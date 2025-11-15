@@ -1,0 +1,634 @@
+openapi: '3.0.3'
+info:
+  title: Emerging Enterprise Landscape API
+  description: API to query data collectors for an emerging enterprise landscape.
+  version: '0.1.0'
+tags:
+  - name: landscape
+    description: query information to the landscape found.
+  - name: p1_structure
+    description: endpoints for elements of the model pertaining to phase 1 of the EmELand model concerning system structure, interfaces and system instances.
+  - name: p2_iam
+    description: endpoints for elements of the model pertaining to phase 2 of the EmELand model concerning identities, roles and access management.
+  - name: p3_capabilities
+    description: endpoints for elements of the model pertaining to phase 3 of the EmELand model concerning offered capabilities and orders to consume these capabilities.
+  - name: p4_billing
+    description: endpoints for elements of the model pertaining to phase 4 of the EmELand model concerning cost accounting and billing.
+  - name: p5_risk
+    description: endpoints for elements of the model pertaining to phase 5 of the EmELand model concerning managing risk and security.
+  - name: p6_observability
+    description: endpoints for elements of the model pertaining to phase 6 of the EmELand model concerning observability, logging and monitoring.
+  - name: p7_capacity
+    description: endpoints for elements of the model pertaining to phase 7 of the EmELand model concerning capacity planing and management.
+  - name: p8_data_catalog
+    description: endpoints for elements of the model pertaining to phase 8 of the EmELand model concerning a data catalog.
+  - name: events
+    description: register and query for events about changes in the landscape.
+servers:
+  - url: https://emeland.local/v1
+paths:
+  /landscape/systems:
+    get:
+      description: Retrieve all systems in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    systemId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/systems/{systemId}:
+    get:
+      description: Retrieve details of a specific system by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: systemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/System'
+        '404':
+          description: Not Found
+  /landscape/apis: 
+    get:
+      description: Retrieve all APIs in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    apiId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/apis/{apiId}:
+    get:
+      description: Retrieve details of a specific API by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: apiId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/API'
+        '404':
+          description: Not Found
+  /landscape/components:
+    get:
+      description: Retrieve all components in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    componentId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/components/{componentId}:
+    get:
+      description: Retrieve details of a specific component by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: componentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Component'
+        '404':
+          description: Not Found
+  /landscape/system-instances:
+    get:
+      description: Retrieve all system instances in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    systemInstanceId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/system-instances/{systemInstanceId}:
+    get:
+      description: Retrieve details of a specific system instance by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: systemInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInstance'
+        '404':
+          description: Not Found
+  /landscape/api-instances:
+    get:
+      description: Retrieve all API instances in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    apiInstanceId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/api-instances/{apiInstanceId}:
+    get:
+      description: Retrieve details of a specific API instance by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: apiInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInstance'
+        '404':
+          description: Not Found
+  /landscape/component-instances:
+    get:
+      description: Retrieve all component instances in the landscape.
+      tags: [landscape, p1_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    componentInstanceId:
+                      type: string
+                      format: uuid
+                    displayName:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/component-instances/{componentInstanceId}:
+    get:
+      description: Retrieve details of a specific component instance by its UUID.
+      tags: [landscape, p1_structure]
+      parameters:
+        - name: componentInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComponentInstance'
+        '404':
+          description: Not Found
+  /landscape/findings:
+    get:
+      description: Retrieve all findings in the landscape.
+      tags: [landscape, p5_risk]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    findingId:
+                      type: string
+                      format: uuid
+                    summary:
+                      type: string
+                    reference:
+                      type: string
+                      format: uri
+  /landscape/findings/{findingId}:
+    get:
+      description: Retrieve details of a specific finding by its UUID.
+      tags: [landscape, p5_risk]
+      parameters:
+        - name: findingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Finding'
+        '404':
+          description: Not Found
+  /events/register:
+    post:
+      description: Register a new event consumer.
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+      responses:
+        '201':
+          description: Created
+  /events/query/{sequenceId}:
+    get:
+      description: Retrieve changes since the given sequence ID.
+      tags: [events]
+      parameters:
+        - name: sequenceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+        '302':
+          description: |
+            Found. This sequence ID does not exist and the url returned with this status code is the next existing one 
+            in the sequence.
+  /test:
+    get:
+      responses:
+        '200':
+          description: OK
+components: 
+  schemas:
+    Finding:
+      type: object
+      description: Represents the finding of a rule violation. Rules may either be defined for semantic correctness of the model or for compliance checks against external regulations and standards.
+      properties:
+        findingId:
+          type: string
+          format: uuid
+        summary:
+          type: string
+        description:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+      required:
+        - findingId
+        - summary
+        - resources
+    ResourceRef:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          format: uuid
+        resourceType:
+          enum:
+            - System
+            - API
+            - Component
+            - SystemInstance
+            - ApiInstance
+            - ComponentInstance
+          description: The type of the resource referenced.
+        reference:
+          type: string
+          format: uri
+      required:
+        - resourceId
+        - resourceType
+    System:
+      type: object
+      description: Represents a system in the EmELand model. A system is a high-level entity that displays a complex behavior. It encapsulates various APIs and software components.
+      properties:
+        systemId:
+          type: string
+          description: An UUID that uniquely identifies the system. It should be generated and assigned when the System is created and must remain constant throughout the System's lifecycle. The field is optional in some contexts, such as when creating a new system where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+          description: A brief description of the system's purpose and functionality.
+        version:
+          $ref: '#/components/schemas/Version'
+        abstract:
+          type: boolean
+          description: Indicates whether the system is abstract (true) or concrete (false). Abstract systems are primarily used to represent external systems that provide APIs consumed by a concrete system defined within the landscape.
+        parent:
+          type: string
+          description: The UUID of the parent system, if applicable. This field is optional and may be omitted if the system has no parent. It establishes a hierarchical relationship between systems.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the system.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - displayName
+        - abstract
+    API:
+      type: object
+      properties:
+        apiId:
+          type: string
+          description: An UUID that uniquely identifies the API. It should be generated and assigned when the API is created and must remain constant throughout the API's lifecycle. The field is optional in some contexts, such as when creating a new API where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the API.
+        description:
+          type: string
+          description: A brief description of the API's purpose and functionality.
+        version:
+          $ref: '#/components/schemas/Version'
+        type:
+          enum:
+            - Unknown
+            - OpenAPI
+            - GraphQL
+            - gRPC
+            - Other
+          description: The type of the API (e.g., OpenAPI, gRPC, GraphQL). If the type is unknown, it should be set to "Unknown". If the type does not fit any predefined categories, it should be set to "Other". In such cases, additional details about the API type should be provided in the description field.
+        system:
+          type: string
+          description: The UUID of the system that provides this API.
+          format: uuid
+      required:
+        - displayName
+        - type
+        - system
+    Component:
+      type: object
+      properties:
+        componentId:
+          type: string
+          description: An UUID that uniquely identifies the component. It should be generated and assigned when the component is created and must remain constant throughout the component's lifecycle. The field is optional in some contexts, such as when creating a new component where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the component.
+        description:
+          type: string
+          description: A brief description of the component's purpose and functionality.
+        version:
+          $ref: '#/components/schemas/Version'
+        system:
+          type: string
+          description: The UUID of the system that contains this component.
+          format: uuid
+        consumes:
+          type: array
+          description: A list of API UUIDs that this component consumes.
+          items:
+            type: string
+            format: uuid
+        provides:
+          type: array
+          description: A list of API UUIDs that this component provides.
+          items:
+            type: string
+            format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the component.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - displayName
+        - system
+    SystemInstance:
+      type: object
+      properties:
+        systemInstanceId:
+          type: string
+          description: An UUID that uniquely identifies the system instance. It should be generated and assigned when the instance is created and must remain constant throughout the instance's lifecycle. The field is optional in some contexts, such as when creating a new instance where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the system instance.
+        system:
+          type: string
+          description: The UUID of the system that this instance realizes.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the system instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - systemInstanceId
+        - displayName
+        - system
+    ApiInstance:
+      type: object
+      properties:
+        apiInstanceId:
+          type: string
+          description: An UUID that uniquely identifies the API instance. It should be generated and assigned when the instance is created and must remain constant throughout the instance's lifecycle. The field is optional in some contexts, such as when creating a new instance where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the API instance.
+        api:
+          type: string
+          description: The UUID of the API that this instance realizes.
+          format: uuid
+        systemInstance:
+          type: string
+          description: The UUID of the system instance that contains this API instance.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the API instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - apiInstanceId
+        - displayName
+        - api
+        - systemInstance
+    ComponentInstance:
+      type: object
+      properties:
+        componentInstanceId:
+          type: string
+          description: An UUID that uniquely identifies the component instance. It should be generated and assigned when the instance is created and must remain constant throughout the instance's lifecycle. The field is optional in some contexts, such as when creating a new instance where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the component instance.
+        component:
+          type: string
+          description: The UUID of the component that this instance realizes.
+          format: uuid
+        systemInstance:
+          type: string
+          description: The UUID of the system instance that contains this component instance.
+          format: uuid
+        consumes:
+          type: array
+          description: A list of API instance UUIDs that this component instance consumes.
+          items:
+            type: string
+            format: uuid
+        provides:
+          type: array
+          description: A list of API instance UUIDs that this component instance provides.
+          items:
+            type: string
+            format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the component instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - componentInstanceId
+        - displayName
+        - component
+        - systemInstance
+        - consumes
+        - provides
+    Annotation:
+      type: object
+      description: Represents a key-value pair used for annotating systems and other entities in the EmELand model.
+      properties:
+        key:
+          type: string
+          description: The key of the annotation. It serves as the identifier for the annotation entry.
+        value:
+          type: string
+          description: The value associated with the annotation key. It provides additional information or metadata related to the key.
+      required:
+        - key
+        - value
+    Version:
+      description: Version information for all objects in the EmELand model.
+      type: object
+      properties:
+        version: 
+          type: string
+          description: Structured version string (e.g., "1.0.0"). The use of semantic versioning is recommended.
+        availableFrom:
+          type: string
+          format: date-time
+          description: Timestamp indicating when this version becomes available. Format is 2006-01-02. May be in the future
+        deprecatedFrom:
+          type: string
+          format: date-time
+          description: Timestamp indicating when this version is considered deprecated. Consumers should avoid using this 
+            version after this date. Format is 2006-01-02. May be in the future. Must be later than availableFrom.
+        terminatedFrom:
+          type: string
+          format: date-time
+          description: Timestamp indicating when this version is considered terminated. Consumers must not use this version 
+            after this date. Format is 2006-01-02. Must be later than deprecatedFrom.
+      required:
+        - version
+      

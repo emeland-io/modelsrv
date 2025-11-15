@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/deepmap/oapi-codegen/HEAD/configuration-schema.json
+package: oapi
+output: client.gen.go
+generate: 
+  client: true
+#compatibility: {}
+output-options:
+  name-normalizer: ToCamelCase
+#import-mapping: {}
