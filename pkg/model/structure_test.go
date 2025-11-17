@@ -323,7 +323,7 @@ func TestAPIInstanceOperations(t *testing.T) {
 	instance := &APIInstance{
 		DisplayName: "test-instance",
 		InstanceId:  instanceId,
-		ApiRef:      apiRef,
+		ApiRef:      &apiRef,
 	}
 
 	// Test getting non-existent instance

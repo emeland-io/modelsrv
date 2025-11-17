@@ -19,6 +19,7 @@ package oapi
 import (
 	"context"
 	"io"
+	"maps"
 	"strings"
 	"text/template"
 )
@@ -33,4 +34,12 @@ func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 
 	template.Execute(body, resp)
 	return strings.NewReader(body.String()), int64(body.Len())
+}
+
+func cloneAnnotations(annos map[string]string) *[]Annotation {
+	retval := make([]Annotation, 0)
+	for key, value := range maps.All(annos) {
+		retval = append(retval, Annotation{Key: key, Value: value})
+	}
+	return &retval
 }

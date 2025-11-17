@@ -1,7 +1,10 @@
 package model
 
 import (
+	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,6 +26,7 @@ type Model interface {
 
 	AddApi(api *API, name string, writer client.SubResourceWriter) error
 	DeleteApiByResourceName(s string) error
+	GetApis() ([]*API, error)
 	GetApiByResourceName(s string) *API
 	GetApiById(id uuid.UUID) *API
 
@@ -38,6 +42,7 @@ type Model interface {
 
 	AddApiInstance(instance *APIInstance, name string, writer client.SubResourceWriter) error
 	DeleteApiInstanceByResourceName(s string) error
+	GetApiInstances() ([]*APIInstance, error)
 	GetApiInstanceByResourceName(s string) *APIInstance
 	GetApiInstanceById(id uuid.UUID) *APIInstance
 
@@ -88,6 +93,10 @@ func NewModel() (*modelData, error) {
 	}
 
 	return model, nil
+}
+
+func (m *modelData) GetCurrentEventSequenceId(ctx context.Context) (string, error) {
+	return "forty-two", nil
 }
 
 type Version struct {
@@ -227,7 +236,7 @@ type SystemInstanceRef struct {
 type APIInstance struct {
 	DisplayName    string
 	InstanceId     uuid.UUID
-	ApiRef         ApiRef
+	ApiRef         *ApiRef
 	SystemInstance *SystemInstanceRef
 	Annotations    map[string]string
 }
@@ -496,4 +505,16 @@ func (m *modelData) GetSystemInstanceByResourceName(s string) *SystemInstance {
 		return nil
 	}
 	return instance
+}
+
+// GetApiInstances implements Model.
+func (m *modelData) GetApiInstances() ([]*APIInstance, error) {
+	instanceArr := slices.Collect(maps.Values(m.APIInstancesByUUID))
+	return instanceArr, nil
+}
+
+// GetApis implements Model.
+func (m *modelData) GetApis() ([]*API, error) {
+	apiArr := slices.Collect(maps.Values(m.APIsByUUID))
+	return apiArr, nil
 }

@@ -21,12 +21,15 @@ import (
 	"context"
 	_ "embed"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	"github.com/oapi-codegen/runtime/types"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 	"gitlab.com/emeland/modelsrv/pkg/model"
 )
 
@@ -44,6 +47,8 @@ const (
 
 type ApiServer struct {
 	Backend model.Model
+	Events  events.EventManager
+	BaseURL string
 }
 
 var _ StrictServerInterface = (*ApiServer)(nil)
@@ -137,14 +142,15 @@ func negotiateContent(acceptedStr string, supported []string) string {
 	return supported[0]
 }
 
-func NewApiServer(backend model.Model) *ApiServer {
+func NewApiServer(backend model.Model, eventMgr events.EventManager, baseUrl string) *ApiServer {
 	return &ApiServer{
 		Backend: backend,
+		Events:  eventMgr,
+		BaseURL: baseUrl,
 	}
 }
 
-func NewApiHandler(backend model.Model) ServerInterface {
-	server := NewApiServer(backend)
+func NewApiHandler(server *ApiServer) ServerInterface {
 	handler := NewStrictHandler(server,
 		[]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeader, ProcessContentTypeRequest})
 
@@ -153,22 +159,100 @@ func NewApiHandler(backend model.Model) ServerInterface {
 
 // GetEventsQuerySequenceId implements StrictServerInterface.
 func (a *ApiServer) GetEventsQuerySequenceId(ctx context.Context, request GetEventsQuerySequenceIdRequestObject) (GetEventsQuerySequenceIdResponseObject, error) {
-	panic("unimplemented")
+	var requestSequenceId uint64
+
+	// parse sequenceId
+	requestSequenceId, err := strconv.ParseUint(request.SequenceId, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	currSequenceId, err := a.Events.GetCurrentSequenceId(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if requestSequenceId == currSequenceId {
+		// no new events
+		resp := GetEventsQuerySequenceId200Response{}
+		return GetEventsQuerySequenceId200Response(resp), nil
+	} else if requestSequenceId < currSequenceId {
+		// there are new events
+		resp := GetEventsQuerySequenceId308Response{}
+		return GetEventsQuerySequenceId308Response(resp), nil
+	} else {
+		// client is ahead of server?
+		resp := GetEventsQuerySequenceId404Response{}
+		return GetEventsQuerySequenceId404Response(resp), nil
+	}
 }
 
 // GetLandscapeApiInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLandscapeApiInstancesRequestObject) (GetLandscapeApiInstancesResponseObject, error) {
-	panic("unimplemented")
+	instanceArr, err := a.Backend.GetApiInstances()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, instance := range instanceArr {
+		reference := fmt.Sprintf("%s/landscape/api-instances/%s", a.BaseURL, instance.InstanceId.String())
+		item := InstanceListItem{
+			InstanceId:  &instance.InstanceId,
+			DisplayName: &instance.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeApiInstances200JSONResponse(respBody), nil
 }
 
 // GetLandscapeApiInstancesApiInstanceId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, request GetLandscapeApiInstancesApiInstanceIdRequestObject) (GetLandscapeApiInstancesApiInstanceIdResponseObject, error) {
-	panic("unimplemented")
+	apiInstance := a.Backend.GetApiInstanceById(request.ApiInstanceId)
+	if apiInstance == nil {
+		return nil, fmt.Errorf("api instance %s not found", request.ApiInstanceId.String())
+	}
+
+	respBody := ApiInstance{
+		ApiInstanceId: apiInstance.InstanceId,
+		DisplayName:   apiInstance.DisplayName,
+		Annotations:   cloneAnnotations(apiInstance.Annotations),
+	}
+
+	if apiInstance.ApiRef != nil {
+		respBody.Api = &(apiInstance.ApiRef.ApiID)
+	}
+
+	if apiInstance.SystemInstance != nil {
+		respBody.SystemInstance = &(apiInstance.SystemInstance.InstanceId)
+	}
+
+	return GetLandscapeApiInstancesApiInstanceId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeApis implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeApisRequestObject) (GetLandscapeApisResponseObject, error) {
-	panic("unimplemented")
+	apiArr, err := a.Backend.GetApis()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, api := range apiArr {
+		item := InstanceListItem{
+			InstanceId:  &api.ApiId,
+			DisplayName: &api.DisplayName,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeApis200JSONResponse(respBody), nil
 }
 
 // GetLandscapeApisApiId implements StrictServerInterface.

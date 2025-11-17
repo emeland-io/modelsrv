@@ -1030,11 +1030,7 @@ func (r PostEventsRegisterResponse) StatusCode() int {
 type GetLandscapeApiInstancesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		ApiInstanceId *openapi_types.UUID `json:"apiInstanceId,omitempty"`
-		DisplayName   *string             `json:"displayName,omitempty"`
-		Reference     *string             `json:"reference,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1078,11 +1074,7 @@ func (r GetLandscapeApiInstancesApiInstanceIdResponse) StatusCode() int {
 type GetLandscapeApisResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		ApiId       *openapi_types.UUID `json:"apiId,omitempty"`
-		DisplayName *string             `json:"displayName,omitempty"`
-		Reference   *string             `json:"reference,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1592,11 +1584,7 @@ func ParseGetLandscapeApiInstancesResponse(rsp *http.Response) (*GetLandscapeApi
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			ApiInstanceId *openapi_types.UUID `json:"apiInstanceId,omitempty"`
-			DisplayName   *string             `json:"displayName,omitempty"`
-			Reference     *string             `json:"reference,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1648,11 +1636,7 @@ func ParseGetLandscapeApisResponse(rsp *http.Response) (*GetLandscapeApisRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			ApiId       *openapi_types.UUID `json:"apiId,omitempty"`
-			DisplayName *string             `json:"displayName,omitempty"`
-			Reference   *string             `json:"reference,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -79,18 +79,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    apiId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/apis/{apiId}:
     get:
       description: Retrieve details of a specific API by its UUID.
@@ -205,18 +194,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    apiInstanceId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/api-instances/{apiInstanceId}:
     get:
       description: Retrieve details of a specific API instance by its UUID.
@@ -351,10 +329,12 @@ paths:
       responses:
         '200':
           description: OK
-        '302':
+        '308':
           description: |
             Found. This sequence ID does not exist and the url returned with this status code is the next existing one 
             in the sequence.
+        '404':
+          description: Not Found'
   /test:
     get:
       responses:
@@ -537,11 +517,11 @@ components:
           description: The human-readable name of the API instance.
         api:
           type: string
-          description: The UUID of the API that this instance realizes.
+          description: The UUID of the API that this instance realizes. This can be left empty if the API resource has not been created yet, but will trigger an entry in the finding list.
           format: uuid
         systemInstance:
           type: string
-          description: The UUID of the system instance that contains this API instance.
+          description: The UUID of the system instance that contains this API instance. This can be left empty if the SystemInstance resource has not been created yet, but will trigger an entry in the finding list.
           format: uuid
         annotations:
           type: array
@@ -551,8 +531,21 @@ components:
       required:
         - apiInstanceId
         - displayName
-        - api
-        - systemInstance
+    InstanceListItem:
+      type: object
+      properties:
+        instanceId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        reference:
+          type: string
+          format: uri
+    InstanceList: 
+      type: array
+      items:
+        $ref: '#/components/schemas/InstanceListItem'
     ComponentInstance:
       type: object
       properties:
