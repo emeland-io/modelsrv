@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -40,6 +41,7 @@ var eventMgr events.EventManager
 
 var apiInstanceId uuid.UUID = uuid.New()
 var apiId uuid.UUID = uuid.New()
+var componentInstanceId uuid.UUID = uuid.New()
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -67,11 +69,42 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApiInstance(&apiInstance, apiInstance.DisplayName, nil)
 	Expect(err).NotTo(HaveOccurred())
 
+	api := model.API{
+		ApiId:       apiId,
+		DisplayName: "First API",
+		Version: model.Version{
+			Version:        "1.0.0",
+			AvailableFrom:  mustParseDate("2023-01-01"),
+			DeprecatedFrom: mustParseDate("2024-01-01"),
+			TerminatedFrom: mustParseDate("2025-01-01"),
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddApi(&api, api.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	componentInstance := model.ComponentInstance{
+		InstanceId:   uuid.New(),
+		DisplayName:  "First Component Instance",
+		ComponentRef: model.EntityVersion{},
+		Annotations:  map[string]string{},
+	}
+	err = backend.AddComponentInstance(&componentInstance, componentInstance.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
 	eventMgr, err = events.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
 })
+
+func mustParseDate(dateStr string) *time.Time {
+	t, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse date %s: %v", dateStr, err))
+	}
+	return &t
+}
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
@@ -179,7 +212,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	})
 
 	It("should call GET on /landscape/apis", func() {
-		url := "http://localhost/landscape/api"
+		url := "http://localhost/landscape/apis"
 		req := httptest.NewRequest("GET", url, nil)
 		w := httptest.NewRecorder()
 
@@ -195,26 +228,55 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
-		Expect(*(instanceArr[0].InstanceId)).To(Equal(apiInstanceId))
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(apiId))
 
-		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/api/%s", apiId.String())))
+		Expect(instanceArr[0].Reference).NotTo(BeNil())
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/apis/%s", apiId.String())))
+	})
+
+	It("should call GET on /landscape/apis/{apiId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/apis/%s", apiId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instance API
+		err = json.Unmarshal(body, &instance)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*(instance.ApiId)).To(Equal(apiId))
+	})
+
+	It("should call GET on /landscape/componentInstances", func() {
+		url := "http://localhost/landscape/componentInstances"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instanceArr InstanceList
+		err = json.Unmarshal(body, &instanceArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(instanceArr)).To(Equal(1))
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(componentInstanceId))
+
+		Expect(instanceArr[0].Reference).NotTo(BeNil())
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/componentInstances/%s", apiId.String())))
 	})
 
 	/*
-		It("GetLandscapeApisApiId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeApisApiId(ctx, GetLandscapeApisApiIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
-		It("GetLandscapeComponentInstances should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeComponentInstances(ctx, GetLandscapeComponentInstancesRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
 		It("GetLandscapeComponentInstancesComponentInstanceId should not panic or error", func() {
 			Expect(func() {
 				_, err := a.GetLandscapeComponentInstancesComponentInstanceId(ctx, GetLandscapeComponentInstancesComponentInstanceIdRequestObject{})

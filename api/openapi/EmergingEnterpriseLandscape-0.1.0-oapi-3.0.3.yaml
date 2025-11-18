@@ -439,10 +439,14 @@ components:
           type: string
           description: The UUID of the system that provides this API.
           format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the API instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
       required:
         - displayName
         - type
-        - system
     Component:
       type: object
       properties:

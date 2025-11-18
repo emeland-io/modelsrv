@@ -220,6 +220,12 @@ type Component struct {
 	statusWriter client.SubResourceWriter
 }
 
+type ComponentRef struct {
+	Component    *Component
+	ComponentId  uuid.UUID
+	ComponentRef *EntityVersion
+}
+
 type SystemInstance struct {
 	DisplayName  string
 	InstanceId   uuid.UUID
@@ -244,7 +250,7 @@ type APIInstance struct {
 type ComponentInstance struct {
 	DisplayName    string
 	InstanceId     uuid.UUID
-	ComponentRef   EntityVersion
+	ComponentRef   *ComponentRef
 	SystemInstance *SystemInstanceRef
 	Annotations    map[string]string
 }
