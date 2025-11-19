@@ -225,18 +225,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    componentInstanceId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/component-instances/{componentInstanceId}:
     get:
       description: Retrieve details of a specific component instance by its UUID.

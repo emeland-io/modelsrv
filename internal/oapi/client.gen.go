@@ -1118,11 +1118,7 @@ func (r GetLandscapeApisApiIdResponse) StatusCode() int {
 type GetLandscapeComponentInstancesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		ComponentInstanceId *openapi_types.UUID `json:"componentInstanceId,omitempty"`
-		DisplayName         *string             `json:"displayName,omitempty"`
-		Reference           *string             `json:"reference,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1688,11 +1684,7 @@ func ParseGetLandscapeComponentInstancesResponse(rsp *http.Response) (*GetLandsc
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			ComponentInstanceId *openapi_types.UUID `json:"componentInstanceId,omitempty"`
-			DisplayName         *string             `json:"displayName,omitempty"`
-			Reference           *string             `json:"reference,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -42,6 +42,7 @@ var eventMgr events.EventManager
 var apiInstanceId uuid.UUID = uuid.New()
 var apiId uuid.UUID = uuid.New()
 var componentInstanceId uuid.UUID = uuid.New()
+var componentId uuid.UUID = uuid.New()
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -84,10 +85,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	componentInstance := model.ComponentInstance{
-		InstanceId:   uuid.New(),
-		DisplayName:  "First Component Instance",
-		ComponentRef: model.EntityVersion{},
-		Annotations:  map[string]string{},
+		InstanceId:  componentInstanceId,
+		DisplayName: "First Component Instance",
+		ComponentRef: &model.ComponentRef{
+			ComponentId: componentId,
+		},
+		Annotations: map[string]string{},
 	}
 	err = backend.AddComponentInstance(&componentInstance, componentInstance.DisplayName, nil)
 	Expect(err).NotTo(HaveOccurred())
@@ -254,7 +257,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	})
 
 	It("should call GET on /landscape/componentInstances", func() {
-		url := "http://localhost/landscape/componentInstances"
+		url := "http://localhost/landscape/component-instances"
 		req := httptest.NewRequest("GET", url, nil)
 		w := httptest.NewRecorder()
 
@@ -273,16 +276,17 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(*(instanceArr[0].InstanceId)).To(Equal(componentInstanceId))
 
 		Expect(instanceArr[0].Reference).NotTo(BeNil())
-		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/componentInstances/%s", apiId.String())))
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/component-instances/%s", componentInstanceId.String())))
+	})
+
+	It("GetLandscapeComponentInstancesComponentInstanceId should not panic or error", func() {
+		Expect(func() {
+			_, err := a.GetLandscapeComponentInstancesComponentInstanceId(ctx, GetLandscapeComponentInstancesComponentInstanceIdRequestObject{})
+			Expect(err).To(BeNil())
+		}).NotTo(Panic())
 	})
 
 	/*
-		It("GetLandscapeComponentInstancesComponentInstanceId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeComponentInstancesComponentInstanceId(ctx, GetLandscapeComponentInstancesComponentInstanceIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
 
 		It("GetLandscapeComponents should not panic or error", func() {
 			Expect(func() {

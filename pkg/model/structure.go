@@ -32,11 +32,13 @@ type Model interface {
 
 	AddComponent(comp *Component, name string, writer client.SubResourceWriter) error
 	DeleteComponentByResourceName(s string) error
+	GetComponents() ([]*Component, error)
 	GetComponentByResourceName(s string) *Component
 	GetComponentById(id uuid.UUID) *Component
 
 	AddSystemInstance(instance *SystemInstance, name string, writer client.SubResourceWriter) error
 	DeleteSystemInstanceByResourceName(s string) error
+	GetSystemInstances() ([]*SystemInstance, error)
 	GetSystemInstanceByResourceName(s string) *SystemInstance
 	GetSystemInstanceById(id uuid.UUID) *SystemInstance
 
@@ -48,6 +50,7 @@ type Model interface {
 
 	AddComponentInstance(instance *ComponentInstance, name string, writer client.SubResourceWriter) error
 	DeleteComponentInstanceByResourceName(s string) error
+	GetComponentInstances() ([]*ComponentInstance, error)
 	GetComponentInstanceByResourceName(s string) *ComponentInstance
 	GetComponentInstanceById(id uuid.UUID) *ComponentInstance
 }
@@ -523,4 +526,20 @@ func (m *modelData) GetApiInstances() ([]*APIInstance, error) {
 func (m *modelData) GetApis() ([]*API, error) {
 	apiArr := slices.Collect(maps.Values(m.APIsByUUID))
 	return apiArr, nil
+}
+
+// GetComponentInstances implements Model.
+func (m *modelData) GetComponentInstances() ([]*ComponentInstance, error) {
+	instanceArr := slices.Collect(maps.Values(m.ComponentInstancesByUUID))
+	return instanceArr, nil
+}
+
+// GetComponents implements Model.
+func (m *modelData) GetComponents() ([]*Component, error) {
+	panic("unimplemented")
+}
+
+// GetSystemInstances implements Model.
+func (m *modelData) GetSystemInstances() ([]*SystemInstance, error) {
+	panic("unimplemented")
 }

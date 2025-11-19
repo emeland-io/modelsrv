@@ -350,7 +350,10 @@ func TestComponentInstanceOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	componentRef := EntityVersion{Name: "test-component", Version: "1.0.0"}
+	componentRef := &ComponentRef{
+		Component:   nil,
+		ComponentId: uuid.New(),
+	}
 	instance := &ComponentInstance{
 		DisplayName:  "test-instance",
 		InstanceId:   instanceId,

@@ -279,7 +279,25 @@ func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandsc
 
 // GetLandscapeComponentInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request GetLandscapeComponentInstancesRequestObject) (GetLandscapeComponentInstancesResponseObject, error) {
-	panic("unimplemented")
+	instanceArr, err := a.Backend.GetComponentInstances()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, instance := range instanceArr {
+		reference := fmt.Sprintf("%s/landscape/component-instances/%s", a.BaseURL, instance.InstanceId.String())
+		item := InstanceListItem{
+			InstanceId:  &instance.InstanceId,
+			DisplayName: &instance.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeComponentInstances200JSONResponse(respBody), nil
 }
 
 // GetLandscapeComponentInstancesComponentInstanceId implements StrictServerInterface.
