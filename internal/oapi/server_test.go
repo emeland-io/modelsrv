@@ -250,8 +250,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
-		Expect(*(instanceArr[0].InstanceId)).To(Equal(apiInstanceId))
 
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(apiInstanceId))
 		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/api-instances/%s", apiInstanceId.String())))
 	})
 
@@ -400,46 +400,6 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(*(instance.ComponentId)).To(Equal(componentId))
 	})
 
-	It("should call GET on /landscape/findings", func() {
-		url := "http://localhost/landscape/findings"
-		req := httptest.NewRequest("GET", url, nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		body, err := io.ReadAll(resp.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(body)).NotTo(Equal(0))
-
-		var findingArr InstanceList
-		err = json.Unmarshal(body, &findingArr)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(findingArr)).To(Equal(1))
-	})
-
-	It("should call GET on /landscape/findings/{findingsId}", func() {
-		url := fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())
-		req := httptest.NewRequest("GET", url, nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		body, err := io.ReadAll(resp.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(body)).NotTo(Equal(0))
-
-		var finding Finding
-		err = json.Unmarshal(body, &finding)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(finding.FindingId).To(Equal(findingId))
-
-		Expect(len(finding.Resources)).To(Equal(2))
-	})
-
 	It("should call GET on /landscape/system-instances", func() {
 		url := "http://localhost/landscape/system-instances"
 		req := httptest.NewRequest("GET", url, nil)
@@ -457,31 +417,71 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
+
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(systemInstanceId))
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/system-instances/%s", systemInstanceId.String())))
 	})
 
-	/*
-		It("GetLandscapeSystemInstancesSystemInstanceId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeSystemInstancesSystemInstanceId(ctx, GetLandscapeSystemInstancesSystemInstanceIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
+	It("should call GET on /landscape/system-instances/{systemInstanceId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/system-instances/%s", systemInstanceId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
 
-		It("GetLandscapeSystems should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeSystems(ctx, GetLandscapeSystemsRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
+		handler.ServeHTTP(w, req)
 
-		It("GetLandscapeSystemsSystemId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeSystemsSystemId(ctx, GetLandscapeSystemsSystemIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
 
-	*/
+		var instance SystemInstance
+		err = json.Unmarshal(body, &instance)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(instance.SystemInstanceId).To(Equal(systemInstanceId))
+	})
+
+	It("should call GET on /landscape/systems", func() {
+		url := "http://localhost/landscape/systems"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instanceArr InstanceList
+		err = json.Unmarshal(body, &instanceArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(instanceArr)).To(Equal(1))
+
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(systemId))
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/systems/%s", systemId.String())))
+
+	})
+
+	It("should call GET on /landscape/systems/{systemId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/systems/%s", systemId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instance System
+		err = json.Unmarshal(body, &instance)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*(instance.SystemId)).To(Equal(systemId))
+	})
 
 	It("should call GET on /landscape/findings", func() {
 		url := "http://localhost/landscape/findings"
@@ -500,6 +500,10 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		err = json.Unmarshal(body, &findingArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(findingArr)).To(Equal(1))
+
+		Expect(*(findingArr[0].InstanceId)).To(Equal(findingId))
+		Expect(*(findingArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())))
+
 	})
 
 	It("should call GET on /landscape/findings/{findingsId}", func() {

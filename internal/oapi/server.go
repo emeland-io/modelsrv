@@ -433,17 +433,62 @@ func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request Get
 
 // GetLandscapeSystemInstancesSystemInstanceId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeSystemInstancesSystemInstanceId(ctx context.Context, request GetLandscapeSystemInstancesSystemInstanceIdRequestObject) (GetLandscapeSystemInstancesSystemInstanceIdResponseObject, error) {
-	panic("unimplemented")
+	systemInstance := a.Backend.GetSystemInstanceById(request.SystemInstanceId)
+	if systemInstance == nil {
+		return nil, fmt.Errorf("system instance %s not found", request.SystemInstanceId.String())
+	}
+
+	respBody := SystemInstance{
+		SystemInstanceId: systemInstance.InstanceId,
+		DisplayName:      systemInstance.DisplayName,
+		Annotations:      cloneAnnotations(systemInstance.Annotations),
+	}
+
+	if systemInstance.SystemRef != nil {
+		respBody.System = systemInstance.SystemRef.SystemId
+	}
+
+	return GetLandscapeSystemInstancesSystemInstanceId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeSystems implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeSystems(ctx context.Context, request GetLandscapeSystemsRequestObject) (GetLandscapeSystemsResponseObject, error) {
-	panic("unimplemented")
+	systemArr, err := a.Backend.GetSystems()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, system := range systemArr {
+		reference := fmt.Sprintf("%s/landscape/systems/%s", a.BaseURL, system.SystemId.String())
+		item := InstanceListItem{
+			InstanceId:  &system.SystemId,
+			DisplayName: &system.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeSystems200JSONResponse(respBody), nil
 }
 
 // GetLandscapeSystemsSystemId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request GetLandscapeSystemsSystemIdRequestObject) (GetLandscapeSystemsSystemIdResponseObject, error) {
-	panic("unimplemented")
+	system := a.Backend.GetSystemById(request.SystemId)
+	if system == nil {
+		return nil, fmt.Errorf("system %s not found", request.SystemId.String())
+	}
+
+	respBody := System{
+		SystemId:    &system.SystemId,
+		DisplayName: system.DisplayName,
+		Description: &system.Description,
+		Annotations: cloneAnnotations(system.Annotations),
+	}
+
+	return GetLandscapeSystemsSystemId200JSONResponse(respBody), nil
 }
 
 // GetTest implements StrictServerInterface.

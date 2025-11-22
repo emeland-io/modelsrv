@@ -21,6 +21,7 @@ var ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not fo
 type Model interface {
 	AddSystem(sys *System, name string, writer client.SubResourceWriter) error
 	DeleteSystemByResourceName(s string) error
+	GetSystems() ([]*System, error)
 	GetSystemByResourceName(s string) *System
 	GetSystemById(id uuid.UUID) *System
 
@@ -340,6 +341,12 @@ func (m *modelData) DeleteSystemByResourceName(s string) error {
 
 	delete(m.SystemsByName, s)
 	return nil
+}
+
+// GetSystems implements Model.
+func (m *modelData) GetSystems() ([]*System, error) {
+	systemArr := slices.Collect(maps.Values(m.SystemsByUUID))
+	return systemArr, nil
 }
 
 // GetSystemByResourceName implements Model.
