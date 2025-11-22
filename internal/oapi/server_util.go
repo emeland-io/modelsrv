@@ -22,6 +22,8 @@ import (
 	"maps"
 	"strings"
 	"text/template"
+
+	"gitlab.com/emeland/modelsrv/pkg/model"
 )
 
 func acceptsHTML(ctx context.Context) bool {
@@ -42,4 +44,22 @@ func cloneAnnotations(annos map[string]string) *[]Annotation {
 		retval = append(retval, Annotation{Key: key, Value: value})
 	}
 	return &retval
+}
+
+/*
+cloneResourceRefs creates a deep copy of the given ResourceRef slice.
+
+	Warning: not the change in the type of the items from reference to value.
+*/
+func cloneResourceRefs(resourceRef []*model.ResourceRef) []ResourceRef {
+	respArr := []ResourceRef{}
+
+	for _, resRef := range resourceRef {
+		newRef := ResourceRef{
+			ResourceType: resRef.ResourceType,
+			ResourceId:   resRef.ResourceId,
+		}
+		respArr = append(respArr, newRef)
+	}
+	return respArr
 }

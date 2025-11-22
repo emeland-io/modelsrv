@@ -53,6 +53,10 @@ type Model interface {
 	GetComponentInstances() ([]*ComponentInstance, error)
 	GetComponentInstanceByResourceName(s string) *ComponentInstance
 	GetComponentInstanceById(id uuid.UUID) *ComponentInstance
+
+	AddFinding(finding *Finding, name string) error
+	GetFindings() ([]*Finding, error)
+	GetFindingById(id uuid.UUID) *Finding
 }
 
 type modelData struct {
@@ -71,6 +75,8 @@ type modelData struct {
 	SystemInstancesByUUID    map[uuid.UUID]*SystemInstance
 	APIInstancesByUUID       map[uuid.UUID]*APIInstance
 	ComponentInstancesByUUID map[uuid.UUID]*ComponentInstance
+
+	FindingsByUUID map[uuid.UUID]*Finding
 }
 
 // ensure Model interface is implemented correctly
@@ -93,6 +99,8 @@ func NewModel() (*modelData, error) {
 		SystemInstancesByUUID:    make(map[uuid.UUID]*SystemInstance),
 		APIInstancesByUUID:       make(map[uuid.UUID]*APIInstance),
 		ComponentInstancesByUUID: make(map[uuid.UUID]*ComponentInstance),
+
+		FindingsByUUID: make(map[uuid.UUID]*Finding),
 	}
 
 	return model, nil
@@ -256,6 +264,57 @@ type ComponentInstance struct {
 	ComponentRef   *ComponentRef
 	SystemInstance *SystemInstanceRef
 	Annotations    map[string]string
+}
+
+type Finding struct {
+	FindingId   uuid.UUID
+	Summary     string
+	Description string
+	Resources   []*ResourceRef
+	Annotations map[string]string
+}
+
+type ResourceType int
+
+const (
+	UnknownResourceType ResourceType = iota
+	SystemResource
+	SystemInstanceResource
+	APIResource
+	APIInstanceResource
+	ComponentResource
+	ComponentInstanceResource
+)
+
+var ResourceTypeValues = map[ResourceType]string{
+	UnknownResourceType:       "UnknownResourceType",
+	SystemResource:            "System",
+	SystemInstanceResource:    "SystemInstance",
+	APIResource:               "API",
+	APIInstanceResource:       "APIInstance",
+	ComponentResource:         "Component",
+	ComponentInstanceResource: "ComponentInstance",
+}
+
+func ParseResourceType(s string) ResourceType {
+	for key, val := range ResourceTypeValues {
+		if val == s {
+			return key
+		}
+	}
+	return UnknownResourceType
+}
+
+func (t ResourceType) String() string {
+	if val, ok := ResourceTypeValues[t]; ok {
+		return val
+	}
+	return ResourceTypeValues[UnknownResourceType]
+}
+
+type ResourceRef struct {
+	ResourceId   uuid.UUID
+	ResourceType ResourceType
 }
 
 // AddSystem implements Model.
@@ -536,10 +595,33 @@ func (m *modelData) GetComponentInstances() ([]*ComponentInstance, error) {
 
 // GetComponents implements Model.
 func (m *modelData) GetComponents() ([]*Component, error) {
-	panic("unimplemented")
+	componentArr := slices.Collect(maps.Values(m.ComponentsByUUID))
+	return componentArr, nil
 }
 
 // GetSystemInstances implements Model.
 func (m *modelData) GetSystemInstances() ([]*SystemInstance, error) {
-	panic("unimplemented")
+	instanceArr := slices.Collect(maps.Values(m.SystemInstancesByUUID))
+	return instanceArr, nil
+}
+
+// GetFindings implements Model.
+func (m modelData) GetFindings() ([]*Finding, error) {
+	findingArr := slices.Collect(maps.Values(m.FindingsByUUID))
+	return findingArr, nil
+}
+
+// AddFinding implements Model.
+func (m *modelData) AddFinding(finding *Finding, name string) error {
+	m.FindingsByUUID[finding.FindingId] = finding
+	return nil
+}
+
+// GetFindingById implements Model.
+func (m *modelData) GetFindingById(id uuid.UUID) *Finding {
+	finding, exists := m.FindingsByUUID[id]
+	if !exists {
+		return nil
+	}
+	return finding
 }

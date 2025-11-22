@@ -43,6 +43,9 @@ var apiInstanceId uuid.UUID = uuid.New()
 var apiId uuid.UUID = uuid.New()
 var componentInstanceId uuid.UUID = uuid.New()
 var componentId uuid.UUID = uuid.New()
+var findingId uuid.UUID = uuid.New()
+var systemId uuid.UUID = uuid.New()
+var systemInstanceId uuid.UUID = uuid.New()
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -59,17 +62,6 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel()
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.APIInstance{
-		InstanceId:  apiInstanceId,
-		DisplayName: "First API Instance",
-		ApiRef: &model.ApiRef{
-			ApiID: uuid.New(),
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddApiInstance(&apiInstance, apiInstance.DisplayName, nil)
-	Expect(err).NotTo(HaveOccurred())
-
 	api := model.API{
 		ApiId:       apiId,
 		DisplayName: "First API",
@@ -84,6 +76,31 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(&api, api.DisplayName, nil)
 	Expect(err).NotTo(HaveOccurred())
 
+	apiInstance := model.APIInstance{
+		InstanceId:  apiInstanceId,
+		DisplayName: "First API Instance",
+		ApiRef: &model.ApiRef{
+			ApiID: uuid.New(),
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddApiInstance(&apiInstance, apiInstance.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	component := model.Component{
+		ComponentId: componentId,
+		DisplayName: "First Component",
+		Version: model.Version{
+			Version:        "1.0.0",
+			AvailableFrom:  mustParseDate("2023-01-01"),
+			DeprecatedFrom: mustParseDate("2024-01-01"),
+			TerminatedFrom: mustParseDate("2025-01-01"),
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddComponent(&component, component.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
 	componentInstance := model.ComponentInstance{
 		InstanceId:  componentInstanceId,
 		DisplayName: "First Component Instance",
@@ -93,6 +110,50 @@ var _ = BeforeSuite(func() {
 		Annotations: map[string]string{},
 	}
 	err = backend.AddComponentInstance(&componentInstance, componentInstance.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	system := model.System{
+		SystemId:    systemId,
+		DisplayName: "First System",
+		Version: model.Version{
+			Version:        "1.0.0",
+			AvailableFrom:  mustParseDate("2023-01-01"),
+			DeprecatedFrom: mustParseDate("2024-01-01"),
+			TerminatedFrom: mustParseDate("2025-01-01"),
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddSystem(&system, system.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	systemInstance := model.SystemInstance{
+		InstanceId:  systemInstanceId,
+		DisplayName: "First System Instance",
+		SystemRef: &model.SystemRef{
+			SystemId: systemId,
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddSystemInstance(&systemInstance, systemInstance.DisplayName, nil)
+	Expect(err).NotTo(HaveOccurred())
+
+	finding := model.Finding{
+		FindingId:   findingId,
+		Summary:     "First Finding",
+		Description: "This is the first test finding.",
+		Resources: []*model.ResourceRef{
+			&model.ResourceRef{
+				ResourceType: model.ParseResourceType("API"),
+				ResourceId:   apiId,
+			},
+			&model.ResourceRef{
+				ResourceType: model.ParseResourceType("Component"),
+				ResourceId:   componentId,
+			},
+		},
+		Annotations: map[string]string{},
+	}
+	err = backend.AddFinding(&finding, finding.Summary)
 	Expect(err).NotTo(HaveOccurred())
 
 	eventMgr, err = events.NewEventManager()
@@ -211,7 +272,6 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(instance.ApiInstanceId).To(Equal(apiInstanceId))
-
 	})
 
 	It("should call GET on /landscape/apis", func() {
@@ -279,50 +339,127 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/component-instances/%s", componentInstanceId.String())))
 	})
 
-	It("GetLandscapeComponentInstancesComponentInstanceId should not panic or error", func() {
-		Expect(func() {
-			_, err := a.GetLandscapeComponentInstancesComponentInstanceId(ctx, GetLandscapeComponentInstancesComponentInstanceIdRequestObject{})
-			Expect(err).To(BeNil())
-		}).NotTo(Panic())
+	It("should call GET on /landscape/component-instances/{componentInstanceId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/component-instances/%s", componentInstanceId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instance ComponentInstance
+		err = json.Unmarshal(body, &instance)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(instance.ComponentInstanceId).To(Equal(componentInstanceId))
+	})
+
+	It("should call GET on /landscape/components", func() {
+		url := "http://localhost/landscape/components"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instanceArr InstanceList
+		err = json.Unmarshal(body, &instanceArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(instanceArr)).To(Equal(1))
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(componentId))
+
+		Expect(instanceArr[0].Reference).NotTo(BeNil())
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/components/%s", componentId.String())))
+	})
+
+	It("should call GET on /landscape/components/{componentId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/components/%s", componentId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instance Component
+		err = json.Unmarshal(body, &instance)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(*(instance.ComponentId)).To(Equal(componentId))
+	})
+
+	It("should call GET on /landscape/findings", func() {
+		url := "http://localhost/landscape/findings"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var findingArr InstanceList
+		err = json.Unmarshal(body, &findingArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(findingArr)).To(Equal(1))
+	})
+
+	It("should call GET on /landscape/findings/{findingsId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var finding Finding
+		err = json.Unmarshal(body, &finding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(finding.FindingId).To(Equal(findingId))
+
+		Expect(len(finding.Resources)).To(Equal(2))
+	})
+
+	It("should call GET on /landscape/system-instances", func() {
+		url := "http://localhost/landscape/system-instances"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instanceArr InstanceList
+		err = json.Unmarshal(body, &instanceArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(instanceArr)).To(Equal(1))
 	})
 
 	/*
-
-		It("GetLandscapeComponents should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeComponents(ctx, GetLandscapeComponentsRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
-		It("GetLandscapeComponentsComponentId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeComponentsComponentId(ctx, GetLandscapeComponentsComponentIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
-		It("GetLandscapeFindings should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeFindings(ctx, GetLandscapeFindingsRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
-		It("GetLandscapeFindingsFindingId should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeFindingsFindingId(ctx, GetLandscapeFindingsFindingIdRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
-		It("GetLandscapeSystemInstances should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetLandscapeSystemInstances(ctx, GetLandscapeSystemInstancesRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-
 		It("GetLandscapeSystemInstancesSystemInstanceId should not panic or error", func() {
 			Expect(func() {
 				_, err := a.GetLandscapeSystemInstancesSystemInstanceId(ctx, GetLandscapeSystemInstancesSystemInstanceIdRequestObject{})
@@ -344,12 +481,50 @@ var _ = Describe("calling the modelsrv API functions", func() {
 			}).NotTo(Panic())
 		})
 
-		It("GetTest should not panic or error", func() {
-			Expect(func() {
-				_, err := a.GetTest(ctx, GetTestRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
+	*/
+
+	It("should call GET on /landscape/findings", func() {
+		url := "http://localhost/landscape/findings"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var findingArr InstanceList
+		err = json.Unmarshal(body, &findingArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(findingArr)).To(Equal(1))
+	})
+
+	It("should call GET on /landscape/findings/{findingsId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var finding Finding
+		err = json.Unmarshal(body, &finding)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(finding.FindingId).To(Equal(findingId))
+
+		Expect(len(finding.Resources)).To(Equal(2))
+	})
+
+	/*
+
 
 		It("PostEventsRegister should not panic or error", func() {
 			Expect(func() {

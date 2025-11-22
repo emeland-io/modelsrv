@@ -1162,11 +1162,7 @@ func (r GetLandscapeComponentInstancesComponentInstanceIdResponse) StatusCode() 
 type GetLandscapeComponentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		ComponentId *openapi_types.UUID `json:"componentId,omitempty"`
-		DisplayName *string             `json:"displayName,omitempty"`
-		Reference   *string             `json:"reference,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1210,11 +1206,7 @@ func (r GetLandscapeComponentsComponentIdResponse) StatusCode() int {
 type GetLandscapeFindingsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		FindingId *openapi_types.UUID `json:"findingId,omitempty"`
-		Reference *string             `json:"reference,omitempty"`
-		Summary   *string             `json:"summary,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1258,11 +1250,7 @@ func (r GetLandscapeFindingsFindingIdResponse) StatusCode() int {
 type GetLandscapeSystemInstancesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		DisplayName      *string             `json:"displayName,omitempty"`
-		Reference        *string             `json:"reference,omitempty"`
-		SystemInstanceId *openapi_types.UUID `json:"systemInstanceId,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1306,11 +1294,7 @@ func (r GetLandscapeSystemInstancesSystemInstanceIdResponse) StatusCode() int {
 type GetLandscapeSystemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]struct {
-		DisplayName *string             `json:"displayName,omitempty"`
-		Reference   *string             `json:"reference,omitempty"`
-		SystemId    *openapi_types.UUID `json:"systemId,omitempty"`
-	}
+	JSON200      *InstanceList
 }
 
 // Status returns HTTPResponse.Status
@@ -1736,11 +1720,7 @@ func ParseGetLandscapeComponentsResponse(rsp *http.Response) (*GetLandscapeCompo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			ComponentId *openapi_types.UUID `json:"componentId,omitempty"`
-			DisplayName *string             `json:"displayName,omitempty"`
-			Reference   *string             `json:"reference,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1792,11 +1772,7 @@ func ParseGetLandscapeFindingsResponse(rsp *http.Response) (*GetLandscapeFinding
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			FindingId *openapi_types.UUID `json:"findingId,omitempty"`
-			Reference *string             `json:"reference,omitempty"`
-			Summary   *string             `json:"summary,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1848,11 +1824,7 @@ func ParseGetLandscapeSystemInstancesResponse(rsp *http.Response) (*GetLandscape
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			DisplayName      *string             `json:"displayName,omitempty"`
-			Reference        *string             `json:"reference,omitempty"`
-			SystemInstanceId *openapi_types.UUID `json:"systemInstanceId,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1904,11 +1876,7 @@ func ParseGetLandscapeSystemsResponse(rsp *http.Response) (*GetLandscapeSystemsR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []struct {
-			DisplayName *string             `json:"displayName,omitempty"`
-			Reference   *string             `json:"reference,omitempty"`
-			SystemId    *openapi_types.UUID `json:"systemId,omitempty"`
-		}
+		var dest InstanceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -302,32 +302,133 @@ func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request 
 
 // GetLandscapeComponentInstancesComponentInstanceId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx context.Context, request GetLandscapeComponentInstancesComponentInstanceIdRequestObject) (GetLandscapeComponentInstancesComponentInstanceIdResponseObject, error) {
-	panic("unimplemented")
+	componentInstance := a.Backend.GetComponentInstanceById(request.ComponentInstanceId)
+	if componentInstance == nil {
+		return nil, fmt.Errorf("component instance %s not found", request.ComponentInstanceId.String())
+	}
+
+	respBody := ComponentInstance{
+		ComponentInstanceId: componentInstance.InstanceId,
+		DisplayName:         componentInstance.DisplayName,
+		Annotations:         cloneAnnotations(componentInstance.Annotations),
+	}
+
+	if componentInstance.ComponentRef != nil {
+		respBody.Component = componentInstance.ComponentRef.ComponentId
+	}
+
+	if componentInstance.SystemInstance != nil {
+		respBody.SystemInstance = componentInstance.SystemInstance.InstanceId
+	}
+
+	return GetLandscapeComponentInstancesComponentInstanceId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeComponents implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLandscapeComponentsRequestObject) (GetLandscapeComponentsResponseObject, error) {
-	panic("unimplemented")
+	componentArr, err := a.Backend.GetComponents()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, component := range componentArr {
+		reference := fmt.Sprintf("%s/landscape/components/%s", a.BaseURL, component.ComponentId.String())
+		item := InstanceListItem{
+			InstanceId:  &component.ComponentId,
+			DisplayName: &component.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeComponents200JSONResponse(respBody), nil
 }
 
 // GetLandscapeComponentsComponentId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponentsComponentId(ctx context.Context, request GetLandscapeComponentsComponentIdRequestObject) (GetLandscapeComponentsComponentIdResponseObject, error) {
-	panic("unimplemented")
+	component := a.Backend.GetComponentById(request.ComponentId)
+	if component == nil {
+		return nil, fmt.Errorf("component %s not found", request.ComponentId.String())
+	}
+
+	respBody := Component{
+		ComponentId: &component.ComponentId,
+		DisplayName: component.DisplayName,
+		Description: &component.Description,
+		Annotations: cloneAnnotations(component.Annotations),
+	}
+
+	if component.System != nil {
+		respBody.System = component.System.SystemId
+	}
+
+	return GetLandscapeComponentsComponentId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeFindings implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandscapeFindingsRequestObject) (GetLandscapeFindingsResponseObject, error) {
-	panic("unimplemented")
+	findingsArr, err := a.Backend.GetFindings()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, finding := range findingsArr {
+		reference := fmt.Sprintf("%s/landscape/findings/%s", a.BaseURL, finding.FindingId.String())
+		item := InstanceListItem{
+			InstanceId:  &finding.FindingId,
+			DisplayName: &finding.Summary,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeFindings200JSONResponse(respBody), nil
 }
 
 // GetLandscapeFindingsFindingId implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request GetLandscapeFindingsFindingIdRequestObject) (GetLandscapeFindingsFindingIdResponseObject, error) {
-	panic("unimplemented")
+	finding := a.Backend.GetFindingById(request.FindingId)
+	if finding == nil {
+		return nil, fmt.Errorf("finding %s not found", request.FindingId.String())
+	}
+
+	respBody := Finding{
+		FindingId:   finding.FindingId,
+		Summary:     finding.Summary,
+		Description: &finding.Description,
+		Resources:   cloneResourceRefs(finding.Resources),
+		Annotations: cloneAnnotations(finding.Annotations),
+	}
+	return GetLandscapeFindingsFindingId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeSystemInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request GetLandscapeSystemInstancesRequestObject) (GetLandscapeSystemInstancesResponseObject, error) {
-	panic("unimplemented")
+	instanceArr, err := a.Backend.GetSystemInstances()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, instance := range instanceArr {
+		reference := fmt.Sprintf("%s/landscape/system-instances/%s", a.BaseURL, instance.InstanceId.String())
+		item := InstanceListItem{
+			InstanceId:  &instance.InstanceId,
+			DisplayName: &instance.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeSystemInstances200JSONResponse(respBody), nil
 }
 
 // GetLandscapeSystemInstancesSystemInstanceId implements StrictServerInterface.

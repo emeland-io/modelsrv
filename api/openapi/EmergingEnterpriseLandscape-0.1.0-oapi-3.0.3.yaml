@@ -37,18 +37,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    systemId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/systems/{systemId}:
     get:
       description: Retrieve details of a specific system by its UUID.
@@ -110,18 +99,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    componentId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/components/{componentId}:
     get:
       description: Retrieve details of a specific component by its UUID.
@@ -152,18 +130,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    systemInstanceId:
-                      type: string
-                      format: uuid
-                    displayName:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/system-instances/{systemInstanceId}:
     get:
       description: Retrieve details of a specific system instance by its UUID.
@@ -256,18 +223,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    findingId:
-                      type: string
-                      format: uuid
-                    summary:
-                      type: string
-                    reference:
-                      type: string
-                      format: uri
+                $ref: '#/components/schemas/InstanceList'
   /landscape/findings/{findingId}:
     get:
       description: Retrieve details of a specific finding by its UUID.
@@ -346,6 +302,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ResourceRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the finding.
+          items:
+            $ref: '#/components/schemas/Annotation'
       required:
         - findingId
         - summary
@@ -354,18 +315,20 @@ components:
       type: object
       properties:
         resourceId:
+          description: The UUID of the resource referenced.
           type: string
           format: uuid
         resourceType:
           enum:
             - System
-            - API
-            - Component
             - SystemInstance
+            - API
             - ApiInstance
+            - Component
             - ComponentInstance
           description: The type of the resource referenced.
         reference:
+          description: A URI reference to the resource.
           type: string
           format: uri
       required:
