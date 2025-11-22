@@ -122,6 +122,12 @@ type ClientInterface interface {
 	// GetLandscapeComponentsComponentId request
 	GetLandscapeComponentsComponentId(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeContexts request
+	GetLandscapeContexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeContextsContextId request
+	GetLandscapeContextsContextId(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeFindings request
 	GetLandscapeFindings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -266,6 +272,30 @@ func (c *Client) GetLandscapeComponents(ctx context.Context, reqEditors ...Reque
 
 func (c *Client) GetLandscapeComponentsComponentId(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeComponentsComponentIdRequest(c.Server, componentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeContexts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeContextsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeContextsContextId(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeContextsContextIdRequest(c.Server, contextId)
 	if err != nil {
 		return nil, err
 	}
@@ -678,6 +708,67 @@ func NewGetLandscapeComponentsComponentIdRequest(server string, componentId open
 	return req, nil
 }
 
+// NewGetLandscapeContextsRequest generates requests for GetLandscapeContexts
+func NewGetLandscapeContextsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/contexts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeContextsContextIdRequest generates requests for GetLandscapeContextsContextId
+func NewGetLandscapeContextsContextIdRequest(server string, contextId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "contextId", runtime.ParamLocationPath, contextId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/contexts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeFindingsRequest generates requests for GetLandscapeFindings
 func NewGetLandscapeFindingsRequest(server string) (*http.Request, error) {
 	var err error
@@ -963,6 +1054,12 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeComponentsComponentIdWithResponse request
 	GetLandscapeComponentsComponentIdWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeComponentsComponentIdResponse, error)
 
+	// GetLandscapeContextsWithResponse request
+	GetLandscapeContextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeContextsResponse, error)
+
+	// GetLandscapeContextsContextIdWithResponse request
+	GetLandscapeContextsContextIdWithResponse(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeContextsContextIdResponse, error)
+
 	// GetLandscapeFindingsWithResponse request
 	GetLandscapeFindingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeFindingsResponse, error)
 
@@ -1197,6 +1294,50 @@ func (r GetLandscapeComponentsComponentIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeComponentsComponentIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeContextsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeContextsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeContextsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeContextsContextIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Context
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeContextsContextIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeContextsContextIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1452,6 +1593,24 @@ func (c *ClientWithResponses) GetLandscapeComponentsComponentIdWithResponse(ctx 
 		return nil, err
 	}
 	return ParseGetLandscapeComponentsComponentIdResponse(rsp)
+}
+
+// GetLandscapeContextsWithResponse request returning *GetLandscapeContextsResponse
+func (c *ClientWithResponses) GetLandscapeContextsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeContextsResponse, error) {
+	rsp, err := c.GetLandscapeContexts(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeContextsResponse(rsp)
+}
+
+// GetLandscapeContextsContextIdWithResponse request returning *GetLandscapeContextsContextIdResponse
+func (c *ClientWithResponses) GetLandscapeContextsContextIdWithResponse(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeContextsContextIdResponse, error) {
+	rsp, err := c.GetLandscapeContextsContextId(ctx, contextId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeContextsContextIdResponse(rsp)
 }
 
 // GetLandscapeFindingsWithResponse request returning *GetLandscapeFindingsResponse
@@ -1747,6 +1906,58 @@ func ParseGetLandscapeComponentsComponentIdResponse(rsp *http.Response) (*GetLan
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Component
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeContextsResponse parses an HTTP response from a GetLandscapeContextsWithResponse call
+func ParseGetLandscapeContextsResponse(rsp *http.Response) (*GetLandscapeContextsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeContextsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeContextsContextIdResponse parses an HTTP response from a GetLandscapeContextsContextIdWithResponse call
+func ParseGetLandscapeContextsContextIdResponse(rsp *http.Response) (*GetLandscapeContextsContextIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeContextsContextIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Context
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

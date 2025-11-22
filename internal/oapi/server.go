@@ -448,6 +448,9 @@ func (a *ApiServer) GetLandscapeSystemInstancesSystemInstanceId(ctx context.Cont
 		respBody.System = systemInstance.SystemRef.SystemId
 	}
 
+	if systemInstance.ContextRef != nil {
+		respBody.Context = &systemInstance.ContextRef.ContextId
+	}
 	return GetLandscapeSystemInstancesSystemInstanceId200JSONResponse(respBody), nil
 }
 
@@ -519,4 +522,43 @@ func parseISO8601(input string) (*types.Date, error) {
 	return &types.Date{
 		Time: t,
 	}, nil
+}
+
+// GetLandscapeContexts implements StrictServerInterface.
+func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandscapeContextsRequestObject) (GetLandscapeContextsResponseObject, error) {
+	contextArr, err := a.Backend.GetContexts()
+
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, context := range contextArr {
+		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.ContextId.String())
+		item := InstanceListItem{
+			InstanceId:  &context.ContextId,
+			DisplayName: &context.DisplayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeContexts200JSONResponse(respBody), nil
+}
+
+// GetLandscapeContextsContextId implements StrictServerInterface.
+func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request GetLandscapeContextsContextIdRequestObject) (GetLandscapeContextsContextIdResponseObject, error) {
+	context := a.Backend.GetContextById(request.ContextId)
+	if context == nil {
+		return nil, fmt.Errorf("context %s not found", request.ContextId.String())
+	}
+
+	respBody := Context{
+		ContextId:   context.ContextId,
+		DisplayName: context.DisplayName,
+		Annotations: cloneAnnotations(context.Annotations),
+	}
+
+	return GetLandscapeContextsContextId200JSONResponse(respBody), nil
 }

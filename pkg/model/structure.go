@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var ContextNotFoundError error = fmt.Errorf("Context not found")
 var SystemNotFoundError error = fmt.Errorf("System not found")
 var ApiNotFoundError error = fmt.Errorf("API not found")
 var ComponentNotFoundError error = fmt.Errorf("Component not found")
@@ -19,6 +20,12 @@ var ApiInstanceNotFoundError error = fmt.Errorf("API Instance not found")
 var ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
 
 type Model interface {
+	AddContext(sys *Context, name string, writer client.SubResourceWriter) error
+	DeleteContextByResourceName(s string) error
+	GetContexts() ([]*Context, error)
+	GetContextByResourceName(s string) *Context
+	GetContextById(id uuid.UUID) *Context
+
 	AddSystem(sys *System, name string, writer client.SubResourceWriter) error
 	DeleteSystemByResourceName(s string) error
 	GetSystems() ([]*System, error)
@@ -61,10 +68,12 @@ type Model interface {
 }
 
 type modelData struct {
+	ContextsByName   map[string]*Context
 	SystemsByName    map[string]*System
 	APIsByName       map[string]*API
 	ComponentsByName map[string]*Component
 
+	ContextsByUUID   map[uuid.UUID]*Context
 	SystemsByUUID    map[uuid.UUID]*System
 	APIsByUUID       map[uuid.UUID]*API
 	ComponentsByUUID map[uuid.UUID]*Component
@@ -85,10 +94,12 @@ var _ Model = (*modelData)(nil)
 
 func NewModel() (*modelData, error) {
 	model := &modelData{
+		ContextsByName:   make(map[string]*Context),
 		SystemsByName:    make(map[string]*System),
 		APIsByName:       make(map[string]*API),
 		ComponentsByName: make(map[string]*Component),
 
+		ContextsByUUID:   make(map[uuid.UUID]*Context),
 		SystemsByUUID:    make(map[uuid.UUID]*System),
 		APIsByUUID:       make(map[uuid.UUID]*API),
 		ComponentsByUUID: make(map[uuid.UUID]*Component),
@@ -109,6 +120,19 @@ func NewModel() (*modelData, error) {
 
 func (m *modelData) GetCurrentEventSequenceId(ctx context.Context) (string, error) {
 	return "forty-two", nil
+}
+
+type Context struct {
+	ContextId   uuid.UUID
+	DisplayName string
+	Description string
+	Parent      *ContextRef
+	Annotations map[string]string
+}
+
+type ContextRef struct {
+	Context   *Context
+	ContextId uuid.UUID
 }
 
 type Version struct {
@@ -239,9 +263,10 @@ type ComponentRef struct {
 }
 
 type SystemInstance struct {
-	DisplayName  string
 	InstanceId   uuid.UUID
+	DisplayName  string
 	SystemRef    *SystemRef
+	ContextRef   *ContextRef
 	Annotations  map[string]string
 	statusWriter client.SubResourceWriter
 }
@@ -316,6 +341,48 @@ func (t ResourceType) String() string {
 type ResourceRef struct {
 	ResourceId   uuid.UUID
 	ResourceType ResourceType
+}
+
+// AddContext implements Model.
+func (m *modelData) AddContext(sys *Context, name string, writer client.SubResourceWriter) error {
+	m.ContextsByName[name] = sys
+
+	// parse parent ref if set
+	if sys.ContextId != uuid.Nil {
+		m.ContextsByUUID[sys.ContextId] = sys
+	}
+
+	return nil
+}
+
+// DeleteContextByResourceName implements Model.
+func (m *modelData) DeleteContextByResourceName(s string) error {
+	_, exists := m.ContextsByName[s]
+	if !exists {
+		return ContextNotFoundError
+	}
+	delete(m.ContextsByName, s)
+	return nil
+}
+
+// GetContextById implements Model.
+func (m *modelData) GetContextById(id uuid.UUID) *Context {
+	context, exists := m.ContextsByUUID[id]
+	if !exists {
+		return nil
+	}
+	return context
+}
+
+// GetContextByResourceName implements Model.
+func (m *modelData) GetContextByResourceName(s string) *Context {
+	panic("unimplemented")
+}
+
+// GetContexts implements Model.
+func (m *modelData) GetContexts() ([]*Context, error) {
+	contextArr := slices.Collect(maps.Values(m.ContextsByUUID))
+	return contextArr, nil
 }
 
 // AddSystem implements Model.

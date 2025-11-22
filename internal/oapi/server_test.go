@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package oapi
+package oapi_test
 
 import (
 	"context"
@@ -30,6 +30,7 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"gitlab.com/emeland/modelsrv/internal/oapi"
 	"gitlab.com/emeland/modelsrv/pkg/events"
 	"gitlab.com/emeland/modelsrv/pkg/model"
 )
@@ -46,6 +47,7 @@ var componentId uuid.UUID = uuid.New()
 var findingId uuid.UUID = uuid.New()
 var systemId uuid.UUID = uuid.New()
 var systemInstanceId uuid.UUID = uuid.New()
+var contextId uuid.UUID = uuid.New()
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -60,6 +62,14 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	backend, err = model.NewModel()
+	Expect(err).NotTo(HaveOccurred())
+
+	context := model.Context{
+		ContextId:   contextId,
+		DisplayName: "First Context",
+		Annotations: map[string]string{},
+	}
+	err = backend.AddContext(&context, context.DisplayName, nil)
 	Expect(err).NotTo(HaveOccurred())
 
 	api := model.API{
@@ -132,6 +142,9 @@ var _ = BeforeSuite(func() {
 		SystemRef: &model.SystemRef{
 			SystemId: systemId,
 		},
+		ContextRef: &model.ContextRef{
+			ContextId: contextId,
+		},
 		Annotations: map[string]string{},
 	}
 	err = backend.AddSystemInstance(&systemInstance, systemInstance.DisplayName, nil)
@@ -142,11 +155,11 @@ var _ = BeforeSuite(func() {
 		Summary:     "First Finding",
 		Description: "This is the first test finding.",
 		Resources: []*model.ResourceRef{
-			&model.ResourceRef{
+			{
 				ResourceType: model.ParseResourceType("API"),
 				ResourceId:   apiId,
 			},
-			&model.ResourceRef{
+			{
 				ResourceType: model.ParseResourceType("Component"),
 				ResourceId:   componentId,
 			},
@@ -180,13 +193,13 @@ var _ = Describe("calling the modelsrv API functions", func() {
 
 	BeforeEach(func() {
 		By("setting up http listener")
-		server := NewApiServer(backend, eventMgr, "http://localhost")
-		strict := NewApiHandler(server)
+		server := oapi.NewApiServer(backend, eventMgr, "http://localhost")
+		strict := oapi.NewApiHandler(server)
 
 		r := mux.NewRouter()
 
 		// get an `http.Handler` that we can use
-		handler = HandlerFromMuxWithBaseURL(strict, r, "")
+		handler = oapi.HandlerFromMuxWithBaseURL(strict, r, "")
 	})
 
 	AfterEach(func() {
@@ -246,7 +259,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -268,7 +281,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance ApiInstance
+		var instance oapi.ApiInstance
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(instance.ApiInstanceId).To(Equal(apiInstanceId))
@@ -287,7 +300,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -310,7 +323,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance API
+		var instance oapi.API
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(*(instance.ApiId)).To(Equal(apiId))
@@ -329,7 +342,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -352,7 +365,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance ComponentInstance
+		var instance oapi.ComponentInstance
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(instance.ComponentInstanceId).To(Equal(componentInstanceId))
@@ -371,7 +384,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -394,7 +407,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance Component
+		var instance oapi.Component
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(*(instance.ComponentId)).To(Equal(componentId))
@@ -413,7 +426,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -435,10 +448,11 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance SystemInstance
+		var instance oapi.SystemInstance
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(instance.SystemInstanceId).To(Equal(systemInstanceId))
+		Expect(*(instance.Context)).To(Equal(contextId))
 	})
 
 	It("should call GET on /landscape/systems", func() {
@@ -454,7 +468,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr InstanceList
+		var instanceArr oapi.InstanceList
 		err = json.Unmarshal(body, &instanceArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(1))
@@ -477,7 +491,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instance System
+		var instance oapi.System
 		err = json.Unmarshal(body, &instance)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(*(instance.SystemId)).To(Equal(systemId))
@@ -496,7 +510,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var findingArr InstanceList
+		var findingArr oapi.InstanceList
 		err = json.Unmarshal(body, &findingArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(findingArr)).To(Equal(1))
@@ -519,12 +533,54 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var finding Finding
+		var finding oapi.Finding
 		err = json.Unmarshal(body, &finding)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(finding.FindingId).To(Equal(findingId))
 
 		Expect(len(finding.Resources)).To(Equal(2))
+	})
+
+	It("should call GET on /landscape/contexts", func() {
+		url := "http://localhost/landscape/contexts"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var instanceArr oapi.InstanceList
+		err = json.Unmarshal(body, &instanceArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(instanceArr)).To(Equal(1))
+
+		Expect(*(instanceArr[0].InstanceId)).To(Equal(contextId))
+		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())))
+
+	})
+
+	It("should call GET on /landscape/contexts/{contextId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var context oapi.Context
+		err = json.Unmarshal(body, &context)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(context.ContextId).To(Equal(contextId))
 	})
 
 	/*
