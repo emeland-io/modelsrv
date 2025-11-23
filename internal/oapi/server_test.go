@@ -69,7 +69,7 @@ var _ = BeforeSuite(func() {
 		DisplayName: "First Context",
 		Annotations: map[string]string{},
 	}
-	err = backend.AddContext(&context, context.DisplayName, nil)
+	err = backend.AddContext(&context)
 	Expect(err).NotTo(HaveOccurred())
 
 	api := model.API{
@@ -83,7 +83,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddApi(&api, api.DisplayName, nil)
+	err = backend.AddApi(&api)
 	Expect(err).NotTo(HaveOccurred())
 
 	apiInstance := model.APIInstance{
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddApiInstance(&apiInstance, apiInstance.DisplayName, nil)
+	err = backend.AddApiInstance(&apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
 	component := model.Component{
@@ -108,7 +108,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddComponent(&component, component.DisplayName, nil)
+	err = backend.AddComponent(&component)
 	Expect(err).NotTo(HaveOccurred())
 
 	componentInstance := model.ComponentInstance{
@@ -119,7 +119,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddComponentInstance(&componentInstance, componentInstance.DisplayName, nil)
+	err = backend.AddComponentInstance(&componentInstance)
 	Expect(err).NotTo(HaveOccurred())
 
 	system := model.System{
@@ -133,7 +133,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddSystem(&system, system.DisplayName, nil)
+	err = backend.AddSystem(&system)
 	Expect(err).NotTo(HaveOccurred())
 
 	systemInstance := model.SystemInstance{
@@ -147,7 +147,7 @@ var _ = BeforeSuite(func() {
 		},
 		Annotations: map[string]string{},
 	}
-	err = backend.AddSystemInstance(&systemInstance, systemInstance.DisplayName, nil)
+	err = backend.AddSystemInstance(&systemInstance)
 	Expect(err).NotTo(HaveOccurred())
 
 	finding := model.Finding{
