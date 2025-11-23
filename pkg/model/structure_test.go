@@ -14,9 +14,6 @@ func TestNewModel(t *testing.T) {
 	assert.NotNil(t, model, "NewModel should return a non-nil model")
 
 	// Verify all maps are initialized
-	assert.NotNil(t, model.SystemsByName, "SystemsByName map should be initialized")
-	assert.NotNil(t, model.APIsByName, "APIsByName map should be initialized")
-	assert.NotNil(t, model.ComponentsByName, "ComponentsByName map should be initialized")
 	assert.NotNil(t, model.SystemsByUUID, "SystemsByUUID map should be initialized")
 	assert.NotNil(t, model.APIsByUUID, "APIsByUUID map should be initialized")
 	assert.NotNil(t, model.ComponentsByUUID, "ComponentsByUUID map should be initialized")
@@ -176,29 +173,33 @@ func TestSystemInstance(t *testing.T) {
 	assert.Equal(t, "value", instance.Annotations["key"])
 }
 
-func TestDeleteSystemByResourceName(t *testing.T) {
+func TestDeleteSystemById(t *testing.T) {
 	model, err := NewModel()
 	assert.NoError(t, err)
+	systemId := uuid.New()
 
 	// Test deleting non-existent system
-	err = model.DeleteSystemByResourceName("non-existent")
+	err = model.DeleteSystemById(uuid.New())
 	assert.Equal(t, SystemNotFoundError, err)
 
 	// Add a system and verify it exists
-	sys := &System{DisplayName: "test-system"}
-	err = model.AddSystem(sys, "test-system", nil)
+	sys := &System{
+		SystemId:    systemId,
+		DisplayName: "test-system",
+	}
+	err = model.AddSystem(sys)
 	assert.NoError(t, err)
-	assert.NotNil(t, model.GetSystemByResourceName("test-system"))
+	assert.NotNil(t, model.GetSystemById(systemId))
 
 	// Delete the system
-	err = model.DeleteSystemByResourceName("test-system")
+	err = model.DeleteSystemById(systemId)
 	assert.NoError(t, err)
 
 	// Verify system was deleted
-	assert.Nil(t, model.GetSystemByResourceName("test-system"))
+	assert.Nil(t, model.GetSystemById(systemId))
 
 	// Try deleting again should return error
-	err = model.DeleteSystemByResourceName("test-system")
+	err = model.DeleteSystemById(systemId)
 	assert.Equal(t, SystemNotFoundError, err)
 }
 
@@ -216,7 +217,7 @@ func TestGetSystemBySystemId(t *testing.T) {
 	assert.Nil(t, model.GetSystemById(sysId))
 
 	// Add system and verify it can be retrieved by UUID
-	err = model.AddSystem(sys, "test-system", nil)
+	err = model.AddSystem(sys)
 	assert.NoError(t, err)
 
 	retrieved := model.GetSystemById(sysId)
@@ -236,21 +237,18 @@ func TestAPIOperations(t *testing.T) {
 	}
 
 	// Test getting non-existent API
-	assert.Nil(t, model.GetApiByResourceName("test-api"))
 	assert.Nil(t, model.GetApiById(apiId))
 
 	// Add API and verify it exists
-	err = model.AddApi(api, "test-api", nil)
+	err = model.AddApi(api)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, api, model.GetApiByResourceName("test-api"))
 	assert.Equal(t, api, model.GetApiById(apiId))
 
 	// Delete API and verify it's gone
-	err = model.DeleteApiByResourceName("test-api")
+	err = model.DeleteApiById(apiId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetApiByResourceName("test-api"))
 	assert.Nil(t, model.GetApiById(apiId))
 }
 
@@ -265,21 +263,18 @@ func TestComponentOperations(t *testing.T) {
 	}
 
 	// Test getting non-existent component
-	assert.Nil(t, model.GetComponentByResourceName("test-component"))
 	assert.Nil(t, model.GetComponentById(componentId))
 
 	// Add component and verify it exists
-	err = model.AddComponent(component, "test-component", nil)
+	err = model.AddComponent(component)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, component, model.GetComponentByResourceName("test-component"))
 	assert.Equal(t, component, model.GetComponentById(componentId))
 
 	// Delete component and verify it's gone
-	err = model.DeleteComponentByResourceName("test-component")
+	err = model.DeleteComponentById(componentId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetComponentByResourceName("test-component"))
 	assert.Nil(t, model.GetComponentById(componentId))
 }
 
@@ -296,21 +291,18 @@ func TestSystemInstanceOperations(t *testing.T) {
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetSystemInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetSystemInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddSystemInstance(instance, "test-instance", nil)
+	err = model.AddSystemInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetSystemInstanceByResourceName("test-instance"))
 	assert.Equal(t, instance, model.GetSystemInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteSystemInstanceByResourceName("test-instance")
+	err = model.DeleteSystemInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetSystemInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetSystemInstanceById(instanceId))
 }
 
@@ -327,21 +319,18 @@ func TestAPIInstanceOperations(t *testing.T) {
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetApiInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetApiInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddApiInstance(instance, "test-instance", nil)
+	err = model.AddApiInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetApiInstanceByResourceName("test-instance"))
 	assert.Equal(t, instance, model.GetApiInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteApiInstanceByResourceName("test-instance")
+	err = model.DeleteApiInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetApiInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetApiInstanceById(instanceId))
 }
 
@@ -361,21 +350,18 @@ func TestComponentInstanceOperations(t *testing.T) {
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetComponentInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetComponentInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddComponentInstance(instance, "test-instance", nil)
+	err = model.AddComponentInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetComponentInstanceByResourceName("test-instance"))
 	assert.Equal(t, instance, model.GetComponentInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteComponentInstanceByResourceName("test-instance")
+	err = model.DeleteComponentInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetComponentInstanceByResourceName("test-instance"))
 	assert.Nil(t, model.GetComponentInstanceById(instanceId))
 }
 
