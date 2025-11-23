@@ -2,6 +2,8 @@
 
 The EmELand model server provides the example mapping of the Emerging Enterprise Landscape as an OpenAPI service. It gives access to the objects of the model. It is implemented as a golang library to allow users to quickly build adapters to their existing IT management solutions.
 
+**Warning: This project is in early alpha and all of the APIs will change!**
+
 ## Usage
 
 TODO
