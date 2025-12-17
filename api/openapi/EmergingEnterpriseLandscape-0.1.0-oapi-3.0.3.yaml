@@ -60,6 +60,10 @@ paths:
                 $ref: '#/components/schemas/Context'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/systems:
     get:
       description: Retrieve all systems in the landscape.
@@ -91,6 +95,10 @@ paths:
                 $ref: '#/components/schemas/System'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/apis: 
     get:
       description: Retrieve all APIs in the landscape.
@@ -122,6 +130,10 @@ paths:
                 $ref: '#/components/schemas/API'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/components:
     get:
       description: Retrieve all components in the landscape.
@@ -153,6 +165,10 @@ paths:
                 $ref: '#/components/schemas/Component'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/system-instances:
     get:
       description: Retrieve all system instances in the landscape.
@@ -184,6 +200,10 @@ paths:
                 $ref: '#/components/schemas/SystemInstance'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/api-instances:
     get:
       description: Retrieve all API instances in the landscape.
@@ -215,6 +235,10 @@ paths:
                 $ref: '#/components/schemas/ApiInstance'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/component-instances:
     get:
       description: Retrieve all component instances in the landscape.
@@ -246,6 +270,10 @@ paths:
                 $ref: '#/components/schemas/ComponentInstance'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/findings:
     get:
       description: Retrieve all findings in the landscape.
@@ -277,6 +305,10 @@ paths:
                 $ref: '#/components/schemas/Finding'
         '404':
           description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -313,6 +345,10 @@ paths:
             in the sequence.
         '404':
           description: Not Found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /test:
     get:
       responses:
@@ -320,6 +356,8 @@ paths:
           description: OK
 components: 
   schemas:
+    ErrorString:
+      type: string
     Finding:
       type: object
       description: Represents the finding of a rule violation. Rules may either be defined for semantic correctness of the model or for compliance checks against external regulations and standards.

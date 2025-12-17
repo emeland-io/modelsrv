@@ -18,12 +18,15 @@ import (
 )
 
 var (
-	uiServer *http.Server
-	setupLog zap.SugaredLogger
+	webServer *http.Server
+	setupLog  zap.SugaredLogger
 )
 
-func StartUIListener(backend model.Model, eventMgr events.EventManager, addr string) error {
-	baseUrl := fmt.Sprintf("%s/api", addr)
+// StarWebListener starts the web endpoint serving the Swagger-UI and API
+//
+// addr is the address and port to bind to, e.g. "localhost:24000"
+func StarWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
+	baseUrl := fmt.Sprintf("http://%s/api", addr)
 	server := oapi.NewApiServer(backend, eventMgr, baseUrl)
 	strict := oapi.NewApiHandler(server)
 	setupLog = *zap.NewExample().Sugar()
@@ -37,27 +40,27 @@ func StartUIListener(backend model.Model, eventMgr events.EventManager, addr str
 	// get an `http.Handler` that we can use
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
-	setupLog.Info("Starting Web-Endpoint", "address", addr)
+	setupLog.Info("Starting Web-Endpoint: ", "address: ", addr)
 
-	uiServer = &http.Server{
+	webServer = &http.Server{
 		Handler: h,
 		Addr:    addr,
 	}
 
-	go runListener(uiServer)
+	go runListener(webServer)
 
 	return nil
 }
 
-func StopUIListener() {
-	uiServer.Shutdown(context.Background())
+func StopWebListener() {
+	webServer.Shutdown(context.Background())
 }
 
 func runListener(server *http.Server) {
 
 	err := server.ListenAndServe()
 	if err != nil {
-		setupLog.Error(err, "Ended server with error")
+		setupLog.Error(err, ". Ended server with error")
 	} else {
 		setupLog.Info("Ended server.")
 	}

@@ -182,8 +182,8 @@ func (a *ApiServer) GetEventsQuerySequenceId(ctx context.Context, request GetEve
 		return GetEventsQuerySequenceId308Response(resp), nil
 	} else {
 		// client is ahead of server?
-		resp := GetEventsQuerySequenceId404Response{}
-		return GetEventsQuerySequenceId404Response(resp), nil
+		resp := ""
+		return GetEventsQuerySequenceId404JSONResponse(resp), nil
 	}
 }
 
@@ -214,7 +214,8 @@ func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLan
 func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, request GetLandscapeApiInstancesApiInstanceIdRequestObject) (GetLandscapeApiInstancesApiInstanceIdResponseObject, error) {
 	apiInstance := a.Backend.GetApiInstanceById(request.ApiInstanceId)
 	if apiInstance == nil {
-		return nil, fmt.Errorf("api instance %s not found", request.ApiInstanceId.String())
+		errorstr := fmt.Sprintf("api instance %s not found", request.ApiInstanceId.String())
+		return GetLandscapeApiInstancesApiInstanceId404JSONResponse(errorstr), nil
 	}
 
 	respBody := ApiInstance{
@@ -261,7 +262,8 @@ func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeAp
 func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandscapeApisApiIdRequestObject) (GetLandscapeApisApiIdResponseObject, error) {
 	api := a.Backend.GetApiById(request.ApiId)
 	if api == nil {
-		return nil, fmt.Errorf("api instance %s not found", request.ApiId.String())
+		errorstr := fmt.Sprintf("api %s not found", request.ApiId.String())
+		return GetLandscapeApisApiId404JSONResponse(errorstr), nil
 	}
 
 	respBody := API{
@@ -304,7 +306,8 @@ func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request 
 func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx context.Context, request GetLandscapeComponentInstancesComponentInstanceIdRequestObject) (GetLandscapeComponentInstancesComponentInstanceIdResponseObject, error) {
 	componentInstance := a.Backend.GetComponentInstanceById(request.ComponentInstanceId)
 	if componentInstance == nil {
-		return nil, fmt.Errorf("component instance %s not found", request.ComponentInstanceId.String())
+		errorstr := fmt.Sprintf("componentInstance %s not found", request.ComponentInstanceId.String())
+		return GetLandscapeComponentInstancesComponentInstanceId404JSONResponse(errorstr), nil
 	}
 
 	respBody := ComponentInstance{
@@ -351,7 +354,8 @@ func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLands
 func (a *ApiServer) GetLandscapeComponentsComponentId(ctx context.Context, request GetLandscapeComponentsComponentIdRequestObject) (GetLandscapeComponentsComponentIdResponseObject, error) {
 	component := a.Backend.GetComponentById(request.ComponentId)
 	if component == nil {
-		return nil, fmt.Errorf("component %s not found", request.ComponentId.String())
+		errorstr := fmt.Sprintf("component %s not found", request.ComponentId.String())
+		return GetLandscapeComponentsComponentId404JSONResponse(errorstr), nil
 	}
 
 	respBody := Component{
@@ -435,7 +439,8 @@ func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request Get
 func (a *ApiServer) GetLandscapeSystemInstancesSystemInstanceId(ctx context.Context, request GetLandscapeSystemInstancesSystemInstanceIdRequestObject) (GetLandscapeSystemInstancesSystemInstanceIdResponseObject, error) {
 	systemInstance := a.Backend.GetSystemInstanceById(request.SystemInstanceId)
 	if systemInstance == nil {
-		return nil, fmt.Errorf("system instance %s not found", request.SystemInstanceId.String())
+		errorstr := fmt.Sprintf("system instance %s not found", request.SystemInstanceId.String())
+		return GetLandscapeSystemInstancesSystemInstanceId404JSONResponse(errorstr), nil
 	}
 
 	respBody := SystemInstance{
@@ -481,7 +486,8 @@ func (a *ApiServer) GetLandscapeSystems(ctx context.Context, request GetLandscap
 func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request GetLandscapeSystemsSystemIdRequestObject) (GetLandscapeSystemsSystemIdResponseObject, error) {
 	system := a.Backend.GetSystemById(request.SystemId)
 	if system == nil {
-		return nil, fmt.Errorf("system %s not found", request.SystemId.String())
+		errorstr := fmt.Sprintf("system %s not found", request.SystemId.String())
+		return GetLandscapeSystemsSystemId404JSONResponse(errorstr), nil
 	}
 
 	respBody := System{
@@ -496,7 +502,7 @@ func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request Get
 
 // GetTest implements StrictServerInterface.
 func (a *ApiServer) GetTest(ctx context.Context, request GetTestRequestObject) (GetTestResponseObject, error) {
-	panic("unimplemented")
+	return GetTest200Response{}, nil
 }
 
 // PostEventsRegister implements StrictServerInterface.
@@ -551,7 +557,8 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request GetLandscapeContextsContextIdRequestObject) (GetLandscapeContextsContextIdResponseObject, error) {
 	context := a.Backend.GetContextById(request.ContextId)
 	if context == nil {
-		return nil, fmt.Errorf("context %s not found", request.ContextId.String())
+		errorstr := fmt.Sprintf("context %s not found", request.ContextId.String())
+		return GetLandscapeContextsContextId404JSONResponse(errorstr), nil
 	}
 
 	respBody := Context{

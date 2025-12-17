@@ -1085,6 +1085,7 @@ type ClientWithResponsesInterface interface {
 type GetEventsQuerySequenceIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1150,6 +1151,7 @@ type GetLandscapeApiInstancesApiInstanceIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ApiInstance
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1194,6 +1196,7 @@ type GetLandscapeApisApiIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *API
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1238,6 +1241,7 @@ type GetLandscapeComponentInstancesComponentInstanceIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ComponentInstance
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1282,6 +1286,7 @@ type GetLandscapeComponentsComponentIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Component
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1326,6 +1331,7 @@ type GetLandscapeContextsContextIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Context
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1370,6 +1376,7 @@ type GetLandscapeFindingsFindingIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *Finding
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1414,6 +1421,7 @@ type GetLandscapeSystemInstancesSystemInstanceIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SystemInstance
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1458,6 +1466,7 @@ type GetLandscapeSystemsSystemIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *System
+	JSON404      *ErrorString
 }
 
 // Status returns HTTPResponse.Status
@@ -1689,6 +1698,16 @@ func ParseGetEventsQuerySequenceIdResponse(rsp *http.Response) (*GetEventsQueryS
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -1755,6 +1774,13 @@ func ParseGetLandscapeApiInstancesApiInstanceIdResponse(rsp *http.Response) (*Ge
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -1806,6 +1832,13 @@ func ParseGetLandscapeApisApiIdResponse(rsp *http.Response) (*GetLandscapeApisAp
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -1859,6 +1892,13 @@ func ParseGetLandscapeComponentInstancesComponentInstanceIdResponse(rsp *http.Re
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -1910,6 +1950,13 @@ func ParseGetLandscapeComponentsComponentIdResponse(rsp *http.Response) (*GetLan
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -1963,6 +2010,13 @@ func ParseGetLandscapeContextsContextIdResponse(rsp *http.Response) (*GetLandsca
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -2014,6 +2068,13 @@ func ParseGetLandscapeFindingsFindingIdResponse(rsp *http.Response) (*GetLandsca
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -2067,6 +2128,13 @@ func ParseGetLandscapeSystemInstancesSystemInstanceIdResponse(rsp *http.Response
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil
@@ -2118,6 +2186,13 @@ func ParseGetLandscapeSystemsSystemIdResponse(rsp *http.Response) (*GetLandscape
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
