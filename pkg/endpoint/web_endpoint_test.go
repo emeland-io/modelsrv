@@ -20,7 +20,7 @@ func TestStartUIListener(t *testing.T) {
 
 	// This test should verify that StartUIListener returns nil and starts a server
 	// For now, just check that it returns nil (since actual server start is async)
-	err = StartUIListener(backend, eventMgr, "127.0.0.1:24000")
+	err = StarWebListener(backend, eventMgr, "127.0.0.1:24000")
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}

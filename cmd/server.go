@@ -30,7 +30,7 @@ var serverCmd = &cobra.Command{
 			return
 		}
 		fmt.Println("Starting server...")
-		endpoint.StartUIListener(model, eventMgr, serviceAddr)
+		endpoint.StarWebListener(model, eventMgr, serviceAddr)
 	},
 }
 

@@ -10,14 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
-var ContextNotFoundError error = fmt.Errorf("Context not found")
-var SystemNotFoundError error = fmt.Errorf("System not found")
-var ApiNotFoundError error = fmt.Errorf("API not found")
-var ComponentNotFoundError error = fmt.Errorf("Component not found")
-var SystemInstanceNotFoundError error = fmt.Errorf("System Instance not found")
-var ApiInstanceNotFoundError error = fmt.Errorf("API Instance not found")
-var ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
-
+var (
+	ContextNotFoundError           error = fmt.Errorf("Context not found")
+	SystemNotFoundError            error = fmt.Errorf("System not found")
+	SystemInstanceNotFoundError    error = fmt.Errorf("System Instance not found")
+	ApiNotFoundError               error = fmt.Errorf("API not found")
+	ApiInstanceNotFoundError       error = fmt.Errorf("API Instance not found")
+	ComponentNotFoundError         error = fmt.Errorf("Component not found")
+	ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
+)
 var UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 
 type Model interface {
