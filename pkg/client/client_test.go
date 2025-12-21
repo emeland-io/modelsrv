@@ -290,7 +290,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	apiInstance := &model.APIInstance{
+	apiInstance := &model.ApiInstance{
 		DisplayName: "Test ApiInstance",
 		InstanceId:  apiInstanceId,
 		ApiRef: &model.ApiRef{
