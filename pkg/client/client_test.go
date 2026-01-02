@@ -236,10 +236,9 @@ var _ = Describe("Client", Ordered, func() {
 func loadModel(target model.Model) error {
 	// create simple System with single Component and API
 
-	context := &model.Context{
-		DisplayName: "Test Context",
-		ContextId:   contextId,
-	}
+	context := model.NewContext(target, contextId)
+	context.SetDisplayName("Test Context")
+
 	err := target.AddContext(context)
 	if err != nil {
 		return err

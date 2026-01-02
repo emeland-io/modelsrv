@@ -64,12 +64,9 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel()
 	Expect(err).NotTo(HaveOccurred())
 
-	context := model.Context{
-		ContextId:   contextId,
-		DisplayName: "First Context",
-		Annotations: map[string]string{},
-	}
-	err = backend.AddContext(&context)
+	context := model.NewContext(backend, contextId)
+
+	err = backend.AddContext(context)
 	Expect(err).NotTo(HaveOccurred())
 
 	api := model.API{

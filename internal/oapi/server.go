@@ -541,10 +541,12 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 	respBody := []InstanceListItem{}
 
 	for _, context := range contextArr {
-		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.ContextId.String())
+		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.GetContextId().String())
+		displayName := context.GetDisplayName()
+		contextId := context.GetContextId()
 		item := InstanceListItem{
-			InstanceId:  &context.ContextId,
-			DisplayName: &context.DisplayName,
+			InstanceId:  &contextId,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -561,10 +563,13 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 		return GetLandscapeContextsContextId404JSONResponse(errorstr), nil
 	}
 
+	displayName := context.GetDisplayName()
+	contextId := context.GetContextId()
+
 	respBody := Context{
-		ContextId:   context.ContextId,
-		DisplayName: context.DisplayName,
-		Annotations: cloneAnnotations(context.Annotations),
+		ContextId:   contextId,
+		DisplayName: displayName,
+		Annotations: cloneAnnotations2(context),
 	}
 
 	return GetLandscapeContextsContextId200JSONResponse(respBody), nil

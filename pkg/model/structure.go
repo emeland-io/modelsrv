@@ -22,10 +22,12 @@ var (
 var UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 
 type Model interface {
-	AddContext(sys *Context) error
+	getData() *modelData
+
+	AddContext(sys Context) error
 	DeleteContextById(id uuid.UUID) error
-	GetContexts() ([]*Context, error)
-	GetContextById(id uuid.UUID) *Context
+	GetContexts() ([]Context, error)
+	GetContextById(id uuid.UUID) Context
 
 	AddSystem(sys *System) error
 	DeleteSystemById(id uuid.UUID) error
@@ -63,7 +65,8 @@ type Model interface {
 }
 
 type modelData struct {
-	contextsByUUID   map[uuid.UUID]*Context
+	contextsByUUID   map[uuid.UUID]*contextData
+	contextsCache    []Context
 	systemsByUUID    map[uuid.UUID]*System
 	apisByUUID       map[uuid.UUID]*API
 	componentsByUUID map[uuid.UUID]*Component
@@ -80,7 +83,7 @@ var _ Model = (*modelData)(nil)
 
 func NewModel() (*modelData, error) {
 	model := &modelData{
-		contextsByUUID: make(map[uuid.UUID]*Context),
+		contextsByUUID: make(map[uuid.UUID]*contextData),
 
 		systemsByUUID:    make(map[uuid.UUID]*System),
 		apisByUUID:       make(map[uuid.UUID]*API),
@@ -98,19 +101,6 @@ func NewModel() (*modelData, error) {
 
 func (m *modelData) GetCurrentEventSequenceId(ctx context.Context) (string, error) {
 	return "forty-two", nil
-}
-
-type Context struct {
-	ContextId   uuid.UUID
-	DisplayName string
-	Description string
-	Parent      *ContextRef
-	Annotations map[string]string
-}
-
-type ContextRef struct {
-	Context   *Context
-	ContextId uuid.UUID
 }
 
 type Version struct {
@@ -323,11 +313,19 @@ type ResourceRef struct {
 	ResourceType ResourceType
 }
 
+func (m *modelData) getData() *modelData {
+	return m
+}
+
 // AddContext implements Model.
-func (m *modelData) AddContext(sys *Context) error {
+func (m *modelData) AddContext(sys Context) error {
+
+	// invalidate the cache
+	m.contextsCache = nil
+
 	// parse parent ref if set
-	if sys.ContextId != uuid.Nil {
-		m.contextsByUUID[sys.ContextId] = sys
+	if sys.GetContextId() != uuid.Nil {
+		m.contextsByUUID[sys.GetContextId()] = sys.getData()
 	} else {
 		return UUIDNotSetError
 	}
@@ -341,12 +339,16 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 	if !exists {
 		return ContextNotFoundError
 	}
+
+	// invalidate the cache
+	m.contextsCache = nil
+
 	delete(m.contextsByUUID, id)
 	return nil
 }
 
 // GetContextById implements Model.
-func (m *modelData) GetContextById(id uuid.UUID) *Context {
+func (m *modelData) GetContextById(id uuid.UUID) Context {
 	context, exists := m.contextsByUUID[id]
 	if !exists {
 		return nil
@@ -355,9 +357,21 @@ func (m *modelData) GetContextById(id uuid.UUID) *Context {
 }
 
 // GetContexts implements Model.
-func (m *modelData) GetContexts() ([]*Context, error) {
-	contextArr := slices.Collect(maps.Values(m.contextsByUUID))
-	return contextArr, nil
+func (m *modelData) GetContexts() ([]Context, error) {
+	/* since this operation would require O(n) and is therfore potentially quite costly, lets cache that
+	   Any write operations to contextsByUUID must invalidate that
+	*/
+	if m.contextsCache != nil {
+		return m.contextsCache, nil
+	}
+
+	contextArr := make([]Context, 0)
+	for context := range maps.Values(m.contextsByUUID) {
+		contextArr = append(contextArr, Context(context))
+	}
+	m.contextsCache = contextArr
+
+	return []Context(contextArr), nil
 }
 
 // AddSystem implements Model.
