@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 	"gitlab.com/emeland/modelsrv/pkg/model"
 )
 
@@ -161,7 +162,8 @@ func TestSystemInstance(t *testing.T) {
 }
 
 func TestDeleteSystemById(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 	systemId := uuid.New()
 
@@ -191,7 +193,8 @@ func TestDeleteSystemById(t *testing.T) {
 }
 
 func TestGetSystemBySystemId(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	sysId := uuid.New()
@@ -213,7 +216,8 @@ func TestGetSystemBySystemId(t *testing.T) {
 }
 
 func TestAPIOperations(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
@@ -240,7 +244,8 @@ func TestAPIOperations(t *testing.T) {
 }
 
 func TestComponentOperations(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	componentId := uuid.New()
@@ -266,7 +271,8 @@ func TestComponentOperations(t *testing.T) {
 }
 
 func TestSystemInstanceOperations(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
@@ -294,7 +300,8 @@ func TestSystemInstanceOperations(t *testing.T) {
 }
 
 func TestAPIInstanceOperations(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
@@ -322,7 +329,8 @@ func TestAPIInstanceOperations(t *testing.T) {
 }
 
 func TestComponentInstanceOperations(t *testing.T) {
-	testModel, err := model.NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()

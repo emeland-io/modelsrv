@@ -61,7 +61,8 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
-	backend, err = model.NewModel()
+	sink := events.NewListSink()
+	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
 	context := model.NewContext(backend, contextId)
@@ -153,11 +154,11 @@ var _ = BeforeSuite(func() {
 		Description: "This is the first test finding.",
 		Resources: []*model.ResourceRef{
 			{
-				ResourceType: model.ParseResourceType("API"),
+				ResourceType: events.ParseResourceType("API"),
 				ResourceId:   apiId,
 			},
 			{
-				ResourceType: model.ParseResourceType("Component"),
+				ResourceType: events.ParseResourceType("Component"),
 				ResourceId:   componentId,
 			},
 		},

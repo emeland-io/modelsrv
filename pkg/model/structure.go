@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 )
 
 var (
@@ -18,8 +19,9 @@ var (
 	ApiInstanceNotFoundError       error = fmt.Errorf("API Instance not found")
 	ComponentNotFoundError         error = fmt.Errorf("Component not found")
 	ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
+
+	UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 )
-var UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 
 type Model interface {
 	getData() *modelData
@@ -65,6 +67,8 @@ type Model interface {
 }
 
 type modelData struct {
+	sink events.EventSink
+
 	contextsByUUID   map[uuid.UUID]*contextData
 	contextsCache    []Context
 	systemsByUUID    map[uuid.UUID]*System
@@ -81,8 +85,10 @@ type modelData struct {
 // ensure Model interface is implemented correctly
 var _ Model = (*modelData)(nil)
 
-func NewModel() (*modelData, error) {
+func NewModel(sink events.EventSink) (*modelData, error) {
 	model := &modelData{
+		sink: sink,
+
 		contextsByUUID: make(map[uuid.UUID]*contextData),
 
 		systemsByUUID:    make(map[uuid.UUID]*System),
@@ -264,53 +270,9 @@ type Finding struct {
 	Annotations map[string]string
 }
 
-type ResourceType int
-
-const (
-	UnknownResourceType ResourceType = iota
-	// Phase 0
-	ContextResource
-	// Phase 1
-	SystemResource
-	SystemInstanceResource
-	APIResource
-	APIInstanceResource
-	ComponentResource
-	ComponentInstanceResource
-)
-
-var ResourceTypeValues = map[ResourceType]string{
-	UnknownResourceType: "UnknownResourceType",
-
-	ContextResource: "Context",
-
-	SystemResource:            "System",
-	SystemInstanceResource:    "SystemInstance",
-	APIResource:               "API",
-	APIInstanceResource:       "APIInstance",
-	ComponentResource:         "Component",
-	ComponentInstanceResource: "ComponentInstance",
-}
-
-func ParseResourceType(s string) ResourceType {
-	for key, val := range ResourceTypeValues {
-		if val == s {
-			return key
-		}
-	}
-	return UnknownResourceType
-}
-
-func (t ResourceType) String() string {
-	if val, ok := ResourceTypeValues[t]; ok {
-		return val
-	}
-	return ResourceTypeValues[UnknownResourceType]
-}
-
 type ResourceRef struct {
 	ResourceId   uuid.UUID
-	ResourceType ResourceType
+	ResourceType events.ResourceType
 }
 
 func (m *modelData) getData() *modelData {
@@ -318,17 +280,30 @@ func (m *modelData) getData() *modelData {
 }
 
 // AddContext implements Model.
-func (m *modelData) AddContext(sys Context) error {
+func (m *modelData) AddContext(context Context) error {
 
 	// invalidate the cache
 	m.contextsCache = nil
 
-	// parse parent ref if set
-	if sys.GetContextId() != uuid.Nil {
-		m.contextsByUUID[sys.GetContextId()] = sys.getData()
-	} else {
+	// TODO: parse parent ref if set
+
+	if context.GetContextId() == uuid.Nil {
 		return UUIDNotSetError
 	}
+
+	op := events.CreateOperation
+
+	// check if this would overwrite an existing entry -> an update
+	if _, ok := m.contextsByUUID[context.GetContextId()]; ok {
+		op = events.UpdateOperation
+	}
+
+	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
+
+	m.contextsByUUID[context.GetContextId()] = context.getData()
+
+	// mark Context as registered to activate sending events when updating fields
+	context.getData().isRegistered = true
 
 	return nil
 }
@@ -344,6 +319,9 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 	m.contextsCache = nil
 
 	delete(m.contextsByUUID, id)
+
+	m.sink.Receive(events.ContextResource, events.DeleteOperation, id)
+
 	return nil
 }
 

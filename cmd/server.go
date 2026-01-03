@@ -18,17 +18,24 @@ var serverCmd = &cobra.Command{
 	Long:  `start a model server instance that serves the model via REST API and provides a minimal web UI.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		model, err := model.NewModel()
+		eventMgr, err := events.NewEventManager()
 		if err != nil {
-			fmt.Println("Error creating model:", err)
+			fmt.Println("Error creating event manager: ", err)
 			return
 		}
 
-		eventMgr, err := events.NewEventManager()
+		sink, err := eventMgr.GetSink()
 		if err != nil {
-			fmt.Println("Error creating event manager:", err)
+			fmt.Println("Error creating event sink: ", err)
 			return
 		}
+
+		model, err := model.NewModel(sink)
+		if err != nil {
+			fmt.Println("Error creating model: ", err)
+			return
+		}
+
 		fmt.Println("Starting server...")
 		endpoint.StarWebListener(model, eventMgr, serviceAddr)
 	},

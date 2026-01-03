@@ -37,7 +37,15 @@ var _ = Describe("Client", Ordered, func() {
 	BeforeAll(func() {
 		var err error
 		By("starting a model server")
-		testModel, err = model.NewModel()
+
+		testEvents, err = events.NewEventManager()
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(testEvents).NotTo(BeNil())
+
+		sink, err := testEvents.GetSink()
+		Expect(err).ShouldNot(HaveOccurred())
+
+		testModel, err = model.NewModel(sink)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testModel).NotTo(BeNil())
 

@@ -5,6 +5,7 @@ import (
 	"maps"
 
 	"github.com/google/uuid"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 )
 
 // ensure Context interface is implemented correctly
@@ -16,10 +17,13 @@ type Context interface {
 	GetDisplayName() string
 	SetDisplayName(string)
 
+	SetDescription(s string)
 	GetDescription() string
+
 	GetParent() (Context, error)
 	SetParentByRef(parent *Context)
 	SetParentById(parentId uuid.UUID)
+
 	AddAnnotation(key string, value string)
 	DeleteAnnotation(key string)
 	GetAnnotationValue(key string) string
@@ -28,7 +32,8 @@ type Context interface {
 }
 
 type contextData struct {
-	model *modelData
+	model        *modelData
+	isRegistered bool
 
 	ContextId   uuid.UUID
 	DisplayName string
@@ -44,8 +49,9 @@ type ContextRef struct {
 
 func NewContext(model Model, id uuid.UUID) Context {
 	return &contextData{
-		model:     model.getData(),
-		ContextId: id,
+		model:        model.getData(),
+		isRegistered: false,
+		ContextId:    id,
 	}
 }
 
@@ -83,6 +89,15 @@ func (c *contextData) GetDescription() string {
 	return c.Description
 }
 
+// SetDescription implements [Context]
+func (c *contextData) SetDescription(s string) {
+	c.Description = s
+
+	if c.isRegistered {
+		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+	}
+}
+
 // GetDisplayName implements [Context].
 func (c *contextData) GetDisplayName() string {
 	return c.DisplayName
@@ -90,6 +105,11 @@ func (c *contextData) GetDisplayName() string {
 
 func (c *contextData) SetDisplayName(name string) {
 	c.DisplayName = name
+
+	if c.isRegistered {
+		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+	}
+
 }
 
 // GetParent implements [Context].
