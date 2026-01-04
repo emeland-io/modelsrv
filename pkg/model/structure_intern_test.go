@@ -10,8 +10,11 @@ import (
 // These are tests that are only possible within the package itself
 
 func TestNewModel(t *testing.T) {
+	model, err := NewModel(nil)
+	assert.Error(t, err, "NewModel should return an error when sink is nil")
+
 	sink := events.NewDummySink()
-	model, err := NewModel(sink)
+	model, err = NewModel(sink)
 	assert.NoError(t, err, "NewModel should not return an error")
 	assert.NotNil(t, model, "NewModel should return a non-nil model")
 

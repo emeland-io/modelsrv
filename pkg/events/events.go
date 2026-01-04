@@ -71,7 +71,7 @@ const (
 	ComponentInstanceResource
 )
 
-var ResourceTypeValues = map[ResourceType]string{
+var resourceTypeValues = map[ResourceType]string{
 	UnknownResourceType: "UnknownResourceType",
 
 	// Phase 0: Contexts
@@ -87,7 +87,7 @@ var ResourceTypeValues = map[ResourceType]string{
 }
 
 func ParseResourceType(s string) ResourceType {
-	for key, val := range ResourceTypeValues {
+	for key, val := range resourceTypeValues {
 		if val == s {
 			return key
 		}
@@ -96,10 +96,10 @@ func ParseResourceType(s string) ResourceType {
 }
 
 func (t ResourceType) String() string {
-	if val, ok := ResourceTypeValues[t]; ok {
+	if val, ok := resourceTypeValues[t]; ok {
 		return val
 	}
-	return ResourceTypeValues[UnknownResourceType]
+	return resourceTypeValues[UnknownResourceType]
 }
 
 type Operation int
@@ -111,7 +111,7 @@ const (
 	DeleteOperation
 )
 
-var OperationValues = map[Operation]string{
+var operationValues = map[Operation]string{
 	UnknownOperation: "UnknownOperation",
 	CreateOperation:  "CreateOperation",
 	UpdateOperation:  "UpdateOperation",
@@ -119,7 +119,7 @@ var OperationValues = map[Operation]string{
 }
 
 func ParseOperation(s string) Operation {
-	for key, val := range OperationValues {
+	for key, val := range operationValues {
 		if val == s {
 			return key
 		}
@@ -128,10 +128,10 @@ func ParseOperation(s string) Operation {
 }
 
 func (o Operation) String() string {
-	if val, ok := OperationValues[o]; ok {
+	if val, ok := operationValues[o]; ok {
 		return val
 	}
-	return OperationValues[UnknownOperation]
+	return operationValues[UnknownOperation]
 }
 
 type EventSink interface {

@@ -86,6 +86,10 @@ type modelData struct {
 var _ Model = (*modelData)(nil)
 
 func NewModel(sink events.EventSink) (*modelData, error) {
+	if sink == nil {
+		return nil, fmt.Errorf("event sink must not be nil")
+	}
+
 	model := &modelData{
 		sink: sink,
 
