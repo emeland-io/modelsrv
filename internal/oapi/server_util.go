@@ -49,8 +49,10 @@ func cloneAnnotations(annos map[string]string) *[]Annotation {
 func cloneAnnotations2(context model.Context) *[]Annotation {
 
 	retval := make([]Annotation, 0)
-	for key := range context.GetAnnotationKeys() {
-		retval = append(retval, Annotation{Key: key, Value: context.GetAnnotationValue(key)})
+
+	modelAnnons := context.GetAnnotations()
+	for key := range modelAnnons.GetKeys() {
+		retval = append(retval, Annotation{Key: key, Value: modelAnnons.GetValue(key)})
 	}
 	return &retval
 }

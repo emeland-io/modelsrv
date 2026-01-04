@@ -19,6 +19,7 @@ func TestEventForwarder(t *testing.T) {
 	context := model.NewContext(testModel, contextId)
 	context.SetDisplayName("Test Context")
 	context.SetDescription("a test context")
+	context.GetAnnotations().Add("a key", "a value")
 
 	err = forwarder.Receive(events.ContextResource, events.CreateOperation, contextId, context)
 	assert.NoError(t, err)
@@ -33,5 +34,6 @@ func TestEventForwarder(t *testing.T) {
 	assert.Contains(t, event.objectJson[0], `"contextId":"`+contextId.String()+`"`)
 	assert.Contains(t, event.objectJson[0], `"displayName":"Test Context"`)
 	assert.Contains(t, event.objectJson[0], `"description":"a test context"`)
+	assert.Contains(t, event.objectJson[0], `"annotations":[{"key":"a key","value":"a value"}]`)
 
 }

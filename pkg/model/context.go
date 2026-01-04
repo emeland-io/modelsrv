@@ -1,9 +1,6 @@
 package model
 
 import (
-	"iter"
-	"maps"
-
 	"github.com/google/uuid"
 	"gitlab.com/emeland/modelsrv/pkg/events"
 )
@@ -24,10 +21,8 @@ type Context interface {
 	SetParentByRef(parent *Context)
 	SetParentById(parentId uuid.UUID)
 
-	AddAnnotation(key string, value string)
-	DeleteAnnotation(key string)
-	GetAnnotationValue(key string) string
-	GetAnnotationKeys() iter.Seq[string]
+	GetAnnotations() Annotations
+
 	getData() *contextData
 }
 
@@ -39,7 +34,7 @@ type contextData struct {
 	DisplayName string
 	Description string
 	Parent      *ContextRef
-	Annotations map[string]string
+	Annotations Annotations
 }
 
 type ContextRef struct {
@@ -52,6 +47,7 @@ func NewContext(model Model, id uuid.UUID) Context {
 		model:        model.getData(),
 		isRegistered: false,
 		ContextId:    id,
+		Annotations:  NewAnnotations(model.getData()),
 	}
 }
 
@@ -59,24 +55,9 @@ func (c *contextData) getData() *contextData {
 	return c
 }
 
-// AddAnnotation implements [Context].
-func (c *contextData) AddAnnotation(key string, value string) {
-	c.Annotations[key] = value
-}
-
-// DeleteAnnotation implements [Context].
-func (c *contextData) DeleteAnnotation(key string) {
-	delete(c.Annotations, key)
-}
-
-// GetAnnotationKeys implements [Context].
-func (c *contextData) GetAnnotationKeys() iter.Seq[string] {
-	return maps.Keys(c.Annotations)
-}
-
-// GetAnnotationValue implements [Context].
-func (c *contextData) GetAnnotationValue(key string) string {
-	return c.Annotations[key]
+// GetAnnotations implements [Context].
+func (c *contextData) GetAnnotations() Annotations {
+	return c.Annotations
 }
 
 // GetContextId implements [Context].

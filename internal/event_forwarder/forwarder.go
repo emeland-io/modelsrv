@@ -61,9 +61,21 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 func convertContextToDTO(context model.Context) client.Context {
 	description := context.GetDescription()
 
-	return client.Context{
+	retval := client.Context{
 		ContextId:   context.GetContextId(),
 		DisplayName: context.GetDisplayName(),
 		Description: &description,
+		Annotations: convertAnnotationsToDTO(context.GetAnnotations()),
 	}
+
+	return retval
+}
+
+func convertAnnotationsToDTO(modelAnnons model.Annotations) *[]client.Annotation {
+
+	retval := make([]client.Annotation, 0)
+	for key := range modelAnnons.GetKeys() {
+		retval = append(retval, client.Annotation{Key: key, Value: modelAnnons.GetValue(key)})
+	}
+	return &retval
 }

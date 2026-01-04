@@ -2,6 +2,7 @@ package model_test
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
@@ -40,7 +41,7 @@ func TestContextOperations(t *testing.T) {
 
 	// update the DisplayName. This MUST create an event, after the object has been registered
 	// with the model.
-	// Event 3: update
+	// Event 2: update
 	context.SetDisplayName("the real test context")
 
 	// update the description. This MUST create an event, after the object has been registered
@@ -74,4 +75,43 @@ func TestContextOperations(t *testing.T) {
 	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
 	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
 	assert.True(t, strings.HasPrefix(eventList[4], fmt.Sprintf("DeleteOperation: Context %s", contextId.String())))
+}
+
+func TestContextAnnotations(t *testing.T) {
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
+	assert.NoError(t, err)
+
+	contextId := uuid.New()
+	context := model.NewContext(testModel, contextId)
+	context.SetDisplayName("Test Context")
+	context.SetDescription("a test context")
+
+	err = testModel.AddContext(context)
+	assert.NoError(t, err)
+
+	// Add annotations
+	annotations := context.GetAnnotations()
+	assert.NotNil(t, annotations)
+	annotations.Add("key1", "value1")
+	annotations.Add("key2", "value2")
+
+	keys := slices.Collect(annotations.GetKeys())
+	assert.Contains(t, keys, "key1")
+	assert.Contains(t, keys, "key2")
+
+	value1 := annotations.GetValue("key1")
+	assert.Equal(t, "value1", value1)
+
+	value2 := annotations.GetValue("key2")
+	assert.Equal(t, "value2", value2)
+
+	// Delete an annotation
+	annotations.Delete("key1")
+	keys = slices.Collect(annotations.GetKeys())
+	assert.NotContains(t, keys, "key1")
+	assert.Contains(t, keys, "key2")
+
+	value1 = annotations.GetValue("key1")
+	assert.Equal(t, "", value1) // should return empty string for non-existent key
 }
