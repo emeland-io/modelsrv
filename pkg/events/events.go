@@ -69,6 +69,9 @@ const (
 	APIInstanceResource
 	ComponentResource
 	ComponentInstanceResource
+
+	// Value objects
+	AnnotationsResource
 )
 
 var resourceTypeValues = map[ResourceType]string{
@@ -84,6 +87,9 @@ var resourceTypeValues = map[ResourceType]string{
 	APIInstanceResource:       "APIInstance",
 	ComponentResource:         "Component",
 	ComponentInstanceResource: "ComponentInstance",
+
+	// Value objects
+	AnnotationsResource: "Annotations",
 }
 
 func ParseResourceType(s string) ResourceType {

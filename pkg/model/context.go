@@ -1,12 +1,17 @@
 package model
 
 import (
+	"fmt"
+
 	"github.com/google/uuid"
 	"gitlab.com/emeland/modelsrv/pkg/events"
 )
 
 // ensure Context interface is implemented correctly
 var _ Context = (*contextData)(nil)
+
+// ensure Context interface is implemented correctly
+var _ events.EventSink = (*contextData)(nil)
 
 type Context interface {
 	GetContextId() uuid.UUID
@@ -43,12 +48,15 @@ type ContextRef struct {
 }
 
 func NewContext(model Model, id uuid.UUID) Context {
-	return &contextData{
+	retval := &contextData{
 		model:        model.getData(),
 		isRegistered: false,
 		ContextId:    id,
-		Annotations:  NewAnnotations(model.getData()),
 	}
+
+	retval.Annotations = NewAnnotations(model.getData(), retval)
+
+	return retval
 }
 
 func (c *contextData) getData() *contextData {
@@ -119,4 +127,18 @@ func (c *contextData) SetParentById(parentId uuid.UUID) {
 // SetParentByRef implements [Context].
 func (c *contextData) SetParentByRef(parent *Context) {
 	panic("unimplemented")
+}
+
+// Receive implements [events.EventSink].
+func (c *contextData) Receive(resType events.ResourceType, op events.Operation, resourceId uuid.UUID, object ...any) error {
+	if resType != events.AnnotationsResource {
+		return fmt.Errorf("unsupported resource type %v in Context event sink. Only Annotations are supported", resType)
+	}
+
+	// all changes to annotations are automatically reflected in the parent object as updates
+	if c.isRegistered {
+		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+	}
+
+	return nil
 }

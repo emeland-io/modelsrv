@@ -87,12 +87,14 @@ func TestContextAnnotations(t *testing.T) {
 	context.SetDisplayName("Test Context")
 	context.SetDescription("a test context")
 
+	// Event 1: create
 	err = testModel.AddContext(context)
 	assert.NoError(t, err)
 
 	// Add annotations
 	annotations := context.GetAnnotations()
 	assert.NotNil(t, annotations)
+	// Event 2,3: add keys -> update context
 	annotations.Add("key1", "value1")
 	annotations.Add("key2", "value2")
 
@@ -107,6 +109,7 @@ func TestContextAnnotations(t *testing.T) {
 	assert.Equal(t, "value2", value2)
 
 	// Delete an annotation
+	// Event 4: delete annotation -> update context
 	annotations.Delete("key1")
 	keys = slices.Collect(annotations.GetKeys())
 	assert.NotContains(t, keys, "key1")
@@ -114,4 +117,50 @@ func TestContextAnnotations(t *testing.T) {
 
 	value1 = annotations.GetValue("key1")
 	assert.Equal(t, "", value1) // should return empty string for non-existent key
+
+	eventList := sink.GetList()
+	assert.Equal(t, 4, len(eventList))
+	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
+	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
+	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
+	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
+
+}
+
+func TestContextSetParent(t *testing.T) {
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
+	assert.NoError(t, err)
+
+	parentId := uuid.New()
+	parent := model.NewContext(testModel, parentId)
+	parent.SetDisplayName("Parent Context")
+	parent.SetDescription("a parent context")
+
+	contextId := uuid.New()
+	context := model.NewContext(testModel, contextId)
+	context.SetDisplayName("Test Context")
+	context.SetDescription("a test context")
+
+	// Event 1: create parent
+	err = testModel.AddContext(parent)
+	assert.NoError(t, err)
+
+	// Event 2: create context
+	err = testModel.AddContext(context)
+	assert.NoError(t, err)
+
+	// Set parent
+	// Event 3: update context
+	context.SetParentById(parentId)
+
+	parentRetrieved, err := context.GetParent()
+	assert.NoError(t, err)
+	assert.Same(t, parent, parentRetrieved)
+
+	eventList := sink.GetList()
+	assert.Equal(t, 4, len(eventList))
+	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", parentId.String())))
+	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
+
 }

@@ -3,6 +3,9 @@ package model
 import (
 	"iter"
 	"maps"
+
+	"github.com/google/uuid"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 )
 
 // ensure Annotations interface is implemented correctly
@@ -18,24 +21,40 @@ type Annotations interface {
 
 type annotationsData struct {
 	model   *modelData
+	sink    events.EventSink
 	records map[string]string
 }
 
-func NewAnnotations(model *modelData) Annotations {
+func NewAnnotations(model *modelData, sink events.EventSink) Annotations {
 	return &annotationsData{
 		model:   model,
+		sink:    sink,
 		records: make(map[string]string),
 	}
 }
 
 // Add implements [Annotations].
 func (a *annotationsData) Add(key string, value string) {
+	if currval, exists := a.records[key]; exists {
+		if currval == value {
+			// no change
+			return
+		} else {
+			// updating existing value
+			a.records[key] = value
+			a.sink.Receive(events.AnnotationsResource, events.UpdateOperation, uuid.Nil, map[string]string{key: value})
+			return
+		}
+	}
+
 	a.records[key] = value
+	a.sink.Receive(events.AnnotationsResource, events.CreateOperation, uuid.Nil, map[string]string{key: value})
 }
 
 // Delete implements [Annotations].
 func (a *annotationsData) Delete(key string) {
 	delete(a.records, key)
+	a.sink.Receive(events.AnnotationsResource, events.DeleteOperation, uuid.Nil, key)
 }
 
 // GetValue implements [Annotations].
