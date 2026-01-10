@@ -31,10 +31,10 @@ type Model interface {
 	GetContexts() ([]Context, error)
 	GetContextById(id uuid.UUID) Context
 
-	AddSystem(sys *System) error
+	AddSystem(sys System) error
 	DeleteSystemById(id uuid.UUID) error
-	GetSystems() ([]*System, error)
-	GetSystemById(id uuid.UUID) *System
+	GetSystems() ([]System, error)
+	GetSystemById(id uuid.UUID) System
 
 	AddApi(api *API) error
 	DeleteApiById(id uuid.UUID) error
@@ -71,7 +71,7 @@ type modelData struct {
 
 	contextsByUUID   map[uuid.UUID]*contextData
 	contextsCache    []Context
-	systemsByUUID    map[uuid.UUID]*System
+	systemsByUUID    map[uuid.UUID]System
 	apisByUUID       map[uuid.UUID]*API
 	componentsByUUID map[uuid.UUID]*Component
 
@@ -95,7 +95,7 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 		contextsByUUID: make(map[uuid.UUID]*contextData),
 
-		systemsByUUID:    make(map[uuid.UUID]*System),
+		systemsByUUID:    make(map[uuid.UUID]System),
 		apisByUUID:       make(map[uuid.UUID]*API),
 		componentsByUUID: make(map[uuid.UUID]*Component),
 
@@ -152,22 +152,6 @@ func (v Version) IsEqual(other Version) bool {
 type EntityVersion struct {
 	Name    string
 	Version string
-}
-
-type System struct {
-	DisplayName string
-	Description string
-	SystemId    uuid.UUID
-	Version     Version
-	Abstract    bool
-	Parent      SystemRef
-	Annotations map[string]string
-}
-
-type SystemRef struct {
-	System    *System
-	SystemId  uuid.UUID
-	SystemRef *EntityVersion
 }
 
 type ApiType int
@@ -357,14 +341,25 @@ func (m *modelData) GetContexts() ([]Context, error) {
 }
 
 // AddSystem implements Model.
-func (m *modelData) AddSystem(sys *System) error {
+func (m *modelData) AddSystem(sys System) error {
 
 	// parse parent ref if set
-	if sys.SystemId != uuid.Nil {
-		m.systemsByUUID[sys.SystemId] = sys
-	} else {
+	if sys.GetSystemId() == uuid.Nil {
 		return UUIDNotSetError
 	}
+
+	op := events.CreateOperation
+
+	// check if this would overwrite an existing entry -> an update
+	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
+		op = events.UpdateOperation
+	}
+	m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys)
+
+	m.systemsByUUID[sys.GetSystemId()] = sys
+
+	// mark System as registered to activate sending events when updating fields
+	sys.getData().isRegistered = true
 
 	return nil
 }
@@ -381,13 +376,13 @@ func (m *modelData) DeleteSystemById(id uuid.UUID) error {
 }
 
 // GetSystems implements Model.
-func (m *modelData) GetSystems() ([]*System, error) {
+func (m *modelData) GetSystems() ([]System, error) {
 	systemArr := slices.Collect(maps.Values(m.systemsByUUID))
 	return systemArr, nil
 }
 
 // GetSystemById implements Model.
-func (m *modelData) GetSystemById(id uuid.UUID) *System {
+func (m *modelData) GetSystemById(id uuid.UUID) System {
 	system, exists := m.systemsByUUID[id]
 	if !exists {
 		return nil

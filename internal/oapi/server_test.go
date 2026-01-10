@@ -17,6 +17,7 @@ limitations under the License.
 package oapi_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -120,18 +121,19 @@ var _ = BeforeSuite(func() {
 	err = backend.AddComponentInstance(&componentInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	system := model.System{
-		SystemId:    systemId,
-		DisplayName: "First System",
-		Version: model.Version{
+	system := model.MakeTestSystem(
+		backend,
+		systemId,
+		"First System",
+		model.Version{
 			Version:        "1.0.0",
 			AvailableFrom:  mustParseDate("2023-01-01"),
 			DeprecatedFrom: mustParseDate("2024-01-01"),
 			TerminatedFrom: mustParseDate("2025-01-01"),
 		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddSystem(&system)
+	)
+
+	err = backend.AddSystem(system)
 	Expect(err).NotTo(HaveOccurred())
 
 	systemInstance := model.SystemInstance{
@@ -242,6 +244,54 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).To(Equal(0))
 
+	})
+
+	It("should call POST on /events/register to add a subscriber", func() {
+		url := "http://localhost/events/register"
+
+		postData := []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
+		req := httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+
+		Expect(len(eventMgr.GetSubscribers())).To(Equal(1))
+		Expect(eventMgr.GetSubscribers()[0]).To(Equal("http://remote-server.example.com/emeland/"))
+	})
+
+	It("should call POST on /events/unregister to remove a subscriber", func() {
+		url := "http://localhost/events/unregister"
+
+		// first try to remove a non-existing subscriber
+		postData := []byte(`{"callbackUrl":"http://invalid-server.example.com/emeland/"}`)
+		req := httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+
+		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
+		resp.Body.Close()
+
+		// now remove the existing subscriber
+		eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+
+		postData = []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
+		req = httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
+		req.Header.Set("Content-Type", "application/json")
+		w = httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		resp = w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+		Expect(len(eventMgr.GetSubscribers())).To(Equal(0))
+
+		defer resp.Body.Close()
 	})
 
 	It("should call GET on /landscape/api-instances", func() {
@@ -581,14 +631,4 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(context.ContextId).To(Equal(contextId))
 	})
 
-	/*
-
-
-		It("PostEventsRegister should not panic or error", func() {
-			Expect(func() {
-				_, err := a.PostEventsRegister(ctx, PostEventsRegisterRequestObject{})
-				Expect(err).To(BeNil())
-			}).NotTo(Panic())
-		})
-	*/
 })

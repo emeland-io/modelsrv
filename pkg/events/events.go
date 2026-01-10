@@ -23,21 +23,41 @@ import (
 	"github.com/google/uuid"
 )
 
+// EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
 	// GetCurrentEventSequenceId returns the current event sequence ID as a string.
 	GetCurrentSequenceId(ctx context.Context) (uint64, error)
 	IncrementSequenceId(ctx context.Context) error
+
+	// SetSinkFactory sets the factory function to create new EventSinks.
+	SetSinkFactory(factory func() (EventSink, error))
+	// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
+	// If no factory has been set, a default [ListSink] is returned.
 	GetSink() (EventSink, error)
+
+	// GetSubscribers returns a list of current subscribers.
+	GetSubscribers() []string
+	// AddSubscriber adds a new subscriber by URL.
+	AddSubscriber(url string) error
+	// RemoveSubscriber removes a subscriber by URL.
+	RemoveSubscriber(url string) error
 }
 
 var _ EventManager = (*eventManager)(nil)
 
 type eventManager struct {
 	sequenceNumber uint64
+	subscribers    []string
+	sinkFactory    func() (EventSink, error)
 }
 
 func NewEventManager() (EventManager, error) {
-	return &eventManager{}, nil
+	retval := &eventManager{
+		sequenceNumber: 0,
+		sinkFactory:    func() (EventSink, error) { return NewListSink(), nil },
+	}
+	return retval, nil
+
 }
 
 // GetCurrentSequenceId implements EventManager.
@@ -51,9 +71,48 @@ func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
 	return nil
 }
 
+// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
+// If no factory has been set, a default [ListSink] is returned.
+//
+// SetSinkFactory implements [EventManager].
+func (e *eventManager) SetSinkFactory(factory func() (EventSink, error)) {
+	e.sinkFactory = factory
+}
+
 // GetSink implements [EventManager].
 func (e *eventManager) GetSink() (EventSink, error) {
 	return NewListSink(), nil
+}
+
+// AddSubscriber implements [EventManager].
+// adding the same subscriber URL again will result in only one entry in the subscriber list.
+func (e *eventManager) AddSubscriber(url string) error {
+	for _, sub := range e.subscribers {
+		if sub == url {
+			// already exists
+			return nil
+		}
+	}
+	e.subscribers = append(e.subscribers, url)
+	return nil
+}
+
+// GetSubscribers implements [EventManager].
+func (e *eventManager) GetSubscribers() []string {
+	return e.subscribers
+}
+
+// RemoveSubscriber implements [EventManager].
+// TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
+func (e *eventManager) RemoveSubscriber(url string) error {
+	for i, sub := range e.subscribers {
+		if sub == url {
+			// remove subscriber
+			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("subscriber %s not found", url)
 }
 
 type ResourceType int

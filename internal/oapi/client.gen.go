@@ -98,6 +98,14 @@ type ClientInterface interface {
 
 	PostEventsRegister(ctx context.Context, body PostEventsRegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetEventsSubscribers request
+	GetEventsSubscribers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostEventsUnregisterWithBody request with any body
+	PostEventsUnregisterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostEventsUnregister(ctx context.Context, body PostEventsUnregisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeApiInstances request
 	GetLandscapeApiInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -176,6 +184,42 @@ func (c *Client) PostEventsRegisterWithBody(ctx context.Context, contentType str
 
 func (c *Client) PostEventsRegister(ctx context.Context, body PostEventsRegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPostEventsRegisterRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetEventsSubscribers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventsSubscribersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostEventsUnregisterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostEventsUnregisterRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostEventsUnregister(ctx context.Context, body PostEventsUnregisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostEventsUnregisterRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -445,6 +489,73 @@ func NewPostEventsRegisterRequestWithBody(server string, contentType string, bod
 	}
 
 	operationPath := fmt.Sprintf("/events/register")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEventsSubscribersRequest generates requests for GetEventsSubscribers
+func NewGetEventsSubscribersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/events/subscribers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostEventsUnregisterRequest calls the generic PostEventsUnregister builder with application/json body
+func NewPostEventsUnregisterRequest(server string, body PostEventsUnregisterJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostEventsUnregisterRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostEventsUnregisterRequestWithBody generates requests for PostEventsUnregister with any type of body
+func NewPostEventsUnregisterRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/events/unregister")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1030,6 +1141,14 @@ type ClientWithResponsesInterface interface {
 
 	PostEventsRegisterWithResponse(ctx context.Context, body PostEventsRegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*PostEventsRegisterResponse, error)
 
+	// GetEventsSubscribersWithResponse request
+	GetEventsSubscribersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventsSubscribersResponse, error)
+
+	// PostEventsUnregisterWithBodyWithResponse request with any body
+	PostEventsUnregisterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsUnregisterResponse, error)
+
+	PostEventsUnregisterWithResponse(ctx context.Context, body PostEventsUnregisterJSONRequestBody, reqEditors ...RequestEditorFn) (*PostEventsUnregisterResponse, error)
+
 	// GetLandscapeApiInstancesWithResponse request
 	GetLandscapeApiInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeApiInstancesResponse, error)
 
@@ -1119,6 +1238,50 @@ func (r PostEventsRegisterResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r PostEventsRegisterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetEventsSubscribersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]string
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEventsSubscribersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEventsSubscribersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type PostEventsUnregisterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r PostEventsUnregisterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostEventsUnregisterResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1532,6 +1695,32 @@ func (c *ClientWithResponses) PostEventsRegisterWithResponse(ctx context.Context
 	return ParsePostEventsRegisterResponse(rsp)
 }
 
+// GetEventsSubscribersWithResponse request returning *GetEventsSubscribersResponse
+func (c *ClientWithResponses) GetEventsSubscribersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetEventsSubscribersResponse, error) {
+	rsp, err := c.GetEventsSubscribers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEventsSubscribersResponse(rsp)
+}
+
+// PostEventsUnregisterWithBodyWithResponse request with arbitrary body returning *PostEventsUnregisterResponse
+func (c *ClientWithResponses) PostEventsUnregisterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsUnregisterResponse, error) {
+	rsp, err := c.PostEventsUnregisterWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostEventsUnregisterResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostEventsUnregisterWithResponse(ctx context.Context, body PostEventsUnregisterJSONRequestBody, reqEditors ...RequestEditorFn) (*PostEventsUnregisterResponse, error) {
+	rsp, err := c.PostEventsUnregister(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostEventsUnregisterResponse(rsp)
+}
+
 // GetLandscapeApiInstancesWithResponse request returning *GetLandscapeApiInstancesResponse
 func (c *ClientWithResponses) GetLandscapeApiInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeApiInstancesResponse, error) {
 	rsp, err := c.GetLandscapeApiInstances(ctx, reqEditors...)
@@ -1722,6 +1911,58 @@ func ParsePostEventsRegisterResponse(rsp *http.Response) (*PostEventsRegisterRes
 	response := &PostEventsRegisterResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetEventsSubscribersResponse parses an HTTP response from a GetEventsSubscribersWithResponse call
+func ParseGetEventsSubscribersResponse(rsp *http.Response) (*GetEventsSubscribersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEventsSubscribersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []string
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostEventsUnregisterResponse parses an HTTP response from a PostEventsUnregisterWithResponse call
+func ParsePostEventsUnregisterResponse(rsp *http.Response) (*PostEventsUnregisterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostEventsUnregisterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
 	}
 
 	return response, nil

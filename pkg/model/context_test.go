@@ -159,8 +159,8 @@ func TestContextSetParent(t *testing.T) {
 	assert.Same(t, parent, parentRetrieved)
 
 	eventList := sink.GetList()
-	assert.Equal(t, 4, len(eventList))
+	assert.Equal(t, 3, len(eventList))
 	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", parentId.String())))
 	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
-
+	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
 }

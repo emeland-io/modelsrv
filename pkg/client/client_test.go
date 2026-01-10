@@ -252,10 +252,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	system := &model.System{
-		DisplayName: "Test System",
-		SystemId:    systemId,
-	}
+	system := model.MakeTestSystem(target, systemId, "Test System", model.Version{})
 	err = target.AddSystem(system)
 	if err != nil {
 		return err

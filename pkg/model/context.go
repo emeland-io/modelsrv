@@ -10,7 +10,7 @@ import (
 // ensure Context interface is implemented correctly
 var _ Context = (*contextData)(nil)
 
-// ensure Context interface is implemented correctly
+// ensure events.EventSink interface is implemented correctly
 var _ events.EventSink = (*contextData)(nil)
 
 type Context interface {
@@ -23,7 +23,7 @@ type Context interface {
 	GetDescription() string
 
 	GetParent() (Context, error)
-	SetParentByRef(parent *Context)
+	SetParentByRef(parent Context)
 	SetParentById(parentId uuid.UUID)
 
 	GetAnnotations() Annotations
@@ -121,12 +121,34 @@ func (c *contextData) GetParent() (Context, error) {
 
 // SetParentById implements [Context].
 func (c *contextData) SetParentById(parentId uuid.UUID) {
-	panic("unimplemented")
+	c.Parent = &ContextRef{
+		ContextId: parentId,
+	}
+
+	ptr, ok := c.model.contextsByUUID[parentId]
+	if ok {
+		c.Parent.Context = ptr
+	}
+
+	if c.isRegistered {
+		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+	}
 }
 
 // SetParentByRef implements [Context].
-func (c *contextData) SetParentByRef(parent *Context) {
-	panic("unimplemented")
+func (c *contextData) SetParentByRef(parent Context) {
+
+	if parent == nil {
+		return
+	}
+	c.Parent = &ContextRef{
+		Context:   parent.getData(),
+		ContextId: parent.GetContextId(),
+	}
+
+	if c.isRegistered {
+		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+	}
 }
 
 // Receive implements [events.EventSink].

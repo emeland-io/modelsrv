@@ -221,8 +221,16 @@ type Version struct {
 
 // PostEventsRegisterJSONBody defines parameters for PostEventsRegister.
 type PostEventsRegisterJSONBody struct {
-	CallbackUrl *string `json:"callbackUrl,omitempty"`
+	CallbackUrl string `json:"callbackUrl"`
+}
+
+// PostEventsUnregisterJSONBody defines parameters for PostEventsUnregister.
+type PostEventsUnregisterJSONBody struct {
+	CallbackUrl string `json:"callbackUrl"`
 }
 
 // PostEventsRegisterJSONRequestBody defines body for PostEventsRegister for application/json ContentType.
 type PostEventsRegisterJSONRequestBody PostEventsRegisterJSONBody
+
+// PostEventsUnregisterJSONRequestBody defines body for PostEventsUnregister for application/json ContentType.
+type PostEventsUnregisterJSONRequestBody PostEventsUnregisterJSONBody
