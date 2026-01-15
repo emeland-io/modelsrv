@@ -323,9 +323,50 @@ paths:
                 callbackUrl:
                   type: string
                   format: uri
+              required:
+                - callbackUrl
       responses:
         '201':
           description: Created
+  /events/unregister:
+    post:
+      description: Unregister an existing event consumer.
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                callbackUrl:
+                  type: string
+                  format: uri
+              required:
+                - callbackUrl
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: URL of callback not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /events/subscribers:
+    get:
+      description: Retrieve the list of registered event consumers.
+      tags: [events]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uri
   /events/query/{sequenceId}:
     get:
       description: Retrieve changes since the given sequence ID.

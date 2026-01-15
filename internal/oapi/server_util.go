@@ -46,6 +46,16 @@ func cloneAnnotations(annos map[string]string) *[]Annotation {
 	return &retval
 }
 
+func cloneAnnotations2(annos model.Annotations) *[]Annotation {
+
+	retval := make([]Annotation, 0)
+
+	for key := range annos.GetKeys() {
+		retval = append(retval, Annotation{Key: key, Value: annos.GetValue(key)})
+	}
+	return &retval
+}
+
 /*
 cloneResourceRefs creates a deep copy of the given ResourceRef slice.
 

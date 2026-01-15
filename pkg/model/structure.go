@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gitlab.com/emeland/modelsrv/pkg/events"
 )
 
 var (
@@ -18,19 +19,22 @@ var (
 	ApiInstanceNotFoundError       error = fmt.Errorf("API Instance not found")
 	ComponentNotFoundError         error = fmt.Errorf("Component not found")
 	ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
+
+	UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 )
-var UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
 
 type Model interface {
-	AddContext(sys *Context) error
-	DeleteContextById(id uuid.UUID) error
-	GetContexts() ([]*Context, error)
-	GetContextById(id uuid.UUID) *Context
+	getData() *modelData
 
-	AddSystem(sys *System) error
+	AddContext(sys Context) error
+	DeleteContextById(id uuid.UUID) error
+	GetContexts() ([]Context, error)
+	GetContextById(id uuid.UUID) Context
+
+	AddSystem(sys System) error
 	DeleteSystemById(id uuid.UUID) error
-	GetSystems() ([]*System, error)
-	GetSystemById(id uuid.UUID) *System
+	GetSystems() ([]System, error)
+	GetSystemById(id uuid.UUID) System
 
 	AddApi(api *API) error
 	DeleteApiById(id uuid.UUID) error
@@ -47,10 +51,10 @@ type Model interface {
 	GetSystemInstances() ([]*SystemInstance, error)
 	GetSystemInstanceById(id uuid.UUID) *SystemInstance
 
-	AddApiInstance(instance *APIInstance) error
+	AddApiInstance(instance *ApiInstance) error
 	DeleteApiInstanceById(id uuid.UUID) error
-	GetApiInstances() ([]*APIInstance, error)
-	GetApiInstanceById(id uuid.UUID) *APIInstance
+	GetApiInstances() ([]*ApiInstance, error)
+	GetApiInstanceById(id uuid.UUID) *ApiInstance
 
 	AddComponentInstance(instance *ComponentInstance) error
 	DeleteComponentInstanceById(id uuid.UUID) error
@@ -63,34 +67,43 @@ type Model interface {
 }
 
 type modelData struct {
-	ContextsByUUID   map[uuid.UUID]*Context
-	SystemsByUUID    map[uuid.UUID]*System
-	APIsByUUID       map[uuid.UUID]*API
-	ComponentsByUUID map[uuid.UUID]*Component
+	sink events.EventSink
 
-	SystemInstancesByUUID    map[uuid.UUID]*SystemInstance
-	APIInstancesByUUID       map[uuid.UUID]*APIInstance
-	ComponentInstancesByUUID map[uuid.UUID]*ComponentInstance
+	contextsByUUID   map[uuid.UUID]*contextData
+	contextsCache    []Context
+	systemsByUUID    map[uuid.UUID]System
+	apisByUUID       map[uuid.UUID]*API
+	componentsByUUID map[uuid.UUID]*Component
 
-	FindingsByUUID map[uuid.UUID]*Finding
+	systemInstancesByUUID    map[uuid.UUID]*SystemInstance
+	apiInstancesByUUID       map[uuid.UUID]*ApiInstance
+	componentInstancesByUUID map[uuid.UUID]*ComponentInstance
+
+	findingsByUUID map[uuid.UUID]*Finding
 }
 
 // ensure Model interface is implemented correctly
 var _ Model = (*modelData)(nil)
 
-func NewModel() (*modelData, error) {
+func NewModel(sink events.EventSink) (*modelData, error) {
+	if sink == nil {
+		return nil, fmt.Errorf("event sink must not be nil")
+	}
+
 	model := &modelData{
-		ContextsByUUID: make(map[uuid.UUID]*Context),
+		sink: sink,
 
-		SystemsByUUID:    make(map[uuid.UUID]*System),
-		APIsByUUID:       make(map[uuid.UUID]*API),
-		ComponentsByUUID: make(map[uuid.UUID]*Component),
+		contextsByUUID: make(map[uuid.UUID]*contextData),
 
-		SystemInstancesByUUID:    make(map[uuid.UUID]*SystemInstance),
-		APIInstancesByUUID:       make(map[uuid.UUID]*APIInstance),
-		ComponentInstancesByUUID: make(map[uuid.UUID]*ComponentInstance),
+		systemsByUUID:    make(map[uuid.UUID]System),
+		apisByUUID:       make(map[uuid.UUID]*API),
+		componentsByUUID: make(map[uuid.UUID]*Component),
 
-		FindingsByUUID: make(map[uuid.UUID]*Finding),
+		systemInstancesByUUID:    make(map[uuid.UUID]*SystemInstance),
+		apiInstancesByUUID:       make(map[uuid.UUID]*ApiInstance),
+		componentInstancesByUUID: make(map[uuid.UUID]*ComponentInstance),
+
+		findingsByUUID: make(map[uuid.UUID]*Finding),
 	}
 
 	return model, nil
@@ -98,19 +111,6 @@ func NewModel() (*modelData, error) {
 
 func (m *modelData) GetCurrentEventSequenceId(ctx context.Context) (string, error) {
 	return "forty-two", nil
-}
-
-type Context struct {
-	ContextId   uuid.UUID
-	DisplayName string
-	Description string
-	Parent      *ContextRef
-	Annotations map[string]string
-}
-
-type ContextRef struct {
-	Context   *Context
-	ContextId uuid.UUID
 }
 
 type Version struct {
@@ -154,29 +154,13 @@ type EntityVersion struct {
 	Version string
 }
 
-type System struct {
-	DisplayName string
-	Description string
-	SystemId    uuid.UUID
-	Version     Version
-	Abstract    bool
-	Parent      SystemRef
-	Annotations map[string]string
-}
-
-type SystemRef struct {
-	System    *System
-	SystemId  uuid.UUID
-	SystemRef *EntityVersion
-}
-
 type ApiType int
 
 const (
 	Unknown ApiType = iota
 	Other
 	GraphQL
-	gRPC
+	GRPC
 	OpenAPI
 )
 
@@ -184,7 +168,7 @@ var ApiTypeValues = map[ApiType]string{
 	Unknown: "Unknown",
 	OpenAPI: "OpenAPI",
 	GraphQL: "GraphQL",
-	gRPC:    "gRPC",
+	GRPC:    "GRPC",
 	Other:   "Other",
 }
 
@@ -250,7 +234,7 @@ type SystemInstanceRef struct {
 	InstanceId     uuid.UUID
 }
 
-type APIInstance struct {
+type ApiInstance struct {
 	DisplayName    string
 	InstanceId     uuid.UUID
 	ApiRef         *ApiRef
@@ -274,74 +258,64 @@ type Finding struct {
 	Annotations map[string]string
 }
 
-type ResourceType int
-
-const (
-	UnknownResourceType ResourceType = iota
-	SystemResource
-	SystemInstanceResource
-	APIResource
-	APIInstanceResource
-	ComponentResource
-	ComponentInstanceResource
-)
-
-var ResourceTypeValues = map[ResourceType]string{
-	UnknownResourceType:       "UnknownResourceType",
-	SystemResource:            "System",
-	SystemInstanceResource:    "SystemInstance",
-	APIResource:               "API",
-	APIInstanceResource:       "APIInstance",
-	ComponentResource:         "Component",
-	ComponentInstanceResource: "ComponentInstance",
-}
-
-func ParseResourceType(s string) ResourceType {
-	for key, val := range ResourceTypeValues {
-		if val == s {
-			return key
-		}
-	}
-	return UnknownResourceType
-}
-
-func (t ResourceType) String() string {
-	if val, ok := ResourceTypeValues[t]; ok {
-		return val
-	}
-	return ResourceTypeValues[UnknownResourceType]
-}
-
 type ResourceRef struct {
 	ResourceId   uuid.UUID
-	ResourceType ResourceType
+	ResourceType events.ResourceType
+}
+
+func (m *modelData) getData() *modelData {
+	return m
 }
 
 // AddContext implements Model.
-func (m *modelData) AddContext(sys *Context) error {
-	// parse parent ref if set
-	if sys.ContextId != uuid.Nil {
-		m.ContextsByUUID[sys.ContextId] = sys
-	} else {
+func (m *modelData) AddContext(context Context) error {
+
+	// invalidate the cache
+	m.contextsCache = nil
+
+	// TODO: parse parent ref if set
+
+	if context.GetContextId() == uuid.Nil {
 		return UUIDNotSetError
 	}
+
+	op := events.CreateOperation
+
+	// check if this would overwrite an existing entry -> an update
+	if _, ok := m.contextsByUUID[context.GetContextId()]; ok {
+		op = events.UpdateOperation
+	}
+
+	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
+
+	m.contextsByUUID[context.GetContextId()] = context.getData()
+
+	// mark Context as registered to activate sending events when updating fields
+	context.getData().isRegistered = true
 
 	return nil
 }
 
 // DeleteContextById implements Model.
 func (m *modelData) DeleteContextById(id uuid.UUID) error {
-	_, exists := m.ContextsByUUID[id]
+	_, exists := m.contextsByUUID[id]
 	if !exists {
 		return ContextNotFoundError
 	}
-	delete(m.ContextsByUUID, id)
+
+	// invalidate the cache
+	m.contextsCache = nil
+
+	delete(m.contextsByUUID, id)
+
+	m.sink.Receive(events.ContextResource, events.DeleteOperation, id)
+
 	return nil
 }
 
 // GetContextById implements Model.
-func (m *modelData) GetContextById(id uuid.UUID) *Context {
-	context, exists := m.ContextsByUUID[id]
+func (m *modelData) GetContextById(id uuid.UUID) Context {
+	context, exists := m.contextsByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -349,44 +323,67 @@ func (m *modelData) GetContextById(id uuid.UUID) *Context {
 }
 
 // GetContexts implements Model.
-func (m *modelData) GetContexts() ([]*Context, error) {
-	contextArr := slices.Collect(maps.Values(m.ContextsByUUID))
-	return contextArr, nil
+func (m *modelData) GetContexts() ([]Context, error) {
+	/* since this operation would require O(n) and is therfore potentially quite costly, lets cache that
+	   Any write operations to contextsByUUID must invalidate that
+	*/
+	if m.contextsCache != nil {
+		return m.contextsCache, nil
+	}
+
+	contextArr := make([]Context, 0)
+	for context := range maps.Values(m.contextsByUUID) {
+		contextArr = append(contextArr, Context(context))
+	}
+	m.contextsCache = contextArr
+
+	return []Context(contextArr), nil
 }
 
 // AddSystem implements Model.
-func (m *modelData) AddSystem(sys *System) error {
+func (m *modelData) AddSystem(sys System) error {
 
 	// parse parent ref if set
-	if sys.SystemId != uuid.Nil {
-		m.SystemsByUUID[sys.SystemId] = sys
-	} else {
+	if sys.GetSystemId() == uuid.Nil {
 		return UUIDNotSetError
 	}
+
+	op := events.CreateOperation
+
+	// check if this would overwrite an existing entry -> an update
+	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
+		op = events.UpdateOperation
+	}
+	m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys)
+
+	m.systemsByUUID[sys.GetSystemId()] = sys
+
+	// mark System as registered to activate sending events when updating fields
+	sys.getData().isRegistered = true
 
 	return nil
 }
 
 // DeleteSystemByResourceName implements Model.
 func (m *modelData) DeleteSystemById(id uuid.UUID) error {
-	_, exists := m.SystemsByUUID[id]
+	_, exists := m.systemsByUUID[id]
 	if !exists {
 		return SystemNotFoundError
 	}
 
-	delete(m.SystemsByUUID, id)
+	delete(m.systemsByUUID, id)
 	return nil
 }
 
 // GetSystems implements Model.
-func (m *modelData) GetSystems() ([]*System, error) {
-	systemArr := slices.Collect(maps.Values(m.SystemsByUUID))
+func (m *modelData) GetSystems() ([]System, error) {
+	systemArr := slices.Collect(maps.Values(m.systemsByUUID))
 	return systemArr, nil
 }
 
 // GetSystemById implements Model.
-func (m *modelData) GetSystemById(id uuid.UUID) *System {
-	system, exists := m.SystemsByUUID[id]
+func (m *modelData) GetSystemById(id uuid.UUID) System {
+	system, exists := m.systemsByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -396,7 +393,7 @@ func (m *modelData) GetSystemById(id uuid.UUID) *System {
 // AddApi implements Model.
 func (m *modelData) AddApi(api *API) error {
 	if api.ApiId != uuid.Nil {
-		m.APIsByUUID[api.ApiId] = api
+		m.apisByUUID[api.ApiId] = api
 	} else {
 		return UUIDNotSetError
 	}
@@ -404,9 +401,9 @@ func (m *modelData) AddApi(api *API) error {
 }
 
 // AddApiInstance implements Model.
-func (m *modelData) AddApiInstance(instance *APIInstance) error {
+func (m *modelData) AddApiInstance(instance *ApiInstance) error {
 	if instance.InstanceId != uuid.Nil {
-		m.APIInstancesByUUID[instance.InstanceId] = instance
+		m.apiInstancesByUUID[instance.InstanceId] = instance
 	}
 	return nil
 }
@@ -414,7 +411,7 @@ func (m *modelData) AddApiInstance(instance *APIInstance) error {
 // AddComponent implements Model.
 func (m *modelData) AddComponent(comp *Component) error {
 	if comp.ComponentId != uuid.Nil {
-		m.ComponentsByUUID[comp.ComponentId] = comp
+		m.componentsByUUID[comp.ComponentId] = comp
 	}
 	return nil
 }
@@ -422,7 +419,7 @@ func (m *modelData) AddComponent(comp *Component) error {
 // AddComponentInstance implements Model.
 func (m *modelData) AddComponentInstance(instance *ComponentInstance) error {
 	if instance.InstanceId != uuid.Nil {
-		m.ComponentInstancesByUUID[instance.InstanceId] = instance
+		m.componentInstancesByUUID[instance.InstanceId] = instance
 	}
 	return nil
 }
@@ -430,14 +427,14 @@ func (m *modelData) AddComponentInstance(instance *ComponentInstance) error {
 // AddSystemInstance implements Model.
 func (m *modelData) AddSystemInstance(instance *SystemInstance) error {
 	if instance.InstanceId != uuid.Nil {
-		m.SystemInstancesByUUID[instance.InstanceId] = instance
+		m.systemInstancesByUUID[instance.InstanceId] = instance
 	} else {
 		return UUIDNotSetError
 	}
 
 	// resolve system ref if set
 	if instance.SystemRef != nil && instance.SystemRef.SystemId != uuid.Nil {
-		system, exists := m.SystemsByUUID[instance.SystemRef.SystemId]
+		system, exists := m.systemsByUUID[instance.SystemRef.SystemId]
 		if exists {
 			instance.SystemRef.System = system
 		}
@@ -448,57 +445,57 @@ func (m *modelData) AddSystemInstance(instance *SystemInstance) error {
 
 // DeleteApiByResourceName implements Model.
 func (m *modelData) DeleteApiById(id uuid.UUID) error {
-	_, exists := m.APIsByUUID[id]
+	_, exists := m.apisByUUID[id]
 	if !exists {
 		return ApiNotFoundError
 	}
-	delete(m.APIsByUUID, id)
+	delete(m.apisByUUID, id)
 	return nil
 }
 
 // DeleteApiInstanceByResourceName implements Model.
 func (m *modelData) DeleteApiInstanceById(id uuid.UUID) error {
-	_, exists := m.APIInstancesByUUID[id]
+	_, exists := m.apiInstancesByUUID[id]
 	if !exists {
 		return ApiInstanceNotFoundError
 	}
-	delete(m.APIInstancesByUUID, id)
+	delete(m.apiInstancesByUUID, id)
 	return nil
 }
 
 // DeleteComponentByResourceName implements Model.
 func (m *modelData) DeleteComponentById(id uuid.UUID) error {
-	_, exists := m.ComponentsByUUID[id]
+	_, exists := m.componentsByUUID[id]
 	if !exists {
 		return ComponentNotFoundError
 	}
-	delete(m.ComponentsByUUID, id)
+	delete(m.componentsByUUID, id)
 	return nil
 }
 
 // DeleteComponentInstanceByResourceName implements Model.
 func (m *modelData) DeleteComponentInstanceById(id uuid.UUID) error {
-	_, exists := m.ComponentInstancesByUUID[id]
+	_, exists := m.componentInstancesByUUID[id]
 	if !exists {
 		return ComponentInstanceNotFoundError
 	}
-	delete(m.ComponentInstancesByUUID, id)
+	delete(m.componentInstancesByUUID, id)
 	return nil
 }
 
 // DeleteSystemInstanceByResourceName implements Model.
 func (m *modelData) DeleteSystemInstanceById(id uuid.UUID) error {
-	_, exists := m.SystemInstancesByUUID[id]
+	_, exists := m.systemInstancesByUUID[id]
 	if !exists {
 		return SystemInstanceNotFoundError
 	}
-	delete(m.SystemInstancesByUUID, id)
+	delete(m.systemInstancesByUUID, id)
 	return nil
 }
 
 // GetApiById implements Model.
 func (m *modelData) GetApiById(id uuid.UUID) *API {
-	api, exists := m.APIsByUUID[id]
+	api, exists := m.apisByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -506,8 +503,8 @@ func (m *modelData) GetApiById(id uuid.UUID) *API {
 }
 
 // GetApiInstanceById implements Model.
-func (m *modelData) GetApiInstanceById(id uuid.UUID) *APIInstance {
-	instance, exists := m.APIInstancesByUUID[id]
+func (m *modelData) GetApiInstanceById(id uuid.UUID) *ApiInstance {
+	instance, exists := m.apiInstancesByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -516,7 +513,7 @@ func (m *modelData) GetApiInstanceById(id uuid.UUID) *APIInstance {
 
 // GetComponentById implements Model.
 func (m *modelData) GetComponentById(id uuid.UUID) *Component {
-	comp, exists := m.ComponentsByUUID[id]
+	comp, exists := m.componentsByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -525,7 +522,7 @@ func (m *modelData) GetComponentById(id uuid.UUID) *Component {
 
 // GetComponentInstanceById implements Model.
 func (m *modelData) GetComponentInstanceById(id uuid.UUID) *ComponentInstance {
-	instance, exists := m.ComponentInstancesByUUID[id]
+	instance, exists := m.componentInstancesByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -534,7 +531,7 @@ func (m *modelData) GetComponentInstanceById(id uuid.UUID) *ComponentInstance {
 
 // GetSystemInstanceById implements Model.
 func (m *modelData) GetSystemInstanceById(id uuid.UUID) *SystemInstance {
-	instance, exists := m.SystemInstancesByUUID[id]
+	instance, exists := m.systemInstancesByUUID[id]
 	if !exists {
 		return nil
 	}
@@ -542,50 +539,50 @@ func (m *modelData) GetSystemInstanceById(id uuid.UUID) *SystemInstance {
 }
 
 // GetApiInstances implements Model.
-func (m *modelData) GetApiInstances() ([]*APIInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.APIInstancesByUUID))
+func (m *modelData) GetApiInstances() ([]*ApiInstance, error) {
+	instanceArr := slices.Collect(maps.Values(m.apiInstancesByUUID))
 	return instanceArr, nil
 }
 
 // GetApis implements Model.
 func (m *modelData) GetApis() ([]*API, error) {
-	apiArr := slices.Collect(maps.Values(m.APIsByUUID))
+	apiArr := slices.Collect(maps.Values(m.apisByUUID))
 	return apiArr, nil
 }
 
 // GetComponentInstances implements Model.
 func (m *modelData) GetComponentInstances() ([]*ComponentInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.ComponentInstancesByUUID))
+	instanceArr := slices.Collect(maps.Values(m.componentInstancesByUUID))
 	return instanceArr, nil
 }
 
 // GetComponents implements Model.
 func (m *modelData) GetComponents() ([]*Component, error) {
-	componentArr := slices.Collect(maps.Values(m.ComponentsByUUID))
+	componentArr := slices.Collect(maps.Values(m.componentsByUUID))
 	return componentArr, nil
 }
 
 // GetSystemInstances implements Model.
 func (m *modelData) GetSystemInstances() ([]*SystemInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.SystemInstancesByUUID))
+	instanceArr := slices.Collect(maps.Values(m.systemInstancesByUUID))
 	return instanceArr, nil
 }
 
 // GetFindings implements Model.
 func (m modelData) GetFindings() ([]*Finding, error) {
-	findingArr := slices.Collect(maps.Values(m.FindingsByUUID))
+	findingArr := slices.Collect(maps.Values(m.findingsByUUID))
 	return findingArr, nil
 }
 
 // AddFinding implements Model.
 func (m *modelData) AddFinding(finding *Finding, name string) error {
-	m.FindingsByUUID[finding.FindingId] = finding
+	m.findingsByUUID[finding.FindingId] = finding
 	return nil
 }
 
 // GetFindingById implements Model.
 func (m *modelData) GetFindingById(id uuid.UUID) *Finding {
-	finding, exists := m.FindingsByUUID[id]
+	finding, exists := m.findingsByUUID[id]
 	if !exists {
 		return nil
 	}

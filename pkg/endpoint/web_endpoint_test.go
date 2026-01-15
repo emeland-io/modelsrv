@@ -8,7 +8,8 @@ import (
 )
 
 func TestStartUIListener(t *testing.T) {
-	backend, err := model.NewModel()
+	sink := events.NewDummySink()
+	backend, err := model.NewModel(sink)
 	if err != nil {
 		t.Fatalf("failed to create model backend: %v", err)
 	}

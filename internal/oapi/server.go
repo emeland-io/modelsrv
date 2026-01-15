@@ -54,6 +54,8 @@ type ApiServer struct {
 var _ StrictServerInterface = (*ApiServer)(nil)
 
 /*
+// TODO: enable templates when HTML rendering is implemented
+
 / /go:embed html_templates/service_list.tmpl
 var serviceListTemplateStr string
 var serviceListTemplate = template.Must(template.New("serviceList").Parse(serviceListTemplateStr))
@@ -470,10 +472,13 @@ func (a *ApiServer) GetLandscapeSystems(ctx context.Context, request GetLandscap
 	respBody := []InstanceListItem{}
 
 	for _, system := range systemArr {
-		reference := fmt.Sprintf("%s/landscape/systems/%s", a.BaseURL, system.SystemId.String())
+		systemId := system.GetSystemId()
+		displayName := system.GetDisplayName()
+		reference := fmt.Sprintf("%s/landscape/systems/%s", a.BaseURL, systemId.String())
+
 		item := InstanceListItem{
-			InstanceId:  &system.SystemId,
-			DisplayName: &system.DisplayName,
+			InstanceId:  &systemId,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -490,11 +495,15 @@ func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request Get
 		return GetLandscapeSystemsSystemId404JSONResponse(errorstr), nil
 	}
 
+	systemId := system.GetSystemId()
+	displayName := system.GetDisplayName()
+	description := system.GetDescription()
+
 	respBody := System{
-		SystemId:    &system.SystemId,
-		DisplayName: system.DisplayName,
-		Description: &system.Description,
-		Annotations: cloneAnnotations(system.Annotations),
+		SystemId:    &systemId,
+		DisplayName: displayName,
+		Description: &description,
+		Annotations: cloneAnnotations2(system.GetAnnotations()),
 	}
 
 	return GetLandscapeSystemsSystemId200JSONResponse(respBody), nil
@@ -507,6 +516,22 @@ func (a *ApiServer) GetTest(ctx context.Context, request GetTestRequestObject) (
 
 // PostEventsRegister implements StrictServerInterface.
 func (a *ApiServer) PostEventsRegister(ctx context.Context, request PostEventsRegisterRequestObject) (PostEventsRegisterResponseObject, error) {
+	a.Events.AddSubscriber(request.Body.CallbackUrl)
+
+	return PostEventsRegister201Response{}, nil
+}
+
+// PostEventsUnregister implements [StrictServerInterface].
+func (a *ApiServer) PostEventsUnregister(ctx context.Context, request PostEventsUnregisterRequestObject) (PostEventsUnregisterResponseObject, error) {
+	error := a.Events.RemoveSubscriber(request.Body.CallbackUrl)
+	if error != nil {
+		return PostEventsUnregister404JSONResponse(error.Error()), nil
+	}
+	return PostEventsUnregister200Response{}, nil
+}
+
+// GetEventsSubscribers implements [StrictServerInterface].
+func (a *ApiServer) GetEventsSubscribers(ctx context.Context, request GetEventsSubscribersRequestObject) (GetEventsSubscribersResponseObject, error) {
 	panic("unimplemented")
 }
 
@@ -541,10 +566,12 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 	respBody := []InstanceListItem{}
 
 	for _, context := range contextArr {
-		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.ContextId.String())
+		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.GetContextId().String())
+		displayName := context.GetDisplayName()
+		contextId := context.GetContextId()
 		item := InstanceListItem{
-			InstanceId:  &context.ContextId,
-			DisplayName: &context.DisplayName,
+			InstanceId:  &contextId,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -561,10 +588,13 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 		return GetLandscapeContextsContextId404JSONResponse(errorstr), nil
 	}
 
+	displayName := context.GetDisplayName()
+	contextId := context.GetContextId()
+
 	respBody := Context{
-		ContextId:   context.ContextId,
-		DisplayName: context.DisplayName,
-		Annotations: cloneAnnotations(context.Annotations),
+		ContextId:   contextId,
+		DisplayName: displayName,
+		Annotations: cloneAnnotations2(context.GetAnnotations()),
 	}
 
 	return GetLandscapeContextsContextId200JSONResponse(respBody), nil

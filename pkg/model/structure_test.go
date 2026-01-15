@@ -1,4 +1,4 @@
-package model
+package model_test
 
 import (
 	"testing"
@@ -6,27 +6,15 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"gitlab.com/emeland/modelsrv/pkg/events"
+	"gitlab.com/emeland/modelsrv/pkg/model"
 )
-
-func TestNewModel(t *testing.T) {
-	model, err := NewModel()
-	assert.NoError(t, err, "NewModel should not return an error")
-	assert.NotNil(t, model, "NewModel should return a non-nil model")
-
-	// Verify all maps are initialized
-	assert.NotNil(t, model.SystemsByUUID, "SystemsByUUID map should be initialized")
-	assert.NotNil(t, model.APIsByUUID, "APIsByUUID map should be initialized")
-	assert.NotNil(t, model.ComponentsByUUID, "ComponentsByUUID map should be initialized")
-	assert.NotNil(t, model.SystemInstancesByUUID, "SystemInstances map should be initialized")
-	assert.NotNil(t, model.APIInstancesByUUID, "APIInstances map should be initialized")
-	assert.NotNil(t, model.ComponentInstancesByUUID, "ComponentInstances map should be initialized")
-}
 
 func TestVersion(t *testing.T) {
 	now := time.Now()
 	future := now.Add(24 * time.Hour)
 
-	version := Version{
+	version := model.Version{
 		Version:        "1.0.0",
 		AvailableFrom:  &now,
 		DeprecatedFrom: &future,
@@ -40,7 +28,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestEntityVersion(t *testing.T) {
-	ev := EntityVersion{
+	ev := model.EntityVersion{
 		Name:    "test-entity",
 		Version: "1.0.0",
 	}
@@ -49,54 +37,17 @@ func TestEntityVersion(t *testing.T) {
 	assert.Equal(t, "1.0.0", ev.Version)
 }
 
-func TestSystem(t *testing.T) {
-	sysId := uuid.New()
-	version := Version{Version: "1.0.0"}
-
-	system := System{
-		DisplayName: "test-system",
-		Description: "Test System Description",
-		SystemId:    sysId,
-		Version:     version,
-		Abstract:    false,
-		Annotations: map[string]string{"key": "value"},
-	}
-
-	assert.Equal(t, "test-system", system.DisplayName)
-	assert.Equal(t, "Test System Description", system.Description)
-	assert.Equal(t, sysId, system.SystemId)
-	assert.Equal(t, version, system.Version)
-	assert.False(t, system.Abstract)
-	assert.Equal(t, "value", system.Annotations["key"])
-}
-
-func TestSystemRef(t *testing.T) {
-	sysId := uuid.New()
-	system := &System{DisplayName: "test-system"}
-	ev := &EntityVersion{Name: "test-system", Version: "1.0.0"}
-
-	sysRef := SystemRef{
-		System:    system,
-		SystemId:  sysId,
-		SystemRef: ev,
-	}
-
-	assert.Equal(t, system, sysRef.System)
-	assert.Equal(t, sysId, sysRef.SystemId)
-	assert.Equal(t, ev, sysRef.SystemRef)
-}
-
 func TestApiType(t *testing.T) {
 	tests := []struct {
-		apiType  ApiType
+		apiType  model.ApiType
 		expected string
 	}{
-		{Unknown, "Unknown"},
-		{OpenAPI, "OpenAPI"},
-		{GraphQL, "GraphQL"},
-		{gRPC, "gRPC"},
-		{Other, "Other"},
-		{ApiType(99), "Unknown"}, // Invalid value should return Unknown
+		{model.Unknown, "Unknown"},
+		{model.OpenAPI, "OpenAPI"},
+		{model.GraphQL, "GraphQL"},
+		{model.GRPC, "GRPC"},
+		{model.Other, "Other"},
+		{model.ApiType(99), "Unknown"}, // Invalid value should return Unknown
 	}
 
 	for _, test := range tests {
@@ -107,15 +58,18 @@ func TestApiType(t *testing.T) {
 
 func TestAPI(t *testing.T) {
 	apiId := uuid.New()
-	version := Version{Version: "1.0.0"}
-	system := &SystemRef{System: &System{DisplayName: "test-system"}}
+	version := model.Version{Version: "1.0.0"}
+	testModel, err := model.NewModel(events.NewListSink())
+	assert.NoError(t, err)
+	systemId, _ := uuid.NewUUID()
+	system := &model.SystemRef{System: model.MakeTestSystem(testModel, systemId, "a test system", model.Version{})}
 
-	api := API{
+	api := model.API{
 		DisplayName: "test-api",
 		Description: "Test API Description",
 		ApiId:       apiId,
 		Version:     version,
-		Type:        OpenAPI,
+		Type:        model.OpenAPI,
 		System:      system,
 		Annotations: map[string]string{"key": "value"},
 	}
@@ -124,23 +78,23 @@ func TestAPI(t *testing.T) {
 	assert.Equal(t, "Test API Description", api.Description)
 	assert.Equal(t, apiId, api.ApiId)
 	assert.Equal(t, version, api.Version)
-	assert.Equal(t, OpenAPI, api.Type)
+	assert.Equal(t, model.OpenAPI, api.Type)
 	assert.Equal(t, system, api.System)
 	assert.Equal(t, "value", api.Annotations["key"])
 }
 
 func TestComponent(t *testing.T) {
 	componentId := uuid.New()
-	version := Version{Version: "1.0.0"}
-	apiRef := ApiRef{API: &API{DisplayName: "test-api"}}
+	version := model.Version{Version: "1.0.0"}
+	apiRef := model.ApiRef{API: &model.API{DisplayName: "test-api"}}
 
-	component := Component{
+	component := model.Component{
 		DisplayName: "test-component",
 		Description: "Test Component Description",
 		ComponentId: componentId,
 		Version:     version,
-		Consumes:    []ApiRef{apiRef},
-		Provides:    []ApiRef{apiRef},
+		Consumes:    []model.ApiRef{apiRef},
+		Provides:    []model.ApiRef{apiRef},
 		Annotations: map[string]string{"key": "value"},
 	}
 
@@ -156,11 +110,15 @@ func TestComponent(t *testing.T) {
 }
 
 func TestSystemInstance(t *testing.T) {
+	testModel, err := model.NewModel(events.NewListSink())
+	assert.NoError(t, err)
 	instanceId := uuid.New()
-	system := &System{DisplayName: "test-system"}
-	sysRef := &SystemRef{System: system}
+	systemId, _ := uuid.NewUUID()
+	system := model.MakeTestSystem(testModel, systemId, "test-system", model.Version{})
 
-	instance := SystemInstance{
+	sysRef := &model.SystemRef{System: system}
+
+	instance := model.SystemInstance{
 		DisplayName: "test-instance",
 		InstanceId:  instanceId,
 		SystemRef:   sysRef,
@@ -174,203 +132,207 @@ func TestSystemInstance(t *testing.T) {
 }
 
 func TestDeleteSystemById(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 	systemId := uuid.New()
 
 	// Test deleting non-existent system
-	err = model.DeleteSystemById(uuid.New())
-	assert.Equal(t, SystemNotFoundError, err)
+	err = testModel.DeleteSystemById(uuid.New())
+	assert.Equal(t, model.SystemNotFoundError, err)
 
 	// Add a system and verify it exists
-	sys := &System{
-		SystemId:    systemId,
-		DisplayName: "test-system",
-	}
-	err = model.AddSystem(sys)
+	sys := model.MakeTestSystem(testModel, systemId, "test-system", model.Version{})
+
+	err = testModel.AddSystem(sys)
 	assert.NoError(t, err)
-	assert.NotNil(t, model.GetSystemById(systemId))
+	assert.NotNil(t, testModel.GetSystemById(systemId))
 
 	// Delete the system
-	err = model.DeleteSystemById(systemId)
+	err = testModel.DeleteSystemById(systemId)
 	assert.NoError(t, err)
 
 	// Verify system was deleted
-	assert.Nil(t, model.GetSystemById(systemId))
+	assert.Nil(t, testModel.GetSystemById(systemId))
 
 	// Try deleting again should return error
-	err = model.DeleteSystemById(systemId)
-	assert.Equal(t, SystemNotFoundError, err)
+	err = testModel.DeleteSystemById(systemId)
+	assert.Equal(t, model.SystemNotFoundError, err)
 }
 
 func TestGetSystemBySystemId(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	sysId := uuid.New()
-	sys := &System{
-		DisplayName: "test-system",
-		SystemId:    sysId,
-	}
+	sys := model.MakeTestSystem(testModel, sysId, "test-system", model.Version{})
 
 	// Test getting non-existent system
-	assert.Nil(t, model.GetSystemById(sysId))
+	assert.Nil(t, testModel.GetSystemById(sysId))
 
 	// Add system and verify it can be retrieved by UUID
-	err = model.AddSystem(sys)
+	err = testModel.AddSystem(sys)
 	assert.NoError(t, err)
 
-	retrieved := model.GetSystemById(sysId)
+	retrieved := testModel.GetSystemById(sysId)
 	assert.NotNil(t, retrieved)
 	assert.Equal(t, sys, retrieved)
 }
 
 func TestAPIOperations(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	api := &API{
+	api := &model.API{
 		DisplayName: "test-api",
 		ApiId:       apiId,
-		Type:        OpenAPI,
+		Type:        model.OpenAPI,
 	}
 
 	// Test getting non-existent API
-	assert.Nil(t, model.GetApiById(apiId))
+	assert.Nil(t, testModel.GetApiById(apiId))
 
 	// Add API and verify it exists
-	err = model.AddApi(api)
+	err = testModel.AddApi(api)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, api, model.GetApiById(apiId))
+	assert.Equal(t, api, testModel.GetApiById(apiId))
 
 	// Delete API and verify it's gone
-	err = model.DeleteApiById(apiId)
+	err = testModel.DeleteApiById(apiId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetApiById(apiId))
+	assert.Nil(t, testModel.GetApiById(apiId))
 }
 
 func TestComponentOperations(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	componentId := uuid.New()
-	component := &Component{
+	component := &model.Component{
 		DisplayName: "test-component",
 		ComponentId: componentId,
 	}
 
 	// Test getting non-existent component
-	assert.Nil(t, model.GetComponentById(componentId))
+	assert.Nil(t, testModel.GetComponentById(componentId))
 
 	// Add component and verify it exists
-	err = model.AddComponent(component)
+	err = testModel.AddComponent(component)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, component, model.GetComponentById(componentId))
+	assert.Equal(t, component, testModel.GetComponentById(componentId))
 
 	// Delete component and verify it's gone
-	err = model.DeleteComponentById(componentId)
+	err = testModel.DeleteComponentById(componentId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetComponentById(componentId))
+	assert.Nil(t, testModel.GetComponentById(componentId))
 }
 
 func TestSystemInstanceOperations(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	sysRef := SystemRef{System: &System{DisplayName: "test-system"}}
-	instance := &SystemInstance{
+	systemId := uuid.New()
+	sysRef := &model.SystemRef{System: model.MakeTestSystem(testModel, systemId, "test-system", model.Version{})}
+
+	instance := &model.SystemInstance{
 		DisplayName: "test-instance",
 		InstanceId:  instanceId,
-		SystemRef:   &sysRef,
+		SystemRef:   sysRef,
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetSystemInstanceById(instanceId))
+	assert.Nil(t, testModel.GetSystemInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddSystemInstance(instance)
+	err = testModel.AddSystemInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetSystemInstanceById(instanceId))
+	assert.Equal(t, instance, testModel.GetSystemInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteSystemInstanceById(instanceId)
+	err = testModel.DeleteSystemInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetSystemInstanceById(instanceId))
+	assert.Nil(t, testModel.GetSystemInstanceById(instanceId))
 }
 
 func TestAPIInstanceOperations(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	apiRef := ApiRef{API: &API{DisplayName: "test-api"}}
-	instance := &APIInstance{
+	apiRef := model.ApiRef{API: &model.API{DisplayName: "test-api"}}
+	instance := &model.ApiInstance{
 		DisplayName: "test-instance",
 		InstanceId:  instanceId,
 		ApiRef:      &apiRef,
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetApiInstanceById(instanceId))
+	assert.Nil(t, testModel.GetApiInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddApiInstance(instance)
+	err = testModel.AddApiInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetApiInstanceById(instanceId))
+	assert.Equal(t, instance, testModel.GetApiInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteApiInstanceById(instanceId)
+	err = testModel.DeleteApiInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetApiInstanceById(instanceId))
+	assert.Nil(t, testModel.GetApiInstanceById(instanceId))
 }
 
 func TestComponentInstanceOperations(t *testing.T) {
-	model, err := NewModel()
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	componentRef := &ComponentRef{
+	componentRef := &model.ComponentRef{
 		Component:   nil,
 		ComponentId: uuid.New(),
 	}
-	instance := &ComponentInstance{
+	instance := &model.ComponentInstance{
 		DisplayName:  "test-instance",
 		InstanceId:   instanceId,
 		ComponentRef: componentRef,
 	}
 
 	// Test getting non-existent instance
-	assert.Nil(t, model.GetComponentInstanceById(instanceId))
+	assert.Nil(t, testModel.GetComponentInstanceById(instanceId))
 
 	// Add instance and verify it exists
-	err = model.AddComponentInstance(instance)
+	err = testModel.AddComponentInstance(instance)
 	assert.NoError(t, err)
 
 	// Verify retrieval by name and ID
-	assert.Equal(t, instance, model.GetComponentInstanceById(instanceId))
+	assert.Equal(t, instance, testModel.GetComponentInstanceById(instanceId))
 
 	// Delete instance and verify it's gone
-	err = model.DeleteComponentInstanceById(instanceId)
+	err = testModel.DeleteComponentInstanceById(instanceId)
 	assert.NoError(t, err)
-	assert.Nil(t, model.GetComponentInstanceById(instanceId))
+	assert.Nil(t, testModel.GetComponentInstanceById(instanceId))
 }
 
 func TestApiRef(t *testing.T) {
 	apiId := uuid.New()
-	api := &API{DisplayName: "test-api"}
-	ev := &EntityVersion{Name: "test-api", Version: "1.0.0"}
+	api := &model.API{DisplayName: "test-api"}
+	ev := &model.EntityVersion{Name: "test-api", Version: "1.0.0"}
 
-	apiRef := ApiRef{
+	apiRef := model.ApiRef{
 		API:    api,
 		ApiID:  apiId,
 		ApiRef: ev,

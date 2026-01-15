@@ -18,22 +18,46 @@ package events
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/google/uuid"
 )
 
+// EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
 	// GetCurrentEventSequenceId returns the current event sequence ID as a string.
 	GetCurrentSequenceId(ctx context.Context) (uint64, error)
 	IncrementSequenceId(ctx context.Context) error
+
+	// SetSinkFactory sets the factory function to create new EventSinks.
+	SetSinkFactory(factory func() (EventSink, error))
+	// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
+	// If no factory has been set, a default [ListSink] is returned.
+	GetSink() (EventSink, error)
+
+	// GetSubscribers returns a list of current subscribers.
+	GetSubscribers() []string
+	// AddSubscriber adds a new subscriber by URL.
+	AddSubscriber(url string) error
+	// RemoveSubscriber removes a subscriber by URL.
+	RemoveSubscriber(url string) error
 }
 
 var _ EventManager = (*eventManager)(nil)
 
 type eventManager struct {
 	sequenceNumber uint64
+	subscribers    []string
+	sinkFactory    func() (EventSink, error)
 }
 
 func NewEventManager() (EventManager, error) {
-	return &eventManager{}, nil
+	retval := &eventManager{
+		sequenceNumber: 0,
+		sinkFactory:    func() (EventSink, error) { return NewListSink(), nil },
+	}
+	return retval, nil
+
 }
 
 // GetCurrentSequenceId implements EventManager.
@@ -45,4 +69,189 @@ func (e *eventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error)
 func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
 	e.sequenceNumber++
 	return nil
+}
+
+// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
+// If no factory has been set, a default [ListSink] is returned.
+//
+// SetSinkFactory implements [EventManager].
+func (e *eventManager) SetSinkFactory(factory func() (EventSink, error)) {
+	e.sinkFactory = factory
+}
+
+// GetSink implements [EventManager].
+func (e *eventManager) GetSink() (EventSink, error) {
+	return NewListSink(), nil
+}
+
+// AddSubscriber implements [EventManager].
+// adding the same subscriber URL again will result in only one entry in the subscriber list.
+func (e *eventManager) AddSubscriber(url string) error {
+	for _, sub := range e.subscribers {
+		if sub == url {
+			// already exists
+			return nil
+		}
+	}
+	e.subscribers = append(e.subscribers, url)
+	return nil
+}
+
+// GetSubscribers implements [EventManager].
+func (e *eventManager) GetSubscribers() []string {
+	return e.subscribers
+}
+
+// RemoveSubscriber implements [EventManager].
+// TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
+func (e *eventManager) RemoveSubscriber(url string) error {
+	for i, sub := range e.subscribers {
+		if sub == url {
+			// remove subscriber
+			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("subscriber %s not found", url)
+}
+
+type ResourceType int
+
+const (
+	UnknownResourceType ResourceType = iota
+	// Phase 0
+	ContextResource
+	// Phase 1
+	SystemResource
+	SystemInstanceResource
+	APIResource
+	APIInstanceResource
+	ComponentResource
+	ComponentInstanceResource
+
+	// Value objects
+	AnnotationsResource
+)
+
+var resourceTypeValues = map[ResourceType]string{
+	UnknownResourceType: "UnknownResourceType",
+
+	// Phase 0: Contexts
+	ContextResource: "Context",
+
+	// Phase 1:
+	SystemResource:            "System",
+	SystemInstanceResource:    "SystemInstance",
+	APIResource:               "API",
+	APIInstanceResource:       "APIInstance",
+	ComponentResource:         "Component",
+	ComponentInstanceResource: "ComponentInstance",
+
+	// Value objects
+	AnnotationsResource: "Annotations",
+}
+
+func ParseResourceType(s string) ResourceType {
+	for key, val := range resourceTypeValues {
+		if val == s {
+			return key
+		}
+	}
+	return UnknownResourceType
+}
+
+func (t ResourceType) String() string {
+	if val, ok := resourceTypeValues[t]; ok {
+		return val
+	}
+	return resourceTypeValues[UnknownResourceType]
+}
+
+type Operation int
+
+const (
+	UnknownOperation Operation = iota
+	CreateOperation
+	UpdateOperation
+	DeleteOperation
+)
+
+var operationValues = map[Operation]string{
+	UnknownOperation: "UnknownOperation",
+	CreateOperation:  "CreateOperation",
+	UpdateOperation:  "UpdateOperation",
+	DeleteOperation:  "DeleteOperation",
+}
+
+func ParseOperation(s string) Operation {
+	for key, val := range operationValues {
+		if val == s {
+			return key
+		}
+	}
+	return UnknownOperation
+}
+
+func (o Operation) String() string {
+	if val, ok := operationValues[o]; ok {
+		return val
+	}
+	return operationValues[UnknownOperation]
+}
+
+type EventSink interface {
+	Receive(resType ResourceType, op Operation, resourceId uuid.UUID, object ...any) error
+}
+
+type dummySink struct {
+}
+
+// ensure Model interface is implemented correctly
+var _ EventSink = (*dummySink)(nil)
+
+func NewDummySink() EventSink {
+	return &dummySink{}
+}
+
+// Receive implements [EventSink].
+func (d *dummySink) Receive(resType ResourceType, op Operation, resourceId uuid.UUID, object ...any) error {
+	// just do nothing
+
+	return nil
+}
+
+type ListSink struct {
+	events []string
+}
+
+var _ EventSink = (*ListSink)(nil)
+
+func NewListSink() *ListSink {
+	return &ListSink{
+		events: make([]string, 0),
+	}
+}
+
+// Receive implements [EventSink].
+func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.UUID, object ...any) error {
+	var eventString string
+	if op == DeleteOperation {
+		eventString = fmt.Sprintf("%s: %s %s", op.String(), resType.String(), resourceId.String())
+	} else {
+		eventString = fmt.Sprintf("%s: %s %s: %s", op.String(), resType.String(), resourceId.String(), object)
+	}
+
+	l.events = append(l.events, eventString)
+
+	return nil
+}
+
+func (l *ListSink) PrintList() {
+	for str := range l.events {
+		fmt.Println(str)
+	}
+}
+
+func (l *ListSink) GetList() []string {
+	return l.events
 }

@@ -37,7 +37,15 @@ var _ = Describe("Client", Ordered, func() {
 	BeforeAll(func() {
 		var err error
 		By("starting a model server")
-		testModel, err = model.NewModel()
+
+		testEvents, err = events.NewEventManager()
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(testEvents).NotTo(BeNil())
+
+		sink, err := testEvents.GetSink()
+		Expect(err).ShouldNot(HaveOccurred())
+
+		testModel, err = model.NewModel(sink)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testModel).NotTo(BeNil())
 
@@ -236,19 +244,15 @@ var _ = Describe("Client", Ordered, func() {
 func loadModel(target model.Model) error {
 	// create simple System with single Component and API
 
-	context := &model.Context{
-		DisplayName: "Test Context",
-		ContextId:   contextId,
-	}
+	context := model.NewContext(target, contextId)
+	context.SetDisplayName("Test Context")
+
 	err := target.AddContext(context)
 	if err != nil {
 		return err
 	}
 
-	system := &model.System{
-		DisplayName: "Test System",
-		SystemId:    systemId,
-	}
+	system := model.MakeTestSystem(target, systemId, "Test System", model.Version{})
 	err = target.AddSystem(system)
 	if err != nil {
 		return err
@@ -290,7 +294,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	apiInstance := &model.APIInstance{
+	apiInstance := &model.ApiInstance{
 		DisplayName: "Test ApiInstance",
 		InstanceId:  apiInstanceId,
 		ApiRef: &model.ApiRef{
