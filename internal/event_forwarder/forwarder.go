@@ -5,10 +5,10 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"gitlab.com/emeland/modelsrv/internal/util"
-	"gitlab.com/emeland/modelsrv/pkg/client"
-	"gitlab.com/emeland/modelsrv/pkg/events"
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/internal/util"
+	"go.emeland.io/modelsrv/pkg/client"
+	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 type event struct {

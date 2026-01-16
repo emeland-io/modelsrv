@@ -23,7 +23,7 @@ import (
 	"strings"
 	"text/template"
 
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 func acceptsHTML(ctx context.Context) bool {

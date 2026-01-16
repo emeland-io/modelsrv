@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"gitlab.com/emeland/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/events"
 )
 
 // ensure System interface is implemented correctly

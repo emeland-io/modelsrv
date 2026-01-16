@@ -1,4 +1,4 @@
-module gitlab.com/emeland/modelsrv
+module go.emeland.io/modelsrv
 
 go 1.24.0
 

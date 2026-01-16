@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/emeland/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/events"
 )
 
 // These are tests that are only possible within the package itself

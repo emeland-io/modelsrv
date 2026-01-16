@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/emeland/modelsrv/internal/util"
+	"go.emeland.io/modelsrv/internal/util"
 )
 
 func TestEnqueueDequeue(t *testing.T) {
