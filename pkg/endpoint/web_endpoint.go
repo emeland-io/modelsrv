@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"gitlab.com/emeland/modelsrv/internal/oapi"
-	"gitlab.com/emeland/modelsrv/pkg/events"
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model"
 	"go.uber.org/zap"
 )
 

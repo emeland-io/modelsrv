@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"gitlab.com/emeland/modelsrv/pkg/endpoint"
-	"gitlab.com/emeland/modelsrv/pkg/events"
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/endpoint"
+	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 var serviceAddr string

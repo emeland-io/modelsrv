@@ -31,9 +31,9 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"gitlab.com/emeland/modelsrv/internal/oapi"
-	"gitlab.com/emeland/modelsrv/pkg/events"
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 var ctx context.Context

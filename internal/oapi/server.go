@@ -29,8 +29,8 @@ import (
 
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	"github.com/oapi-codegen/runtime/types"
-	"gitlab.com/emeland/modelsrv/pkg/events"
-	"gitlab.com/emeland/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 type ContextLabel string

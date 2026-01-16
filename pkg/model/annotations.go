@@ -5,7 +5,7 @@ import (
 	"maps"
 
 	"github.com/google/uuid"
-	"gitlab.com/emeland/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/events"
 )
 
 // ensure Annotations interface is implemented correctly
