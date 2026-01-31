@@ -51,6 +51,8 @@ type ApiServer struct {
 	BaseURL string
 }
 
+// GetLandscapeContextTypes implements [StrictServerInterface].
+
 var _ StrictServerInterface = (*ApiServer)(nil)
 
 /*
@@ -598,4 +600,43 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 	}
 
 	return GetLandscapeContextsContextId200JSONResponse(respBody), nil
+}
+
+func (a *ApiServer) GetLandscapeContextTypes(ctx context.Context, request GetLandscapeContextTypesRequestObject) (GetLandscapeContextTypesResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeContextTypesContextTypeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeContextTypesContextTypeId(ctx context.Context, request GetLandscapeContextTypesContextTypeIdRequestObject) (GetLandscapeContextTypesContextTypeIdResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeNodeTypes implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeNodeTypes(ctx context.Context, request GetLandscapeNodeTypesRequestObject) (GetLandscapeNodeTypesResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeNodeTypesNodeTypeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeNodeTypesNodeTypeId(ctx context.Context, request GetLandscapeNodeTypesNodeTypeIdRequestObject) (GetLandscapeNodeTypesNodeTypeIdResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeNodes implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeNodes(ctx context.Context, request GetLandscapeNodesRequestObject) (GetLandscapeNodesResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeNodesNodeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeNodesNodeId(ctx context.Context, request GetLandscapeNodesNodeIdRequestObject) (GetLandscapeNodesNodeIdResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeFindingTypes implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFindingTypes(ctx context.Context, request GetLandscapeFindingTypesRequestObject) (GetLandscapeFindingTypesResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeFindingTypesFindingTypeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, request GetLandscapeFindingTypesFindingTypeIdRequestObject) (GetLandscapeFindingTypesFindingTypeIdResponseObject, error) {
+	panic("unimplemented")
 }
