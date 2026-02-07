@@ -1,0 +1,35 @@
+version: emeland.io/v1alpha1
+kind: System
+spec:
+  systemId: b4eaa9f0-0242-4a26-9496-fa2b1a3b9330
+  displayName: Simple System
+  description: A simple system with two services and one database.
+  version: 
+    version: 1.0.0
+    availableFrom: 2027-01-01T00:00:00Z
+    deprecatedFrom: 2028-01-01T00:00:00Z
+    retiredFrom: 2029-01-01T00:00:00Z
+  abstract: false
+  # parent: # Reference to a parent system if this is a subsystem.
+  annotations:
+    owner: team-alpha
+    environment: production
+
+---
+
+version: emeland.io/v1alpha1
+kind: Component
+spec:
+  componentId: 104e9a87-817d-486a-b834-5a70e8c4f68a
+  systemId: b4eaa9f0-0242-4a26-9496-fa2b1a3b9330
+  displayName: Service A
+  description: A simple microservice that provides functionality A.
+  annotations:
+    owner: team-alpha
+
+---
+version: emeland.io/v1alpha1
+kind: API
+spec:
+  apiId: c649f2f3-462b-4a6d-8337-0d2e7403c44d
+  systemId: b4eaa9f0-0242-4a26-9496-fa2b1a3b9330

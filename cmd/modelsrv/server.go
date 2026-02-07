@@ -14,8 +14,8 @@ var serviceAddr string
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "start a model server instance",
-	Long:  `start a model server instance that serves the model via REST API and provides a minimal web UI.`,
+	Short: "minimal model server for the Emerging Enterprise Landscape (EmELand).",
+	Long:  `minimal model server instance that serves the model via REST API and provides a minimal web UI.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
 		eventMgr, err := events.NewEventManager()

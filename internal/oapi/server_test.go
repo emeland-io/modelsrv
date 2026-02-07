@@ -41,14 +41,36 @@ var cancel context.CancelFunc
 var backend model.Model
 var eventMgr events.EventManager
 
+// Phase 0 test data
+var contextId uuid.UUID = uuid.New()
+var parentContextId uuid.UUID = uuid.New()
+var contextTypeId uuid.UUID = uuid.New()
+var nodeId uuid.UUID = uuid.New()
+var nodeTypeId uuid.UUID = uuid.New()
+
+// Phase 1 test data
 var apiInstanceId uuid.UUID = uuid.New()
 var apiId uuid.UUID = uuid.New()
 var componentInstanceId uuid.UUID = uuid.New()
 var componentId uuid.UUID = uuid.New()
-var findingId uuid.UUID = uuid.New()
 var systemId uuid.UUID = uuid.New()
 var systemInstanceId uuid.UUID = uuid.New()
-var contextId uuid.UUID = uuid.New()
+
+// Phase 2 test data
+
+// Phase 3 test data
+
+// Phase 4 test data
+var findingId uuid.UUID = uuid.New()
+var findingTypeId uuid.UUID = uuid.New()
+
+// Phase 5 test data
+
+// Phase 6 test data
+
+// Phase 7 test data
+
+// Phase 8 test data
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -66,9 +88,33 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
-	context := model.NewContext(backend, contextId)
+	contextType := model.NewContextType(backend, contextTypeId)
+	contextType.SetDisplayName("Test Context Type")
+	contextType.SetDescription("A test context type for testing purposes")
+	err = backend.AddContextType(contextType)
+	Expect(err).NotTo(HaveOccurred())
 
+	context := model.NewContext(backend, contextId)
+	context.SetParentById(parentContextId)
+	context.SetDisplayName("the real test context")
+	// TODO: not implemented yet
+	// context.SetTypeById(contextTypeId)
 	err = backend.AddContext(context)
+	Expect(err).NotTo(HaveOccurred())
+
+	parentContext := model.NewContext(backend, parentContextId)
+	err = backend.AddContext(parentContext)
+	Expect(err).NotTo(HaveOccurred())
+
+	node := model.NewNode(backend, nodeId)
+	node.SetNodeTypeById(nodeTypeId)
+	err = backend.AddNode(node)
+	Expect(err).NotTo(HaveOccurred())
+
+	nodeType := model.NewNodeType(backend, nodeTypeId)
+	nodeType.SetDisplayName("Test Node Type")
+	nodeType.SetDescription("A test node type for testing purposes")
+	err = backend.AddNodeType(nodeType)
 	Expect(err).NotTo(HaveOccurred())
 
 	api := model.API{
@@ -167,6 +213,12 @@ var _ = BeforeSuite(func() {
 		Annotations: map[string]string{},
 	}
 	err = backend.AddFinding(&finding, finding.Summary)
+	Expect(err).NotTo(HaveOccurred())
+
+	findingType := model.NewFindingType(backend, findingTypeId)
+	findingType.SetDisplayName("Test Finding Type")
+	findingType.SetDescription("A test finding type for testing purposes")
+	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
 	eventMgr, err = events.NewEventManager()
@@ -589,8 +641,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(len(finding.Resources)).To(Equal(2))
 	})
 
-	It("should call GET on /landscape/contexts", func() {
-		url := "http://localhost/landscape/contexts"
+	It("should call GET on /landscape/findingTypes", func() {
+		url := "http://localhost/landscape/findingTypes"
 		req := httptest.NewRequest("GET", url, nil)
 		w := httptest.NewRecorder()
 
@@ -602,18 +654,18 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr oapi.InstanceList
-		err = json.Unmarshal(body, &instanceArr)
+		var findingArr oapi.InstanceList
+		err = json.Unmarshal(body, &findingArr)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(instanceArr)).To(Equal(1))
+		Expect(len(findingArr)).To(Equal(1))
 
-		Expect(*(instanceArr[0].InstanceId)).To(Equal(contextId))
-		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())))
+		Expect(*(findingArr[0].InstanceId)).To(Equal(findingTypeId))
+		Expect(*(findingArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/findingTypes/%s", findingTypeId.String())))
 
 	})
 
-	It("should call GET on /landscape/contexts/{contextId}", func() {
-		url := fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())
+	It("should call GET on /landscape/findingTypes/{findingTypeId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/findingTypes/%s", findingTypeId.String())
 		req := httptest.NewRequest("GET", url, nil)
 		w := httptest.NewRecorder()
 
@@ -625,10 +677,11 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var context oapi.Context
-		err = json.Unmarshal(body, &context)
+		var findingType oapi.FindingType
+		err = json.Unmarshal(body, &findingType)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(context.ContextId).To(Equal(contextId))
+		Expect(*findingType.FindingTypeId).To(Equal(findingTypeId))
+
 	})
 
 })

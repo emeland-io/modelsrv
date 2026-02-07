@@ -25,11 +25,12 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "modelsrv",
-	Short: "minimal model server for the Emerging Enterprise Landscape (EmELand).",
-	Long: `This is the minimal model server for the Emerging Enterprise Landscape (EmELand) example mapping.
-	It will allow you to query resource objects of your landscape. It will also scrape them from other 
-	EmELand modelservers, which are adapters to special data sources like a Kubernetes cluster or Enterprise
+	Use:   "emelandctl",
+	Short: "The Emerging Enterprise Landscape (EmELand) CLI tool",
+	Long: `This contains multiple tools to work with the Emerging Enterprise Landscape (EmELand) example mapping,
+	including the minimal model server for the EmELand example mapping.
+	It will allow you to query resource objects of your landscape. Furthermore, it will receive daa from other 
+	EmELand model servers, which are adapters to special data sources like a Kubernetes cluster or Enterprise
 	Portal.`,
 }
 

@@ -6,6 +6,11 @@ $(LOCALBIN):
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 
+.PHONY: build
+build: test ## Build the project binary.
+	go build -ldflags "-s -w" -o bin/modelsrv ./cmd/modelsrv
+	go build -ldflags "-s -w" -o bin/emelandctl ./cmd/emelandctl
+
 .PHONY: generate
 generate: 
 	go generate ./...
