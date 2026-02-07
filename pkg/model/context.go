@@ -159,7 +159,7 @@ func (c *contextData) Receive(resType events.ResourceType, op events.Operation, 
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		return c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
 
 	return nil

@@ -119,6 +119,10 @@ type ResourceType int
 
 const (
 	UnknownResourceType ResourceType = iota
+
+	NodeResource
+	NodeTypeResource
+
 	// Phase 0
 	ContextResource
 	ContextTypeResource
@@ -140,6 +144,9 @@ const (
 
 var resourceTypeValues = map[ResourceType]string{
 	UnknownResourceType: "UnknownResourceType",
+
+	NodeResource:     "Node",
+	NodeTypeResource: "NodeType",
 
 	// Phase 0: Contexts
 	ContextResource:     "Context",

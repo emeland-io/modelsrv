@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	NodeNotFoundError              error = fmt.Errorf("Node not found")
+	NodeTypeNotFoundError          error = fmt.Errorf("Node Type not found")
 	ContextNotFoundError           error = fmt.Errorf("Context not found")
 	ContextTypeNotFoundError       error = fmt.Errorf("Context Type not found")
 	SystemNotFoundError            error = fmt.Errorf("System not found")
@@ -28,6 +30,16 @@ var (
 
 type Model interface {
 	getData() *modelData
+
+	AddNode(node Node) error
+	DeleteNodeById(id uuid.UUID) error
+	GetNodes() ([]Node, error)
+	GetNodeById(id uuid.UUID) Node
+
+	AddNodeType(nodeType NodeType) error
+	DeleteNodeTypeById(id uuid.UUID) error
+	GetNodeTypes() ([]NodeType, error)
+	GetNodeTypeById(id uuid.UUID) NodeType
 
 	AddContext(context Context) error
 	DeleteContextById(id uuid.UUID) error
@@ -83,12 +95,16 @@ type Model interface {
 type modelData struct {
 	sink events.EventSink
 
+	nodeTypesByUUID map[uuid.UUID]NodeType
+	nodesByUUID     map[uuid.UUID]Node
+
 	contextsByUUID     map[uuid.UUID]*contextData
 	contextTypesByUUID map[uuid.UUID]ContextType
 	contextsCache      []Context
-	systemsByUUID      map[uuid.UUID]System
-	apisByUUID         map[uuid.UUID]*API
-	componentsByUUID   map[uuid.UUID]*Component
+
+	systemsByUUID    map[uuid.UUID]System
+	apisByUUID       map[uuid.UUID]*API
+	componentsByUUID map[uuid.UUID]*Component
 
 	systemInstancesByUUID    map[uuid.UUID]*SystemInstance
 	apiInstancesByUUID       map[uuid.UUID]*ApiInstance
@@ -108,6 +124,9 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 	model := &modelData{
 		sink: sink,
+
+		nodesByUUID:     make(map[uuid.UUID]Node),
+		nodeTypesByUUID: make(map[uuid.UUID]NodeType),
 
 		contextsByUUID:     make(map[uuid.UUID]*contextData),
 		contextTypesByUUID: make(map[uuid.UUID]ContextType),
