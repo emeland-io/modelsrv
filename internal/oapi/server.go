@@ -51,6 +51,8 @@ type ApiServer struct {
 	BaseURL string
 }
 
+// GetLandscapeContextTypes implements [StrictServerInterface].
+
 var _ StrictServerInterface = (*ApiServer)(nil)
 
 /*
@@ -555,9 +557,9 @@ func parseISO8601(input string) (*types.Date, error) {
 	}, nil
 }
 
-// GetLandscapeContexts implements StrictServerInterface.
-func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandscapeContextsRequestObject) (GetLandscapeContextsResponseObject, error) {
-	contextArr, err := a.Backend.GetContexts()
+// GetLandscapeFindingTypes implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFindingTypes(ctx context.Context, request GetLandscapeFindingTypesRequestObject) (GetLandscapeFindingTypesResponseObject, error) {
+	findingTypesArr, err := a.Backend.GetFindingTypes()
 
 	if err != nil {
 		return nil, err
@@ -565,37 +567,39 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 
 	respBody := []InstanceListItem{}
 
-	for _, context := range contextArr {
-		reference := fmt.Sprintf("%s/landscape/contexts/%s", a.BaseURL, context.GetContextId().String())
-		displayName := context.GetDisplayName()
-		contextId := context.GetContextId()
+	for _, findingType := range findingTypesArr {
+		findingTypeId := findingType.GetFindingTypeId()
+		displayName := findingType.GetDisplayName()
+		reference := fmt.Sprintf("%s/landscape/findingTypes/%s", a.BaseURL, findingTypeId.String())
+
 		item := InstanceListItem{
-			InstanceId:  &contextId,
+			InstanceId:  &findingTypeId,
 			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
 	}
 
-	return GetLandscapeContexts200JSONResponse(respBody), nil
+	return GetLandscapeFindingTypes200JSONResponse(respBody), nil
 }
 
-// GetLandscapeContextsContextId implements StrictServerInterface.
-func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request GetLandscapeContextsContextIdRequestObject) (GetLandscapeContextsContextIdResponseObject, error) {
-	context := a.Backend.GetContextById(request.ContextId)
-	if context == nil {
-		errorstr := fmt.Sprintf("context %s not found", request.ContextId.String())
-		return GetLandscapeContextsContextId404JSONResponse(errorstr), nil
+// GetLandscapeFindingTypesFindingTypeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, request GetLandscapeFindingTypesFindingTypeIdRequestObject) (GetLandscapeFindingTypesFindingTypeIdResponseObject, error) {
+	findingType := a.Backend.GetFindingTypeById(request.FindingTypeId)
+	if findingType == nil {
+		errorstr := fmt.Sprintf("finding type %s not found", request.FindingTypeId.String())
+		return GetLandscapeFindingTypesFindingTypeId404JSONResponse(errorstr), nil
 	}
 
-	displayName := context.GetDisplayName()
-	contextId := context.GetContextId()
+	displayName := findingType.GetDisplayName()
+	findingTypeId := findingType.GetFindingTypeId()
 
-	respBody := Context{
-		ContextId:   contextId,
-		DisplayName: displayName,
-		Annotations: cloneAnnotations2(context.GetAnnotations()),
+	respBody := FindingType{
+		FindingTypeId: &findingTypeId,
+		DisplayName:   &displayName,
+		Annotations:   cloneAnnotations2(findingType.GetAnnotations()),
 	}
 
-	return GetLandscapeContextsContextId200JSONResponse(respBody), nil
+	return GetLandscapeFindingTypesFindingTypeId200JSONResponse(respBody), nil
+
 }

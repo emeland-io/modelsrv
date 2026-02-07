@@ -119,8 +119,13 @@ type ResourceType int
 
 const (
 	UnknownResourceType ResourceType = iota
+
+	NodeResource
+	NodeTypeResource
+
 	// Phase 0
 	ContextResource
+	ContextTypeResource
 	// Phase 1
 	SystemResource
 	SystemInstanceResource
@@ -129,6 +134,10 @@ const (
 	ComponentResource
 	ComponentInstanceResource
 
+	//Phase 5
+	FindingResource
+	FindingTypeResource
+
 	// Value objects
 	AnnotationsResource
 )
@@ -136,8 +145,12 @@ const (
 var resourceTypeValues = map[ResourceType]string{
 	UnknownResourceType: "UnknownResourceType",
 
+	NodeResource:     "Node",
+	NodeTypeResource: "NodeType",
+
 	// Phase 0: Contexts
-	ContextResource: "Context",
+	ContextResource:     "Context",
+	ContextTypeResource: "ContextType",
 
 	// Phase 1:
 	SystemResource:            "System",
@@ -183,6 +196,21 @@ var operationValues = map[Operation]string{
 	DeleteOperation:  "DeleteOperation",
 }
 
+type Event struct {
+	ResourceType ResourceType
+	Operation    Operation
+	ResourceId   uuid.UUID
+	Objects      []any
+}
+
+func (e Event) String() string {
+	if e.Operation == DeleteOperation {
+		return fmt.Sprintf("%s: %s %s", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String())
+	} else {
+		return fmt.Sprintf("%s: %s %s: %v", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String(), e.Objects)
+	}
+}
+
 func ParseOperation(s string) Operation {
 	for key, val := range operationValues {
 		if val == s {
@@ -221,37 +249,44 @@ func (d *dummySink) Receive(resType ResourceType, op Operation, resourceId uuid.
 }
 
 type ListSink struct {
-	events []string
+	eventsTxts []string
+	events     []Event
 }
 
 var _ EventSink = (*ListSink)(nil)
 
 func NewListSink() *ListSink {
 	return &ListSink{
-		events: make([]string, 0),
+		eventsTxts: make([]string, 0),
+		events:     make([]Event, 0),
 	}
 }
 
 // Receive implements [EventSink].
-func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.UUID, object ...any) error {
-	var eventString string
-	if op == DeleteOperation {
-		eventString = fmt.Sprintf("%s: %s %s", op.String(), resType.String(), resourceId.String())
-	} else {
-		eventString = fmt.Sprintf("%s: %s %s: %s", op.String(), resType.String(), resourceId.String(), object)
+func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.UUID, objects ...any) error {
+	currEvent := Event{
+		ResourceType: resType,
+		Operation:    op,
+		ResourceId:   resourceId,
+		Objects:      objects,
 	}
+	l.events = append(l.events, currEvent)
 
-	l.events = append(l.events, eventString)
+	l.eventsTxts = append(l.eventsTxts, currEvent.String())
 
 	return nil
 }
 
 func (l *ListSink) PrintList() {
-	for str := range l.events {
+	for str := range l.eventsTxts {
 		fmt.Println(str)
 	}
 }
 
 func (l *ListSink) GetList() []string {
+	return l.eventsTxts
+}
+
+func (l *ListSink) GetEvents() []Event {
 	return l.events
 }

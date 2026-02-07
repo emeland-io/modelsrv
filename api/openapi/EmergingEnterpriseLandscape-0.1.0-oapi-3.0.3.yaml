@@ -64,6 +64,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/contextTypes:
+    get:
+      description: Retrieve all context types in the landscape.
+      tags: [landscape, p0_structure]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/contextTypes/{contextTypeId}:
+    get:
+      description: Retrieve details of a specific context type by its UUID.
+      tags: [landscape, p0_structure]
+      parameters:
+        - name: contextTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextType'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/systems:
     get:
       description: Retrieve all systems in the landscape.
@@ -309,6 +344,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/findingTypes:
+    get:
+      description: Retrieve all types of findings known to the landscape.
+      tags: [landscape, p5_risk]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/findingTypes/{findingTypeId}:
+    get:
+      description: Retrieve a known types of findings by its UUID.
+      tags: [landscape, p5_risk]
+      parameters:
+        - name: findingTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindingType'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/nodeTypes:
+    get:
+      description: Retrieve all node types in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/nodeTypes/{nodeTypeId}:
+    get:
+      description: Retrieve details of a specific node type by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: nodeTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeType'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/nodes:
+    get:
+      description: Retrieve all nodes in the landscape discovered so far.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/nodes/{nodeId}:
+    get:
+      description: Retrieve details of a specific node by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: nodeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -410,6 +550,9 @@ components:
           type: string
         description:
           type: string
+        type:
+          type: string
+          format: uuid
         resources:
           type: array
           items:
@@ -422,7 +565,27 @@ components:
       required:
         - findingId
         - summary
+        - FindingType
         - resources
+    FindingType:
+      type: object
+      description: Represents a type of findings in the EmELand model. A finding type defines the type of rule violation and provides metadata about the rule. They are defined by the original source of a finding, e.g., a data collector or a compliance standard. Use the FindingType of a Finding to ensure any further processing or filtering is only applied to findings that are actually understood by the filter.
+      properties:
+        findingTypeId:
+          type: string
+          description: An UUID that uniquely identifies the finding class. It should be generated and assigned when the finding class is created and must remain constant throughout the finding class's lifecycle. The field is optional in some contexts, such as when creating a new finding class where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the finding class.
+        description:
+          type: string
+          description: A brief description of the finding class's purpose and scope.
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the finding class.
+          items:
+            $ref: '#/components/schemas/Annotation'
     Context:
       type: object
       description: Represents a context in the EmELand model. A context is a high-level categorization or domain that groups systems and other entities based on shared characteristics or purposes.
@@ -437,6 +600,10 @@ components:
         description:
           type: string
           description: A brief description of the context's purpose and scope.
+        type:
+          type: string
+          description: The UUID of the context type that defines the characteristics of this context.
+          format: uuid
         parent:
           type: string
           description: The UUID of the parent context, if applicable. This field is optional and may be omitted if the context has no parent. It establishes a hierarchical relationship between contexts.
@@ -449,6 +616,7 @@ components:
       required:
         - contextId
         - displayName
+        - type
     ResourceRef:
       type: object
       properties:
@@ -722,4 +890,71 @@ components:
             after this date. Format is 2006-01-02. Must be later than deprecatedFrom.
       required:
         - version
-      
+    ContextType:
+      type: object
+      description: Represents a type of context in the EmELand model. A context type defines the characteristics and categorization of contexts.
+      properties:
+        contextTypeId:
+          type: string
+          description: An UUID that uniquely identifies the context type. It should be generated and assigned when the context type is created and must remain constant throughout the context type's lifecycle. The field is optional in some contexts, such as when creating a new context type where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the context type.
+        description:
+          type: string
+          description: A brief description of the context type's purpose and scope.
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the context type.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - contextTypeId
+        - displayName
+    NodeType:
+      type: object
+      description: Represents a type of node in the EmELand model. A node type defines the characteristics and capabilities of nodes that belong to this type.
+      properties:
+        nodeTypeId:
+          type: string
+          description: An UUID that uniquely identifies the node type. It should be generated and assigned when the node type is created and must remain constant throughout the node type's lifecycle. The field is optional in some contexts, such as when creating a new node type where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the node type.
+        description:
+          type: string
+          description: A brief description of the node type's purpose and characteristics.
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the node type.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - nodeTypeId
+        - displayName
+    Node:
+      type: object
+      description: Represents a node in the EmELand model. A node is an instance of a node type and represents a specific entity within the landscape.
+      properties:
+        nodeId:
+          type: string
+          description: An UUID that uniquely identifies the node. It should be generated and assigned when the node is created and must remain constant throughout the node's lifecycle. The field is optional in some contexts, such as when creating a new node where the ID may be generated by the system itself.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the node.
+        nodeType:
+          type: string
+          description: The UUID of the node type that this node is an instance of.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the node.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - nodeId
+        - displayName
+        - nodeType  
