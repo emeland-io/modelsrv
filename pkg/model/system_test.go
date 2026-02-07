@@ -1,8 +1,6 @@
 package model_test
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -62,10 +60,27 @@ func TestSystemOperations(t *testing.T) {
 	err = testModel.AddSystem(system2)
 	assert.NoError(t, err)
 
-	eventList := sink.GetList()
-	assert.Equal(t, 4, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: System %s", sysId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: System %s", sysId.String())))
-	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: System %s", sysId.String())))
-	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("UpdateOperation: System %s", sysId.String())))
+	// delete system from model
+	// Event 5: delete
+	err = testModel.DeleteSystemById(sysId)
+	assert.NoError(t, err)
+
+	expectedEvents := []struct {
+		resType    events.ResourceType
+		operation  events.Operation
+		resourceId uuid.UUID
+	}{
+		{events.SystemResource, events.CreateOperation, sysId},
+		{events.SystemResource, events.UpdateOperation, sysId},
+		{events.SystemResource, events.UpdateOperation, sysId},
+		{events.SystemResource, events.UpdateOperation, sysId},
+		{events.SystemResource, events.DeleteOperation, sysId},
+	}
+
+	for i, expected := range expectedEvents {
+		event := sink.GetEvents()[i]
+		assert.Equal(t, expected.resType, event.ResourceType, "event %d: resource type mismatch", i)
+		assert.Equal(t, expected.operation, event.Operation, "event %d: operation mismatch", i)
+		assert.Equal(t, expected.resourceId, event.ResourceId, "event %d: resource ID mismatch", i)
+	}
 }

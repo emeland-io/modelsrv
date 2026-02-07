@@ -28,7 +28,7 @@ func TestContextOperations(t *testing.T) {
 	context.SetDescription("a test context")
 	assert.Equal(t, "a test context", context.GetDescription())
 
-	// Test getting non-existent API
+	// Test getting non-existent Context
 	assert.Nil(t, testModel.GetContextById(contextId))
 
 	// Add Context and verify it exists
@@ -36,7 +36,7 @@ func TestContextOperations(t *testing.T) {
 	err = testModel.AddContext(context)
 	assert.NoError(t, err)
 
-	// Verify retrieval by name and ID
+	// Verify retrieval by ID
 	assert.Same(t, context, testModel.GetContextById(contextId))
 
 	// update the DisplayName. This MUST create an event, after the object has been registered
