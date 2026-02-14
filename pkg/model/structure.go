@@ -81,10 +81,10 @@ type Model interface {
 	GetComponentInstances() ([]*ComponentInstance, error)
 	GetComponentInstanceById(id uuid.UUID) *ComponentInstance
 
-	AddFinding(finding *Finding, name string) error
+	AddFinding(finding Finding) error
 	DeleteFindingById(id uuid.UUID) error
-	GetFindings() ([]*Finding, error)
-	GetFindingById(id uuid.UUID) *Finding
+	GetFindings() ([]Finding, error)
+	GetFindingById(id uuid.UUID) Finding
 
 	AddFindingType(findingType FindingType) error
 	DeleteFindingTypeById(id uuid.UUID) error
@@ -110,7 +110,7 @@ type modelData struct {
 	apiInstancesByUUID       map[uuid.UUID]*ApiInstance
 	componentInstancesByUUID map[uuid.UUID]*ComponentInstance
 
-	findingsByUUID     map[uuid.UUID]*Finding
+	findingsByUUID     map[uuid.UUID]Finding
 	findingTypesByUUID map[uuid.UUID]FindingType
 }
 
@@ -139,7 +139,7 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		apiInstancesByUUID:       make(map[uuid.UUID]*ApiInstance),
 		componentInstancesByUUID: make(map[uuid.UUID]*ComponentInstance),
 
-		findingsByUUID:     make(map[uuid.UUID]*Finding),
+		findingsByUUID:     make(map[uuid.UUID]Finding),
 		findingTypesByUUID: make(map[uuid.UUID]FindingType),
 	}
 
@@ -285,19 +285,6 @@ type ComponentInstance struct {
 	ComponentRef   *ComponentRef
 	SystemInstance *SystemInstanceRef
 	Annotations    map[string]string
-}
-
-type Finding struct {
-	FindingId   uuid.UUID
-	Summary     string
-	Description string
-	Resources   []*ResourceRef
-	Annotations map[string]string
-}
-
-type ResourceRef struct {
-	ResourceId   uuid.UUID
-	ResourceType events.ResourceType
 }
 
 func (m *modelData) getData() *modelData {
@@ -657,32 +644,6 @@ func (m *modelData) GetComponents() ([]*Component, error) {
 func (m *modelData) GetSystemInstances() ([]*SystemInstance, error) {
 	instanceArr := slices.Collect(maps.Values(m.systemInstancesByUUID))
 	return instanceArr, nil
-}
-
-// GetFindings implements Model.
-func (m modelData) GetFindings() ([]*Finding, error) {
-	findingArr := slices.Collect(maps.Values(m.findingsByUUID))
-	return findingArr, nil
-}
-
-// AddFinding implements Model.
-func (m *modelData) AddFinding(finding *Finding, name string) error {
-	m.findingsByUUID[finding.FindingId] = finding
-	return nil
-}
-
-// DeleteFindingById implements [Model].
-func (m *modelData) DeleteFindingById(id uuid.UUID) error {
-	panic("unimplemented")
-}
-
-// GetFindingById implements Model.
-func (m *modelData) GetFindingById(id uuid.UUID) *Finding {
-	finding, exists := m.findingsByUUID[id]
-	if !exists {
-		return nil
-	}
-	return finding
 }
 
 // AddFindingType implements [Model].

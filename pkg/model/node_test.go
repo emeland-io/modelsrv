@@ -60,23 +60,13 @@ func TestNodeOperations(t *testing.T) {
 	err = testModel.DeleteNodeById(nodeId)
 	assert.NoError(t, err)
 
-	expectedEvents := []struct {
-		resourceType events.ResourceType
-		operation    events.Operation
-		resourceId   uuid.UUID
-	}{
-		{events.NodeResource, events.CreateOperation, nodeId},
-		{events.NodeResource, events.UpdateOperation, nodeId},
-		{events.NodeResource, events.UpdateOperation, nodeId},
-		{events.NodeResource, events.UpdateOperation, nodeId},
-		{events.NodeResource, events.DeleteOperation, nodeId},
+	expectedEvents := []expectedEvent{
+		{resourceType: events.NodeResource, operation: events.CreateOperation, resourceId: nodeId},
+		{resourceType: events.NodeResource, operation: events.UpdateOperation, resourceId: nodeId},
+		{resourceType: events.NodeResource, operation: events.UpdateOperation, resourceId: nodeId},
+		{resourceType: events.NodeResource, operation: events.UpdateOperation, resourceId: nodeId},
+		{resourceType: events.NodeResource, operation: events.DeleteOperation, resourceId: nodeId},
 	}
 
-	actualEvents := sink.GetEvents()
-	assert.Len(t, actualEvents, len(expectedEvents))
-	for i, expected := range expectedEvents {
-		assert.Equal(t, expected.resourceType, actualEvents[i].ResourceType)
-		assert.Equal(t, expected.operation, actualEvents[i].Operation)
-		assert.Equal(t, expected.resourceId, actualEvents[i].ResourceId)
-	}
+	checkEvents(t, sink.GetEvents(), expectedEvents)
 }

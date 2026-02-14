@@ -21,7 +21,22 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	eventforwarder "go.emeland.io/modelsrv/internal/events/forwarder"
 )
+
+type Subscriber interface {
+	// Notify notifies the subscriber of an event.
+	Notify(ctx context.Context, event *Event) error
+
+	// GetURL returns the URL of the subscriber, under which it accepts events.
+	GetURL() string
+
+	// GetId returns the unique ID of the subscriber.
+	GetId() uuid.UUID
+
+	// GetStatus returns the current status of the subscriber (e.g. active, inactive, etc.)
+	GetStatus() string
+}
 
 // EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
@@ -36,18 +51,18 @@ type EventManager interface {
 	GetSink() (EventSink, error)
 
 	// GetSubscribers returns a list of current subscribers.
-	GetSubscribers() []string
-	// AddSubscriber adds a new subscriber by URL.
-	AddSubscriber(url string) error
+	GetSubscribers() []Subscriber
+	// AddSubscriber adds a new subscriber by url.
+	AddSubscriber(subUrl string) error
 	// RemoveSubscriber removes a subscriber by URL.
-	RemoveSubscriber(url string) error
+	RemoveSubscriber(subUrl string) error
 }
 
 var _ EventManager = (*eventManager)(nil)
 
 type eventManager struct {
 	sequenceNumber uint64
-	subscribers    []string
+	subscribers    []Subscriber
 	sinkFactory    func() (EventSink, error)
 }
 
@@ -86,19 +101,19 @@ func (e *eventManager) GetSink() (EventSink, error) {
 
 // AddSubscriber implements [EventManager].
 // adding the same subscriber URL again will result in only one entry in the subscriber list.
-func (e *eventManager) AddSubscriber(url string) error {
+func (e *eventManager) AddSubscriber(subUrl string) error {
 	for _, sub := range e.subscribers {
-		if sub == url {
+		if sub.GetURL() == subUrl {
 			// already exists
 			return nil
 		}
 	}
-	e.subscribers = append(e.subscribers, url)
+	e.subscribers = append(e.subscribers, eventforwarder.NewSubscriber(subUrl))
 	return nil
 }
 
 // GetSubscribers implements [EventManager].
-func (e *eventManager) GetSubscribers() []string {
+func (e *eventManager) GetSubscribers() []Subscriber {
 	return e.subscribers
 }
 
@@ -106,7 +121,7 @@ func (e *eventManager) GetSubscribers() []string {
 // TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
 func (e *eventManager) RemoveSubscriber(url string) error {
 	for i, sub := range e.subscribers {
-		if sub == url {
+		if sub.GetURL() == url {
 			// remove subscriber
 			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
 			return nil
@@ -159,6 +174,10 @@ var resourceTypeValues = map[ResourceType]string{
 	APIInstanceResource:       "APIInstance",
 	ComponentResource:         "Component",
 	ComponentInstanceResource: "ComponentInstance",
+
+	//Phase 5
+	FindingResource:     "Finding",
+	FindingTypeResource: "FindingType",
 
 	// Value objects
 	AnnotationsResource: "Annotations",

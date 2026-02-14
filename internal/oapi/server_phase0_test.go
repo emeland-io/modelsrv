@@ -64,9 +64,9 @@ var _ = Describe("calling the modelsrv API functions for phase 0", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(instanceArr)).To(Equal(2))
 
-		Expect(*(instanceArr[0].InstanceId)).To(Equal(contextId))
-		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())))
-
+		Expect(instanceArr).To(ContainElement(HaveField("InstanceId", &contextId)))
+		expectedReference := fmt.Sprintf("http://localhost/landscape/contexts/%s", contextId.String())
+		Expect(instanceArr).To(ContainElement(HaveField("Reference", &expectedReference)))
 	})
 
 	It("should call GET on /landscape/contexts/{contextId}", func() {
