@@ -232,3 +232,18 @@ func (c *ModelSrvClient) GetComponentInstanceById(componentId uuid.UUID) (*oapi.
 
 	return (*oapi.ComponentInstance)(resp.JSON200), nil
 }
+
+// Register allows url to be registered as a subscriber. The url should point to the base URL of the subscriber's listener.
+func (c *ModelSrvClient) Register(targetUrl string) error {
+	resp, err := c.oapi_client.PostEventsRegister(context.TODO(), oapi.PostEventsRegisterJSONRequestBody{
+		CallbackUrl: targetUrl,
+	})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("expected HTTP 201 but received %d", resp.StatusCode)
+	}
+
+	return nil
+}

@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	eventforwarder "go.emeland.io/modelsrv/internal/events/forwarder"
 )
 
 type Subscriber interface {
@@ -56,78 +55,6 @@ type EventManager interface {
 	AddSubscriber(subUrl string) error
 	// RemoveSubscriber removes a subscriber by URL.
 	RemoveSubscriber(subUrl string) error
-}
-
-var _ EventManager = (*eventManager)(nil)
-
-type eventManager struct {
-	sequenceNumber uint64
-	subscribers    []Subscriber
-	sinkFactory    func() (EventSink, error)
-}
-
-func NewEventManager() (EventManager, error) {
-	retval := &eventManager{
-		sequenceNumber: 0,
-		sinkFactory:    func() (EventSink, error) { return NewListSink(), nil },
-	}
-	return retval, nil
-
-}
-
-// GetCurrentSequenceId implements EventManager.
-func (e *eventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error) {
-	return e.sequenceNumber, nil
-}
-
-// IncrementSequenceId implements EventManager.
-func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
-	e.sequenceNumber++
-	return nil
-}
-
-// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
-// If no factory has been set, a default [ListSink] is returned.
-//
-// SetSinkFactory implements [EventManager].
-func (e *eventManager) SetSinkFactory(factory func() (EventSink, error)) {
-	e.sinkFactory = factory
-}
-
-// GetSink implements [EventManager].
-func (e *eventManager) GetSink() (EventSink, error) {
-	return NewListSink(), nil
-}
-
-// AddSubscriber implements [EventManager].
-// adding the same subscriber URL again will result in only one entry in the subscriber list.
-func (e *eventManager) AddSubscriber(subUrl string) error {
-	for _, sub := range e.subscribers {
-		if sub.GetURL() == subUrl {
-			// already exists
-			return nil
-		}
-	}
-	e.subscribers = append(e.subscribers, eventforwarder.NewSubscriber(subUrl))
-	return nil
-}
-
-// GetSubscribers implements [EventManager].
-func (e *eventManager) GetSubscribers() []Subscriber {
-	return e.subscribers
-}
-
-// RemoveSubscriber implements [EventManager].
-// TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
-func (e *eventManager) RemoveSubscriber(url string) error {
-	for i, sub := range e.subscribers {
-		if sub.GetURL() == url {
-			// remove subscriber
-			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
-			return nil
-		}
-	}
-	return fmt.Errorf("subscriber %s not found", url)
 }
 
 type ResourceType int

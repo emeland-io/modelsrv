@@ -7,10 +7,12 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ievents "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/endpoint"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/test/matchers"
 )
 
 func TestClient(t *testing.T) {
@@ -38,7 +40,7 @@ var _ = Describe("Client", Ordered, func() {
 		var err error
 		By("starting a model server")
 
-		testEvents, err = events.NewEventManager()
+		testEvents, err = ievents.NewEventManager()
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testEvents).NotTo(BeNil())
 
@@ -49,12 +51,12 @@ var _ = Describe("Client", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testModel).NotTo(BeNil())
 
-		testEvents, err = events.NewEventManager()
+		testEvents, err = ievents.NewEventManager()
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testEvents).NotTo(BeNil())
 
 		By("attaching the model to a listener")
-		Expect(endpoint.StarWebListener(testModel, testEvents, "localhost:24000")).To(Succeed())
+		Expect(endpoint.StartWebListener(testModel, testEvents, "localhost:24000")).To(Succeed())
 
 		By("creating a client")
 		testClient, err = client.NewModelSrvClient("http://localhost:24000/api/")
@@ -83,7 +85,7 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(*instanceList).ToNot(BeEmpty())
 		})
 		It("return a Context by ID", func() {
 			// first try with an invalid ID
@@ -237,6 +239,20 @@ var _ = Describe("Client", Ordered, func() {
 
 			Expect(componentInstance.ComponentInstanceId).To(Equal(componentInstanceId))
 			Expect(componentInstance.DisplayName).To(Equal("Test ComponentInstance"))
+		})
+	})
+
+	Describe("Register subscriber for event callback", func() {
+		It("should register a subscriber using POST /events/register", func() {
+
+			err := testClient.Register("http://localhost:24000/api/")
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Eventually(func() []events.Subscriber {
+				return testEvents.GetSubscribers()
+			}, "10s", "500ms").ShouldNot(BeEmpty())
+
+			Expect(testEvents.GetSubscribers()).To(ContainElement(matchers.MatchSubscriberUrl("http://localhost:24000/api/")))
 		})
 	})
 })

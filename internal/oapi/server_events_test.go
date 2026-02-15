@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	ievents "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 )
 
@@ -93,6 +94,10 @@ var _ = Describe("calling the event handling functions", func() {
 	It("should register a consumer using POST /landscape/register", func() {
 		url := "http://localhost/events/register"
 		callbackUrl := "http://localhost:8080/callback"
+
+		subscriber := ievents.NewSubscriber(callbackUrl)
+		Expect(subscriber.GetURL()).To(Equal(callbackUrl))
+
 		postBody := `{"callbackUrl": "` + callbackUrl + `", "eventTypes": ["FindingResource"]}`
 		req := httptest.NewRequest("POST", url, io.NopCloser(strings.NewReader(postBody)))
 		req.Header.Set("Content-Type", "application/json")
@@ -108,7 +113,7 @@ var _ = Describe("calling the event handling functions", func() {
 		Expect(len(body)).To(Equal(0))
 
 		Expect(len(eventMgr.GetSubscribers())).NotTo(Equal(0))
-		Expect(eventMgr.GetSubscribers()[0]).To(Equal(callbackUrl))
+		Expect(eventMgr.GetSubscribers()[0]).To(Equal(subscriber))
 	})
 
 	It("should call POST on /events/unregister to remove a subscriber", func() {

@@ -21,12 +21,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	ievents "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
 func TestEventManager(t *testing.T) {
 	ctx := context.Background()
-	em, err := events.NewEventManager()
+	em, err := ievents.NewEventManager()
 	assert.NoError(t, err)
 
 	// Test sequence ID management
@@ -45,8 +46,9 @@ func TestEventManager(t *testing.T) {
 	err = em.AddSubscriber("http://example.com/sink")
 	assert.NoError(t, err)
 
+	subscriber := ievents.NewSubscriber("http://example.com/sink")
 	subscribers := em.GetSubscribers()
-	assert.Contains(t, subscribers, "http://example.com/sink")
+	assert.Contains(t, subscribers, subscriber)
 }
 
 func TestResourceType(t *testing.T) {

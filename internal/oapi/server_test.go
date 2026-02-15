@@ -30,6 +30,7 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ievents "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -212,7 +213,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
-	eventMgr, err = events.NewEventManager()
+	eventMgr, err = ievents.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
