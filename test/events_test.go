@@ -97,7 +97,7 @@ var _ = Describe("forwarding events between two modelsrv instances", func() {
 		var err error
 
 		By("creating two modelsrv instances")
-		aliceSrv, err = newModelsrvInstance("24000")
+		aliceSrv, err = newModelsrvInstance("24001")
 		Expect(err).To(Succeed())
 		Expect(aliceSrv).ToNot(BeNil())
 
@@ -108,7 +108,7 @@ var _ = Describe("forwarding events between two modelsrv instances", func() {
 
 		Expect(aliceSrv.client.GetTest()).To(Succeed())
 
-		bobSrv, err = newModelsrvInstance("24001")
+		bobSrv, err = newModelsrvInstance("24002")
 		Expect(err).To(Succeed())
 		Expect(bobSrv).ToNot(BeNil())
 
@@ -133,10 +133,11 @@ var _ = Describe("forwarding events between two modelsrv instances", func() {
 			return subs
 		}, "10s", "500ms").ShouldNot(BeEmpty())
 
+		By("expecting to see bob in alice's list of subscribers")
 		Eventually(func() []events.Subscriber {
-
+			fmt.Printf("Seeing subscribers: %#v\n", aliceSrv.eventMgr.GetSubscribers())
 			return aliceSrv.eventMgr.GetSubscribers()
-		}, "10s", "500ms").Should(ContainElement(matchers.MatchSubscriberUrl("http://localhost:24001/api")))
+		}, "10s", "500ms").Should(ContainElement(matchers.MatchSubscriberUrl("http://localhost:24002/api")))
 
 		By("adding a new Context to instance alice")
 		contextId := uuid.New()

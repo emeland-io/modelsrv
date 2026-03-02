@@ -8,9 +8,19 @@ import (
 )
 
 type subscriber struct {
-	url    string
-	status string
-	id     uuid.UUID
+	url       string
+	status    string
+	id        uuid.UUID
+	forwarder *eventForwarder
+	/* fwdCtrl is a channel to control the forwarder goroutine.
+
+	Send a new maximum index of the event list to be forwarded to the subscriber. The
+	forwarder will forward all events in the list up to the specified index to the
+	subscriber, and then wait for the next control signal.
+
+	Closing the channel will stop the forwarder goroutine.
+	*/
+	fwdCtrl chan int // channel to control the forwarder goroutine
 }
 
 var _ events.Subscriber = (*subscriber)(nil)

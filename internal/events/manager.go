@@ -13,12 +13,16 @@ type eventManager struct {
 	sequenceNumber uint64
 	subscribers    []events.Subscriber
 	sinkFactory    func() (events.EventSink, error)
+
+	masterList *events.ListSink
 }
 
 func NewEventManager() (events.EventManager, error) {
 	retval := &eventManager{
 		sequenceNumber: 0,
-		sinkFactory:    func() (events.EventSink, error) { return events.NewListSink(), nil },
+		sinkFactory:    func() (events.EventSink, error) { return NewEnumeratedListSink(), nil },
+		subscribers:    make([]events.Subscriber, 0),
+		masterList:     events.NewListSink(),
 	}
 	return retval, nil
 
@@ -35,14 +39,14 @@ func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
 	return nil
 }
 
-// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
-// If no factory has been set, a default [ListSink] is returned.
-//
 // SetSinkFactory implements [EventManager].
 func (e *eventManager) SetSinkFactory(factory func() (events.EventSink, error)) {
 	e.sinkFactory = factory
 }
 
+// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
+// If no factory has been set, a default [EnumeratedListSink] is returned.
+//
 // GetSink implements [EventManager].
 func (e *eventManager) GetSink() (events.EventSink, error) {
 	return e.sinkFactory()
@@ -57,8 +61,17 @@ func (e *eventManager) AddSubscriber(subUrl string) error {
 			return nil
 		}
 	}
-	e.subscribers = append(e.subscribers, NewSubscriber(subUrl))
+
+	newSub := NewSubscriber(subUrl)
+	e.subscribers = append(e.subscribers, newSub)
+
+	// TODO: Start a forwarder to notify the new subscriber of all past events in local event list for synchronization. This requires the local list to be thread-safe.
+	go ExecuteForwarder(e.masterList, newSub)
 	return nil
+}
+
+func ExecuteForwarder(listSink *events.ListSink, newSub events.Subscriber) {
+	panic("unimplemented")
 }
 
 // GetSubscribers implements [EventManager].
@@ -73,6 +86,8 @@ func (e *eventManager) RemoveSubscriber(url string) error {
 		if sub.GetURL() == url {
 			// remove subscriber
 			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
+
+			// TODO: stop the forwarder associated with the subscriber to stop sending events to the removed subscriber.
 			return nil
 		}
 	}
