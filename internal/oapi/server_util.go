@@ -18,11 +18,12 @@ package oapi
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"maps"
 	"strings"
 	"text/template"
 
+	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
@@ -38,38 +39,95 @@ func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 	return strings.NewReader(body.String()), int64(body.Len())
 }
 
-func cloneAnnotations(annos map[string]string) *[]Annotation {
+func cloneAnnotations(annos model.Annotations) *[]Annotation {
 	retval := make([]Annotation, 0)
-	for key, value := range maps.All(annos) {
-		retval = append(retval, Annotation{Key: key, Value: value})
-	}
-	return &retval
-}
-
-func cloneAnnotations2(annos model.Annotations) *[]Annotation {
-
-	retval := make([]Annotation, 0)
-
 	for key := range annos.GetKeys() {
 		retval = append(retval, Annotation{Key: key, Value: annos.GetValue(key)})
 	}
 	return &retval
 }
 
+// Generic helper to build instance list responses
+type hasIdAndName interface {
+	GetInstanceId() uuid.UUID
+	GetDisplayName() string
+}
+
+func buildInstanceList[T hasIdAndName](baseURL, path string, items []T) []InstanceListItem {
+	result := make([]InstanceListItem, 0, len(items))
+	for _, item := range items {
+		id := item.GetInstanceId()
+		name := item.GetDisplayName()
+		ref := fmt.Sprintf("%s%s/%s", baseURL, path, id.String())
+		result = append(result, InstanceListItem{
+			InstanceId:  &id,
+			DisplayName: &name,
+			Reference:   &ref,
+		})
+	}
+	return result
+}
+
+// Specialized version for APIs (uses GetApiId instead of GetInstanceId)
+func buildApiList(baseURL string, items []model.API) []InstanceListItem {
+	result := make([]InstanceListItem, 0, len(items))
+	for _, item := range items {
+		id := item.GetApiId()
+		name := item.GetDisplayName()
+		ref := fmt.Sprintf("%s/landscape/apis/%s", baseURL, id.String())
+		result = append(result, InstanceListItem{
+			InstanceId:  &id,
+			DisplayName: &name,
+			Reference:   &ref,
+		})
+	}
+	return result
+}
+
+// Specialized version for Components (uses GetComponentId)
+func buildComponentList(baseURL string, items []model.Component) []InstanceListItem {
+	result := make([]InstanceListItem, 0, len(items))
+	for _, item := range items {
+		id := item.GetComponentId()
+		name := item.GetDisplayName()
+		ref := fmt.Sprintf("%s/landscape/components/%s", baseURL, id.String())
+		result = append(result, InstanceListItem{
+			InstanceId:  &id,
+			DisplayName: &name,
+			Reference:   &ref,
+		})
+	}
+	return result
+}
+
+// Specialized version for Findings (uses GetFindingId and GetSummary)
+func buildFindingList(baseURL string, items []model.Finding) []InstanceListItem {
+	result := make([]InstanceListItem, 0, len(items))
+	for _, item := range items {
+		id := item.GetFindingId()
+		summary := item.GetSummary()
+		ref := fmt.Sprintf("%s/landscape/findings/%s", baseURL, id.String())
+		result = append(result, InstanceListItem{
+			InstanceId:  &id,
+			DisplayName: &summary,
+			Reference:   &ref,
+		})
+	}
+	return result
+}
+
 /*
 cloneResourceRefs creates a deep copy of the given ResourceRef slice.
 
-	Warning: not the change in the type of the items from reference to value.
+	Warning: note the change in the type of the items from reference to value.
 */
 func cloneResourceRefs(resourceRef []*model.ResourceRef) []ResourceRef {
-	respArr := []ResourceRef{}
-
+	respArr := make([]ResourceRef, 0, len(resourceRef))
 	for _, resRef := range resourceRef {
-		newRef := ResourceRef{
+		respArr = append(respArr, ResourceRef{
 			ResourceType: resRef.ResourceType,
 			ResourceId:   resRef.ResourceId,
-		}
-		respArr = append(respArr, newRef)
+		})
 	}
 	return respArr
 }

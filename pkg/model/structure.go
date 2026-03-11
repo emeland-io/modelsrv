@@ -251,6 +251,57 @@ func (m *modelData) getData() *modelData {
 	return m
 }
 
+// Generic add helper for event-enabled types
+func addEventEnabled[T any](
+	m *modelData,
+	obj T,
+	getId func(T) uuid.UUID,
+	setRegistered func(T),
+	store map[uuid.UUID]T,
+	resourceType events.ResourceType,
+) error {
+	id := getId(obj)
+	if id == uuid.Nil {
+		return UUIDNotSetError
+	}
+	setRegistered(obj)
+	store[id] = obj
+	m.sink.Receive(resourceType, events.CreateOperation, id, obj)
+	return nil
+}
+
+// Generic delete helper
+func deleteEventEnabled[T any](
+	m *modelData,
+	id uuid.UUID,
+	store map[uuid.UUID]T,
+	resourceType events.ResourceType,
+	notFoundError error,
+) error {
+	_, exists := store[id]
+	if !exists {
+		return notFoundError
+	}
+	delete(store, id)
+	m.sink.Receive(resourceType, events.DeleteOperation, id)
+	return nil
+}
+
+// Generic get helper
+func getEventEnabled[T any](id uuid.UUID, store map[uuid.UUID]T) T {
+	obj, exists := store[id]
+	if !exists {
+		var zero T
+		return zero
+	}
+	return obj
+}
+
+// Generic getAll helper
+func getAllEventEnabled[T any](store map[uuid.UUID]T) ([]T, error) {
+	return slices.Collect(maps.Values(store)), nil
+}
+
 // AddContext implements Model.
 func (m *modelData) AddContext(context Context) error {
 
@@ -430,186 +481,102 @@ func (m *modelData) GetSystemById(id uuid.UUID) System {
 
 // AddApi implements Model.
 func (m *modelData) AddApi(api API) error {
-	if api.GetApiId() != uuid.Nil {
-		api.getData().isRegistered = true
-		m.apisByUUID[api.GetApiId()] = api
-		m.sink.Receive(events.APIResource, events.CreateOperation, api.GetApiId(), api)
-	} else {
-		return UUIDNotSetError
-	}
-	return nil
+	return addEventEnabled(m, api, API.GetApiId, func(a API) { a.getData().isRegistered = true }, m.apisByUUID, events.APIResource)
 }
 
 // AddApiInstance implements Model.
 func (m *modelData) AddApiInstance(instance ApiInstance) error {
-	if instance.GetInstanceId() != uuid.Nil {
-		instance.getData().isRegistered = true
-		m.apiInstancesByUUID[instance.GetInstanceId()] = instance
-		m.sink.Receive(events.APIInstanceResource, events.CreateOperation, instance.GetInstanceId(), instance)
-	}
-	return nil
+	return addEventEnabled(m, instance, ApiInstance.GetInstanceId, func(i ApiInstance) { i.getData().isRegistered = true }, m.apiInstancesByUUID, events.APIInstanceResource)
 }
 
 // AddComponent implements Model.
 func (m *modelData) AddComponent(comp Component) error {
-	if comp.GetComponentId() != uuid.Nil {
-		comp.getData().isRegistered = true
-		m.componentsByUUID[comp.GetComponentId()] = comp
-		m.sink.Receive(events.ComponentResource, events.CreateOperation, comp.GetComponentId(), comp)
-	}
-	return nil
+	return addEventEnabled(m, comp, Component.GetComponentId, func(c Component) { c.getData().isRegistered = true }, m.componentsByUUID, events.ComponentResource)
 }
 
 // AddComponentInstance implements Model.
 func (m *modelData) AddComponentInstance(instance ComponentInstance) error {
-	if instance.GetInstanceId() != uuid.Nil {
-		instance.getData().isRegistered = true
-		m.componentInstancesByUUID[instance.GetInstanceId()] = instance
-		m.sink.Receive(events.ComponentInstanceResource, events.CreateOperation, instance.GetInstanceId(), instance)
-	}
-	return nil
+	return addEventEnabled(m, instance, ComponentInstance.GetInstanceId, func(i ComponentInstance) { i.getData().isRegistered = true }, m.componentInstancesByUUID, events.ComponentInstanceResource)
 }
 
 // AddSystemInstance implements Model.
 func (m *modelData) AddSystemInstance(instance SystemInstance) error {
-	if instance.GetInstanceId() != uuid.Nil {
-		instance.getData().isRegistered = true
-		m.systemInstancesByUUID[instance.GetInstanceId()] = instance
-		m.sink.Receive(events.SystemInstanceResource, events.CreateOperation, instance.GetInstanceId(), instance)
-	} else {
-		return UUIDNotSetError
-	}
-	return nil
+	return addEventEnabled(m, instance, SystemInstance.GetInstanceId, func(i SystemInstance) { i.getData().isRegistered = true }, m.systemInstancesByUUID, events.SystemInstanceResource)
 }
 
 // DeleteApiByResourceName implements Model.
 func (m *modelData) DeleteApiById(id uuid.UUID) error {
-	_, exists := m.apisByUUID[id]
-	if !exists {
-		return ApiNotFoundError
-	}
-	delete(m.apisByUUID, id)
-	m.sink.Receive(events.APIResource, events.DeleteOperation, id)
-	return nil
+	return deleteEventEnabled(m, id, m.apisByUUID, events.APIResource, ApiNotFoundError)
 }
 
 // DeleteApiInstanceByResourceName implements Model.
 func (m *modelData) DeleteApiInstanceById(id uuid.UUID) error {
-	_, exists := m.apiInstancesByUUID[id]
-	if !exists {
-		return ApiInstanceNotFoundError
-	}
-	delete(m.apiInstancesByUUID, id)
-	m.sink.Receive(events.APIInstanceResource, events.DeleteOperation, id)
-	return nil
+	return deleteEventEnabled(m, id, m.apiInstancesByUUID, events.APIInstanceResource, ApiInstanceNotFoundError)
 }
 
 // DeleteComponentByResourceName implements Model.
 func (m *modelData) DeleteComponentById(id uuid.UUID) error {
-	_, exists := m.componentsByUUID[id]
-	if !exists {
-		return ComponentNotFoundError
-	}
-	delete(m.componentsByUUID, id)
-	m.sink.Receive(events.ComponentResource, events.DeleteOperation, id)
-	return nil
+	return deleteEventEnabled(m, id, m.componentsByUUID, events.ComponentResource, ComponentNotFoundError)
 }
 
 // DeleteComponentInstanceByResourceName implements Model.
 func (m *modelData) DeleteComponentInstanceById(id uuid.UUID) error {
-	_, exists := m.componentInstancesByUUID[id]
-	if !exists {
-		return ComponentInstanceNotFoundError
-	}
-	delete(m.componentInstancesByUUID, id)
-	m.sink.Receive(events.ComponentInstanceResource, events.DeleteOperation, id)
-	return nil
+	return deleteEventEnabled(m, id, m.componentInstancesByUUID, events.ComponentInstanceResource, ComponentInstanceNotFoundError)
 }
 
 // DeleteSystemInstanceByResourceName implements Model.
 func (m *modelData) DeleteSystemInstanceById(id uuid.UUID) error {
-	_, exists := m.systemInstancesByUUID[id]
-	if !exists {
-		return SystemInstanceNotFoundError
-	}
-	delete(m.systemInstancesByUUID, id)
-	m.sink.Receive(events.SystemInstanceResource, events.DeleteOperation, id)
-	return nil
+	return deleteEventEnabled(m, id, m.systemInstancesByUUID, events.SystemInstanceResource, SystemInstanceNotFoundError)
 }
 
 // GetApiById implements Model.
 func (m *modelData) GetApiById(id uuid.UUID) API {
-	api, exists := m.apisByUUID[id]
-	if !exists {
-		return nil
-	}
-	return api
+	return getEventEnabled(id, m.apisByUUID)
 }
 
 // GetApiInstanceById implements Model.
 func (m *modelData) GetApiInstanceById(id uuid.UUID) ApiInstance {
-	instance, exists := m.apiInstancesByUUID[id]
-	if !exists {
-		return nil
-	}
-	return instance
+	return getEventEnabled(id, m.apiInstancesByUUID)
 }
 
 // GetComponentById implements Model.
 func (m *modelData) GetComponentById(id uuid.UUID) Component {
-	comp, exists := m.componentsByUUID[id]
-	if !exists {
-		return nil
-	}
-	return comp
+	return getEventEnabled(id, m.componentsByUUID)
 }
 
 // GetComponentInstanceById implements Model.
 func (m *modelData) GetComponentInstanceById(id uuid.UUID) ComponentInstance {
-	instance, exists := m.componentInstancesByUUID[id]
-	if !exists {
-		return nil
-	}
-	return instance
+	return getEventEnabled(id, m.componentInstancesByUUID)
 }
 
 // GetSystemInstanceById implements Model.
 func (m *modelData) GetSystemInstanceById(id uuid.UUID) SystemInstance {
-	instance, exists := m.systemInstancesByUUID[id]
-	if !exists {
-		return nil
-	}
-	return instance
+	return getEventEnabled(id, m.systemInstancesByUUID)
 }
 
 // GetApiInstances implements Model.
 func (m *modelData) GetApiInstances() ([]ApiInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.apiInstancesByUUID))
-	return instanceArr, nil
+	return getAllEventEnabled(m.apiInstancesByUUID)
 }
 
 // GetApis implements Model.
 func (m *modelData) GetApis() ([]API, error) {
-	apiArr := slices.Collect(maps.Values(m.apisByUUID))
-	return apiArr, nil
+	return getAllEventEnabled(m.apisByUUID)
 }
 
 // GetComponentInstances implements Model.
 func (m *modelData) GetComponentInstances() ([]ComponentInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.componentInstancesByUUID))
-	return instanceArr, nil
+	return getAllEventEnabled(m.componentInstancesByUUID)
 }
 
 // GetComponents implements Model.
 func (m *modelData) GetComponents() ([]Component, error) {
-	componentArr := slices.Collect(maps.Values(m.componentsByUUID))
-	return componentArr, nil
+	return getAllEventEnabled(m.componentsByUUID)
 }
 
 // GetSystemInstances implements Model.
 func (m *modelData) GetSystemInstances() ([]SystemInstance, error) {
-	instanceArr := slices.Collect(maps.Values(m.systemInstancesByUUID))
-	return instanceArr, nil
+	return getAllEventEnabled(m.systemInstancesByUUID)
 }
 
 // GetFindings implements Model.
