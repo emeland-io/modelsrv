@@ -258,37 +258,31 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	component := &model.Component{
-		DisplayName: "Test Component",
-		ComponentId: componentId,
-		System: &model.SystemRef{
-			System: system,
-		},
-	}
+	component := model.NewComponent(target, componentId)
+	component.SetDisplayName("Test Component")
+	component.SetSystem(&model.SystemRef{
+		System: system,
+	})
 	err = target.AddComponent(component)
 	if err != nil {
 		return err
 	}
 
-	componentInstance := &model.ComponentInstance{
-		DisplayName: "Test ComponentInstance",
-		InstanceId:  componentInstanceId,
-		ComponentRef: &model.ComponentRef{
-			Component: component,
-		},
-	}
+	componentInstance := model.NewComponentInstance(target, componentInstanceId)
+	componentInstance.SetDisplayName("Test ComponentInstance")
+	componentInstance.SetComponentRef(&model.ComponentRef{
+		Component: component,
+	})
 	err = target.AddComponentInstance(componentInstance)
 	if err != nil {
 		return err
 	}
 
-	api := &model.API{
-		DisplayName: "Test API",
-		ApiId:       apiId,
-		System: &model.SystemRef{
-			System: system,
-		},
-	}
+	api := model.NewAPI(target, apiId)
+	api.SetDisplayName("Test API")
+	api.SetSystem(&model.SystemRef{
+		System: system,
+	})
 	err = target.AddApi(api)
 	if err != nil {
 		return err
@@ -302,19 +296,12 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	err = target.AddApi(api)
-	if err != nil {
-		return err
-	}
-
 	// TODO: set context in which this instance exists
-	systemInstance := &model.SystemInstance{
-		DisplayName: "Test SystemInstances",
-		InstanceId:  systemInstanceId,
-		SystemRef: &model.SystemRef{
-			System: system,
-		},
-	}
+	systemInstance := model.NewSystemInstance(target, systemInstanceId)
+	systemInstance.SetDisplayName("Test SystemInstances")
+	systemInstance.SetSystemRef(&model.SystemRef{
+		System: system,
+	})
 	err = target.AddSystemInstance(systemInstance)
 	if err != nil {
 		return err

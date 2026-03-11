@@ -21,11 +21,11 @@ type ApiInstance interface {
 
 	GetApiRef() *ApiRef
 	SetApiRefById(apiId uuid.UUID)
-	SetApiRefByRef(api *API)
+	SetApiRefByRef(api API)
 
 	GetSystemInstance() *SystemInstanceRef
 	SetSystemInstanceById(instanceId uuid.UUID)
-	SetSystemInstanceByRef(instance *SystemInstance)
+	SetSystemInstanceByRef(instance SystemInstance)
 
 	GetAnnotations() Annotations
 
@@ -105,13 +105,13 @@ func (a *apiInstanceData) SetApiRefById(apiId uuid.UUID) {
 }
 
 // SetApiRefByRef implements [ApiInstance].
-func (a *apiInstanceData) SetApiRefByRef(api *API) {
+func (a *apiInstanceData) SetApiRefByRef(api API) {
 	if api == nil {
 		return
 	}
 	a.ApiRef = &ApiRef{
 		API:   api,
-		ApiID: api.ApiId,
+		ApiID: api.GetApiId(),
 	}
 
 	if a.isRegistered {
@@ -141,13 +141,13 @@ func (a *apiInstanceData) SetSystemInstanceById(instanceId uuid.UUID) {
 }
 
 // SetSystemInstanceByRef implements [ApiInstance].
-func (a *apiInstanceData) SetSystemInstanceByRef(instance *SystemInstance) {
+func (a *apiInstanceData) SetSystemInstanceByRef(instance SystemInstance) {
 	if instance == nil {
 		return
 	}
 	a.SystemInstance = &SystemInstanceRef{
 		SystemInstance: instance,
-		InstanceId:     instance.InstanceId,
+		InstanceId:     instance.GetInstanceId(),
 	}
 
 	if a.isRegistered {
