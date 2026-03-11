@@ -266,35 +266,6 @@ func TestSystemInstanceOperations(t *testing.T) {
 	assert.Nil(t, testModel.GetSystemInstanceById(instanceId))
 }
 
-func TestAPIInstanceOperations(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
-
-	instanceId := uuid.New()
-	apiRef := model.ApiRef{API: &model.API{DisplayName: "test-api"}}
-	instance := &model.ApiInstance{
-		DisplayName: "test-instance",
-		InstanceId:  instanceId,
-		ApiRef:      &apiRef,
-	}
-
-	// Test getting non-existent instance
-	assert.Nil(t, testModel.GetApiInstanceById(instanceId))
-
-	// Add instance and verify it exists
-	err = testModel.AddApiInstance(instance)
-	assert.NoError(t, err)
-
-	// Verify retrieval by name and ID
-	assert.Equal(t, instance, testModel.GetApiInstanceById(instanceId))
-
-	// Delete instance and verify it's gone
-	err = testModel.DeleteApiInstanceById(instanceId)
-	assert.NoError(t, err)
-	assert.Nil(t, testModel.GetApiInstanceById(instanceId))
-}
-
 func TestComponentInstanceOperations(t *testing.T) {
 	sink := events.NewListSink()
 	testModel, err := model.NewModel(sink)

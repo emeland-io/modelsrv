@@ -202,10 +202,12 @@ func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLan
 	respBody := []InstanceListItem{}
 
 	for _, instance := range instanceArr {
-		reference := fmt.Sprintf("%s/landscape/api-instances/%s", a.BaseURL, instance.InstanceId.String())
+		instanceId := instance.GetInstanceId()
+		displayName := instance.GetDisplayName()
+		reference := fmt.Sprintf("%s/landscape/api-instances/%s", a.BaseURL, instanceId.String())
 		item := InstanceListItem{
-			InstanceId:  &instance.InstanceId,
-			DisplayName: &instance.DisplayName,
+			InstanceId:  &instanceId,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -223,17 +225,17 @@ func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, r
 	}
 
 	respBody := ApiInstance{
-		ApiInstanceId: apiInstance.InstanceId,
-		DisplayName:   apiInstance.DisplayName,
-		Annotations:   cloneAnnotations(apiInstance.Annotations),
+		ApiInstanceId: apiInstance.GetInstanceId(),
+		DisplayName:   apiInstance.GetDisplayName(),
+		Annotations:   cloneAnnotations2(apiInstance.GetAnnotations()),
 	}
 
-	if apiInstance.ApiRef != nil {
-		respBody.Api = &(apiInstance.ApiRef.ApiID)
+	if apiInstance.GetApiRef() != nil {
+		respBody.Api = &(apiInstance.GetApiRef().ApiID)
 	}
 
-	if apiInstance.SystemInstance != nil {
-		respBody.SystemInstance = &(apiInstance.SystemInstance.InstanceId)
+	if apiInstance.GetSystemInstance() != nil {
+		respBody.SystemInstance = &(apiInstance.GetSystemInstance().InstanceId)
 	}
 
 	return GetLandscapeApiInstancesApiInstanceId200JSONResponse(respBody), nil

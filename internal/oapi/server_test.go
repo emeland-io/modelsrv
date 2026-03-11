@@ -131,15 +131,10 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(&api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.ApiInstance{
-		InstanceId:  apiInstanceId,
-		DisplayName: "First API Instance",
-		ApiRef: &model.ApiRef{
-			ApiID: uuid.New(),
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddApiInstance(&apiInstance)
+	apiInstance := model.NewApiInstance(backend, apiInstanceId)
+	apiInstance.SetDisplayName("First API Instance")
+	apiInstance.SetApiRefById(uuid.New())
+	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
 	component := model.Component{
