@@ -123,6 +123,17 @@ func main() {
 
 	types := []TypeSpec{
 		{
+			Name:      "ApiInstance",
+			EventType: "APIInstance",
+			IDField:   "InstanceId",
+			Fields: []Field{
+				{Name: "DisplayName", Type: "string"},
+				{Name: "ApiRef", Type: "*ApiRef"},
+				{Name: "SystemInstance", Type: "*SystemInstanceRef"},
+				{Name: "Annotations", Type: "Annotations", HasAnnotations: true},
+			},
+		},
+		{
 			Name:      "API",
 			EventType: "API",
 			IDField:   "ApiId",
