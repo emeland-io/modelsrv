@@ -71,10 +71,10 @@ type Model interface {
 	GetSystemInstances() ([]*SystemInstance, error)
 	GetSystemInstanceById(id uuid.UUID) *SystemInstance
 
-	AddApiInstance(instance *ApiInstance) error
+	AddApiInstance(instance ApiInstance) error
 	DeleteApiInstanceById(id uuid.UUID) error
-	GetApiInstances() ([]*ApiInstance, error)
-	GetApiInstanceById(id uuid.UUID) *ApiInstance
+	GetApiInstances() ([]ApiInstance, error)
+	GetApiInstanceById(id uuid.UUID) ApiInstance
 
 	AddComponentInstance(instance *ComponentInstance) error
 	DeleteComponentInstanceById(id uuid.UUID) error
@@ -107,7 +107,7 @@ type modelData struct {
 	componentsByUUID map[uuid.UUID]*Component
 
 	systemInstancesByUUID    map[uuid.UUID]*SystemInstance
-	apiInstancesByUUID       map[uuid.UUID]*ApiInstance
+	apiInstancesByUUID       map[uuid.UUID]ApiInstance
 	componentInstancesByUUID map[uuid.UUID]*ComponentInstance
 
 	findingsByUUID     map[uuid.UUID]Finding
@@ -136,7 +136,7 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		componentsByUUID: make(map[uuid.UUID]*Component),
 
 		systemInstancesByUUID:    make(map[uuid.UUID]*SystemInstance),
-		apiInstancesByUUID:       make(map[uuid.UUID]*ApiInstance),
+		apiInstancesByUUID:       make(map[uuid.UUID]ApiInstance),
 		componentInstancesByUUID: make(map[uuid.UUID]*ComponentInstance),
 
 		findingsByUUID:     make(map[uuid.UUID]Finding),
@@ -269,14 +269,6 @@ type SystemInstance struct {
 type SystemInstanceRef struct {
 	SystemInstance *SystemInstance
 	InstanceId     uuid.UUID
-}
-
-type ApiInstance struct {
-	DisplayName    string
-	InstanceId     uuid.UUID
-	ApiRef         *ApiRef
-	SystemInstance *SystemInstanceRef
-	Annotations    map[string]string
 }
 
 type ComponentInstance struct {
@@ -479,9 +471,11 @@ func (m *modelData) AddApi(api *API) error {
 }
 
 // AddApiInstance implements Model.
-func (m *modelData) AddApiInstance(instance *ApiInstance) error {
-	if instance.InstanceId != uuid.Nil {
-		m.apiInstancesByUUID[instance.InstanceId] = instance
+func (m *modelData) AddApiInstance(instance ApiInstance) error {
+	if instance.GetInstanceId() != uuid.Nil {
+		instance.getData().isRegistered = true
+		m.apiInstancesByUUID[instance.GetInstanceId()] = instance
+		m.sink.Receive(events.APIInstanceResource, events.CreateOperation, instance.GetInstanceId(), instance)
 	}
 	return nil
 }
@@ -538,6 +532,7 @@ func (m *modelData) DeleteApiInstanceById(id uuid.UUID) error {
 		return ApiInstanceNotFoundError
 	}
 	delete(m.apiInstancesByUUID, id)
+	m.sink.Receive(events.APIInstanceResource, events.DeleteOperation, id)
 	return nil
 }
 
@@ -581,7 +576,7 @@ func (m *modelData) GetApiById(id uuid.UUID) *API {
 }
 
 // GetApiInstanceById implements Model.
-func (m *modelData) GetApiInstanceById(id uuid.UUID) *ApiInstance {
+func (m *modelData) GetApiInstanceById(id uuid.UUID) ApiInstance {
 	instance, exists := m.apiInstancesByUUID[id]
 	if !exists {
 		return nil
@@ -617,7 +612,7 @@ func (m *modelData) GetSystemInstanceById(id uuid.UUID) *SystemInstance {
 }
 
 // GetApiInstances implements Model.
-func (m *modelData) GetApiInstances() ([]*ApiInstance, error) {
+func (m *modelData) GetApiInstances() ([]ApiInstance, error) {
 	instanceArr := slices.Collect(maps.Values(m.apiInstancesByUUID))
 	return instanceArr, nil
 }

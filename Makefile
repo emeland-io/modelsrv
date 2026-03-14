@@ -1,3 +1,4 @@
+SHELL := /bin/bash
 
 LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
