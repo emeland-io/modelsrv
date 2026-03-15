@@ -4,8 +4,10 @@
 package client
 
 import (
+	"encoding/json"
 	"time"
 
+	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
@@ -150,6 +152,25 @@ type ContextType struct {
 // ErrorString defines model for ErrorString.
 type ErrorString = string
 
+// Event Represents an event in the EmELand model. An event captures a change or occurrence within the landscape that may be of interest to subscribers.
+type Event struct {
+	// Kind The type of the resource that this event is about.
+	Kind interface{} `json:"kind"`
+
+	// Operation The type of the event: create, update or delete.
+	Operation interface{} `json:"operation"`
+
+	// Resource The list of resources that this event is about. The structure of this field depends on the
+	// value of the "kind" field. It can be any of the following:
+	Resource Event_Resource `json:"resource"`
+}
+
+// Event_Resource The list of resources that this event is about. The structure of this field depends on the
+// value of the "kind" field. It can be any of the following:
+type Event_Resource struct {
+	union json.RawMessage
+}
+
 // Finding Represents the finding of a rule violation. Rules may either be defined for semantic correctness of the model or for compliance checks against external regulations and standards.
 type Finding struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the finding.
@@ -293,8 +314,177 @@ type PostEventsUnregisterJSONBody struct {
 	CallbackUrl string `json:"callbackUrl"`
 }
 
+// PostEventsPushJSONRequestBody defines body for PostEventsPush for application/json ContentType.
+type PostEventsPushJSONRequestBody = Event
+
 // PostEventsRegisterJSONRequestBody defines body for PostEventsRegister for application/json ContentType.
 type PostEventsRegisterJSONRequestBody PostEventsRegisterJSONBody
 
 // PostEventsUnregisterJSONRequestBody defines body for PostEventsUnregister for application/json ContentType.
 type PostEventsUnregisterJSONRequestBody PostEventsUnregisterJSONBody
+
+// AsSystem returns the union data inside the Event_Resource as a System
+func (t Event_Resource) AsSystem() (System, error) {
+	var body System
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSystem overwrites any union data inside the Event_Resource as the provided System
+func (t *Event_Resource) FromSystem(v System) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSystem performs a merge with any union data inside the Event_Resource, using the provided System
+func (t *Event_Resource) MergeSystem(v System) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSystemInstance returns the union data inside the Event_Resource as a SystemInstance
+func (t Event_Resource) AsSystemInstance() (SystemInstance, error) {
+	var body SystemInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSystemInstance overwrites any union data inside the Event_Resource as the provided SystemInstance
+func (t *Event_Resource) FromSystemInstance(v SystemInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSystemInstance performs a merge with any union data inside the Event_Resource, using the provided SystemInstance
+func (t *Event_Resource) MergeSystemInstance(v SystemInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAPI returns the union data inside the Event_Resource as a API
+func (t Event_Resource) AsAPI() (API, error) {
+	var body API
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAPI overwrites any union data inside the Event_Resource as the provided API
+func (t *Event_Resource) FromAPI(v API) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAPI performs a merge with any union data inside the Event_Resource, using the provided API
+func (t *Event_Resource) MergeAPI(v API) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsApiInstance returns the union data inside the Event_Resource as a ApiInstance
+func (t Event_Resource) AsApiInstance() (ApiInstance, error) {
+	var body ApiInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromApiInstance overwrites any union data inside the Event_Resource as the provided ApiInstance
+func (t *Event_Resource) FromApiInstance(v ApiInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeApiInstance performs a merge with any union data inside the Event_Resource, using the provided ApiInstance
+func (t *Event_Resource) MergeApiInstance(v ApiInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComponent returns the union data inside the Event_Resource as a Component
+func (t Event_Resource) AsComponent() (Component, error) {
+	var body Component
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComponent overwrites any union data inside the Event_Resource as the provided Component
+func (t *Event_Resource) FromComponent(v Component) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComponent performs a merge with any union data inside the Event_Resource, using the provided Component
+func (t *Event_Resource) MergeComponent(v Component) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComponentInstance returns the union data inside the Event_Resource as a ComponentInstance
+func (t Event_Resource) AsComponentInstance() (ComponentInstance, error) {
+	var body ComponentInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComponentInstance overwrites any union data inside the Event_Resource as the provided ComponentInstance
+func (t *Event_Resource) FromComponentInstance(v ComponentInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComponentInstance performs a merge with any union data inside the Event_Resource, using the provided ComponentInstance
+func (t *Event_Resource) MergeComponentInstance(v ComponentInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Event_Resource) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Event_Resource) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}

@@ -23,6 +23,20 @@ import (
 	"github.com/google/uuid"
 )
 
+type Subscriber interface {
+	// Notify notifies the subscriber of an event.
+	Notify(ctx context.Context, event *Event) error
+
+	// GetURL returns the URL of the subscriber, under which it accepts events.
+	GetURL() string
+
+	// GetId returns the unique ID of the subscriber.
+	GetId() uuid.UUID
+
+	// GetStatus returns the current status of the subscriber (e.g. active, inactive, etc.)
+	GetStatus() string
+}
+
 // EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
 	// GetCurrentEventSequenceId returns the current event sequence ID as a string.
@@ -36,83 +50,11 @@ type EventManager interface {
 	GetSink() (EventSink, error)
 
 	// GetSubscribers returns a list of current subscribers.
-	GetSubscribers() []string
-	// AddSubscriber adds a new subscriber by URL.
-	AddSubscriber(url string) error
+	GetSubscribers() []Subscriber
+	// AddSubscriber adds a new subscriber by url.
+	AddSubscriber(subUrl string) error
 	// RemoveSubscriber removes a subscriber by URL.
-	RemoveSubscriber(url string) error
-}
-
-var _ EventManager = (*eventManager)(nil)
-
-type eventManager struct {
-	sequenceNumber uint64
-	subscribers    []string
-	sinkFactory    func() (EventSink, error)
-}
-
-func NewEventManager() (EventManager, error) {
-	retval := &eventManager{
-		sequenceNumber: 0,
-		sinkFactory:    func() (EventSink, error) { return NewListSink(), nil },
-	}
-	return retval, nil
-
-}
-
-// GetCurrentSequenceId implements EventManager.
-func (e *eventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error) {
-	return e.sequenceNumber, nil
-}
-
-// IncrementSequenceId implements EventManager.
-func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
-	e.sequenceNumber++
-	return nil
-}
-
-// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
-// If no factory has been set, a default [ListSink] is returned.
-//
-// SetSinkFactory implements [EventManager].
-func (e *eventManager) SetSinkFactory(factory func() (EventSink, error)) {
-	e.sinkFactory = factory
-}
-
-// GetSink implements [EventManager].
-func (e *eventManager) GetSink() (EventSink, error) {
-	return NewListSink(), nil
-}
-
-// AddSubscriber implements [EventManager].
-// adding the same subscriber URL again will result in only one entry in the subscriber list.
-func (e *eventManager) AddSubscriber(url string) error {
-	for _, sub := range e.subscribers {
-		if sub == url {
-			// already exists
-			return nil
-		}
-	}
-	e.subscribers = append(e.subscribers, url)
-	return nil
-}
-
-// GetSubscribers implements [EventManager].
-func (e *eventManager) GetSubscribers() []string {
-	return e.subscribers
-}
-
-// RemoveSubscriber implements [EventManager].
-// TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
-func (e *eventManager) RemoveSubscriber(url string) error {
-	for i, sub := range e.subscribers {
-		if sub == url {
-			// remove subscriber
-			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
-			return nil
-		}
-	}
-	return fmt.Errorf("subscriber %s not found", url)
+	RemoveSubscriber(subUrl string) error
 }
 
 type ResourceType int
@@ -160,6 +102,10 @@ var resourceTypeValues = map[ResourceType]string{
 	ComponentResource:         "Component",
 	ComponentInstanceResource: "ComponentInstance",
 
+	//Phase 5
+	FindingResource:     "Finding",
+	FindingTypeResource: "FindingType",
+
 	// Value objects
 	AnnotationsResource: "Annotations",
 }
@@ -200,14 +146,14 @@ type Event struct {
 	ResourceType ResourceType
 	Operation    Operation
 	ResourceId   uuid.UUID
-	Objects      []any
+	Object       any
 }
 
 func (e Event) String() string {
 	if e.Operation == DeleteOperation {
 		return fmt.Sprintf("%s: %s %s", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String())
 	} else {
-		return fmt.Sprintf("%s: %s %s: %v", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String(), e.Objects)
+		return fmt.Sprintf("%s: %s %s: %v", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String(), e.Object)
 	}
 }
 
@@ -268,7 +214,7 @@ func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.U
 		ResourceType: resType,
 		Operation:    op,
 		ResourceId:   resourceId,
-		Objects:      objects,
+		Object:       objects,
 	}
 	l.events = append(l.events, currEvent)
 

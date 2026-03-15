@@ -90,6 +90,11 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// PostEventsPushWithBody request with any body
+	PostEventsPushWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostEventsPush(ctx context.Context, body PostEventsPushJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetEventsQuerySequenceId request
 	GetEventsQuerySequenceId(ctx context.Context, sequenceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -180,6 +185,30 @@ type ClientInterface interface {
 
 	// GetTest request
 	GetTest(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) PostEventsPushWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostEventsPushRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostEventsPush(ctx context.Context, body PostEventsPushJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostEventsPushRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) GetEventsQuerySequenceId(ctx context.Context, sequenceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -552,6 +581,46 @@ func (c *Client) GetTest(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewPostEventsPushRequest calls the generic PostEventsPush builder with application/json body
+func NewPostEventsPushRequest(server string, body PostEventsPushJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostEventsPushRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostEventsPushRequestWithBody generates requests for PostEventsPush with any type of body
+func NewPostEventsPushRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/events/push")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetEventsQuerySequenceIdRequest generates requests for GetEventsQuerySequenceId
@@ -1497,6 +1566,11 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// PostEventsPushWithBodyWithResponse request with any body
+	PostEventsPushWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error)
+
+	PostEventsPushWithResponse(ctx context.Context, body PostEventsPushJSONRequestBody, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error)
+
 	// GetEventsQuerySequenceIdWithResponse request
 	GetEventsQuerySequenceIdWithResponse(ctx context.Context, sequenceId string, reqEditors ...RequestEditorFn) (*GetEventsQuerySequenceIdResponse, error)
 
@@ -1587,6 +1661,27 @@ type ClientWithResponsesInterface interface {
 
 	// GetTestWithResponse request
 	GetTestWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTestResponse, error)
+}
+
+type PostEventsPushResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r PostEventsPushResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostEventsPushResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type GetEventsQuerySequenceIdResponse struct {
@@ -2237,6 +2332,23 @@ func (r GetTestResponse) StatusCode() int {
 	return 0
 }
 
+// PostEventsPushWithBodyWithResponse request with arbitrary body returning *PostEventsPushResponse
+func (c *ClientWithResponses) PostEventsPushWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error) {
+	rsp, err := c.PostEventsPushWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostEventsPushResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostEventsPushWithResponse(ctx context.Context, body PostEventsPushJSONRequestBody, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error) {
+	rsp, err := c.PostEventsPush(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostEventsPushResponse(rsp)
+}
+
 // GetEventsQuerySequenceIdWithResponse request returning *GetEventsQuerySequenceIdResponse
 func (c *ClientWithResponses) GetEventsQuerySequenceIdWithResponse(ctx context.Context, sequenceId string, reqEditors ...RequestEditorFn) (*GetEventsQuerySequenceIdResponse, error) {
 	rsp, err := c.GetEventsQuerySequenceId(ctx, sequenceId, reqEditors...)
@@ -2512,6 +2624,22 @@ func (c *ClientWithResponses) GetTestWithResponse(ctx context.Context, reqEditor
 		return nil, err
 	}
 	return ParseGetTestResponse(rsp)
+}
+
+// ParsePostEventsPushResponse parses an HTTP response from a PostEventsPushWithResponse call
+func ParsePostEventsPushResponse(rsp *http.Response) (*PostEventsPushResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostEventsPushResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
 }
 
 // ParseGetEventsQuerySequenceIdResponse parses an HTTP response from a GetEventsQuerySequenceIdWithResponse call

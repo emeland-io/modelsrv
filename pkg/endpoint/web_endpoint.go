@@ -22,10 +22,10 @@ var (
 	setupLog  zap.SugaredLogger
 )
 
-// StarWebListener starts the web endpoint serving the Swagger-UI and API
+// StartWebListener starts the web endpoint serving the Swagger-UI and API
 //
 // addr is the address and port to bind to, e.g. "localhost:24000"
-func StarWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
+func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
 	baseUrl := fmt.Sprintf("http://%s/api", addr)
 	server := oapi.NewApiServer(backend, eventMgr, baseUrl)
 	strict := oapi.NewApiHandler(server)

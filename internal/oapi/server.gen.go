@@ -164,6 +164,25 @@ type ContextType struct {
 // ErrorString defines model for ErrorString.
 type ErrorString = string
 
+// Event Represents an event in the EmELand model. An event captures a change or occurrence within the landscape that may be of interest to subscribers.
+type Event struct {
+	// Kind The type of the resource that this event is about.
+	Kind interface{} `json:"kind"`
+
+	// Operation The type of the event: create, update or delete.
+	Operation interface{} `json:"operation"`
+
+	// Resource The list of resources that this event is about. The structure of this field depends on the
+	// value of the "kind" field. It can be any of the following:
+	Resource Event_Resource `json:"resource"`
+}
+
+// Event_Resource The list of resources that this event is about. The structure of this field depends on the
+// value of the "kind" field. It can be any of the following:
+type Event_Resource struct {
+	union json.RawMessage
+}
+
 // Finding Represents the finding of a rule violation. Rules may either be defined for semantic correctness of the model or for compliance checks against external regulations and standards.
 type Finding struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the finding.
@@ -307,14 +326,186 @@ type PostEventsUnregisterJSONBody struct {
 	CallbackUrl string `json:"callbackUrl"`
 }
 
+// PostEventsPushJSONRequestBody defines body for PostEventsPush for application/json ContentType.
+type PostEventsPushJSONRequestBody = Event
+
 // PostEventsRegisterJSONRequestBody defines body for PostEventsRegister for application/json ContentType.
 type PostEventsRegisterJSONRequestBody PostEventsRegisterJSONBody
 
 // PostEventsUnregisterJSONRequestBody defines body for PostEventsUnregister for application/json ContentType.
 type PostEventsUnregisterJSONRequestBody PostEventsUnregisterJSONBody
 
+// AsSystem returns the union data inside the Event_Resource as a System
+func (t Event_Resource) AsSystem() (System, error) {
+	var body System
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSystem overwrites any union data inside the Event_Resource as the provided System
+func (t *Event_Resource) FromSystem(v System) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSystem performs a merge with any union data inside the Event_Resource, using the provided System
+func (t *Event_Resource) MergeSystem(v System) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSystemInstance returns the union data inside the Event_Resource as a SystemInstance
+func (t Event_Resource) AsSystemInstance() (SystemInstance, error) {
+	var body SystemInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSystemInstance overwrites any union data inside the Event_Resource as the provided SystemInstance
+func (t *Event_Resource) FromSystemInstance(v SystemInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSystemInstance performs a merge with any union data inside the Event_Resource, using the provided SystemInstance
+func (t *Event_Resource) MergeSystemInstance(v SystemInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAPI returns the union data inside the Event_Resource as a API
+func (t Event_Resource) AsAPI() (API, error) {
+	var body API
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAPI overwrites any union data inside the Event_Resource as the provided API
+func (t *Event_Resource) FromAPI(v API) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAPI performs a merge with any union data inside the Event_Resource, using the provided API
+func (t *Event_Resource) MergeAPI(v API) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsApiInstance returns the union data inside the Event_Resource as a ApiInstance
+func (t Event_Resource) AsApiInstance() (ApiInstance, error) {
+	var body ApiInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromApiInstance overwrites any union data inside the Event_Resource as the provided ApiInstance
+func (t *Event_Resource) FromApiInstance(v ApiInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeApiInstance performs a merge with any union data inside the Event_Resource, using the provided ApiInstance
+func (t *Event_Resource) MergeApiInstance(v ApiInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComponent returns the union data inside the Event_Resource as a Component
+func (t Event_Resource) AsComponent() (Component, error) {
+	var body Component
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComponent overwrites any union data inside the Event_Resource as the provided Component
+func (t *Event_Resource) FromComponent(v Component) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComponent performs a merge with any union data inside the Event_Resource, using the provided Component
+func (t *Event_Resource) MergeComponent(v Component) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsComponentInstance returns the union data inside the Event_Resource as a ComponentInstance
+func (t Event_Resource) AsComponentInstance() (ComponentInstance, error) {
+	var body ComponentInstance
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromComponentInstance overwrites any union data inside the Event_Resource as the provided ComponentInstance
+func (t *Event_Resource) FromComponentInstance(v ComponentInstance) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeComponentInstance performs a merge with any union data inside the Event_Resource, using the provided ComponentInstance
+func (t *Event_Resource) MergeComponentInstance(v ComponentInstance) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Event_Resource) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Event_Resource) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /events/push)
+	PostEventsPush(w http.ResponseWriter, r *http.Request)
 
 	// (GET /events/query/{sequenceId})
 	GetEventsQuerySequenceId(w http.ResponseWriter, r *http.Request, sequenceId string)
@@ -412,6 +603,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// PostEventsPush operation middleware
+func (siw *ServerInterfaceWrapper) PostEventsPush(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostEventsPush(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetEventsQuerySequenceId operation middleware
 func (siw *ServerInterfaceWrapper) GetEventsQuerySequenceId(w http.ResponseWriter, r *http.Request) {
@@ -1075,6 +1280,8 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.HandleFunc(options.BaseURL+"/events/push", wrapper.PostEventsPush).Methods("POST")
+
 	r.HandleFunc(options.BaseURL+"/events/query/{sequenceId}", wrapper.GetEventsQuerySequenceId).Methods("GET")
 
 	r.HandleFunc(options.BaseURL+"/events/register", wrapper.PostEventsRegister).Methods("POST")
@@ -1134,6 +1341,22 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/test", wrapper.GetTest).Methods("GET")
 
 	return r
+}
+
+type PostEventsPushRequestObject struct {
+	Body *PostEventsPushJSONRequestBody
+}
+
+type PostEventsPushResponseObject interface {
+	VisitPostEventsPushResponse(w http.ResponseWriter) error
+}
+
+type PostEventsPush200Response struct {
+}
+
+func (response PostEventsPush200Response) VisitPostEventsPushResponse(w http.ResponseWriter) error {
+	w.WriteHeader(200)
+	return nil
 }
 
 type GetEventsQuerySequenceIdRequestObject struct {
@@ -1748,6 +1971,9 @@ func (response GetTest200Response) VisitGetTestResponse(w http.ResponseWriter) e
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (POST /events/push)
+	PostEventsPush(ctx context.Context, request PostEventsPushRequestObject) (PostEventsPushResponseObject, error)
+
 	// (GET /events/query/{sequenceId})
 	GetEventsQuerySequenceId(ctx context.Context, request GetEventsQuerySequenceIdRequestObject) (GetEventsQuerySequenceIdResponseObject, error)
 
@@ -1863,6 +2089,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// PostEventsPush operation middleware
+func (sh *strictHandler) PostEventsPush(w http.ResponseWriter, r *http.Request) {
+	var request PostEventsPushRequestObject
+
+	var body PostEventsPushJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostEventsPush(ctx, request.(PostEventsPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostEventsPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostEventsPushResponseObject); ok {
+		if err := validResponse.VisitPostEventsPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetEventsQuerySequenceId operation middleware
@@ -2604,74 +2861,79 @@ func (sh *strictHandler) GetTest(w http.ResponseWriter, r *http.Request) {
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

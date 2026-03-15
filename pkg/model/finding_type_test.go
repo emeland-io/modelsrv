@@ -60,25 +60,14 @@ func TestFindingTypeBasic(t *testing.T) {
 	err = testModel.DeleteFindingTypeById(findingTypeId)
 	assert.NoError(t, err)
 
-	expectedEvents := []struct {
-		resource   events.ResourceType
-		operation  events.Operation
-		resourceId uuid.UUID
-	}{
-		{resource: events.FindingTypeResource, operation: events.CreateOperation, resourceId: findingTypeId},
-		{resource: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
-		{resource: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
-		{resource: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
-		{resource: events.FindingTypeResource, operation: events.DeleteOperation, resourceId: findingTypeId},
+	expectedEvents := []expectedEvent{
+		{resourceType: events.FindingTypeResource, operation: events.CreateOperation, resourceId: findingTypeId},
+		{resourceType: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
+		{resourceType: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
+		{resourceType: events.FindingTypeResource, operation: events.UpdateOperation, resourceId: findingTypeId},
+		{resourceType: events.FindingTypeResource, operation: events.DeleteOperation, resourceId: findingTypeId},
 	}
 
 	// Verify events in sink
-	eventsList := sink.GetEvents()
-	assert.Equal(t, len(expectedEvents), len(eventsList), "expected %d events in sink, got %d", len(expectedEvents), len(eventsList))
-
-	for i, expectedEvent := range expectedEvents {
-		assert.Equal(t, expectedEvent.resource, eventsList[i].ResourceType, "event %d: expected resource type %v, got %v", i+1, expectedEvent.resource, eventsList[i].ResourceType)
-		assert.Equal(t, expectedEvent.operation, eventsList[i].Operation, "event %d: expected operation %v, got %v", i+1, expectedEvent.operation, eventsList[i].Operation)
-		assert.Equal(t, expectedEvent.resourceId, eventsList[i].ResourceId, "event %d: expected resource ID %v, got %v", i+1, expectedEvent.resourceId, eventsList[i].ResourceId)
-	}
+	checkEvents(t, sink.GetEvents(), expectedEvents)
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
@@ -231,4 +232,61 @@ func (c *ModelSrvClient) GetComponentInstanceById(componentId uuid.UUID) (*oapi.
 	}
 
 	return (*oapi.ComponentInstance)(resp.JSON200), nil
+}
+
+// Register allows url to be registered as a subscriber. The url should point to the base URL of the subscriber's listener.
+func (c *ModelSrvClient) Register(targetUrl string) error {
+	resp, err := c.oapi_client.PostEventsRegister(context.TODO(), oapi.PostEventsRegisterJSONRequestBody{
+		CallbackUrl: targetUrl,
+	})
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("expected HTTP 201 but received %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func (c *ModelSrvClient) PostEvent(event *events.Event) error {
+
+	var err error
+
+	operationValues := map[events.Operation]string{
+		events.UnknownOperation: "Unknown",
+		events.CreateOperation:  "Create",
+		events.UpdateOperation:  "Update",
+		events.DeleteOperation:  "Delete",
+	}
+
+	kind := event.ResourceType
+
+	resource := oapi.Event_Resource{}
+
+	switch kind {
+	case events.APIResource:
+		api := oapi.API{}
+		err = resource.FromAPI(api)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to convert event object to API resource: %v", err)
+	}
+
+	oEvent := oapi.Event{
+		Kind:      kind.String(),
+		Operation: operationValues[event.Operation],
+		Resource:  resource,
+	}
+
+	resp, err := c.oapi_client.PostEventsPush(context.TODO(), oEvent)
+
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("expected HTTP 201 but received %d", resp.StatusCode)
+	}
+
+	return nil
 }

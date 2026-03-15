@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -159,36 +158,6 @@ func NewApiHandler(server *ApiServer) ServerInterface {
 		[]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeader, ProcessContentTypeRequest})
 
 	return handler
-}
-
-// GetEventsQuerySequenceId implements StrictServerInterface.
-func (a *ApiServer) GetEventsQuerySequenceId(ctx context.Context, request GetEventsQuerySequenceIdRequestObject) (GetEventsQuerySequenceIdResponseObject, error) {
-	var requestSequenceId uint64
-
-	// parse sequenceId
-	requestSequenceId, err := strconv.ParseUint(request.SequenceId, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	currSequenceId, err := a.Events.GetCurrentSequenceId(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if requestSequenceId == currSequenceId {
-		// no new events
-		resp := GetEventsQuerySequenceId200Response{}
-		return GetEventsQuerySequenceId200Response(resp), nil
-	} else if requestSequenceId < currSequenceId {
-		// there are new events
-		resp := GetEventsQuerySequenceId308Response{}
-		return GetEventsQuerySequenceId308Response(resp), nil
-	} else {
-		// client is ahead of server?
-		resp := ""
-		return GetEventsQuerySequenceId404JSONResponse(resp), nil
-	}
 }
 
 // GetLandscapeApiInstances implements StrictServerInterface.
@@ -389,10 +358,12 @@ func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandsca
 	respBody := []InstanceListItem{}
 
 	for _, finding := range findingsArr {
-		reference := fmt.Sprintf("%s/landscape/findings/%s", a.BaseURL, finding.FindingId.String())
+		reference := fmt.Sprintf("%s/landscape/findings/%s", a.BaseURL, finding.GetFindingId().String())
+		id := finding.GetFindingId()
+		displayName := finding.GetDisplayName()
 		item := InstanceListItem{
-			InstanceId:  &finding.FindingId,
-			DisplayName: &finding.Summary,
+			InstanceId:  &id,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -408,12 +379,13 @@ func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request G
 		return nil, fmt.Errorf("finding %s not found", request.FindingId.String())
 	}
 
+	desc := finding.GetDescription()
 	respBody := Finding{
-		FindingId:   finding.FindingId,
-		Summary:     finding.Summary,
-		Description: &finding.Description,
-		Resources:   cloneResourceRefs(finding.Resources),
-		Annotations: cloneAnnotations(finding.Annotations),
+		FindingId:   finding.GetFindingId(),
+		Summary:     finding.GetDisplayName(),
+		Description: &desc,
+		Resources:   *cloneResourceRefs(finding.GetResources()),
+		Annotations: cloneAnnotations2(finding.GetAnnotations()),
 	}
 	return GetLandscapeFindingsFindingId200JSONResponse(respBody), nil
 }
@@ -516,27 +488,6 @@ func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request Get
 // GetTest implements StrictServerInterface.
 func (a *ApiServer) GetTest(ctx context.Context, request GetTestRequestObject) (GetTestResponseObject, error) {
 	return GetTest200Response{}, nil
-}
-
-// PostEventsRegister implements StrictServerInterface.
-func (a *ApiServer) PostEventsRegister(ctx context.Context, request PostEventsRegisterRequestObject) (PostEventsRegisterResponseObject, error) {
-	a.Events.AddSubscriber(request.Body.CallbackUrl)
-
-	return PostEventsRegister201Response{}, nil
-}
-
-// PostEventsUnregister implements [StrictServerInterface].
-func (a *ApiServer) PostEventsUnregister(ctx context.Context, request PostEventsUnregisterRequestObject) (PostEventsUnregisterResponseObject, error) {
-	error := a.Events.RemoveSubscriber(request.Body.CallbackUrl)
-	if error != nil {
-		return PostEventsUnregister404JSONResponse(error.Error()), nil
-	}
-	return PostEventsUnregister200Response{}, nil
-}
-
-// GetEventsSubscribers implements [StrictServerInterface].
-func (a *ApiServer) GetEventsSubscribers(ctx context.Context, request GetEventsSubscribersRequestObject) (GetEventsSubscribersResponseObject, error) {
-	panic("unimplemented")
 }
 
 // parseISO8601 is more tolerant when parsing the input string, than the rfc3339 compliant parsing implemented by the golang default

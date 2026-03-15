@@ -60,9 +60,11 @@ func cloneAnnotations2(annos model.Annotations) *[]Annotation {
 cloneResourceRefs creates a deep copy of the given ResourceRef slice.
 
 	Warning: not the change in the type of the items from reference to value.
+
+	TODO: make this use the future generic array type with event handling instead of the current array of model.ResourceRef type.
 */
-func cloneResourceRefs(resourceRef []*model.ResourceRef) []ResourceRef {
-	respArr := []ResourceRef{}
+func cloneResourceRefs(resourceRef []model.ResourceRef) *[]ResourceRef {
+	respArr := make([]ResourceRef, 0)
 
 	for _, resRef := range resourceRef {
 		newRef := ResourceRef{
@@ -71,5 +73,5 @@ func cloneResourceRefs(resourceRef []*model.ResourceRef) []ResourceRef {
 		}
 		respArr = append(respArr, newRef)
 	}
-	return respArr
+	return &respArr
 }

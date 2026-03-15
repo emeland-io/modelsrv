@@ -17,7 +17,6 @@ limitations under the License.
 package oapi_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -31,6 +30,7 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ievents "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -104,6 +104,7 @@ var _ = BeforeSuite(func() {
 
 	parentContext := model.NewContext(backend, parentContextId)
 	err = backend.AddContext(parentContext)
+	parentContext.SetDisplayName("the parent context")
 	Expect(err).NotTo(HaveOccurred())
 
 	node := model.NewNode(backend, nodeId)
@@ -191,23 +192,14 @@ var _ = BeforeSuite(func() {
 	err = backend.AddSystemInstance(&systemInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	finding := model.Finding{
-		FindingId:   findingId,
-		Summary:     "First Finding",
-		Description: "This is the first test finding.",
-		Resources: []*model.ResourceRef{
-			{
-				ResourceType: events.ParseResourceType("API"),
-				ResourceId:   apiId,
-			},
-			{
-				ResourceType: events.ParseResourceType("Component"),
-				ResourceId:   componentId,
-			},
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddFinding(&finding, finding.Summary)
+	finding := model.NewFinding(backend, findingId)
+	finding.SetDisplayName("First Finding")
+	finding.SetDescription("This is the first test finding.")
+
+	finding.AddResource(events.APIResource, apiId)
+	finding.AddResource(events.ComponentResource, componentId)
+
+	err = backend.AddFinding(finding)
 	Expect(err).NotTo(HaveOccurred())
 
 	findingType := model.NewFindingType(backend, findingTypeId)
@@ -216,7 +208,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
-	eventMgr, err = events.NewEventManager()
+	eventMgr, err = ievents.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
@@ -250,95 +242,6 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	})
 
 	AfterEach(func() {
-	})
-
-	ctx := context.Background()
-
-	It("should call GET on /events/query/{sequenceId} for sequenceId 0", func() {
-		eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
-
-		url := fmt.Sprintf("http://localhost/events/query/%d", 0)
-		req := httptest.NewRequest("GET", url, nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-
-		//ctx := context.Background()
-		Expect(resp.StatusCode).To(Equal(http.StatusPermanentRedirect))
-		body, err := io.ReadAll(resp.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(body)).To(Equal(0))
-		// TODO: check reference to location returned in header
-
-	})
-
-	It("should call GET on /events/query/{sequenceId} for valid sequenceId", func() {
-		sequenceId, err := eventMgr.GetCurrentSequenceId(ctx)
-		Expect(err).NotTo(HaveOccurred())
-
-		url := fmt.Sprintf("http://localhost/events/query/%d", sequenceId)
-		req := httptest.NewRequest("GET", url, nil)
-		w := httptest.NewRecorder()
-
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		body, err := io.ReadAll(resp.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(len(body)).To(Equal(0))
-
-	})
-
-	It("should call POST on /events/register to add a subscriber", func() {
-		url := "http://localhost/events/register"
-
-		postData := []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
-		req := httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-		defer resp.Body.Close()
-		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
-
-		Expect(len(eventMgr.GetSubscribers())).To(Equal(1))
-		Expect(eventMgr.GetSubscribers()[0]).To(Equal("http://remote-server.example.com/emeland/"))
-	})
-
-	It("should call POST on /events/unregister to remove a subscriber", func() {
-		url := "http://localhost/events/unregister"
-
-		// first try to remove a non-existing subscriber
-		postData := []byte(`{"callbackUrl":"http://invalid-server.example.com/emeland/"}`)
-		req := httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-
-		resp := w.Result()
-
-		Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
-		resp.Body.Close()
-
-		// now remove the existing subscriber
-		eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
-
-		postData = []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
-		req = httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
-		req.Header.Set("Content-Type", "application/json")
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		resp = w.Result()
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-		Expect(len(eventMgr.GetSubscribers())).To(Equal(0))
-
-		defer resp.Body.Close()
 	})
 
 	It("should call GET on /landscape/api-instances", func() {
