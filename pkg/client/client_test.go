@@ -87,17 +87,17 @@ var _ = Describe("Client", Ordered, func() {
 		})
 		It("return a Context by ID", func() {
 			// first try with an invalid ID
-			context, err := testClient.GetContextById(uuid.New())
+			context, err := testClient.GetContextById(uuid.New(), testModel)
 			Expect(err).Should(Equal(model.ContextNotFoundError))
 			Expect(context).To(BeNil())
 
 			// now try with a valid ID
-			context, err = testClient.GetContextById(contextId)
+			context, err = testClient.GetContextById(contextId, testModel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(context).NotTo(BeNil())
 
-			Expect(context.ContextId).To(Equal(contextId))
-			Expect(context.DisplayName).To(Equal("Test Context"))
+			Expect(context.GetContextId()).To(Equal(contextId))
+			Expect(context.GetDisplayName()).To(Equal("Test Context"))
 		})
 	})
 

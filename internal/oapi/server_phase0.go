@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
+	"go.emeland.io/modelsrv/pkg/model"
 )
 
 // GetLandscapeContexts implements StrictServerInterface.
@@ -56,24 +58,11 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 		return GetLandscapeContextsContextId404JSONResponse(errorstr), nil
 	}
 
-	displayName := context.GetDisplayName()
-	contextId := context.GetContextId()
-	var parentContextId uuid.UUID
-	parent, err := context.GetParent()
-	if err != nil || parent == nil {
-		parentContextId = uuid.Nil
-	} else {
-		parentContextId = parent.GetContextId()
+	respBody, err := ContextToDto(context)
+	if err != nil {
+		return nil, err
 	}
-
-	respBody := Context{
-		ContextId:   contextId,
-		DisplayName: displayName,
-		Parent:      &parentContextId,
-		Annotations: cloneAnnotations2(context.GetAnnotations()),
-	}
-
-	return GetLandscapeContextsContextId200JSONResponse(respBody), nil
+	return GetLandscapeContextsContextId200JSONResponse(*respBody), nil
 }
 
 func (a *ApiServer) GetLandscapeContextTypes(ctx context.Context, request GetLandscapeContextTypesRequestObject) (GetLandscapeContextTypesResponseObject, error) {
@@ -110,16 +99,12 @@ func (a *ApiServer) GetLandscapeContextTypesContextTypeId(ctx context.Context, r
 		return GetLandscapeContextTypesContextTypeId404JSONResponse(errorstr), nil
 	}
 
-	displayName := contextType.GetDisplayName()
-	contextTypeId := contextType.GetContextTypeId()
-
-	respBody := ContextType{
-		ContextTypeId: contextTypeId,
-		DisplayName:   displayName,
-		Annotations:   cloneAnnotations2(contextType.GetAnnotations()),
+	respBody, err := ContextTypeToDto(contextType)
+	if err != nil {
+		return nil, err
 	}
 
-	return GetLandscapeContextTypesContextTypeId200JSONResponse(respBody), nil
+	return GetLandscapeContextTypesContextTypeId200JSONResponse(*respBody), nil
 
 }
 
@@ -177,4 +162,90 @@ func (a *ApiServer) GetLandscapeNodesNodeId(ctx context.Context, request GetLand
 	}
 
 	return GetLandscapeNodesNodeId200JSONResponse(respBody), nil
+}
+
+/*
+############### DTO to Model conversion functions ###############
+These functions convert between the internal model and the API DTOs. They are used to decouple the internal model from the library API.
+They are functions rather than methods of the internal model to avoid circular dependencies between the internal model and the API DTOs.
+*/
+
+/*
+  These functions convert between the internal model and the API DTOs. They are used to decouple the internal model from the library API.
+  They are functions rather than methods of the internal model to avoid circular dependencies between the internal model and the API DTOs.
+*/
+
+func ContextToDto(context model.Context) (*Context, error) {
+	displayName := context.GetDisplayName()
+	contextId := context.GetContextId()
+	var parentContextId uuid.UUID
+	parent, err := context.GetParent()
+	if err != nil || parent == nil {
+		parentContextId = uuid.Nil
+	} else {
+		parentContextId = parent.GetContextId()
+	}
+
+	contextDto := &Context{
+		ContextId:   contextId,
+		DisplayName: displayName,
+		Parent:      &parentContextId,
+		Annotations: cloneAnnotations2(context.GetAnnotations()),
+	}
+
+	return contextDto, nil
+}
+
+func ContextFromDto(theModel model.Model, contextDto *Context) (model.Context, error) {
+	if contextDto == nil {
+		return nil, fmt.Errorf("contextDto is nil")
+	}
+
+	context := model.NewContext(theModel, contextDto.ContextId)
+
+	context.SetDisplayName(contextDto.DisplayName)
+	if contextDto.Description != nil {
+		context.SetDescription(*contextDto.Description)
+	}
+	if contextDto.Parent != nil {
+		context.SetParentById(*contextDto.Parent)
+	}
+
+	annotations := context.GetAnnotations()
+	for _, annotationDto := range *contextDto.Annotations {
+		annotations.Add(annotationDto.Key, annotationDto.Value)
+	}
+
+	return context, nil
+}
+
+func ContextTypeToDto(contextType model.ContextType) (*ContextType, error) {
+	displayName := contextType.GetDisplayName()
+	contextTypeId := contextType.GetContextTypeId()
+
+	contextTypeDto := &ContextType{
+		ContextTypeId: contextTypeId,
+		DisplayName:   displayName,
+		Annotations:   cloneAnnotations2(contextType.GetAnnotations()),
+	}
+
+	return contextTypeDto, nil
+}
+
+func ContextTypeFromDto(theModel model.Model, contextTypeDto *ContextType) (model.ContextType, error) {
+	if contextTypeDto == nil {
+		return nil, fmt.Errorf("contextTypeDto is nil")
+	}
+
+	contextType := model.NewContextType(theModel, contextTypeDto.ContextTypeId)
+
+	contextType.SetDisplayName(contextTypeDto.DisplayName)
+	contextType.SetDescription(*contextTypeDto.Description)
+
+	annotations := contextType.GetAnnotations()
+	for _, annotationDto := range *contextTypeDto.Annotations {
+		annotations.Add(annotationDto.Key, annotationDto.Value)
+	}
+
+	return contextType, nil
 }
