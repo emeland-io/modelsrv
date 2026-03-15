@@ -56,7 +56,16 @@ func (c *ModelSrvClient) GetContexts() (*oapi.InstanceList, error) {
 	return (*oapi.InstanceList)(resp.JSON200), nil
 }
 
-func (c *ModelSrvClient) GetContextById(contextId uuid.UUID) (*oapi.Context, error) {
+/*
+* GetContextById retrieves a context by its ID from the model server and converts it to a model.Context.
+* It returns model.ContextNotFoundError if the context is not found, and an error for any other issues.
+*
+* Note: theModel parameter is required to convert the received DTO into a model.Context. This is because the conversion
+* process may require access to the model's data or methods. Set a dummy model if you don't want to add the context to
+* an existing model.
+* The function will NOT add the retrieved context to theModel, so the caller is responsible for doing that if needed.
+ */
+func (c *ModelSrvClient) GetContextById(contextId uuid.UUID, theModel model.Model) (model.Context, error) {
 	resp, err := c.oapi_client.GetLandscapeContextsContextIdWithResponse(context.TODO(), contextId)
 	if err != nil {
 		return nil, err
@@ -68,7 +77,12 @@ func (c *ModelSrvClient) GetContextById(contextId uuid.UUID) (*oapi.Context, err
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 
-	return (*oapi.Context)(resp.JSON200), nil
+	retval, err := oapi.ContextFromDto(theModel, (*oapi.Context)(resp.JSON200))
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert context DTO to model.Context: %w", err)
+	}
+
+	return retval, nil
 }
 
 func (c *ModelSrvClient) GetSystems() (*oapi.InstanceList, error) {
