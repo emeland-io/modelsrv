@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
@@ -12,6 +13,8 @@ type subscriber struct {
 	status    string
 	id        uuid.UUID
 	forwarder *eventForwarder
+	subClient *client.ModelSrvClient
+
 	/* fwdCtrl is a channel to control the forwarder goroutine.
 
 	Send a new maximum index of the event list to be forwarded to the subscriber. The
@@ -25,10 +28,20 @@ type subscriber struct {
 
 var _ events.Subscriber = (*subscriber)(nil)
 
-func NewSubscriber(url string) events.Subscriber {
-	return &subscriber{
-		url: url,
+func NewSubscriber(url string) (events.Subscriber, error) {
+	sub := &subscriber{
+		url:     url,
+		status:  "active",
+		id:      uuid.New(),
+		fwdCtrl: make(chan int),
 	}
+	subClient, err := client.NewModelSrvClient(url)
+	if err != nil {
+		return nil, err
+	}
+	sub.subClient = subClient
+
+	return sub, nil
 }
 
 // GetId implements [events.Subscriber].
@@ -48,5 +61,6 @@ func (s *subscriber) GetURL() string {
 
 // Notify implements [events.Subscriber].
 func (s *subscriber) Notify(ctx context.Context, event *events.Event) error {
-	panic("unimplemented")
+	s.subClient.PostEvent(event)
+	return nil
 }

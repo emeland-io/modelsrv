@@ -146,14 +146,14 @@ type Event struct {
 	ResourceType ResourceType
 	Operation    Operation
 	ResourceId   uuid.UUID
-	Objects      []any
+	Object       any
 }
 
 func (e Event) String() string {
 	if e.Operation == DeleteOperation {
 		return fmt.Sprintf("%s: %s %s", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String())
 	} else {
-		return fmt.Sprintf("%s: %s %s: %v", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String(), e.Objects)
+		return fmt.Sprintf("%s: %s %s: %v", e.Operation.String(), e.ResourceType.String(), e.ResourceId.String(), e.Object)
 	}
 }
 
@@ -214,7 +214,7 @@ func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.U
 		ResourceType: resType,
 		Operation:    op,
 		ResourceId:   resourceId,
-		Objects:      objects,
+		Object:       objects,
 	}
 	l.events = append(l.events, currEvent)
 

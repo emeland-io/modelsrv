@@ -55,3 +55,8 @@ func (a *ApiServer) PostEventsUnregister(ctx context.Context, request PostEvents
 func (a *ApiServer) GetEventsSubscribers(ctx context.Context, request GetEventsSubscribersRequestObject) (GetEventsSubscribersResponseObject, error) {
 	panic("unimplemented")
 }
+
+// PostEventsPush implements [StrictServerInterface].
+func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRequestObject) (PostEventsPushResponseObject, error) {
+	panic("unimplemented")
+}

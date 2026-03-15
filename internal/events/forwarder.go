@@ -56,7 +56,7 @@ func (l *EnumeratedListSink) Receive(resType events.ResourceType, op events.Oper
 		ResourceType: resType,
 		Operation:    op,
 		ResourceId:   resourceId,
-		Objects:      objects,
+		Object:       objects,
 	}
 	l.events = append(l.events, currEvent)
 

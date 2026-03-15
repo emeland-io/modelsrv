@@ -62,7 +62,10 @@ func (e *eventManager) AddSubscriber(subUrl string) error {
 		}
 	}
 
-	newSub := NewSubscriber(subUrl)
+	newSub, err := NewSubscriber(subUrl)
+	if err != nil {
+		return err
+	}
 	e.subscribers = append(e.subscribers, newSub)
 
 	// TODO: Start a forwarder to notify the new subscriber of all past events in local event list for synchronization. This requires the local list to be thread-safe.
@@ -71,7 +74,12 @@ func (e *eventManager) AddSubscriber(subUrl string) error {
 }
 
 func ExecuteForwarder(listSink *events.ListSink, newSub events.Subscriber) {
-	panic("unimplemented")
+	for _, event := range listSink.GetEvents() {
+		err := newSub.Notify(context.Background(), &event)
+		if err != nil {
+			fmt.Printf("failed to notify subscriber %s: %v\n", newSub.GetURL(), err)
+		}
+	}
 }
 
 // GetSubscribers implements [EventManager].

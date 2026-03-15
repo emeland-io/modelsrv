@@ -530,6 +530,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /events/push:
+    post:
+      description: Push a new event to a registered consumer. This endpoint is used by an upstream component to notify subscribers of changes.
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: OK
   /test:
     get:
       responses:
@@ -957,4 +970,40 @@ components:
       required:
         - nodeId
         - displayName
-        - nodeType  
+        - nodeType
+    Event:
+      type: object
+      description: Represents an event in the EmELand model. An event captures a change or occurrence within the landscape that may be of interest to subscribers.
+      properties:
+        operation:
+          description: "The type of the event: create, update or delete."
+          enum:
+            - Unknown
+            - Create
+            - Update
+            - Delete
+        kind:
+          description: The type of the resource that this event is about.
+          enum:
+            - System
+            - SystemInstance
+            - API
+            - ApiInstance
+            - Component
+            - ComponentInstance
+        resource:
+          description: |
+            The list of resources that this event is about. The structure of this field depends on the
+            value of the "kind" field. It can be any of the following:
+          type: object
+          oneOf: 
+            - $ref: '#/components/schemas/System'
+            - $ref: '#/components/schemas/SystemInstance'
+            - $ref: '#/components/schemas/API'
+            - $ref: '#/components/schemas/ApiInstance'
+            - $ref: '#/components/schemas/Component'
+            - $ref: '#/components/schemas/ComponentInstance'
+      required:
+        - operation
+        - kind
+        - resource
