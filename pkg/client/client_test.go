@@ -244,7 +244,7 @@ var _ = Describe("Client", Ordered, func() {
 func loadModel(target model.Model) error {
 	// create simple System with single Component and API
 
-	context := model.NewContext(target, contextId)
+	context := model.NewContext(target.GetSink(), contextId)
 	context.SetDisplayName("Test Context")
 
 	err := target.AddContext(context)
@@ -252,7 +252,9 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	system := model.MakeTestSystem(target, systemId, "Test System", model.Version{})
+	system := model.NewSystem(target.GetSink(), systemId)
+	system.SetDisplayName("Test System")
+	system.SetVersion(model.Version{})
 	err = target.AddSystem(system)
 	if err != nil {
 		return err
@@ -282,13 +284,8 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	api := &model.API{
-		DisplayName: "Test API",
-		ApiId:       apiId,
-		System: &model.SystemRef{
-			System: system,
-		},
-	}
+	api := model.MakeTestAPIForModel(target, apiId, "Test API", model.OpenAPI, model.Version{})
+	api.SetSystemByRef(system)
 	err = target.AddApi(api)
 	if err != nil {
 		return err

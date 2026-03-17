@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_finding_type.go -package=mocks . FindingType
+
 import (
 	"fmt"
 
@@ -18,11 +20,11 @@ type FindingType interface {
 
 	GetAnnotations() Annotations
 
-	getData() *findingTypeData
+	Register() bool
 }
 
 type findingTypeData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	FindingTypeId uuid.UUID
@@ -31,20 +33,21 @@ type findingTypeData struct {
 	Annotations   Annotations
 }
 
-func NewFindingType(model Model, id uuid.UUID) FindingType {
+func NewFindingType(sink events.EventSink, id uuid.UUID) FindingType {
 	retval := &findingTypeData{
-		model:         model.getData(),
+		sink:          sink,
 		isRegistered:  false,
 		FindingTypeId: id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
 }
 
-func (f *findingTypeData) getData() *findingTypeData {
-	return f
+func (f *findingTypeData) Register() bool {
+	f.isRegistered = true
+	return true
 }
 
 // GetDescription implements [FindingType].
@@ -67,7 +70,7 @@ func (f *findingTypeData) SetDescription(s string) {
 	f.Description = s
 
 	if f.isRegistered {
-		f.model.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
+		f.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
 	}
 }
 
@@ -76,7 +79,7 @@ func (f *findingTypeData) SetDisplayName(s string) {
 	f.DisplayName = s
 
 	if f.isRegistered {
-		f.model.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
+		f.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
 	}
 }
 
@@ -93,7 +96,7 @@ func (f *findingTypeData) Receive(resType events.ResourceType, op events.Operati
 
 	// all changes to Annotations result in UpdateOperation on FindingType
 	if f.isRegistered {
-		f.model.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
+		f.sink.Receive(events.FindingTypeResource, events.UpdateOperation, f.FindingTypeId, f)
 	}
 
 	return nil

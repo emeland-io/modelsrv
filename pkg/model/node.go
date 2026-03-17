@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_node.go -package=mocks . Node
+
 import (
 	"fmt"
 	"maps"
@@ -20,15 +22,14 @@ type Node interface {
 
 	GetNodeType() (NodeType, error)
 	SetNodeTypeByRef(nodeType NodeType)
-	SetNodeTypeById(nodeTypeId uuid.UUID)
 
 	GetAnnotations() Annotations
 
-	getData() *nodeData
+	Register() bool
 }
 
 type nodeData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	nodeId      uuid.UUID
@@ -46,20 +47,21 @@ var _ Node = (*nodeData)(nil)
 // ensure events.EventSink interface is implemented correctly
 var _ events.EventSink = (*nodeData)(nil)
 
-func NewNode(model Model, id uuid.UUID) Node {
+func NewNode(sink events.EventSink, id uuid.UUID) Node {
 	retval := &nodeData{
-		model:        model.getData(),
+		sink:         sink,
 		isRegistered: false,
 		nodeId:       id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
 }
 
-func (n *nodeData) getData() *nodeData {
-	return n
+func (n *nodeData) Register() bool {
+	n.isRegistered = true
+	return true
 }
 
 // Receive implements [events.EventSink].
@@ -70,11 +72,10 @@ func (n *nodeData) Receive(resType events.ResourceType, op events.Operation, res
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if n.isRegistered {
-		n.model.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
+		n.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
 	}
 
 	return nil
-
 }
 
 // GetAnnotations implements [Node].
@@ -102,7 +103,7 @@ func (n *nodeData) SetDescription(s string) {
 	n.description = s
 
 	if n.isRegistered {
-		n.model.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
+		n.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
 	}
 }
 
@@ -111,42 +112,17 @@ func (n *nodeData) SetDisplayName(name string) {
 	n.displayName = name
 
 	if n.isRegistered {
-		n.model.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
+		n.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
 	}
 }
 
 // GetNodeType implements [Node].
 func (n *nodeData) GetNodeType() (NodeType, error) {
-	if n.typeRef == nil {
+	if n.typeRef == nil || n.typeRef.NodeType == nil {
 		return nil, nil
 	}
 
-	if n.typeRef.NodeType != nil {
-		return n.typeRef.NodeType, nil
-	}
-
-	nodeType, ok := n.model.nodeTypesByUUID[n.typeRef.NodeTypeId]
-	if !ok {
-		return nil, NodeTypeNotFoundError
-	}
-	n.typeRef.NodeType = nodeType
-
-	return nodeType, nil
-}
-
-// SetNodeTypeById implements [Node].
-func (n *nodeData) SetNodeTypeById(nodeTypeId uuid.UUID) {
-	n.typeRef = &NodeTypeRef{
-		NodeTypeId: nodeTypeId,
-	}
-
-	ptr, ok := n.model.nodeTypesByUUID[nodeTypeId]
-	if ok {
-		n.typeRef.NodeType = ptr
-	}
-	if n.isRegistered {
-		n.model.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
-	}
+	return n.typeRef.NodeType, nil
 }
 
 // SetNodeTypeByRef implements [Node].
@@ -156,11 +132,11 @@ func (n *nodeData) SetNodeTypeByRef(nodeType NodeType) {
 	}
 
 	n.typeRef = &NodeTypeRef{
-		NodeType:   nodeType.getData(),
+		NodeType:   nodeType,
 		NodeTypeId: nodeType.GetNodeTypeId(),
 	}
 	if n.isRegistered {
-		n.model.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
+		n.sink.Receive(events.NodeResource, events.UpdateOperation, n.nodeId, n)
 	}
 }
 
@@ -184,7 +160,7 @@ func (m *modelData) AddNode(node Node) error {
 	m.nodesByUUID[node.GetNodeId()] = node
 
 	// mark Node as registered to activate sending events when updating fields
-	node.getData().isRegistered = true
+	node.Register()
 
 	return nil
 }

@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_context.go -package=mocks . Context
+
 import (
 	"fmt"
 
@@ -19,20 +21,21 @@ type Context interface {
 	GetDisplayName() string
 	SetDisplayName(string)
 
-	SetDescription(s string)
 	GetDescription() string
+	SetDescription(s string)
 
 	GetParent() (Context, error)
+	GetParentId() uuid.UUID
 	SetParentByRef(parent Context)
 	SetParentById(parentId uuid.UUID)
 
 	GetAnnotations() Annotations
 
-	getData() *contextData
+	Register() bool
 }
 
 type contextData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	ContextId   uuid.UUID
@@ -43,24 +46,26 @@ type contextData struct {
 }
 
 type ContextRef struct {
-	Context   *contextData
+	Context   Context
 	ContextId uuid.UUID
 }
 
-func NewContext(model Model, id uuid.UUID) Context {
+func NewContext(sink events.EventSink, id uuid.UUID) Context {
 	retval := &contextData{
-		model:        model.getData(),
+		sink:         sink,
 		isRegistered: false,
 		ContextId:    id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
 }
 
-func (c *contextData) getData() *contextData {
-	return c
+func (c *contextData) Register() bool {
+	c.isRegistered = true
+
+	return true
 }
 
 // GetAnnotations implements [Context].
@@ -83,7 +88,7 @@ func (c *contextData) SetDescription(s string) {
 	c.Description = s
 
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		c.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
 }
 
@@ -96,27 +101,24 @@ func (c *contextData) SetDisplayName(name string) {
 	c.DisplayName = name
 
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		c.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
-
 }
 
 // GetParent implements [Context].
 func (c *contextData) GetParent() (Context, error) {
-	if c.Parent == nil {
+	if c.Parent == nil || c.Parent.Context == nil {
 		return nil, nil
 	}
-	if c.Parent.Context != nil {
-		return c.Parent.Context, nil
-	}
+	return c.Parent.Context, nil
+}
 
-	parent, ok := c.model.contextsByUUID[c.Parent.ContextId]
-	if !ok {
-		return nil, ContextNotFoundError
+// GetParentId implements [Context].
+func (c *contextData) GetParentId() uuid.UUID {
+	if c.Parent == nil {
+		return uuid.Nil
 	}
-	c.Parent.Context = parent
-
-	return parent, nil
+	return c.Parent.ContextId
 }
 
 // SetParentById implements [Context].
@@ -125,29 +127,23 @@ func (c *contextData) SetParentById(parentId uuid.UUID) {
 		ContextId: parentId,
 	}
 
-	ptr, ok := c.model.contextsByUUID[parentId]
-	if ok {
-		c.Parent.Context = ptr
-	}
-
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		c.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
 }
 
 // SetParentByRef implements [Context].
 func (c *contextData) SetParentByRef(parent Context) {
-
 	if parent == nil {
 		return
 	}
 	c.Parent = &ContextRef{
-		Context:   parent.getData(),
+		Context:   parent,
 		ContextId: parent.GetContextId(),
 	}
 
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		c.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
 }
 
@@ -159,7 +155,7 @@ func (c *contextData) Receive(resType events.ResourceType, op events.Operation, 
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if c.isRegistered {
-		return c.model.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
+		return c.sink.Receive(events.ContextResource, events.UpdateOperation, c.ContextId, c)
 	}
 
 	return nil

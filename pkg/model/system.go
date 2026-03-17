@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_system.go -package=mocks . System
+
 import (
 	"fmt"
 
@@ -30,15 +32,14 @@ type System interface {
 
 	GetParent() (System, error)
 	SetParentByRef(parent System)
-	SetParentById(parentId uuid.UUID)
 
 	GetAnnotations() Annotations
 
-	getData() *systemData
+	Register() bool
 }
 
 type systemData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	SystemId    uuid.UUID
@@ -58,20 +59,22 @@ type SystemRef struct {
 	SystemRef *EntityVersion
 }
 
-func NewSystem(model Model, id uuid.UUID) System {
+func NewSystem(sink events.EventSink, id uuid.UUID) System {
 	retval := &systemData{
-		model:        model.getData(),
+		sink:         sink,
 		isRegistered: false,
 		SystemId:     id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(sink)
 
 	return retval
 }
 
-func (s *systemData) getData() *systemData {
-	return s
+func (s *systemData) Register() bool {
+	s.isRegistered = true
+
+	return true
 }
 
 // GetAnnotations implements [System].
@@ -91,20 +94,10 @@ func (s *systemData) GetDisplayName() string {
 
 // GetParent implements [System].
 func (s *systemData) GetParent() (System, error) {
-	if s.Parent == nil {
+	if s.Parent == nil || s.Parent.System == nil {
 		return nil, nil
 	}
-	if s.Parent.System != nil {
-		return s.Parent.System, nil
-	}
-
-	parent, ok := s.model.systemsByUUID[s.Parent.SystemId]
-	if !ok {
-		return nil, SystemNotFoundError
-	}
-	s.Parent.System = parent
-
-	return parent, nil
+	return s.Parent.System, nil
 }
 
 // GetSystemId implements [System].
@@ -127,7 +120,7 @@ func (s *systemData) SetAbstract(abs bool) {
 	s.Abstract = abs
 
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 }
 
@@ -136,7 +129,7 @@ func (s *systemData) SetDescription(desc string) {
 	s.Description = desc
 
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 }
 
@@ -145,23 +138,7 @@ func (s *systemData) SetDisplayName(name string) {
 	s.DisplayName = name
 
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
-	}
-}
-
-// SetParentById implements [System].
-func (s *systemData) SetParentById(parentId uuid.UUID) {
-	s.Parent = &SystemRef{
-		SystemId: parentId,
-	}
-
-	ptr, ok := s.model.systemsByUUID[parentId]
-	if ok {
-		s.Parent.System = ptr
-	}
-
-	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 }
 
@@ -172,11 +149,11 @@ func (s *systemData) SetParentByRef(parent System) {
 	}
 
 	s.Parent = &SystemRef{
-		System:   parent.getData(),
+		System:   parent,
 		SystemId: parent.GetSystemId(),
 	}
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 }
 
@@ -185,7 +162,7 @@ func (s *systemData) SetVersion(ver Version) {
 	s.Version = ver
 
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 }
 
@@ -197,7 +174,7 @@ func (s *systemData) Receive(resType events.ResourceType, op events.Operation, r
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if s.isRegistered {
-		s.model.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
+		s.sink.Receive(events.SystemResource, events.UpdateOperation, s.SystemId, s)
 	}
 
 	return nil
@@ -217,8 +194,8 @@ func convertSystemToDTO(ctx Context) systemDTO {
 
 */
 
-func MakeTestSystem(testModel Model, id uuid.UUID, name string, version Version) System {
-	system := NewSystem(testModel, id)
+func MakeTestSystem(sink events.EventSink, id uuid.UUID, name string, version Version) System {
+	system := NewSystem(sink, id)
 	system.SetDisplayName(name)
 
 	system.SetDescription("a test system")

@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_context_type.go -package=mocks . ContextType
+
 import (
 	"fmt"
 
@@ -18,11 +20,11 @@ type ContextType interface {
 
 	GetAnnotations() Annotations
 
-	getData() *contextTypeData
+	Register() bool
 }
 
 type contextTypeData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	ContextTypeId uuid.UUID
@@ -31,20 +33,21 @@ type contextTypeData struct {
 	Annotations   Annotations
 }
 
-func NewContextType(model Model, id uuid.UUID) ContextType {
+func NewContextType(sink events.EventSink, id uuid.UUID) ContextType {
 	retval := &contextTypeData{
-		model:         model.getData(),
+		sink:          sink,
 		isRegistered:  false,
 		ContextTypeId: id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
 }
 
-func (c *contextTypeData) getData() *contextTypeData {
-	return c
+func (c *contextTypeData) Register() bool {
+	c.isRegistered = true
+	return true
 }
 
 // GetAnnotations implements [ContextType].
@@ -67,7 +70,7 @@ func (c *contextTypeData) SetDisplayName(name string) {
 	c.DisplayName = name
 
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
+		c.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
 	}
 }
 
@@ -81,7 +84,7 @@ func (c *contextTypeData) SetDescription(s string) {
 	c.Description = s
 
 	if c.isRegistered {
-		c.model.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
+		c.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
 	}
 }
 
@@ -91,7 +94,7 @@ func (c *contextTypeData) Receive(resType events.ResourceType, op events.Operati
 	}
 
 	if c.isRegistered {
-		return c.model.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
+		return c.sink.Receive(events.ContextTypeResource, events.UpdateOperation, c.ContextTypeId, c)
 	}
 
 	return nil

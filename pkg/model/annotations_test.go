@@ -15,10 +15,10 @@ import (
 func TestAnnotationsOperations(t *testing.T) {
 	sink := events.NewListSink()
 
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
+	// testModel, err := model.NewModel(sink)
+	// assert.NoError(t, err)
 
-	annotations := model.NewAnnotations(testModel, sink)
+	annotations := model.NewAnnotations(sink)
 
 	annotations.Add("key1", "value1")
 	assert.Equal(t, "value1", annotations.GetValue("key1"))

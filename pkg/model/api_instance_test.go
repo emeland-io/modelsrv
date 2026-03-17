@@ -120,36 +120,35 @@ func TestApiInstanceSetApiRef(t *testing.T) {
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	api := &model.API{
-		ApiId:       apiId,
-		DisplayName: "Test API",
-	}
+	api := model.MakeTestAPIForModel(testModel, apiId, "Test API", model.OpenAPI, model.Version{})
 
 	instanceId := uuid.New()
 	instance := model.NewApiInstance(testModel, instanceId)
 	instance.SetDisplayName("Test API Instance")
 
-	// Add API (no event - API is still a struct)
+	// Add API (emits event - API is now interface with sink)
+	// Event 1: create API
 	err = testModel.AddApi(api)
 	assert.NoError(t, err)
 
-	// Event 1: create instance
+	// Event 2: create instance
 	err = testModel.AddApiInstance(instance)
 	assert.NoError(t, err)
 
 	// Set API reference by ID
-	// Event 2: update instance
+	// Event 3: update instance
 	instance.SetApiRefById(apiId)
 
 	apiRef := instance.GetApiRef()
 	assert.NotNil(t, apiRef)
 	assert.Equal(t, apiId, apiRef.ApiID)
-	assert.Same(t, api, apiRef.API)
+	assert.Equal(t, api, apiRef.API)
 
 	eventList := sink.GetList()
-	assert.Equal(t, 2, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
+	assert.Equal(t, 3, len(eventList))
+	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: API %s", apiId.String())))
+	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
+	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
 }
 
 func TestApiInstanceSetSystemInstance(t *testing.T) {

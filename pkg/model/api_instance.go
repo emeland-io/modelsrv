@@ -1,5 +1,7 @@
 package model
 
+//go:generate mockgen -destination=../mocks/mock_api_instance.go -package=mocks . ApiInstance
+
 import (
 	"fmt"
 
@@ -21,7 +23,7 @@ type ApiInstance interface {
 
 	GetApiRef() *ApiRef
 	SetApiRefById(apiId uuid.UUID)
-	SetApiRefByRef(api *API)
+	SetApiRefByRef(api API)
 
 	GetSystemInstance() *SystemInstanceRef
 	SetSystemInstanceById(instanceId uuid.UUID)
@@ -29,11 +31,11 @@ type ApiInstance interface {
 
 	GetAnnotations() Annotations
 
-	getData() *apiInstanceData
+	Register() bool
 }
 
 type apiInstanceData struct {
-	model        *modelData
+	model        Model
 	isRegistered bool
 
 	InstanceId     uuid.UUID
@@ -45,18 +47,20 @@ type apiInstanceData struct {
 
 func NewApiInstance(model Model, id uuid.UUID) ApiInstance {
 	retval := &apiInstanceData{
-		model:        model.getData(),
+		model:        model,
 		isRegistered: false,
 		InstanceId:   id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
 }
 
-func (a *apiInstanceData) getData() *apiInstanceData {
-	return a
+func (a *apiInstanceData) Register() bool {
+	a.isRegistered = true
+
+	return true
 }
 
 // GetAnnotations implements [ApiInstance].
@@ -79,7 +83,7 @@ func (a *apiInstanceData) SetDisplayName(name string) {
 	a.DisplayName = name
 
 	if a.isRegistered {
-		a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 }
 
@@ -94,28 +98,28 @@ func (a *apiInstanceData) SetApiRefById(apiId uuid.UUID) {
 		ApiID: apiId,
 	}
 
-	ptr, ok := a.model.apisByUUID[apiId]
-	if ok {
-		a.ApiRef.API = ptr
+	api := a.model.GetApiById(apiId)
+	if api != nil {
+		a.ApiRef.API = api
 	}
 
 	if a.isRegistered {
-		a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 }
 
 // SetApiRefByRef implements [ApiInstance].
-func (a *apiInstanceData) SetApiRefByRef(api *API) {
+func (a *apiInstanceData) SetApiRefByRef(api API) {
 	if api == nil {
 		return
 	}
 	a.ApiRef = &ApiRef{
 		API:   api,
-		ApiID: api.ApiId,
+		ApiID: api.GetApiId(),
 	}
 
 	if a.isRegistered {
-		a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 }
 
@@ -130,13 +134,13 @@ func (a *apiInstanceData) SetSystemInstanceById(instanceId uuid.UUID) {
 		InstanceId: instanceId,
 	}
 
-	ptr, ok := a.model.systemInstancesByUUID[instanceId]
-	if ok {
-		a.SystemInstance.SystemInstance = ptr
+	instance := a.model.GetSystemInstanceById(instanceId)
+	if instance != nil {
+		a.SystemInstance.SystemInstance = instance
 	}
 
 	if a.isRegistered {
-		a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 }
 
@@ -151,7 +155,7 @@ func (a *apiInstanceData) SetSystemInstanceByRef(instance *SystemInstance) {
 	}
 
 	if a.isRegistered {
-		a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 }
 
@@ -163,7 +167,7 @@ func (a *apiInstanceData) Receive(resType events.ResourceType, op events.Operati
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if a.isRegistered {
-		return a.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
+		return a.model.GetSink().Receive(events.APIInstanceResource, events.UpdateOperation, a.InstanceId, a)
 	}
 
 	return nil

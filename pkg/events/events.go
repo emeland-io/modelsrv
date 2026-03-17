@@ -16,6 +16,8 @@ limitations under the License.
 
 package events
 
+//go:generate mockgen -destination=../mocks/mock_events.go -package=mocks . EventSink,EventManager
+
 import (
 	"context"
 	"fmt"

@@ -19,7 +19,7 @@ func TestNewModel(t *testing.T) {
 	assert.NotNil(t, model, "NewModel should return a non-nil model")
 
 	// Verify the fields are set correctly
-	assert.Same(t, sink, model.getData().sink)
+	assert.Same(t, sink, model.GetSink())
 
 	// Verify all maps are initialized
 	assert.NotNil(t, model.systemsByUUID, "SystemsByUUID map should be initialized")

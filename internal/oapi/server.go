@@ -252,10 +252,12 @@ func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeAp
 	respBody := []InstanceListItem{}
 
 	for _, api := range apiArr {
-		reference := fmt.Sprintf("%s/landscape/apis/%s", a.BaseURL, api.ApiId.String())
+		apiId := api.GetApiId()
+		displayName := api.GetDisplayName()
+		reference := fmt.Sprintf("%s/landscape/apis/%s", a.BaseURL, apiId.String())
 		item := InstanceListItem{
-			InstanceId:  &api.ApiId,
-			DisplayName: &api.DisplayName,
+			InstanceId:  &apiId,
+			DisplayName: &displayName,
 			Reference:   &reference,
 		}
 		respBody = append(respBody, item)
@@ -272,14 +274,16 @@ func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandsc
 		return GetLandscapeApisApiId404JSONResponse(errorstr), nil
 	}
 
+	apiId := api.GetApiId()
 	respBody := API{
-		ApiId:       &api.ApiId,
-		DisplayName: api.DisplayName,
-		Annotations: cloneAnnotations(api.Annotations),
+		ApiId:       &apiId,
+		DisplayName: api.GetDisplayName(),
+		Annotations: cloneAnnotations2(api.GetAnnotations()),
 	}
 
-	if api.System != nil {
-		respBody.System = &api.System.SystemId
+	if api.GetSystem() != nil {
+		systemId := api.GetSystem().SystemId
+		respBody.System = &systemId
 	}
 
 	return GetLandscapeApisApiId200JSONResponse(respBody), nil
