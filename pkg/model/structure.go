@@ -1,3 +1,4 @@
+//go:generate go run generate_events.go
 package model
 
 import (
