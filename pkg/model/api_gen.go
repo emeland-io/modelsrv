@@ -17,6 +17,8 @@ var _ events.EventSink = (*apiData)(nil)
 
 type API interface {
 	GetApiId() uuid.UUID
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 
 	GetDisplayName() string
 	SetDisplayName(string)
@@ -71,6 +73,16 @@ func (o *apiData) getData() *apiData {
 // GetApiId implements [API].
 func (o *apiData) GetApiId() uuid.UUID {
 	return o.ApiId
+}
+
+// GetResourceId implements the hasIdAndName interface.
+func (o *apiData) GetResourceId() uuid.UUID {
+	return o.ApiId
+}
+
+// GetResourceName implements the hasIdAndName interface.
+func (o *apiData) GetResourceName() string {
+	return o.DisplayName
 }
 
 // GetDisplayName implements [DisplayName].

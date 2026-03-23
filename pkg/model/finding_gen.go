@@ -17,6 +17,8 @@ var _ events.EventSink = (*findingData)(nil)
 
 type Finding interface {
 	GetFindingId() uuid.UUID
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 
 	GetSummary() string
 	SetSummary(string)
@@ -63,6 +65,16 @@ func (o *findingData) getData() *findingData {
 // GetFindingId implements [Finding].
 func (o *findingData) GetFindingId() uuid.UUID {
 	return o.FindingId
+}
+
+// GetResourceId implements the hasIdAndName interface.
+func (o *findingData) GetResourceId() uuid.UUID {
+	return o.FindingId
+}
+
+// GetResourceName implements the hasIdAndName interface.
+func (o *findingData) GetResourceName() string {
+	return o.Summary
 }
 
 // GetSummary implements [Summary].

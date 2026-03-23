@@ -231,7 +231,7 @@ func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeAp
 	if err != nil {
 		return nil, err
 	}
-	return GetLandscapeApis200JSONResponse(buildApiList(a.BaseURL, apiArr)), nil
+	return GetLandscapeApis200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/apis", apiArr)), nil
 }
 
 // GetLandscapeApisApiId implements StrictServerInterface.
@@ -296,7 +296,7 @@ func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLands
 	if err != nil {
 		return nil, err
 	}
-	return GetLandscapeComponents200JSONResponse(buildComponentList(a.BaseURL, componentArr)), nil
+	return GetLandscapeComponents200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/components", componentArr)), nil
 }
 
 // GetLandscapeComponentsComponentId implements StrictServerInterface.
@@ -329,7 +329,7 @@ func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
-	return GetLandscapeFindings200JSONResponse(buildFindingList(a.BaseURL, findingsArr)), nil
+	return GetLandscapeFindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findings", findingsArr)), nil
 }
 
 // GetLandscapeFindingsFindingId implements StrictServerInterface.

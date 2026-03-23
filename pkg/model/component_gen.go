@@ -17,6 +17,8 @@ var _ events.EventSink = (*componentData)(nil)
 
 type Component interface {
 	GetComponentId() uuid.UUID
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 
 	GetDisplayName() string
 	SetDisplayName(string)
@@ -75,6 +77,16 @@ func (o *componentData) getData() *componentData {
 // GetComponentId implements [Component].
 func (o *componentData) GetComponentId() uuid.UUID {
 	return o.ComponentId
+}
+
+// GetResourceId implements the hasIdAndName interface.
+func (o *componentData) GetResourceId() uuid.UUID {
+	return o.ComponentId
+}
+
+// GetResourceName implements the hasIdAndName interface.
+func (o *componentData) GetResourceName() string {
+	return o.DisplayName
 }
 
 // GetDisplayName implements [DisplayName].

@@ -49,67 +49,19 @@ func cloneAnnotations(annos model.Annotations) *[]Annotation {
 
 // Generic helper to build instance list responses
 type hasIdAndName interface {
-	GetInstanceId() uuid.UUID
-	GetDisplayName() string
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 }
 
 func buildInstanceList[T hasIdAndName](baseURL, path string, items []T) []InstanceListItem {
 	result := make([]InstanceListItem, 0, len(items))
 	for _, item := range items {
-		id := item.GetInstanceId()
-		name := item.GetDisplayName()
+		id := item.GetResourceId()
+		name := item.GetResourceName()
 		ref := fmt.Sprintf("%s%s/%s", baseURL, path, id.String())
 		result = append(result, InstanceListItem{
 			InstanceId:  &id,
 			DisplayName: &name,
-			Reference:   &ref,
-		})
-	}
-	return result
-}
-
-// Specialized version for APIs (uses GetApiId instead of GetInstanceId)
-func buildApiList(baseURL string, items []model.API) []InstanceListItem {
-	result := make([]InstanceListItem, 0, len(items))
-	for _, item := range items {
-		id := item.GetApiId()
-		name := item.GetDisplayName()
-		ref := fmt.Sprintf("%s/landscape/apis/%s", baseURL, id.String())
-		result = append(result, InstanceListItem{
-			InstanceId:  &id,
-			DisplayName: &name,
-			Reference:   &ref,
-		})
-	}
-	return result
-}
-
-// Specialized version for Components (uses GetComponentId)
-func buildComponentList(baseURL string, items []model.Component) []InstanceListItem {
-	result := make([]InstanceListItem, 0, len(items))
-	for _, item := range items {
-		id := item.GetComponentId()
-		name := item.GetDisplayName()
-		ref := fmt.Sprintf("%s/landscape/components/%s", baseURL, id.String())
-		result = append(result, InstanceListItem{
-			InstanceId:  &id,
-			DisplayName: &name,
-			Reference:   &ref,
-		})
-	}
-	return result
-}
-
-// Specialized version for Findings (uses GetFindingId and GetSummary)
-func buildFindingList(baseURL string, items []model.Finding) []InstanceListItem {
-	result := make([]InstanceListItem, 0, len(items))
-	for _, item := range items {
-		id := item.GetFindingId()
-		summary := item.GetSummary()
-		ref := fmt.Sprintf("%s/landscape/findings/%s", baseURL, id.String())
-		result = append(result, InstanceListItem{
-			InstanceId:  &id,
-			DisplayName: &summary,
 			Reference:   &ref,
 		})
 	}

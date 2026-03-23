@@ -17,6 +17,8 @@ var _ events.EventSink = (*systeminstanceData)(nil)
 
 type SystemInstance interface {
 	GetInstanceId() uuid.UUID
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 
 	GetDisplayName() string
 	SetDisplayName(string)
@@ -63,6 +65,16 @@ func (o *systeminstanceData) getData() *systeminstanceData {
 // GetInstanceId implements [SystemInstance].
 func (o *systeminstanceData) GetInstanceId() uuid.UUID {
 	return o.InstanceId
+}
+
+// GetResourceId implements the hasIdAndName interface.
+func (o *systeminstanceData) GetResourceId() uuid.UUID {
+	return o.InstanceId
+}
+
+// GetResourceName implements the hasIdAndName interface.
+func (o *systeminstanceData) GetResourceName() string {
+	return o.DisplayName
 }
 
 // GetDisplayName implements [DisplayName].

@@ -17,22 +17,25 @@ var _ events.EventSink = (*apiinstanceData)(nil)
 
 type ApiInstance interface {
 	GetInstanceId() uuid.UUID
+	GetResourceId() uuid.UUID
+	GetResourceName() string
 
 	GetDisplayName() string
 	SetDisplayName(string)
 
 	GetApiRef() *ApiRef
 	SetApiRef(*ApiRef)
-	SetApiRefById(apiId uuid.UUID)
-	SetApiRefByRef(api API)
 
 	GetSystemInstance() *SystemInstanceRef
 	SetSystemInstance(*SystemInstanceRef)
-	SetSystemInstanceById(instanceId uuid.UUID)
-	SetSystemInstanceByRef(instance SystemInstance)
 
 	GetAnnotations() Annotations
 	SetAnnotations(Annotations)
+
+	SetApiRefById(apiId uuid.UUID)
+	SetApiRefByRef(api API)
+	SetSystemInstanceById(instanceId uuid.UUID)
+	SetSystemInstanceByRef(instance SystemInstance)
 
 	getData() *apiinstanceData
 }
@@ -67,6 +70,16 @@ func (o *apiinstanceData) getData() *apiinstanceData {
 // GetInstanceId implements [ApiInstance].
 func (o *apiinstanceData) GetInstanceId() uuid.UUID {
 	return o.InstanceId
+}
+
+// GetResourceId implements the hasIdAndName interface.
+func (o *apiinstanceData) GetResourceId() uuid.UUID {
+	return o.InstanceId
+}
+
+// GetResourceName implements the hasIdAndName interface.
+func (o *apiinstanceData) GetResourceName() string {
+	return o.DisplayName
 }
 
 // GetDisplayName implements [DisplayName].
