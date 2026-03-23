@@ -88,30 +88,29 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
-	contextType := model.NewContextType(backend, contextTypeId)
+	contextType := model.NewContextType(backend.GetSink(), contextTypeId)
 	contextType.SetDisplayName("Test Context Type")
 	contextType.SetDescription("A test context type for testing purposes")
 	err = backend.AddContextType(contextType)
 	Expect(err).NotTo(HaveOccurred())
 
-	context := model.NewContext(backend, contextId)
-	context.SetParentById(parentContextId)
-	context.SetDisplayName("the real test context")
+	testContext := model.NewContext(backend.GetSink(), contextId)
+	testContext.SetParentById(parentContextId)
+	testContext.SetDisplayName("the real test context")
 	// TODO: not implemented yet
-	// context.SetTypeById(contextTypeId)
-	err = backend.AddContext(context)
+	// testContext.SetTypeById(contextTypeId)
+	err = backend.AddContext(testContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	parentContext := model.NewContext(backend, parentContextId)
+	parentContext := model.NewContext(backend.GetSink(), parentContextId)
 	err = backend.AddContext(parentContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	node := model.NewNode(backend, nodeId)
-	node.SetNodeTypeById(nodeTypeId)
+	node := model.NewNode(backend.GetSink(), nodeId)
 	err = backend.AddNode(node)
 	Expect(err).NotTo(HaveOccurred())
 
-	nodeType := model.NewNodeType(backend, nodeTypeId)
+	nodeType := model.NewNodeType(backend.GetSink(), nodeTypeId)
 	nodeType.SetDisplayName("Test Node Type")
 	nodeType.SetDescription("A test node type for testing purposes")
 	err = backend.AddNodeType(nodeType)
@@ -128,9 +127,9 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.NewApiInstance(backend, apiInstanceId)
+	apiInstance := model.NewApiInstance(backend.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("First API Instance")
-	apiInstance.SetApiRefById(uuid.New())
+	apiInstance.SetApiRef(backend.ApiRefByID(apiId))
 	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -154,7 +153,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	system := model.MakeTestSystem(
-		backend,
+		backend.GetSink(),
 		systemId,
 		"First System",
 		model.Version{
@@ -195,7 +194,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddFinding(finding, finding.GetSummary())
 	Expect(err).NotTo(HaveOccurred())
 
-	findingType := model.NewFindingType(backend, findingTypeId)
+	findingType := model.NewFindingType(backend.GetSink(), findingTypeId)
 	findingType.SetDisplayName("Test Finding Type")
 	findingType.SetDescription("A test finding type for testing purposes")
 	err = backend.AddFindingType(findingType)

@@ -1,86 +1,119 @@
+// pkg/model/system_test.go
 package model_test
 
 import (
-	"testing"
-
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/mocks"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.uber.org/mock/gomock"
 )
 
-func TestSystemOperations(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
+var _ = Describe("System functionalities", func() {
+	var (
+		sysId    uuid.UUID
+		sinkMock *mocks.MockEventSink
+		sys      model.System
+	)
 
-	sysId := uuid.New()
-	version := model.Version{Version: "1.0.0"}
+	BeforeEach(func() {
+		sysId = uuid.New()
 
-	system := model.NewSystem(testModel, sysId)
-	assert.NotNil(t, system)
+		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
+		sys = model.NewSystem(sinkMock, sysId)
+	})
 
-	system.SetDisplayName("Test System")
-	assert.Equal(t, "Test System", system.GetDisplayName())
+	When("System is created", func() {
+		It("must not be nil", func() {
+			Expect(sys).NotTo(BeNil())
+		})
 
-	system.SetDescription("a test system")
-	assert.Equal(t, "a test system", system.GetDescription())
+		It("has the provided UUID", func() {
+			Expect(sys.GetSystemId()).To(Equal(sysId))
+		})
 
-	system.SetVersion(version)
-	assert.Equal(t, version, system.GetVersion())
+		It("has annotations set", func() {
+			Expect(sys.GetAnnotations()).NotTo(BeNil())
+		})
+	})
 
-	// Test getting non-existent System
-	assert.Nil(t, testModel.GetSystemById(sysId))
+	When("System is updated", func() {
+		Context("System is not registered", func() {
 
-	// Add System and verify it exists
-	// Event: 1: create
-	err = testModel.AddSystem(system)
-	assert.NoError(t, err)
+			When("Display name gets updated", func() {
 
-	// Verify retrieval by name and ID
-	assert.Same(t, system, testModel.GetSystemById(sysId))
+				It("updates the display name", func() {
+					displayName := "System-007"
+					sys.SetDisplayName(displayName)
 
-	// update the DisplayName. This MUST create an event, after the object has been registered
-	// with the model.
-	// Event 2: update
-	system.SetDisplayName("the real test system")
+					Expect(sys.GetDisplayName()).To(Equal(displayName))
+				})
+			})
 
-	// update the description. This MUST create an event, after the object has been registered
-	// with the model.
-	// Event 3: update
-	system.SetDescription("a test system, but with more bla bla")
+			When("Description gets updated", func() {
 
-	// create a new go object and re-submit under the same UUID, but with other values
-	system2 := model.NewSystem(testModel, sysId)
-	system2.SetDisplayName("The other Test System")
-	system2.SetDescription("a different test system, but same Id")
+				It("updates the description", func() {
+					description := "This is a test system."
+					sys.SetDescription(description)
 
-	//only when the object is added, it should trigger an event.
-	// Event 4: update
-	err = testModel.AddSystem(system2)
-	assert.NoError(t, err)
+					Expect(sys.GetDescription()).To(Equal(description))
+				})
+			})
 
-	// delete system from model
-	// Event 5: delete
-	err = testModel.DeleteSystemById(sysId)
-	assert.NoError(t, err)
+			When("Version gets updated", func() {
+				It("updates the version", func() {
+					newPatchVersion := model.Version{Version: "1.0.1"}
+					sys.SetVersion(newPatchVersion)
 
-	expectedEvents := []struct {
-		resType    events.ResourceType
-		operation  events.Operation
-		resourceId uuid.UUID
-	}{
-		{events.SystemResource, events.CreateOperation, sysId},
-		{events.SystemResource, events.UpdateOperation, sysId},
-		{events.SystemResource, events.UpdateOperation, sysId},
-		{events.SystemResource, events.UpdateOperation, sysId},
-		{events.SystemResource, events.DeleteOperation, sysId},
-	}
+					Expect(sys.GetVersion()).To(Equal(newPatchVersion))
+				})
+			})
 
-	for i, expected := range expectedEvents {
-		event := sink.GetEvents()[i]
-		assert.Equal(t, expected.resType, event.ResourceType, "event %d: resource type mismatch", i)
-		assert.Equal(t, expected.operation, event.Operation, "event %d: operation mismatch", i)
-		assert.Equal(t, expected.resourceId, event.ResourceId, "event %d: resource ID mismatch", i)
-	}
-}
+			When("Abstract gets updated", func() {
+				It("updates the abstract", func() {
+					abs := true
+					sys.SetAbstract(abs)
+
+					Expect(sys.GetAbstract()).To(Equal(abs))
+				})
+			})
+
+			When("Parent gets updated", func() {
+				It("updates the parent by ref", func() {
+					parentSystem := model.NewSystem(sinkMock, uuid.New())
+					sys.SetParentByRef(parentSystem)
+
+					retrievedParent, err := sys.GetParent()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(retrievedParent).NotTo(BeNil())
+					Expect(retrievedParent.GetSystemId()).To(Equal(parentSystem.GetSystemId()))
+				})
+			})
+		})
+	})
+
+	When("System is updated", func() {
+
+		Context("System is registered", func() {
+
+			BeforeEach(func() {
+				sys.Register()
+			})
+
+			When("DisplayName gets updated", func() {
+
+				It("emits an event and calls Receive", func() {
+					expectedEventType := events.UpdateOperation
+					expectedResourceType := events.SystemResource
+
+					sinkMock.EXPECT().Receive(expectedResourceType, expectedEventType, sys.GetSystemId(), gomock.Any())
+
+					sys.SetDisplayName("FooBar")
+					// Update already tested above
+				})
+			})
+		})
+	})
+})

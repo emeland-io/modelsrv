@@ -41,11 +41,12 @@ type Component interface {
 	GetAnnotations() Annotations
 	SetAnnotations(Annotations)
 
-	getData() *componentData
+	Register()
 }
 
 type componentData struct {
-	model        *modelData
+	model        Model
+	sink         events.EventSink
 	isRegistered bool
 
 	ComponentId uuid.UUID
@@ -58,20 +59,18 @@ type componentData struct {
 	Annotations Annotations
 }
 
-func NewComponent(model Model, id uuid.UUID) Component {
+// NewComponent constructs a resource bound to the given [Model] and its sink.
+func NewComponent(m Model, id uuid.UUID) Component {
 	retval := &componentData{
-		model:        model.getData(),
+		model:        m,
+		sink:         m.GetSink(),
 		isRegistered: false,
 		ComponentId:  id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
-}
-
-func (o *componentData) getData() *componentData {
-	return o
 }
 
 // GetComponentId implements [Component].
@@ -99,7 +98,7 @@ func (o *componentData) SetDisplayName(val string) {
 	o.DisplayName = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -113,7 +112,7 @@ func (o *componentData) SetDescription(val string) {
 	o.Description = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -127,7 +126,7 @@ func (o *componentData) SetVersion(val Version) {
 	o.Version = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -141,7 +140,7 @@ func (o *componentData) SetSystem(val *SystemRef) {
 	o.System = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -155,7 +154,7 @@ func (o *componentData) SetConsumes(val []ApiRef) {
 	o.Consumes = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -169,7 +168,7 @@ func (o *componentData) SetProvides(val []ApiRef) {
 	o.Provides = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 }
 
@@ -183,8 +182,13 @@ func (o *componentData) SetAnnotations(val Annotations) {
 	o.Annotations = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
+}
+
+// Register implements [Component].
+func (o *componentData) Register() {
+	o.isRegistered = true
 }
 
 // Receive implements [events.EventSink].
@@ -195,7 +199,7 @@ func (o *componentData) Receive(resType events.ResourceType, op events.Operation
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if o.isRegistered {
-		return o.model.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
+		return o.sink.Receive(events.ComponentResource, events.UpdateOperation, o.ComponentId, o)
 	}
 
 	return nil

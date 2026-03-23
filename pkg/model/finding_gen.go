@@ -32,11 +32,12 @@ type Finding interface {
 	GetAnnotations() Annotations
 	SetAnnotations(Annotations)
 
-	getData() *findingData
+	Register()
 }
 
 type findingData struct {
-	model        *modelData
+	model        Model
+	sink         events.EventSink
 	isRegistered bool
 
 	FindingId   uuid.UUID
@@ -46,20 +47,18 @@ type findingData struct {
 	Annotations Annotations
 }
 
-func NewFinding(model Model, id uuid.UUID) Finding {
+// NewFinding constructs a resource bound to the given [Model] and its sink.
+func NewFinding(m Model, id uuid.UUID) Finding {
 	retval := &findingData{
-		model:        model.getData(),
+		model:        m,
+		sink:         m.GetSink(),
 		isRegistered: false,
 		FindingId:    id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
-}
-
-func (o *findingData) getData() *findingData {
-	return o
 }
 
 // GetFindingId implements [Finding].
@@ -87,7 +86,7 @@ func (o *findingData) SetSummary(val string) {
 	o.Summary = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
 }
 
@@ -101,7 +100,7 @@ func (o *findingData) SetDescription(val string) {
 	o.Description = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
 }
 
@@ -115,7 +114,7 @@ func (o *findingData) SetResources(val []*ResourceRef) {
 	o.Resources = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
 }
 
@@ -129,8 +128,13 @@ func (o *findingData) SetAnnotations(val Annotations) {
 	o.Annotations = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
+}
+
+// Register implements [Finding].
+func (o *findingData) Register() {
+	o.isRegistered = true
 }
 
 // Receive implements [events.EventSink].
@@ -141,7 +145,7 @@ func (o *findingData) Receive(resType events.ResourceType, op events.Operation, 
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if o.isRegistered {
-		return o.model.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+		return o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
 
 	return nil

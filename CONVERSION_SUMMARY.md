@@ -38,7 +38,7 @@ type TypeName interface {
     GetId() uuid.UUID
     GetField() FieldType
     SetField(FieldType)
-    getData() *typeNameData
+    Register()
 }
 
 // Implementation struct

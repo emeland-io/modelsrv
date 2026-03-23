@@ -19,8 +19,6 @@ package oapi
 import (
 	"context"
 	"fmt"
-
-	"github.com/google/uuid"
 )
 
 // GetLandscapeContexts implements StrictServerInterface.
@@ -58,13 +56,7 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 
 	displayName := context.GetDisplayName()
 	contextId := context.GetContextId()
-	var parentContextId uuid.UUID
-	parent, err := context.GetParent()
-	if err != nil || parent == nil {
-		parentContextId = uuid.Nil
-	} else {
-		parentContextId = parent.GetContextId()
-	}
+	parentContextId := context.GetParentId()
 
 	respBody := Context{
 		ContextId:   contextId,

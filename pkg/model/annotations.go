@@ -8,6 +8,8 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
+//go:generate mockgen -destination=../mocks/mock_annotations.go -package=mocks . Annotations
+
 // ensure Annotations interface is implemented correctly
 var _ Annotations = (*annotationsData)(nil)
 
@@ -16,18 +18,15 @@ type Annotations interface {
 	Delete(key string)
 	GetValue(key string) string
 	GetKeys() iter.Seq[string]
-	getData() *annotationsData
 }
 
 type annotationsData struct {
-	model   *modelData
 	sink    events.EventSink
 	records map[string]string
 }
 
-func NewAnnotations(model *modelData, sink events.EventSink) Annotations {
+func NewAnnotations(sink events.EventSink) Annotations {
 	return &annotationsData{
-		model:   model,
 		sink:    sink,
 		records: make(map[string]string),
 	}
@@ -65,8 +64,4 @@ func (a *annotationsData) GetValue(key string) string {
 // GetKeys implements [Annotations].
 func (a *annotationsData) GetKeys() iter.Seq[string] {
 	return maps.Keys(a.records)
-}
-
-func (a *annotationsData) getData() *annotationsData {
-	return a
 }

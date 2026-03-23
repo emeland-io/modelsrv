@@ -1,6 +1,9 @@
 //go:generate go run generate_events.go
 package model
 
+//go:generate mockgen -destination=../mocks/mock_model.go -package=mocks . Model
+//go:generate mockgen -destination=../mocks/mock_finding_type.go -package=mocks . FindingType
+
 import (
 	"context"
 	"fmt"
@@ -30,7 +33,7 @@ var (
 )
 
 type Model interface {
-	getData() *modelData
+	GetSink() events.EventSink
 
 	AddNode(node Node) error
 	DeleteNodeById(id uuid.UUID) error
@@ -62,6 +65,9 @@ type Model interface {
 	GetApis() ([]API, error)
 	GetApiById(id uuid.UUID) API
 
+	// ApiRefByID builds an [ApiRef] for a registered API, or nil if not found.
+	ApiRefByID(apiId uuid.UUID) *ApiRef
+
 	AddComponent(comp Component) error
 	DeleteComponentById(id uuid.UUID) error
 	GetComponents() ([]Component, error)
@@ -71,6 +77,9 @@ type Model interface {
 	DeleteSystemInstanceById(id uuid.UUID) error
 	GetSystemInstances() ([]SystemInstance, error)
 	GetSystemInstanceById(id uuid.UUID) SystemInstance
+
+	// SystemInstanceRefByID builds a [SystemInstanceRef] for a registered instance, or nil if not found.
+	SystemInstanceRefByID(instanceId uuid.UUID) *SystemInstanceRef
 
 	AddApiInstance(instance ApiInstance) error
 	DeleteApiInstanceById(id uuid.UUID) error
@@ -99,7 +108,7 @@ type modelData struct {
 	nodeTypesByUUID map[uuid.UUID]NodeType
 	nodesByUUID     map[uuid.UUID]Node
 
-	contextsByUUID     map[uuid.UUID]*contextData
+	contextsByUUID     map[uuid.UUID]Context
 	contextTypesByUUID map[uuid.UUID]ContextType
 	contextsCache      []Context
 
@@ -129,7 +138,7 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		nodesByUUID:     make(map[uuid.UUID]Node),
 		nodeTypesByUUID: make(map[uuid.UUID]NodeType),
 
-		contextsByUUID:     make(map[uuid.UUID]*contextData),
+		contextsByUUID:     make(map[uuid.UUID]Context),
 		contextTypesByUUID: make(map[uuid.UUID]ContextType),
 
 		systemsByUUID:    make(map[uuid.UUID]System),
@@ -192,46 +201,6 @@ type EntityVersion struct {
 	Version string
 }
 
-type ApiType int
-
-const (
-	Unknown ApiType = iota
-	Other
-	GraphQL
-	GRPC
-	OpenAPI
-)
-
-var ApiTypeValues = map[ApiType]string{
-	Unknown: "Unknown",
-	OpenAPI: "OpenAPI",
-	GraphQL: "GraphQL",
-	GRPC:    "GRPC",
-	Other:   "Other",
-}
-
-func ParseApiType(s string) ApiType {
-	for key, val := range ApiTypeValues {
-		if val == s {
-			return key
-		}
-	}
-	return Unknown
-}
-
-func (t ApiType) String() string {
-	if val, ok := ApiTypeValues[t]; ok {
-		return val
-	}
-	return ApiTypeValues[Unknown]
-}
-
-type ApiRef struct {
-	API    API
-	ApiID  uuid.UUID
-	ApiRef *EntityVersion
-}
-
 type ComponentRef struct {
 	Component    Component
 	ComponentId  uuid.UUID
@@ -248,8 +217,9 @@ type ResourceRef struct {
 	ResourceType events.ResourceType
 }
 
-func (m *modelData) getData() *modelData {
-	return m
+// GetSink implements [Model].
+func (m *modelData) GetSink() events.EventSink {
+	return m.sink
 }
 
 // Generic add helper for event-enabled types
@@ -265,9 +235,13 @@ func addEventEnabled[T any](
 	if id == uuid.Nil {
 		return UUIDNotSetError
 	}
+	op := events.CreateOperation
+	if _, exists := store[id]; exists {
+		op = events.UpdateOperation
+	}
 	setRegistered(obj)
 	store[id] = obj
-	m.sink.Receive(resourceType, events.CreateOperation, id, obj)
+	m.sink.Receive(resourceType, op, id, obj)
 	return nil
 }
 
@@ -324,10 +298,10 @@ func (m *modelData) AddContext(context Context) error {
 
 	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
 
-	m.contextsByUUID[context.GetContextId()] = context.getData()
+	m.contextsByUUID[context.GetContextId()] = context
 
 	// mark Context as registered to activate sending events when updating fields
-	context.getData().isRegistered = true
+	context.Register()
 
 	return nil
 }
@@ -349,13 +323,12 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 	return nil
 }
 
-// GetContextById implements Model.
 func (m *modelData) GetContextById(id uuid.UUID) Context {
-	context, exists := m.contextsByUUID[id]
+	ctx, exists := m.contextsByUUID[id]
 	if !exists {
 		return nil
 	}
-	return context
+	return ctx
 }
 
 // GetContexts implements Model.
@@ -368,12 +341,12 @@ func (m *modelData) GetContexts() ([]Context, error) {
 	}
 
 	contextArr := make([]Context, 0)
-	for context := range maps.Values(m.contextsByUUID) {
-		contextArr = append(contextArr, Context(context))
+	for ctx := range maps.Values(m.contextsByUUID) {
+		contextArr = append(contextArr, ctx)
 	}
 	m.contextsCache = contextArr
 
-	return []Context(contextArr), nil
+	return contextArr, nil
 }
 
 // AddContextType implements [Model].
@@ -393,7 +366,7 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
 
 	// mark ContextType as registered to activate sending events when updating fields
-	contextType.getData().isRegistered = true
+	contextType.Register()
 
 	return nil
 }
@@ -427,6 +400,46 @@ func (m *modelData) GetContextTypes() ([]ContextType, error) {
 	return contextTypeArr, nil
 }
 
+// AddNode implements [Model].
+func (m *modelData) AddNode(node Node) error {
+	return addEventEnabled(m, node, Node.GetNodeId, func(n Node) { n.Register() }, m.nodesByUUID, events.NodeResource)
+}
+
+// DeleteNodeById implements [Model].
+func (m *modelData) DeleteNodeById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.nodesByUUID, events.NodeResource, NodeNotFoundError)
+}
+
+// GetNodeById implements [Model].
+func (m *modelData) GetNodeById(id uuid.UUID) Node {
+	return getEventEnabled(id, m.nodesByUUID)
+}
+
+// GetNodes implements [Model].
+func (m *modelData) GetNodes() ([]Node, error) {
+	return getAllEventEnabled(m.nodesByUUID)
+}
+
+// AddNodeType implements [Model].
+func (m *modelData) AddNodeType(nodeType NodeType) error {
+	return addEventEnabled(m, nodeType, NodeType.GetNodeTypeId, func(nt NodeType) { nt.Register() }, m.nodeTypesByUUID, events.NodeTypeResource)
+}
+
+// DeleteNodeTypeById implements [Model].
+func (m *modelData) DeleteNodeTypeById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.nodeTypesByUUID, events.NodeTypeResource, NodeTypeNotFoundError)
+}
+
+// GetNodeTypeById implements [Model].
+func (m *modelData) GetNodeTypeById(id uuid.UUID) NodeType {
+	return getEventEnabled(id, m.nodeTypesByUUID)
+}
+
+// GetNodeTypes implements [Model].
+func (m *modelData) GetNodeTypes() ([]NodeType, error) {
+	return getAllEventEnabled(m.nodeTypesByUUID)
+}
+
 // AddSystem implements Model.
 func (m *modelData) AddSystem(sys System) error {
 
@@ -446,7 +459,7 @@ func (m *modelData) AddSystem(sys System) error {
 	m.systemsByUUID[sys.GetSystemId()] = sys
 
 	// mark System as registered to activate sending events when updating fields
-	sys.getData().isRegistered = true
+	sys.Register()
 
 	return nil
 }
@@ -482,27 +495,27 @@ func (m *modelData) GetSystemById(id uuid.UUID) System {
 
 // AddApi implements Model.
 func (m *modelData) AddApi(api API) error {
-	return addEventEnabled(m, api, API.GetApiId, func(a API) { a.getData().isRegistered = true }, m.apisByUUID, events.APIResource)
+	return addEventEnabled(m, api, API.GetApiId, func(a API) { a.Register() }, m.apisByUUID, events.APIResource)
 }
 
 // AddApiInstance implements Model.
 func (m *modelData) AddApiInstance(instance ApiInstance) error {
-	return addEventEnabled(m, instance, ApiInstance.GetInstanceId, func(i ApiInstance) { i.getData().isRegistered = true }, m.apiInstancesByUUID, events.APIInstanceResource)
+	return addEventEnabled(m, instance, ApiInstance.GetInstanceId, func(i ApiInstance) { i.Register() }, m.apiInstancesByUUID, events.APIInstanceResource)
 }
 
 // AddComponent implements Model.
 func (m *modelData) AddComponent(comp Component) error {
-	return addEventEnabled(m, comp, Component.GetComponentId, func(c Component) { c.getData().isRegistered = true }, m.componentsByUUID, events.ComponentResource)
+	return addEventEnabled(m, comp, Component.GetComponentId, func(c Component) { c.Register() }, m.componentsByUUID, events.ComponentResource)
 }
 
 // AddComponentInstance implements Model.
 func (m *modelData) AddComponentInstance(instance ComponentInstance) error {
-	return addEventEnabled(m, instance, ComponentInstance.GetInstanceId, func(i ComponentInstance) { i.getData().isRegistered = true }, m.componentInstancesByUUID, events.ComponentInstanceResource)
+	return addEventEnabled(m, instance, ComponentInstance.GetInstanceId, func(i ComponentInstance) { i.Register() }, m.componentInstancesByUUID, events.ComponentInstanceResource)
 }
 
 // AddSystemInstance implements Model.
 func (m *modelData) AddSystemInstance(instance SystemInstance) error {
-	return addEventEnabled(m, instance, SystemInstance.GetInstanceId, func(i SystemInstance) { i.getData().isRegistered = true }, m.systemInstancesByUUID, events.SystemInstanceResource)
+	return addEventEnabled(m, instance, SystemInstance.GetInstanceId, func(i SystemInstance) { i.Register() }, m.systemInstancesByUUID, events.SystemInstanceResource)
 }
 
 // DeleteApiByResourceName implements Model.
@@ -535,6 +548,15 @@ func (m *modelData) GetApiById(id uuid.UUID) API {
 	return getEventEnabled(id, m.apisByUUID)
 }
 
+// ApiRefByID implements [Model].
+func (m *modelData) ApiRefByID(apiId uuid.UUID) *ApiRef {
+	api := m.GetApiById(apiId)
+	if api == nil {
+		return nil
+	}
+	return &ApiRef{API: api, ApiID: api.GetApiId()}
+}
+
 // GetApiInstanceById implements Model.
 func (m *modelData) GetApiInstanceById(id uuid.UUID) ApiInstance {
 	return getEventEnabled(id, m.apiInstancesByUUID)
@@ -553,6 +575,18 @@ func (m *modelData) GetComponentInstanceById(id uuid.UUID) ComponentInstance {
 // GetSystemInstanceById implements Model.
 func (m *modelData) GetSystemInstanceById(id uuid.UUID) SystemInstance {
 	return getEventEnabled(id, m.systemInstancesByUUID)
+}
+
+// SystemInstanceRefByID implements [Model].
+func (m *modelData) SystemInstanceRefByID(instanceId uuid.UUID) *SystemInstanceRef {
+	inst := m.GetSystemInstanceById(instanceId)
+	if inst == nil {
+		return nil
+	}
+	return &SystemInstanceRef{
+		SystemInstance: inst,
+		InstanceId:     inst.GetInstanceId(),
+	}
 }
 
 // GetApiInstances implements Model.
@@ -589,7 +623,7 @@ func (m modelData) GetFindings() ([]Finding, error) {
 // AddFinding implements Model.
 func (m *modelData) AddFinding(finding Finding, name string) error {
 	if finding.GetFindingId() != uuid.Nil {
-		finding.getData().isRegistered = true
+		finding.Register()
 		m.findingsByUUID[finding.GetFindingId()] = finding
 		m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding)
 	}
@@ -635,7 +669,7 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 	m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
 
 	// mark FindingType as registered to activate sending events when updating fields
-	findingType.getData().isRegistered = true
+	findingType.Register()
 
 	return nil
 

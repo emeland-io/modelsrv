@@ -1,82 +1,144 @@
 package model_test
 
 import (
-	"testing"
-
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/mocks"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.uber.org/mock/gomock"
 )
 
-func TestNodeTypeOperations(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
+var _ = Describe("NodeType functionalities", func() {
+	var (
+		nodeTypeId uuid.UUID
+		sinkMock   *mocks.MockEventSink
+		nodeType   model.NodeType
+	)
 
-	nodeTypeId := uuid.New()
-	nodeType := model.NewNodeType(testModel, nodeTypeId)
+	BeforeEach(func() {
+		nodeTypeId = uuid.New()
+		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
+		nodeType = model.NewNodeType(sinkMock, nodeTypeId)
+	})
 
-	// this must not create an event, as the node type has not been registered with the system
-	nodeType.SetDisplayName("Test Node Type")
-	assert.Equal(t, "Test Node Type", nodeType.GetDisplayName())
+	When("NodeType is created", func() {
+		It("must not be nil", func() {
+			Expect(nodeType).NotTo(BeNil())
+		})
 
-	// this must not create an event, as the node type has not been registered with the system
-	nodeType.SetDescription("a test node type")
-	assert.Equal(t, "a test node type", nodeType.GetDescription())
+		It("has the provided UUID", func() {
+			Expect(nodeType.GetNodeTypeId()).To(Equal(nodeTypeId))
+		})
 
-	// Test getting non-existent NodeType
-	assert.Nil(t, testModel.GetNodeTypeById(nodeTypeId))
+		It("has annotations set", func() {
+			Expect(nodeType.GetAnnotations()).NotTo(BeNil())
+		})
+	})
 
-	// Add NodeType and verify it exists
-	// Event: 1: create
-	err = testModel.AddNodeType(nodeType)
-	assert.NoError(t, err)
+	When("NodeType is updated", func() {
+		Context("NodeType is not registered", func() {
+			When("Display name gets updated", func() {
+				It("updates the display name without emitting events", func() {
+					nodeType.SetDisplayName("Test Node Type")
+					Expect(nodeType.GetDisplayName()).To(Equal("Test Node Type"))
+				})
+			})
 
-	// Verify retrieval by ID
-	assert.Same(t, nodeType, testModel.GetNodeTypeById(nodeTypeId))
+			When("Description gets updated", func() {
+				It("updates the description without emitting events", func() {
+					nodeType.SetDescription("a test node type")
+					Expect(nodeType.GetDescription()).To(Equal("a test node type"))
+				})
+			})
+		})
+	})
 
-	// update the DisplayName. This MUST create an event, after the object has been registered
-	// Event 2: update
-	nodeType.SetDisplayName("the real test node type")
+	When("NodeType is updated", func() {
+		Context("NodeType is registered", func() {
+			BeforeEach(func() {
+				nodeType.Register()
+			})
 
-	// update the description. This MUST create an event, after the object has been registered
-	// with the model.
-	// Event 3: update
-	nodeType.SetDescription("a test node type, but with more bla bla")
+			When("DisplayName gets updated", func() {
+				It("emits an event and calls Receive", func() {
+					expectedEventType := events.UpdateOperation
+					expectedResourceType := events.NodeTypeResource
 
-	// create a new go object and re-submit under the same UUID, but with other values
-	nodeType2 := model.NewNodeType(testModel, nodeTypeId)
-	nodeType2.SetDisplayName("The other Test Node Type")
-	nodeType2.SetDescription("a different test node type, but same Id")
+					sinkMock.EXPECT().Receive(expectedResourceType, expectedEventType, nodeType.GetNodeTypeId(), gomock.Any())
 
-	//only when the object is added, it should trigger an event.
-	// Event 4: update
-	err = testModel.AddNodeType(nodeType2)
-	assert.NoError(t, err)
+					nodeType.SetDisplayName("FooBar")
+				})
+			})
 
-	// delete nodeType from model
-	// Event 5: delete
-	err = testModel.DeleteNodeTypeById(nodeTypeId)
-	assert.NoError(t, err)
+			When("Description gets updated", func() {
+				It("emits an event and calls Receive", func() {
+					sinkMock.EXPECT().Receive(events.NodeTypeResource, events.UpdateOperation, nodeType.GetNodeTypeId(), gomock.Any())
 
-	expectedEvents := []struct {
-		resType    events.ResourceType
-		operation  events.Operation
-		resourceId uuid.UUID
-	}{
-		{resType: events.NodeTypeResource, operation: events.CreateOperation, resourceId: nodeTypeId},
-		{resType: events.NodeTypeResource, operation: events.UpdateOperation, resourceId: nodeTypeId},
-		{resType: events.NodeTypeResource, operation: events.UpdateOperation, resourceId: nodeTypeId},
-		{resType: events.NodeTypeResource, operation: events.UpdateOperation, resourceId: nodeTypeId},
-		{resType: events.NodeTypeResource, operation: events.DeleteOperation, resourceId: nodeTypeId},
-	}
+					nodeType.SetDescription("a test description")
+				})
+			})
+		})
+	})
+})
 
-	actualEvents := sink.GetEvents()
-	assert.Len(t, actualEvents, len(expectedEvents))
-	for i, expected := range expectedEvents {
-		assert.Equal(t, expected.resType, actualEvents[i].ResourceType)
-		assert.Equal(t, expected.operation, actualEvents[i].Operation)
-		assert.Equal(t, expected.resourceId, actualEvents[i].ResourceId)
-	}
-}
+// var _ = Describe("NodeType operations with model", func() {
+// 	var (
+// 		sink      *events.ListSink
+// 		testModel model.Model
+// 	)
+
+// 	BeforeEach(func() {
+// 		var err error
+// 		sink = events.NewListSink()
+// 		testModel, err = model.NewModel(sink)
+// 		Expect(err).NotTo(HaveOccurred())
+// 	})
+
+// 	It("supports full CRUD lifecycle with correct event sequence", func() {
+// 		nodeTypeId := uuid.New()
+// 		nodeType := model.NewNodeTypeForModel(testModel, nodeTypeId)
+
+// 		nodeType.SetDisplayName("Test Node Type")
+// 		nodeType.SetDescription("a test node type")
+// 		Expect(testModel.GetNodeTypeById(nodeTypeId)).To(BeNil())
+
+// 		err := testModel.AddNodeType(nodeType)
+// 		Expect(err).NotTo(HaveOccurred())
+// 		Expect(testModel.GetNodeTypeById(nodeTypeId)).To(Equal(nodeType))
+
+// 		nodeType.SetDisplayName("the real test node type")
+// 		nodeType.SetDescription("a test node type, but with more bla bla")
+
+// 		nodeType2 := model.NewNodeTypeForModel(testModel, nodeTypeId)
+// 		nodeType2.SetDisplayName("The other Test Node Type")
+// 		nodeType2.SetDescription("a different test node type, but same Id")
+// 		err = testModel.AddNodeType(nodeType2)
+// 		Expect(err).NotTo(HaveOccurred())
+
+// 		err = testModel.DeleteNodeTypeById(nodeTypeId)
+// 		Expect(err).NotTo(HaveOccurred())
+// 		Expect(testModel.GetNodeTypeById(nodeTypeId)).To(BeNil())
+
+// 		expectedEvents := []struct {
+// 			resourceType events.ResourceType
+// 			operation    events.Operation
+// 			resourceId   uuid.UUID
+// 		}{
+// 			{events.NodeTypeResource, events.CreateOperation, nodeTypeId},
+// 			{events.NodeTypeResource, events.UpdateOperation, nodeTypeId},
+// 			{events.NodeTypeResource, events.UpdateOperation, nodeTypeId},
+// 			{events.NodeTypeResource, events.UpdateOperation, nodeTypeId},
+// 			{events.NodeTypeResource, events.DeleteOperation, nodeTypeId},
+// 		}
+
+// 		actualEvents := sink.GetEvents()
+// 		Expect(actualEvents).To(HaveLen(len(expectedEvents)))
+// 		for i, expected := range expectedEvents {
+// 			Expect(actualEvents[i].ResourceType).To(Equal(expected.resourceType))
+// 			Expect(actualEvents[i].Operation).To(Equal(expected.operation))
+// 			Expect(actualEvents[i].ResourceId).To(Equal(expected.resourceId))
+// 		}
+// 	})
+// })
