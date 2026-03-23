@@ -120,14 +120,14 @@ func TestApiInstanceSetApiRef(t *testing.T) {
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	api := model.MakeTestAPIForModel(testModel, apiId, "Test API", model.OpenAPI, model.Version{})
+	api := model.NewAPI(testModel, apiId)
+	api.SetDisplayName("Test API")
 
 	instanceId := uuid.New()
 	instance := model.NewApiInstance(testModel, instanceId)
 	instance.SetDisplayName("Test API Instance")
 
-	// Add API (emits event - API is now interface with sink)
-	// Event 1: create API
+	// Event 1: Add API
 	err = testModel.AddApi(api)
 	assert.NoError(t, err)
 
@@ -157,25 +157,23 @@ func TestApiInstanceSetSystemInstance(t *testing.T) {
 	assert.NoError(t, err)
 
 	systemInstanceId := uuid.New()
-	systemInstance := &model.SystemInstance{
-		InstanceId:  systemInstanceId,
-		DisplayName: "Test System Instance",
-	}
+	systemInstance := model.NewSystemInstance(testModel, systemInstanceId)
+	systemInstance.SetDisplayName("Test System Instance")
 
 	instanceId := uuid.New()
 	instance := model.NewApiInstance(testModel, instanceId)
 	instance.SetDisplayName("Test API Instance")
 
-	// Add system instance (no event - SystemInstance is still a struct)
+	// Event 1: Add system instance
 	err = testModel.AddSystemInstance(systemInstance)
 	assert.NoError(t, err)
 
-	// Event 1: create API instance
+	// Event 2: create API instance
 	err = testModel.AddApiInstance(instance)
 	assert.NoError(t, err)
 
 	// Set system instance reference by ID
-	// Event 2: update instance
+	// Event 3: update instance
 	instance.SetSystemInstanceById(systemInstanceId)
 
 	sysInstRef := instance.GetSystemInstance()
@@ -184,7 +182,8 @@ func TestApiInstanceSetSystemInstance(t *testing.T) {
 	assert.Same(t, systemInstance, sysInstRef.SystemInstance)
 
 	eventList := sink.GetList()
-	assert.Equal(t, 2, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
+	assert.Equal(t, 3, len(eventList))
+	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: SystemInstance %s", systemInstanceId.String())))
+	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
+	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
 }

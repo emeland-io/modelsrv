@@ -62,7 +62,7 @@ func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request G
 		ContextId:   contextId,
 		DisplayName: displayName,
 		Parent:      &parentContextId,
-		Annotations: cloneAnnotations2(context.GetAnnotations()),
+		Annotations: cloneAnnotations(context.GetAnnotations()),
 	}
 
 	return GetLandscapeContextsContextId200JSONResponse(respBody), nil
@@ -108,7 +108,7 @@ func (a *ApiServer) GetLandscapeContextTypesContextTypeId(ctx context.Context, r
 	respBody := ContextType{
 		ContextTypeId: contextTypeId,
 		DisplayName:   displayName,
-		Annotations:   cloneAnnotations2(contextType.GetAnnotations()),
+		Annotations:   cloneAnnotations(contextType.GetAnnotations()),
 	}
 
 	return GetLandscapeContextTypesContextTypeId200JSONResponse(respBody), nil
@@ -165,7 +165,7 @@ func (a *ApiServer) GetLandscapeNodesNodeId(ctx context.Context, request GetLand
 	respBody := Node{
 		NodeId:      nodeId,
 		DisplayName: displayName,
-		Annotations: cloneAnnotations2(node.GetAnnotations()),
+		Annotations: cloneAnnotations(node.GetAnnotations()),
 	}
 
 	return GetLandscapeNodesNodeId200JSONResponse(respBody), nil
