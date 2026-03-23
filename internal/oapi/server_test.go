@@ -127,9 +127,9 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.NewApiInstance(backend, apiInstanceId)
+	apiInstance := model.NewApiInstance(backend.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("First API Instance")
-	apiInstance.SetApiRefById(uuid.New())
+	apiInstance.SetApiRef(backend.ApiRefByID(apiId))
 	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 

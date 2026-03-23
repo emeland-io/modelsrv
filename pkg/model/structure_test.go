@@ -60,6 +60,8 @@ func TestAPI(t *testing.T) {
 	apiId := uuid.New()
 	version := model.Version{Version: "1.0.0"}
 	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
+	assert.NoError(t, err)
 	systemId, _ := uuid.NewUUID()
 	system := model.MakeTestSystem(sink, systemId, "a test system", model.Version{})
 
@@ -68,7 +70,7 @@ func TestAPI(t *testing.T) {
 	api.SetDescription("Test API Description")
 	api.SetVersion(version)
 	api.SetType(model.OpenAPI)
-	api.SetSystem(system)
+	api.SetSystemByRef(system)
 	api.GetAnnotations().Add("key", "value")
 
 	assert.Equal(t, "test-api", api.GetDisplayName())
@@ -76,7 +78,7 @@ func TestAPI(t *testing.T) {
 	assert.Equal(t, apiId, api.GetApiId())
 	assert.Equal(t, version, api.GetVersion())
 	assert.Equal(t, model.OpenAPI, api.GetType())
-	assert.Equal(t, system, api.GetSystem())
+	assert.Equal(t, system, api.GetSystem().System)
 	assert.Equal(t, "value", api.GetAnnotations().GetValue("key"))
 }
 
@@ -111,11 +113,12 @@ func TestComponent(t *testing.T) {
 }
 
 func TestSystemInstance(t *testing.T) {
-	// testModel, err := model.NewModel(events.NewListSink())
-	// assert.NoError(t, err)
+	sink := events.NewListSink()
+	testModel, err := model.NewModel(sink)
+	assert.NoError(t, err)
 	instanceId := uuid.New()
 	systemId, _ := uuid.NewUUID()
-	system := model.MakeTestSystem(events.NewListSink(), systemId, "test-system", model.Version{})
+	system := model.MakeTestSystem(sink, systemId, "test-system", model.Version{})
 
 	sysRef := &model.SystemRef{System: system}
 

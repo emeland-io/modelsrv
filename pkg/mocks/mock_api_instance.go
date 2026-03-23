@@ -97,6 +97,34 @@ func (mr *MockApiInstanceMockRecorder) GetInstanceId() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstanceId", reflect.TypeOf((*MockApiInstance)(nil).GetInstanceId))
 }
 
+// GetResourceId mocks base method.
+func (m *MockApiInstance) GetResourceId() uuid.UUID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceId")
+	ret0, _ := ret[0].(uuid.UUID)
+	return ret0
+}
+
+// GetResourceId indicates an expected call of GetResourceId.
+func (mr *MockApiInstanceMockRecorder) GetResourceId() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceId", reflect.TypeOf((*MockApiInstance)(nil).GetResourceId))
+}
+
+// GetResourceName mocks base method.
+func (m *MockApiInstance) GetResourceName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetResourceName indicates an expected call of GetResourceName.
+func (mr *MockApiInstanceMockRecorder) GetResourceName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceName", reflect.TypeOf((*MockApiInstance)(nil).GetResourceName))
+}
+
 // GetSystemInstance mocks base method.
 func (m *MockApiInstance) GetSystemInstance() *model.SystemInstanceRef {
 	m.ctrl.T.Helper()
@@ -112,11 +140,9 @@ func (mr *MockApiInstanceMockRecorder) GetSystemInstance() *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockApiInstance) Register() bool {
+func (m *MockApiInstance) Register() {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register")
-	ret0, _ := ret[0].(bool)
-	return ret0
+	m.ctrl.Call(m, "Register")
 }
 
 // Register indicates an expected call of Register.
@@ -125,16 +151,28 @@ func (mr *MockApiInstanceMockRecorder) Register() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockApiInstance)(nil).Register))
 }
 
-// SetApiRefById mocks base method.
-func (m *MockApiInstance) SetApiRefById(apiId uuid.UUID) {
+// SetAnnotations mocks base method.
+func (m *MockApiInstance) SetAnnotations(arg0 model.Annotations) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetApiRefById", apiId)
+	m.ctrl.Call(m, "SetAnnotations", arg0)
 }
 
-// SetApiRefById indicates an expected call of SetApiRefById.
-func (mr *MockApiInstanceMockRecorder) SetApiRefById(apiId any) *gomock.Call {
+// SetAnnotations indicates an expected call of SetAnnotations.
+func (mr *MockApiInstanceMockRecorder) SetAnnotations(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetApiRefById", reflect.TypeOf((*MockApiInstance)(nil).SetApiRefById), apiId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockApiInstance)(nil).SetAnnotations), arg0)
+}
+
+// SetApiRef mocks base method.
+func (m *MockApiInstance) SetApiRef(arg0 *model.ApiRef) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetApiRef", arg0)
+}
+
+// SetApiRef indicates an expected call of SetApiRef.
+func (mr *MockApiInstanceMockRecorder) SetApiRef(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetApiRef", reflect.TypeOf((*MockApiInstance)(nil).SetApiRef), arg0)
 }
 
 // SetApiRefByRef mocks base method.
@@ -161,20 +199,20 @@ func (mr *MockApiInstanceMockRecorder) SetDisplayName(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDisplayName", reflect.TypeOf((*MockApiInstance)(nil).SetDisplayName), arg0)
 }
 
-// SetSystemInstanceById mocks base method.
-func (m *MockApiInstance) SetSystemInstanceById(instanceId uuid.UUID) {
+// SetSystemInstance mocks base method.
+func (m *MockApiInstance) SetSystemInstance(arg0 *model.SystemInstanceRef) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetSystemInstanceById", instanceId)
+	m.ctrl.Call(m, "SetSystemInstance", arg0)
 }
 
-// SetSystemInstanceById indicates an expected call of SetSystemInstanceById.
-func (mr *MockApiInstanceMockRecorder) SetSystemInstanceById(instanceId any) *gomock.Call {
+// SetSystemInstance indicates an expected call of SetSystemInstance.
+func (mr *MockApiInstanceMockRecorder) SetSystemInstance(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSystemInstanceById", reflect.TypeOf((*MockApiInstance)(nil).SetSystemInstanceById), instanceId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSystemInstance", reflect.TypeOf((*MockApiInstance)(nil).SetSystemInstance), arg0)
 }
 
 // SetSystemInstanceByRef mocks base method.
-func (m *MockApiInstance) SetSystemInstanceByRef(instance *model.SystemInstance) {
+func (m *MockApiInstance) SetSystemInstanceByRef(instance model.SystemInstance) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetSystemInstanceByRef", instance)
 }

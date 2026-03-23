@@ -290,7 +290,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	apiInstance := model.NewApiInstance(target, apiInstanceId)
+	apiInstance := model.NewApiInstance(target.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("Test ApiInstance")
 	apiInstance.SetApiRefByRef(api)
 	err = target.AddApiInstance(apiInstance)

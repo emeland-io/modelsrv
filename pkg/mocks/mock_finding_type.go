@@ -97,12 +97,38 @@ func (mr *MockFindingTypeMockRecorder) GetFindingTypeId() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindingTypeId", reflect.TypeOf((*MockFindingType)(nil).GetFindingTypeId))
 }
 
-// Register mocks base method.
-func (m *MockFindingType) Register() bool {
+// GetResourceId mocks base method.
+func (m *MockFindingType) GetResourceId() uuid.UUID {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Register")
-	ret0, _ := ret[0].(bool)
+	ret := m.ctrl.Call(m, "GetResourceId")
+	ret0, _ := ret[0].(uuid.UUID)
 	return ret0
+}
+
+// GetResourceId indicates an expected call of GetResourceId.
+func (mr *MockFindingTypeMockRecorder) GetResourceId() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceId", reflect.TypeOf((*MockFindingType)(nil).GetResourceId))
+}
+
+// GetResourceName mocks base method.
+func (m *MockFindingType) GetResourceName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetResourceName indicates an expected call of GetResourceName.
+func (mr *MockFindingTypeMockRecorder) GetResourceName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceName", reflect.TypeOf((*MockFindingType)(nil).GetResourceName))
+}
+
+// Register mocks base method.
+func (m *MockFindingType) Register() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Register")
 }
 
 // Register indicates an expected call of Register.
@@ -111,16 +137,28 @@ func (mr *MockFindingTypeMockRecorder) Register() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFindingType)(nil).Register))
 }
 
-// SetDescription mocks base method.
-func (m *MockFindingType) SetDescription(s string) {
+// SetAnnotations mocks base method.
+func (m *MockFindingType) SetAnnotations(arg0 model.Annotations) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetDescription", s)
+	m.ctrl.Call(m, "SetAnnotations", arg0)
+}
+
+// SetAnnotations indicates an expected call of SetAnnotations.
+func (mr *MockFindingTypeMockRecorder) SetAnnotations(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockFindingType)(nil).SetAnnotations), arg0)
+}
+
+// SetDescription mocks base method.
+func (m *MockFindingType) SetDescription(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetDescription", arg0)
 }
 
 // SetDescription indicates an expected call of SetDescription.
-func (mr *MockFindingTypeMockRecorder) SetDescription(s any) *gomock.Call {
+func (mr *MockFindingTypeMockRecorder) SetDescription(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDescription", reflect.TypeOf((*MockFindingType)(nil).SetDescription), s)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDescription", reflect.TypeOf((*MockFindingType)(nil).SetDescription), arg0)
 }
 
 // SetDisplayName mocks base method.

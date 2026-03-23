@@ -18,7 +18,7 @@ func TestApiInstanceOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	instance := model.NewApiInstance(testModel, instanceId)
+	instance := model.NewApiInstance(testModel.GetSink(), instanceId)
 
 	// this must not create an event, as the instance has not been registered with the system
 	instance.SetDisplayName("Test API Instance")
@@ -41,7 +41,7 @@ func TestApiInstanceOperations(t *testing.T) {
 	instance.SetDisplayName("the real test API instance")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	instance2 := model.NewApiInstance(testModel, instanceId)
+	instance2 := model.NewApiInstance(testModel.GetSink(), instanceId)
 	instance2.SetDisplayName("The other Test API Instance")
 
 	//only when the object is added, it should trigger an event.
@@ -62,7 +62,7 @@ func TestApiInstanceOperations(t *testing.T) {
 	assert.Equal(t, 4, len(eventList))
 	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
 	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
-	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("CreateOperation: APIInstance %s", instanceId.String())))
+	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: APIInstance %s", instanceId.String())))
 	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("DeleteOperation: APIInstance %s", instanceId.String())))
 }
 
@@ -72,7 +72,7 @@ func TestApiInstanceAnnotations(t *testing.T) {
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	instance := model.NewApiInstance(testModel, instanceId)
+	instance := model.NewApiInstance(testModel.GetSink(), instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: create
@@ -124,7 +124,7 @@ func TestApiInstanceSetApiRef(t *testing.T) {
 	api.SetDisplayName("Test API")
 
 	instanceId := uuid.New()
-	instance := model.NewApiInstance(testModel, instanceId)
+	instance := model.NewApiInstance(testModel.GetSink(), instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: Add API
@@ -137,7 +137,7 @@ func TestApiInstanceSetApiRef(t *testing.T) {
 
 	// Set API reference by ID
 	// Event 3: update instance
-	instance.SetApiRefById(apiId)
+	instance.SetApiRef(testModel.ApiRefByID(apiId))
 
 	apiRef := instance.GetApiRef()
 	assert.NotNil(t, apiRef)
@@ -161,7 +161,7 @@ func TestApiInstanceSetSystemInstance(t *testing.T) {
 	systemInstance.SetDisplayName("Test System Instance")
 
 	instanceId := uuid.New()
-	instance := model.NewApiInstance(testModel, instanceId)
+	instance := model.NewApiInstance(testModel.GetSink(), instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: Add system instance
@@ -174,7 +174,7 @@ func TestApiInstanceSetSystemInstance(t *testing.T) {
 
 	// Set system instance reference by ID
 	// Event 3: update instance
-	instance.SetSystemInstanceById(systemInstanceId)
+	instance.SetSystemInstance(testModel.SystemInstanceRefByID(systemInstanceId))
 
 	sysInstRef := instance.GetSystemInstance()
 	assert.NotNil(t, sysInstRef)

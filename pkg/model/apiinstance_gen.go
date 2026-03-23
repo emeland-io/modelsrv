@@ -32,16 +32,14 @@ type ApiInstance interface {
 	GetAnnotations() Annotations
 	SetAnnotations(Annotations)
 
-	SetApiRefById(apiId uuid.UUID)
 	SetApiRefByRef(api API)
-	SetSystemInstanceById(instanceId uuid.UUID)
 	SetSystemInstanceByRef(instance SystemInstance)
 
-	getData() *apiinstanceData
+	Register()
 }
 
 type apiinstanceData struct {
-	model        *modelData
+	sink         events.EventSink
 	isRegistered bool
 
 	InstanceId     uuid.UUID
@@ -51,20 +49,17 @@ type apiinstanceData struct {
 	Annotations    Annotations
 }
 
-func NewApiInstance(model Model, id uuid.UUID) ApiInstance {
+// NewApiInstance constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
+func NewApiInstance(sink events.EventSink, id uuid.UUID) ApiInstance {
 	retval := &apiinstanceData{
-		model:        model.getData(),
+		sink:         sink,
 		isRegistered: false,
 		InstanceId:   id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
-}
-
-func (o *apiinstanceData) getData() *apiinstanceData {
-	return o
 }
 
 // GetInstanceId implements [ApiInstance].
@@ -92,7 +87,7 @@ func (o *apiinstanceData) SetDisplayName(val string) {
 	o.DisplayName = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -106,7 +101,7 @@ func (o *apiinstanceData) SetApiRef(val *ApiRef) {
 	o.ApiRef = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -120,7 +115,7 @@ func (o *apiinstanceData) SetSystemInstance(val *SystemInstanceRef) {
 	o.SystemInstance = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -134,8 +129,31 @@ func (o *apiinstanceData) SetAnnotations(val Annotations) {
 	o.Annotations = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
+}
+
+// SetApiRefByRef sets the reference from the given [API].
+func (o *apiinstanceData) SetApiRefByRef(api API) {
+
+	o.SetApiRef(&ApiRef{
+		API:   api,
+		ApiID: api.GetApiId(),
+	})
+}
+
+// SetSystemInstanceByRef sets the reference from the given [SystemInstance].
+func (o *apiinstanceData) SetSystemInstanceByRef(instance SystemInstance) {
+
+	o.SetSystemInstance(&SystemInstanceRef{
+		SystemInstance: instance,
+		InstanceId:     instance.GetInstanceId(),
+	})
+}
+
+// Register implements [ApiInstance].
+func (o *apiinstanceData) Register() {
+	o.isRegistered = true
 }
 
 // Receive implements [events.EventSink].
@@ -146,7 +164,7 @@ func (o *apiinstanceData) Receive(resType events.ResourceType, op events.Operati
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if o.isRegistered {
-		return o.model.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		return o.sink.Receive(events.APIInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 
 	return nil

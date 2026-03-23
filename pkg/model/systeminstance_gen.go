@@ -32,11 +32,12 @@ type SystemInstance interface {
 	GetAnnotations() Annotations
 	SetAnnotations(Annotations)
 
-	getData() *systeminstanceData
+	Register()
 }
 
 type systeminstanceData struct {
-	model        *modelData
+	model        Model
+	sink         events.EventSink
 	isRegistered bool
 
 	InstanceId  uuid.UUID
@@ -46,20 +47,18 @@ type systeminstanceData struct {
 	Annotations Annotations
 }
 
-func NewSystemInstance(model Model, id uuid.UUID) SystemInstance {
+// NewSystemInstance constructs a resource bound to the given [Model] and its sink.
+func NewSystemInstance(m Model, id uuid.UUID) SystemInstance {
 	retval := &systeminstanceData{
-		model:        model.getData(),
+		model:        m,
+		sink:         m.GetSink(),
 		isRegistered: false,
 		InstanceId:   id,
 	}
 
-	retval.Annotations = NewAnnotations(model.getData(), retval)
+	retval.Annotations = NewAnnotations(retval)
 
 	return retval
-}
-
-func (o *systeminstanceData) getData() *systeminstanceData {
-	return o
 }
 
 // GetInstanceId implements [SystemInstance].
@@ -87,7 +86,7 @@ func (o *systeminstanceData) SetDisplayName(val string) {
 	o.DisplayName = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -101,7 +100,7 @@ func (o *systeminstanceData) SetSystemRef(val *SystemRef) {
 	o.SystemRef = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -115,7 +114,7 @@ func (o *systeminstanceData) SetContextRef(val *ContextRef) {
 	o.ContextRef = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 }
 
@@ -129,8 +128,13 @@ func (o *systeminstanceData) SetAnnotations(val Annotations) {
 	o.Annotations = val
 
 	if o.isRegistered {
-		o.model.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
+}
+
+// Register implements [SystemInstance].
+func (o *systeminstanceData) Register() {
+	o.isRegistered = true
 }
 
 // Receive implements [events.EventSink].
@@ -141,7 +145,7 @@ func (o *systeminstanceData) Receive(resType events.ResourceType, op events.Oper
 
 	// all changes to annotations are automatically reflected in the parent object as updates
 	if o.isRegistered {
-		return o.model.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+		return o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
 	}
 
 	return nil

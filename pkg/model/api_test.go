@@ -12,16 +12,20 @@ import (
 
 var _ = Describe("API functionalities", func() {
 	var (
-		apiId    uuid.UUID
-		sinkMock *mocks.MockEventSink
-		api      model.API
+		apiId     uuid.UUID
+		sinkMock  *mocks.MockEventSink
+		testModel model.Model
+		api       model.API
 	)
 
 	BeforeEach(func() {
 		apiId = uuid.New()
 
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		api = model.NewAPI(sinkMock, apiId)
+		m, err := model.NewModel(sinkMock)
+		Expect(err).NotTo(HaveOccurred())
+		testModel = m
+		api = model.NewAPI(testModel, apiId)
 	})
 
 	When("API is created", func() {

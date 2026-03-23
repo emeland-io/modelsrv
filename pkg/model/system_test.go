@@ -76,7 +76,7 @@ var _ = Describe("System functionalities", func() {
 					abs := true
 					sys.SetAbstract(abs)
 
-					Expect(sys.IsAbstract()).To(Equal(abs))
+					Expect(sys.GetAbstract()).To(Equal(abs))
 				})
 			})
 
