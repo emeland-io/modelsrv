@@ -33,5 +33,10 @@ jobs:
     - name: Vet
       run: go vet ./...
 
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v9
+      with:
+        version: v2.11.3
+
     - name: Test
       run: go test -v ./...
