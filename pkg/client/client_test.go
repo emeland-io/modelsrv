@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/endpoint"
 	"go.emeland.io/modelsrv/pkg/events"
@@ -38,7 +39,7 @@ var _ = Describe("Client", Ordered, func() {
 		var err error
 		By("starting a model server")
 
-		testEvents, err = events.NewEventManager()
+		testEvents, err = eventmgr.NewEventManager()
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testEvents).NotTo(BeNil())
 
@@ -48,10 +49,6 @@ var _ = Describe("Client", Ordered, func() {
 		testModel, err = model.NewModel(sink)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testModel).NotTo(BeNil())
-
-		testEvents, err = events.NewEventManager()
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(testEvents).NotTo(BeNil())
 
 		By("attaching the model to a listener")
 		Expect(endpoint.StarWebListener(testModel, testEvents, "localhost:24000")).To(Succeed())

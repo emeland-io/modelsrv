@@ -25,6 +25,14 @@ import (
 	"github.com/google/uuid"
 )
 
+// Subscriber receives replicated events from an upstream server (HTTP callback target).
+type Subscriber interface {
+	Notify(ctx context.Context, event *Event) error
+	GetURL() string
+	GetId() uuid.UUID
+	GetStatus() string
+}
+
 // EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
 	// GetCurrentEventSequenceId returns the current event sequence ID as a string.
@@ -33,88 +41,15 @@ type EventManager interface {
 
 	// SetSinkFactory sets the factory function to create new EventSinks.
 	SetSinkFactory(factory func() (EventSink, error))
-	// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
-	// If no factory has been set, a default [ListSink] is returned.
+	// GetSink returns the shared recording sink used by the model (see internal/events).
 	GetSink() (EventSink, error)
 
-	// GetSubscribers returns a list of current subscribers.
-	GetSubscribers() []string
-	// AddSubscriber adds a new subscriber by URL.
+	// GetSubscribers returns registered downstream servers.
+	GetSubscribers() []Subscriber
+	// AddSubscriber registers a subscriber base API URL (e.g. http://host:port/api); past events are replayed.
 	AddSubscriber(url string) error
 	// RemoveSubscriber removes a subscriber by URL.
 	RemoveSubscriber(url string) error
-}
-
-var _ EventManager = (*eventManager)(nil)
-
-type eventManager struct {
-	sequenceNumber uint64
-	subscribers    []string
-	sinkFactory    func() (EventSink, error)
-}
-
-func NewEventManager() (EventManager, error) {
-	retval := &eventManager{
-		sequenceNumber: 0,
-		sinkFactory:    func() (EventSink, error) { return NewListSink(), nil },
-	}
-	return retval, nil
-
-}
-
-// GetCurrentSequenceId implements EventManager.
-func (e *eventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error) {
-	return e.sequenceNumber, nil
-}
-
-// IncrementSequenceId implements EventManager.
-func (e *eventManager) IncrementSequenceId(ctx context.Context) error {
-	e.sequenceNumber++
-	return nil
-}
-
-// GetSink returns a new EventSink created by the sink factory set with [SetSinkFactory].
-// If no factory has been set, a default [ListSink] is returned.
-//
-// SetSinkFactory implements [EventManager].
-func (e *eventManager) SetSinkFactory(factory func() (EventSink, error)) {
-	e.sinkFactory = factory
-}
-
-// GetSink implements [EventManager].
-func (e *eventManager) GetSink() (EventSink, error) {
-	return NewListSink(), nil
-}
-
-// AddSubscriber implements [EventManager].
-// adding the same subscriber URL again will result in only one entry in the subscriber list.
-func (e *eventManager) AddSubscriber(url string) error {
-	for _, sub := range e.subscribers {
-		if sub == url {
-			// already exists
-			return nil
-		}
-	}
-	e.subscribers = append(e.subscribers, url)
-	return nil
-}
-
-// GetSubscribers implements [EventManager].
-func (e *eventManager) GetSubscribers() []string {
-	return e.subscribers
-}
-
-// RemoveSubscriber implements [EventManager].
-// TODO: this function requires O(n) time. If the subscriber list becomes long, consider using a map for O(1) removal.
-func (e *eventManager) RemoveSubscriber(url string) error {
-	for i, sub := range e.subscribers {
-		if sub == url {
-			// remove subscriber
-			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
-			return nil
-		}
-	}
-	return fmt.Errorf("subscriber %s not found", url)
 }
 
 type ResourceType int
@@ -162,6 +97,10 @@ var resourceTypeValues = map[ResourceType]string{
 	ComponentResource:         "Component",
 	ComponentInstanceResource: "ComponentInstance",
 
+	//Phase 5
+	FindingResource:     "Finding",
+	FindingTypeResource: "FindingType",
+
 	// Value objects
 	AnnotationsResource: "Annotations",
 }
@@ -180,6 +119,14 @@ func (t ResourceType) String() string {
 		return val
 	}
 	return resourceTypeValues[UnknownResourceType]
+}
+
+// WireKind returns the JSON event "kind" value for phase-1 replication (matches OpenAPI Event.kind enum).
+func (t ResourceType) WireKind() string {
+	if t == APIInstanceResource {
+		return "ApiInstance"
+	}
+	return t.String()
 }
 
 type Operation int
@@ -227,6 +174,54 @@ func (o Operation) String() string {
 		return val
 	}
 	return operationValues[UnknownOperation]
+}
+
+// WireOperation returns short names used in JSON event payloads (Create, Update, Delete).
+func (o Operation) WireOperation() string {
+	switch o {
+	case CreateOperation:
+		return "Create"
+	case UpdateOperation:
+		return "Update"
+	case DeleteOperation:
+		return "Delete"
+	default:
+		return "Unknown"
+	}
+}
+
+// ParseWireKind maps JSON Event.kind strings (see WireKind) to ResourceType.
+func ParseWireKind(s string) ResourceType {
+	switch s {
+	case "System":
+		return SystemResource
+	case "SystemInstance":
+		return SystemInstanceResource
+	case "API":
+		return APIResource
+	case "ApiInstance":
+		return APIInstanceResource
+	case "Component":
+		return ComponentResource
+	case "ComponentInstance":
+		return ComponentInstanceResource
+	default:
+		return UnknownResourceType
+	}
+}
+
+// ParseWireOperation maps JSON Event.operation strings (Create, Update, Delete) to Operation.
+func ParseWireOperation(s string) Operation {
+	switch s {
+	case "Create":
+		return CreateOperation
+	case "Update":
+		return UpdateOperation
+	case "Delete":
+		return DeleteOperation
+	default:
+		return UnknownOperation
+	}
 }
 
 type EventSink interface {

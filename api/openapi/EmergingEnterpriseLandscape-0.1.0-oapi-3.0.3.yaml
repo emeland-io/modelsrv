@@ -530,6 +530,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /events/push:
+    post:
+      description: Push a new event to a registered consumer. Used by an upstream server to notify subscribers of model changes.
+      tags: [events]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: OK
   /test:
     get:
       responses:
@@ -957,4 +970,41 @@ components:
       required:
         - nodeId
         - displayName
-        - nodeType  
+        - nodeType
+    Event:
+      type: object
+      description: Represents a change in the landscape model for event replication between servers.
+      properties:
+        operation:
+          description: The type of the event.
+          enum:
+            - Unknown
+            - Create
+            - Update
+            - Delete
+        kind:
+          description: The type of the resource this event refers to (phase-1 structure types for replication).
+          enum:
+            - System
+            - SystemInstance
+            - API
+            - ApiInstance
+            - Component
+            - ComponentInstance
+        resourceId:
+          type: string
+          format: uuid
+          description: Set for delete events when no resource body is sent.
+        resource:
+          description: Resource payload; structure depends on kind.
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/System'
+            - $ref: '#/components/schemas/SystemInstance'
+            - $ref: '#/components/schemas/API'
+            - $ref: '#/components/schemas/ApiInstance'
+            - $ref: '#/components/schemas/Component'
+            - $ref: '#/components/schemas/ComponentInstance'
+      required:
+        - operation
+        - kind

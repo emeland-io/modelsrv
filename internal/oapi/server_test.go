@@ -31,6 +31,7 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -200,7 +201,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
-	eventMgr, err = events.NewEventManager()
+	eventMgr, err = eventmgr.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
@@ -291,7 +292,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 
 		Expect(len(eventMgr.GetSubscribers())).To(Equal(1))
-		Expect(eventMgr.GetSubscribers()[0]).To(Equal("http://remote-server.example.com/emeland/"))
+		Expect(eventMgr.GetSubscribers()[0].GetURL()).To(Equal("http://remote-server.example.com/emeland/"))
 	})
 
 	It("should call POST on /events/unregister to remove a subscriber", func() {
