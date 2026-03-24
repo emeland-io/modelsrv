@@ -37,7 +37,11 @@ var serverCmd = &cobra.Command{
 		}
 
 		fmt.Println("Starting server...")
-		endpoint.StarWebListener(model, eventMgr, serviceAddr)
+		if err := endpoint.StarWebListener(model, eventMgr, serviceAddr); err != nil {
+			fmt.Println("Error starting web listener: ", err)
+			return
+		}
+		fmt.Println("Server started successfully")
 	},
 }
 

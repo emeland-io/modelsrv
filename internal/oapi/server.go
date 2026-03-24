@@ -44,6 +44,13 @@ const (
 	CONTENT_TYPE_HTML                 = HeaderLabel("text/html")
 )
 
+// ctxKey is the type for context.WithValue keys in this package (SA1029).
+type ctxKey int
+
+const (
+	ctxKeyNegotiatedContentType ctxKey = iota
+)
+
 type ApiServer struct {
 	Backend model.Model
 	Events  events.EventManager
@@ -124,7 +131,7 @@ func ProcessContentTypeRequest(f StrictHandlerFunc, _ string) StrictHandlerFunc 
 			contentType = "application/json" // default to HTML if no header is set
 		}
 
-		newCtx = context.WithValue(ctx, HEADER_ACCEPT, contentType)
+		newCtx = context.WithValue(ctx, ctxKeyNegotiatedContentType, contentType)
 
 		return f(newCtx, w, r, request)
 	}
@@ -406,6 +413,8 @@ func (a *ApiServer) GetTest(ctx context.Context, request GetTestRequestObject) (
 }
 
 // parseISO8601 is more tolerant when parsing the input string, than the rfc3339 compliant parsing implemented by the golang default
+//
+//nolint:unused
 func parseISO8601(input string) (*types.Date, error) {
 	parseError := &time.ParseError{}
 

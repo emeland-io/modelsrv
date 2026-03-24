@@ -241,7 +241,9 @@ func addEventEnabled[T any](
 	}
 	setRegistered(obj)
 	store[id] = obj
-	m.sink.Receive(resourceType, op, id, obj)
+	if err := m.sink.Receive(resourceType, op, id, obj); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", op, " event: ", err)
+	}
 	return nil
 }
 
@@ -258,7 +260,9 @@ func deleteEventEnabled[T any](
 		return notFoundError
 	}
 	delete(store, id)
-	m.sink.Receive(resourceType, events.DeleteOperation, id)
+	if err := m.sink.Receive(resourceType, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
@@ -296,7 +300,9 @@ func (m *modelData) AddContext(context Context) error {
 		op = events.UpdateOperation
 	}
 
-	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
+	if err := m.sink.Receive(events.ContextResource, op, context.GetContextId(), context); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
+	}
 
 	m.contextsByUUID[context.GetContextId()] = context
 
@@ -318,7 +324,9 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 
 	delete(m.contextsByUUID, id)
 
-	m.sink.Receive(events.ContextResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -361,7 +369,9 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 	if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType)
+	if err := m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
 
@@ -380,7 +390,9 @@ func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
 
 	delete(m.contextTypesByUUID, id)
 
-	m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -454,7 +466,9 @@ func (m *modelData) AddSystem(sys System) error {
 	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys)
+	if err := m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", op, " event: ", err)
+	}
 
 	m.systemsByUUID[sys.GetSystemId()] = sys
 
@@ -473,7 +487,9 @@ func (m *modelData) DeleteSystemById(id uuid.UUID) error {
 
 	delete(m.systemsByUUID, id)
 
-	m.sink.Receive(events.SystemResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.SystemResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -625,7 +641,9 @@ func (m *modelData) AddFinding(finding Finding, name string) error {
 	if finding.GetFindingId() != uuid.Nil {
 		finding.Register()
 		m.findingsByUUID[finding.GetFindingId()] = finding
-		m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding)
+		if err := m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding); err != nil {
+			fmt.Println("Error receiving ", events.FindingResource, "| ", events.CreateOperation, " event: ", err)
+		}
 	}
 	return nil
 }
@@ -637,7 +655,9 @@ func (m *modelData) DeleteFindingById(id uuid.UUID) error {
 		return FindingNotFoundError
 	}
 	delete(m.findingsByUUID, id)
-	m.sink.Receive(events.FindingResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
@@ -664,7 +684,9 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 	if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType)
+	if err := m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
 
@@ -684,7 +706,9 @@ func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
 
 	delete(m.findingTypesByUUID, id)
 
-	m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }

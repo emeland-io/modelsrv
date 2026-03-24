@@ -240,7 +240,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	ctx := context.Background()
 
 	It("should call GET on /events/query/{sequenceId} for sequenceId 0", func() {
-		eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		err := eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		Expect(err).NotTo(HaveOccurred())
 
 		url := fmt.Sprintf("http://localhost/events/query/%d", 0)
 		req := httptest.NewRequest("GET", url, nil)
@@ -311,7 +312,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		resp.Body.Close()
 
 		// now remove the existing subscriber
-		eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		err := eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		Expect(err).NotTo(HaveOccurred())
 
 		postData = []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
 		req = httptest.NewRequest("POST", url, bytes.NewBuffer(postData))
