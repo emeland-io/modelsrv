@@ -15,7 +15,7 @@ func TestContextTypeOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	contextTypeId := uuid.New()
-	contextType := model.NewContextType(testModel, contextTypeId)
+	contextType := model.NewContextType(testModel.GetSink(), contextTypeId)
 
 	// this must not create an event, as the context type has not been registered with the system
 	contextType.SetDisplayName("Test Context Type")
@@ -46,7 +46,7 @@ func TestContextTypeOperations(t *testing.T) {
 	contextType.SetDescription("a test context type, but with more bla bla")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	contextType2 := model.NewContextType(testModel, contextTypeId)
+	contextType2 := model.NewContextType(testModel.GetSink(), contextTypeId)
 	contextType2.SetDisplayName("The other Test Context Type")
 	contextType2.SetDescription("a different test context type, but same Id")
 

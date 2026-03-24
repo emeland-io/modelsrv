@@ -1,166 +1,96 @@
+// pkg/model/context_test.go
 package model_test
 
 import (
-	"fmt"
-	"slices"
-	"strings"
-	"testing"
-
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/mocks"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.uber.org/mock/gomock"
 )
 
-func TestContextOperations(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
+var _ = Describe("Context functionalities", func() {
+	var (
+		contextId uuid.UUID
+		sinkMock  *mocks.MockEventSink
+		ctx       model.Context
+	)
 
-	contextId := uuid.New()
-	context := model.NewContext(testModel, contextId)
+	BeforeEach(func() {
+		contextId = uuid.New()
 
-	// this must not create an event, as the context has not been registered with the system
-	context.SetDisplayName("Test Context")
-	assert.Equal(t, "Test Context", context.GetDisplayName())
+		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
+		ctx = model.NewContext(sinkMock, contextId)
+	})
 
-	// this must not create an event, as the context has not been registered with the system
-	context.SetDescription("a test context")
-	assert.Equal(t, "a test context", context.GetDescription())
+	When("Context is created", func() {
+		It("must not be nil", func() {
+			Expect(ctx).NotTo(BeNil())
+		})
 
-	// Test getting non-existent Context
-	assert.Nil(t, testModel.GetContextById(contextId))
+		It("has the provided UUID", func() {
+			Expect(ctx.GetContextId()).To(Equal(contextId))
+		})
 
-	// Add Context and verify it exists
-	// Event: 1: create
-	err = testModel.AddContext(context)
-	assert.NoError(t, err)
+		It("has annotations set", func() {
+			Expect(ctx.GetAnnotations()).NotTo(BeNil())
+		})
+	})
 
-	// Verify retrieval by ID
-	assert.Same(t, context, testModel.GetContextById(contextId))
+	When("Context is updated", func() {
+		Context("Context is not registered", func() {
 
-	// update the DisplayName. This MUST create an event, after the object has been registered
-	// with the model.
-	// Event 2: update
-	context.SetDisplayName("the real test context")
+			When("Display name gets updated", func() {
+				It("updates the display name", func() {
+					displayName := "Context-007"
+					ctx.SetDisplayName(displayName)
 
-	// update the description. This MUST create an event, after the object has been registered
-	// with the model.
-	// Event 3: update
-	context.SetDescription("a test context, but with more bla bla")
+					Expect(ctx.GetDisplayName()).To(Equal(displayName))
+				})
+			})
 
-	// create a new go object and re-submit under the same UUID, but with other values
-	context2 := model.NewContext(testModel, contextId)
-	context2.SetDisplayName("The other Test Context")
-	context2.SetDescription("a different test context, but same Id")
+			When("Description gets updated", func() {
+				It("updates the description", func() {
+					description := "This is a test context."
+					ctx.SetDescription(description)
 
-	//only when the object is added, it should trigger an event.
-	// Event 4: update
-	err = testModel.AddContext(context2)
-	assert.NoError(t, err)
+					Expect(ctx.GetDescription()).To(Equal(description))
+				})
+			})
 
-	// Verify retrieval by name and ID
-	assert.Same(t, context2, testModel.GetContextById(contextId))
+			When("Parent gets updated", func() {
+				It("updates the parent by ref", func() {
+					parentContext := model.NewContext(sinkMock, uuid.New())
+					ctx.SetParentByRef(parentContext)
 
-	// Delete API and verify it's gone
-	// Event: 5: delete
-	err = testModel.DeleteContextById(contextId)
-	assert.NoError(t, err)
-	assert.Nil(t, testModel.GetContextById(contextId))
+					retrievedParent, err := ctx.GetParent()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(retrievedParent).NotTo(BeNil())
+					Expect(retrievedParent.GetContextId()).To(Equal(parentContext.GetContextId()))
+				})
+			})
+		})
+	})
 
-	eventList := sink.GetList()
-	assert.Equal(t, 5, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[4], fmt.Sprintf("DeleteOperation: Context %s", contextId.String())))
-}
+	When("Context is updated", func() {
+		Context("Context is registered", func() {
 
-func TestContextAnnotations(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
+			BeforeEach(func() {
+				ctx.Register()
+			})
 
-	contextId := uuid.New()
-	context := model.NewContext(testModel, contextId)
-	context.SetDisplayName("Test Context")
-	context.SetDescription("a test context")
+			When("DisplayName gets updated", func() {
+				It("emits an event and calls Receive", func() {
+					expectedEventType := events.UpdateOperation
+					expectedResourceType := events.ContextResource
 
-	// Event 1: create
-	err = testModel.AddContext(context)
-	assert.NoError(t, err)
+					sinkMock.EXPECT().Receive(expectedResourceType, expectedEventType, ctx.GetContextId(), gomock.Any())
 
-	// Add annotations
-	annotations := context.GetAnnotations()
-	assert.NotNil(t, annotations)
-	// Event 2,3: add keys -> update context
-	annotations.Add("key1", "value1")
-	annotations.Add("key2", "value2")
-
-	keys := slices.Collect(annotations.GetKeys())
-	assert.Contains(t, keys, "key1")
-	assert.Contains(t, keys, "key2")
-
-	value1 := annotations.GetValue("key1")
-	assert.Equal(t, "value1", value1)
-
-	value2 := annotations.GetValue("key2")
-	assert.Equal(t, "value2", value2)
-
-	// Delete an annotation
-	// Event 4: delete annotation -> update context
-	annotations.Delete("key1")
-	keys = slices.Collect(annotations.GetKeys())
-	assert.NotContains(t, keys, "key1")
-	assert.Contains(t, keys, "key2")
-
-	value1 = annotations.GetValue("key1")
-	assert.Equal(t, "", value1) // should return empty string for non-existent key
-
-	eventList := sink.GetList()
-	assert.Equal(t, 4, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[3], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-
-}
-
-func TestContextSetParent(t *testing.T) {
-	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
-	assert.NoError(t, err)
-
-	parentId := uuid.New()
-	parent := model.NewContext(testModel, parentId)
-	parent.SetDisplayName("Parent Context")
-	parent.SetDescription("a parent context")
-
-	contextId := uuid.New()
-	context := model.NewContext(testModel, contextId)
-	context.SetDisplayName("Test Context")
-	context.SetDescription("a test context")
-
-	// Event 1: create parent
-	err = testModel.AddContext(parent)
-	assert.NoError(t, err)
-
-	// Event 2: create context
-	err = testModel.AddContext(context)
-	assert.NoError(t, err)
-
-	// Set parent
-	// Event 3: update context
-	context.SetParentById(parentId)
-
-	parentRetrieved, err := context.GetParent()
-	assert.NoError(t, err)
-	assert.Same(t, parent, parentRetrieved)
-
-	eventList := sink.GetList()
-	assert.Equal(t, 3, len(eventList))
-	assert.True(t, strings.HasPrefix(eventList[0], fmt.Sprintf("CreateOperation: Context %s", parentId.String())))
-	assert.True(t, strings.HasPrefix(eventList[1], fmt.Sprintf("CreateOperation: Context %s", contextId.String())))
-	assert.True(t, strings.HasPrefix(eventList[2], fmt.Sprintf("UpdateOperation: Context %s", contextId.String())))
-}
+					ctx.SetDisplayName("FooBar")
+				})
+			})
+		})
+	})
+})

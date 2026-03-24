@@ -194,26 +194,10 @@ func (a *ApiServer) GetEventsQuerySequenceId(ctx context.Context, request GetEve
 // GetLandscapeApiInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLandscapeApiInstancesRequestObject) (GetLandscapeApiInstancesResponseObject, error) {
 	instanceArr, err := a.Backend.GetApiInstances()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, instance := range instanceArr {
-		instanceId := instance.GetInstanceId()
-		displayName := instance.GetDisplayName()
-		reference := fmt.Sprintf("%s/landscape/api-instances/%s", a.BaseURL, instanceId.String())
-		item := InstanceListItem{
-			InstanceId:  &instanceId,
-			DisplayName: &displayName,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeApiInstances200JSONResponse(respBody), nil
+	return GetLandscapeApiInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/api-instances", instanceArr)), nil
 }
 
 // GetLandscapeApiInstancesApiInstanceId implements StrictServerInterface.
@@ -227,7 +211,7 @@ func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, r
 	respBody := ApiInstance{
 		ApiInstanceId: apiInstance.GetInstanceId(),
 		DisplayName:   apiInstance.GetDisplayName(),
-		Annotations:   cloneAnnotations2(apiInstance.GetAnnotations()),
+		Annotations:   cloneAnnotations(apiInstance.GetAnnotations()),
 	}
 
 	if apiInstance.GetApiRef() != nil {
@@ -244,24 +228,10 @@ func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, r
 // GetLandscapeApis implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeApisRequestObject) (GetLandscapeApisResponseObject, error) {
 	apiArr, err := a.Backend.GetApis()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, api := range apiArr {
-		reference := fmt.Sprintf("%s/landscape/apis/%s", a.BaseURL, api.ApiId.String())
-		item := InstanceListItem{
-			InstanceId:  &api.ApiId,
-			DisplayName: &api.DisplayName,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeApis200JSONResponse(respBody), nil
+	return GetLandscapeApis200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/apis", apiArr)), nil
 }
 
 // GetLandscapeApisApiId implements StrictServerInterface.
@@ -272,14 +242,15 @@ func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandsc
 		return GetLandscapeApisApiId404JSONResponse(errorstr), nil
 	}
 
+	apiId := api.GetApiId()
 	respBody := API{
-		ApiId:       &api.ApiId,
-		DisplayName: api.DisplayName,
-		Annotations: cloneAnnotations(api.Annotations),
+		ApiId:       &apiId,
+		DisplayName: api.GetDisplayName(),
+		Annotations: cloneAnnotations(api.GetAnnotations()),
 	}
 
-	if api.System != nil {
-		respBody.System = &api.System.SystemId
+	if api.GetSystem() != nil {
+		respBody.System = &api.GetSystem().SystemId
 	}
 
 	return GetLandscapeApisApiId200JSONResponse(respBody), nil
@@ -288,24 +259,10 @@ func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandsc
 // GetLandscapeComponentInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request GetLandscapeComponentInstancesRequestObject) (GetLandscapeComponentInstancesResponseObject, error) {
 	instanceArr, err := a.Backend.GetComponentInstances()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, instance := range instanceArr {
-		reference := fmt.Sprintf("%s/landscape/component-instances/%s", a.BaseURL, instance.InstanceId.String())
-		item := InstanceListItem{
-			InstanceId:  &instance.InstanceId,
-			DisplayName: &instance.DisplayName,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeComponentInstances200JSONResponse(respBody), nil
+	return GetLandscapeComponentInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/component-instances", instanceArr)), nil
 }
 
 // GetLandscapeComponentInstancesComponentInstanceId implements StrictServerInterface.
@@ -317,17 +274,17 @@ func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx contex
 	}
 
 	respBody := ComponentInstance{
-		ComponentInstanceId: componentInstance.InstanceId,
-		DisplayName:         componentInstance.DisplayName,
-		Annotations:         cloneAnnotations(componentInstance.Annotations),
+		ComponentInstanceId: componentInstance.GetInstanceId(),
+		DisplayName:         componentInstance.GetDisplayName(),
+		Annotations:         cloneAnnotations(componentInstance.GetAnnotations()),
 	}
 
-	if componentInstance.ComponentRef != nil {
-		respBody.Component = componentInstance.ComponentRef.ComponentId
+	if componentInstance.GetComponentRef() != nil {
+		respBody.Component = componentInstance.GetComponentRef().ComponentId
 	}
 
-	if componentInstance.SystemInstance != nil {
-		respBody.SystemInstance = componentInstance.SystemInstance.InstanceId
+	if componentInstance.GetSystemInstance() != nil {
+		respBody.SystemInstance = componentInstance.GetSystemInstance().InstanceId
 	}
 
 	return GetLandscapeComponentInstancesComponentInstanceId200JSONResponse(respBody), nil
@@ -336,24 +293,10 @@ func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx contex
 // GetLandscapeComponents implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLandscapeComponentsRequestObject) (GetLandscapeComponentsResponseObject, error) {
 	componentArr, err := a.Backend.GetComponents()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, component := range componentArr {
-		reference := fmt.Sprintf("%s/landscape/components/%s", a.BaseURL, component.ComponentId.String())
-		item := InstanceListItem{
-			InstanceId:  &component.ComponentId,
-			DisplayName: &component.DisplayName,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeComponents200JSONResponse(respBody), nil
+	return GetLandscapeComponents200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/components", componentArr)), nil
 }
 
 // GetLandscapeComponentsComponentId implements StrictServerInterface.
@@ -364,15 +307,17 @@ func (a *ApiServer) GetLandscapeComponentsComponentId(ctx context.Context, reque
 		return GetLandscapeComponentsComponentId404JSONResponse(errorstr), nil
 	}
 
+	componentId := component.GetComponentId()
+	description := component.GetDescription()
 	respBody := Component{
-		ComponentId: &component.ComponentId,
-		DisplayName: component.DisplayName,
-		Description: &component.Description,
-		Annotations: cloneAnnotations(component.Annotations),
+		ComponentId: &componentId,
+		DisplayName: component.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(component.GetAnnotations()),
 	}
 
-	if component.System != nil {
-		respBody.System = component.System.SystemId
+	if component.GetSystem() != nil {
+		respBody.System = component.GetSystem().SystemId
 	}
 
 	return GetLandscapeComponentsComponentId200JSONResponse(respBody), nil
@@ -381,24 +326,10 @@ func (a *ApiServer) GetLandscapeComponentsComponentId(ctx context.Context, reque
 // GetLandscapeFindings implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandscapeFindingsRequestObject) (GetLandscapeFindingsResponseObject, error) {
 	findingsArr, err := a.Backend.GetFindings()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, finding := range findingsArr {
-		reference := fmt.Sprintf("%s/landscape/findings/%s", a.BaseURL, finding.FindingId.String())
-		item := InstanceListItem{
-			InstanceId:  &finding.FindingId,
-			DisplayName: &finding.Summary,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeFindings200JSONResponse(respBody), nil
+	return GetLandscapeFindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findings", findingsArr)), nil
 }
 
 // GetLandscapeFindingsFindingId implements StrictServerInterface.
@@ -408,12 +339,13 @@ func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request G
 		return nil, fmt.Errorf("finding %s not found", request.FindingId.String())
 	}
 
+	description := finding.GetDescription()
 	respBody := Finding{
-		FindingId:   finding.FindingId,
-		Summary:     finding.Summary,
-		Description: &finding.Description,
-		Resources:   cloneResourceRefs(finding.Resources),
-		Annotations: cloneAnnotations(finding.Annotations),
+		FindingId:   finding.GetFindingId(),
+		Summary:     finding.GetSummary(),
+		Description: &description,
+		Resources:   cloneResourceRefs(finding.GetResources()),
+		Annotations: cloneAnnotations(finding.GetAnnotations()),
 	}
 	return GetLandscapeFindingsFindingId200JSONResponse(respBody), nil
 }
@@ -421,24 +353,10 @@ func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request G
 // GetLandscapeSystemInstances implements StrictServerInterface.
 func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request GetLandscapeSystemInstancesRequestObject) (GetLandscapeSystemInstancesResponseObject, error) {
 	instanceArr, err := a.Backend.GetSystemInstances()
-
 	if err != nil {
 		return nil, err
 	}
-
-	respBody := []InstanceListItem{}
-
-	for _, instance := range instanceArr {
-		reference := fmt.Sprintf("%s/landscape/system-instances/%s", a.BaseURL, instance.InstanceId.String())
-		item := InstanceListItem{
-			InstanceId:  &instance.InstanceId,
-			DisplayName: &instance.DisplayName,
-			Reference:   &reference,
-		}
-		respBody = append(respBody, item)
-	}
-
-	return GetLandscapeSystemInstances200JSONResponse(respBody), nil
+	return GetLandscapeSystemInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/system-instances", instanceArr)), nil
 }
 
 // GetLandscapeSystemInstancesSystemInstanceId implements StrictServerInterface.
@@ -450,17 +368,17 @@ func (a *ApiServer) GetLandscapeSystemInstancesSystemInstanceId(ctx context.Cont
 	}
 
 	respBody := SystemInstance{
-		SystemInstanceId: systemInstance.InstanceId,
-		DisplayName:      systemInstance.DisplayName,
-		Annotations:      cloneAnnotations(systemInstance.Annotations),
+		SystemInstanceId: systemInstance.GetInstanceId(),
+		DisplayName:      systemInstance.GetDisplayName(),
+		Annotations:      cloneAnnotations(systemInstance.GetAnnotations()),
 	}
 
-	if systemInstance.SystemRef != nil {
-		respBody.System = systemInstance.SystemRef.SystemId
+	if systemInstance.GetSystemRef() != nil {
+		respBody.System = systemInstance.GetSystemRef().SystemId
 	}
 
-	if systemInstance.ContextRef != nil {
-		respBody.Context = &systemInstance.ContextRef.ContextId
+	if systemInstance.GetContextRef() != nil {
+		respBody.Context = &systemInstance.GetContextRef().ContextId
 	}
 	return GetLandscapeSystemInstancesSystemInstanceId200JSONResponse(respBody), nil
 }
@@ -507,7 +425,7 @@ func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request Get
 		SystemId:    &systemId,
 		DisplayName: displayName,
 		Description: &description,
-		Annotations: cloneAnnotations2(system.GetAnnotations()),
+		Annotations: cloneAnnotations(system.GetAnnotations()),
 	}
 
 	return GetLandscapeSystemsSystemId200JSONResponse(respBody), nil
@@ -599,7 +517,7 @@ func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, r
 	respBody := FindingType{
 		FindingTypeId: &findingTypeId,
 		DisplayName:   &displayName,
-		Annotations:   cloneAnnotations2(findingType.GetAnnotations()),
+		Annotations:   cloneAnnotations(findingType.GetAnnotations()),
 	}
 
 	return GetLandscapeFindingTypesFindingTypeId200JSONResponse(respBody), nil

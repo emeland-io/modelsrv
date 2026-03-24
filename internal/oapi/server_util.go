@@ -18,11 +18,12 @@ package oapi
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"maps"
 	"strings"
 	"text/template"
 
+	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
@@ -38,38 +39,47 @@ func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 	return strings.NewReader(body.String()), int64(body.Len())
 }
 
-func cloneAnnotations(annos map[string]string) *[]Annotation {
+func cloneAnnotations(annos model.Annotations) *[]Annotation {
 	retval := make([]Annotation, 0)
-	for key, value := range maps.All(annos) {
-		retval = append(retval, Annotation{Key: key, Value: value})
-	}
-	return &retval
-}
-
-func cloneAnnotations2(annos model.Annotations) *[]Annotation {
-
-	retval := make([]Annotation, 0)
-
 	for key := range annos.GetKeys() {
 		retval = append(retval, Annotation{Key: key, Value: annos.GetValue(key)})
 	}
 	return &retval
 }
 
+// Generic helper to build instance list responses
+type hasIdAndName interface {
+	GetResourceId() uuid.UUID
+	GetResourceName() string
+}
+
+func buildInstanceList[T hasIdAndName](baseURL, path string, items []T) []InstanceListItem {
+	result := make([]InstanceListItem, 0, len(items))
+	for _, item := range items {
+		id := item.GetResourceId()
+		name := item.GetResourceName()
+		ref := fmt.Sprintf("%s%s/%s", baseURL, path, id.String())
+		result = append(result, InstanceListItem{
+			InstanceId:  &id,
+			DisplayName: &name,
+			Reference:   &ref,
+		})
+	}
+	return result
+}
+
 /*
 cloneResourceRefs creates a deep copy of the given ResourceRef slice.
 
-	Warning: not the change in the type of the items from reference to value.
+	Warning: note the change in the type of the items from reference to value.
 */
 func cloneResourceRefs(resourceRef []*model.ResourceRef) []ResourceRef {
-	respArr := []ResourceRef{}
-
+	respArr := make([]ResourceRef, 0, len(resourceRef))
 	for _, resRef := range resourceRef {
-		newRef := ResourceRef{
+		respArr = append(respArr, ResourceRef{
 			ResourceType: resRef.ResourceType,
 			ResourceId:   resRef.ResourceId,
-		}
-		respArr = append(respArr, newRef)
+		})
 	}
 	return respArr
 }

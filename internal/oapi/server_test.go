@@ -88,82 +88,72 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
-	contextType := model.NewContextType(backend, contextTypeId)
+	contextType := model.NewContextType(backend.GetSink(), contextTypeId)
 	contextType.SetDisplayName("Test Context Type")
 	contextType.SetDescription("A test context type for testing purposes")
 	err = backend.AddContextType(contextType)
 	Expect(err).NotTo(HaveOccurred())
 
-	context := model.NewContext(backend, contextId)
-	context.SetParentById(parentContextId)
-	context.SetDisplayName("the real test context")
+	testContext := model.NewContext(backend.GetSink(), contextId)
+	testContext.SetParentById(parentContextId)
+	testContext.SetDisplayName("the real test context")
 	// TODO: not implemented yet
-	// context.SetTypeById(contextTypeId)
-	err = backend.AddContext(context)
+	// testContext.SetTypeById(contextTypeId)
+	err = backend.AddContext(testContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	parentContext := model.NewContext(backend, parentContextId)
+	parentContext := model.NewContext(backend.GetSink(), parentContextId)
 	err = backend.AddContext(parentContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	node := model.NewNode(backend, nodeId)
-	node.SetNodeTypeById(nodeTypeId)
+	node := model.NewNode(backend.GetSink(), nodeId)
 	err = backend.AddNode(node)
 	Expect(err).NotTo(HaveOccurred())
 
-	nodeType := model.NewNodeType(backend, nodeTypeId)
+	nodeType := model.NewNodeType(backend.GetSink(), nodeTypeId)
 	nodeType.SetDisplayName("Test Node Type")
 	nodeType.SetDescription("A test node type for testing purposes")
 	err = backend.AddNodeType(nodeType)
 	Expect(err).NotTo(HaveOccurred())
 
-	api := model.API{
-		ApiId:       apiId,
-		DisplayName: "First API",
-		Version: model.Version{
-			Version:        "1.0.0",
-			AvailableFrom:  mustParseDate("2023-01-01"),
-			DeprecatedFrom: mustParseDate("2024-01-01"),
-			TerminatedFrom: mustParseDate("2025-01-01"),
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddApi(&api)
+	api := model.NewAPI(backend, apiId)
+	api.SetDisplayName("First API")
+	api.SetVersion(model.Version{
+		Version:        "1.0.0",
+		AvailableFrom:  mustParseDate("2023-01-01"),
+		DeprecatedFrom: mustParseDate("2024-01-01"),
+		TerminatedFrom: mustParseDate("2025-01-01"),
+	})
+	err = backend.AddApi(api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.NewApiInstance(backend, apiInstanceId)
+	apiInstance := model.NewApiInstance(backend.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("First API Instance")
-	apiInstance.SetApiRefById(uuid.New())
+	apiInstance.SetApiRef(backend.ApiRefByID(apiId))
 	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	component := model.Component{
-		ComponentId: componentId,
-		DisplayName: "First Component",
-		Version: model.Version{
-			Version:        "1.0.0",
-			AvailableFrom:  mustParseDate("2023-01-01"),
-			DeprecatedFrom: mustParseDate("2024-01-01"),
-			TerminatedFrom: mustParseDate("2025-01-01"),
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddComponent(&component)
+	component := model.NewComponent(backend, componentId)
+	component.SetDisplayName("First Component")
+	component.SetVersion(model.Version{
+		Version:        "1.0.0",
+		AvailableFrom:  mustParseDate("2023-01-01"),
+		DeprecatedFrom: mustParseDate("2024-01-01"),
+		TerminatedFrom: mustParseDate("2025-01-01"),
+	})
+	err = backend.AddComponent(component)
 	Expect(err).NotTo(HaveOccurred())
 
-	componentInstance := model.ComponentInstance{
-		InstanceId:  componentInstanceId,
-		DisplayName: "First Component Instance",
-		ComponentRef: &model.ComponentRef{
-			ComponentId: componentId,
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddComponentInstance(&componentInstance)
+	componentInstance := model.NewComponentInstance(backend, componentInstanceId)
+	componentInstance.SetDisplayName("First Component Instance")
+	componentInstance.SetComponentRef(&model.ComponentRef{
+		ComponentId: componentId,
+	})
+	err = backend.AddComponentInstance(componentInstance)
 	Expect(err).NotTo(HaveOccurred())
 
 	system := model.MakeTestSystem(
-		backend,
+		backend.GetSink(),
 		systemId,
 		"First System",
 		model.Version{
@@ -177,40 +167,34 @@ var _ = BeforeSuite(func() {
 	err = backend.AddSystem(system)
 	Expect(err).NotTo(HaveOccurred())
 
-	systemInstance := model.SystemInstance{
-		InstanceId:  systemInstanceId,
-		DisplayName: "First System Instance",
-		SystemRef: &model.SystemRef{
-			SystemId: systemId,
-		},
-		ContextRef: &model.ContextRef{
-			ContextId: contextId,
-		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddSystemInstance(&systemInstance)
+	systemInstance := model.NewSystemInstance(backend, systemInstanceId)
+	systemInstance.SetDisplayName("First System Instance")
+	systemInstance.SetSystemRef(&model.SystemRef{
+		SystemId: systemId,
+	})
+	systemInstance.SetContextRef(&model.ContextRef{
+		ContextId: contextId,
+	})
+	err = backend.AddSystemInstance(systemInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	finding := model.Finding{
-		FindingId:   findingId,
-		Summary:     "First Finding",
-		Description: "This is the first test finding.",
-		Resources: []*model.ResourceRef{
-			{
-				ResourceType: events.ParseResourceType("API"),
-				ResourceId:   apiId,
-			},
-			{
-				ResourceType: events.ParseResourceType("Component"),
-				ResourceId:   componentId,
-			},
+	finding := model.NewFinding(backend, findingId)
+	finding.SetSummary("First Finding")
+	finding.SetDescription("This is the first test finding.")
+	finding.SetResources([]*model.ResourceRef{
+		{
+			ResourceType: events.ParseResourceType("API"),
+			ResourceId:   apiId,
 		},
-		Annotations: map[string]string{},
-	}
-	err = backend.AddFinding(&finding, finding.Summary)
+		{
+			ResourceType: events.ParseResourceType("Component"),
+			ResourceId:   componentId,
+		},
+	})
+	err = backend.AddFinding(finding, finding.GetSummary())
 	Expect(err).NotTo(HaveOccurred())
 
-	findingType := model.NewFindingType(backend, findingTypeId)
+	findingType := model.NewFindingType(backend.GetSink(), findingTypeId)
 	findingType.SetDisplayName("Test Finding Type")
 	findingType.SetDescription("A test finding type for testing purposes")
 	err = backend.AddFindingType(findingType)
