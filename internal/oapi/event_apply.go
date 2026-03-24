@@ -85,12 +85,12 @@ func applyDelete(m model.Model, rt events.ResourceType, rid *openapi_types.UUID)
 }
 
 func isNotFound(err error) bool {
-	return errors.Is(err, model.SystemNotFoundError) ||
-		errors.Is(err, model.SystemInstanceNotFoundError) ||
-		errors.Is(err, model.ApiNotFoundError) ||
-		errors.Is(err, model.ApiInstanceNotFoundError) ||
-		errors.Is(err, model.ComponentNotFoundError) ||
-		errors.Is(err, model.ComponentInstanceNotFoundError)
+	return errors.Is(err, model.ErrSystemNotFound) ||
+		errors.Is(err, model.ErrSystemInstanceNotFound) ||
+		errors.Is(err, model.ErrApiNotFound) ||
+		errors.Is(err, model.ErrApiInstanceNotFound) ||
+		errors.Is(err, model.ErrComponentNotFound) ||
+		errors.Is(err, model.ErrComponentInstanceNotFound)
 }
 
 func applyUpsert(m model.Model, rt events.ResourceType, res *Event_Resource) error {

@@ -85,7 +85,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Context by ID", func() {
 			// first try with an invalid ID
 			context, err := testClient.GetContextById(uuid.New())
-			Expect(err).Should(Equal(model.ContextNotFoundError))
+			Expect(err).Should(Equal(model.ErrContextNotFound))
 			Expect(context).To(BeNil())
 
 			// now try with a valid ID
@@ -109,7 +109,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a System by ID", func() {
 			// first try with an invalid ID
 			system, err := testClient.GetSystemById(uuid.New())
-			Expect(err).Should(Equal(model.SystemNotFoundError))
+			Expect(err).Should(Equal(model.ErrSystemNotFound))
 			Expect(system).To(BeNil())
 
 			// now try with a valid ID
@@ -133,7 +133,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a SystemInstance by ID", func() {
 			// first try with an invalid ID
 			systemInstance, err := testClient.GetSystemInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.SystemInstanceNotFoundError))
+			Expect(err).Should(Equal(model.ErrSystemInstanceNotFound))
 			Expect(systemInstance).To(BeNil())
 
 			systemInstance, err = testClient.GetSystemInstanceById(systemInstanceId)
@@ -156,7 +156,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a API by ID", func() {
 			// first try with an invalid ID
 			api, err := testClient.GetAPIById(uuid.New())
-			Expect(err).Should(Equal(model.ApiNotFoundError))
+			Expect(err).Should(Equal(model.ErrApiNotFound))
 			Expect(api).To(BeNil())
 
 			api, err = testClient.GetAPIById(apiId)
@@ -179,7 +179,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a ApiInstance by ID", func() {
 			// first try with an invalid ID
 			apiInstance, err := testClient.GetApiInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.ApiInstanceNotFoundError))
+			Expect(err).Should(Equal(model.ErrApiInstanceNotFound))
 			Expect(apiInstance).To(BeNil())
 
 			apiInstance, err = testClient.GetApiInstanceById(apiInstanceId)
@@ -202,7 +202,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Component by ID", func() {
 			// first try with an invalid ID
 			component, err := testClient.GetComponentById(uuid.New())
-			Expect(err).Should(Equal(model.ComponentNotFoundError))
+			Expect(err).Should(Equal(model.ErrComponentNotFound))
 			Expect(component).To(BeNil())
 
 			component, err = testClient.GetComponentById(componentId)
@@ -225,7 +225,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Component Instance by ID", func() {
 			// first try with an invalid ID
 			componentInstance, err := testClient.GetComponentInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.ComponentInstanceNotFoundError))
+			Expect(err).Should(Equal(model.ErrComponentInstanceNotFound))
 			Expect(componentInstance).To(BeNil())
 
 			componentInstance, err = testClient.GetComponentInstanceById(componentInstanceId)

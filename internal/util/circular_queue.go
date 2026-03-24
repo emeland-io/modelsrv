@@ -42,7 +42,7 @@ func (c *CircularQueue[T]) Length() int {
 // Enqueue adds an element to the rear of the circular queue.
 func (c *CircularQueue[T]) Enqueue(data T) error {
 	if c.IsFull() {
-		return fmt.Errorf("Circular Queue is Full!")
+		return fmt.Errorf("circular queue is full")
 	}
 
 	c.rear = (c.rear + 1) % c.capacity // to effectively wrap around (ensuring the queue uses all available slots)
@@ -56,7 +56,7 @@ func (c *CircularQueue[T]) Enqueue(data T) error {
 func (c *CircularQueue[T]) Dequeue() (T, error) {
 	if c.IsEmpty() {
 		var zero T
-		return zero, fmt.Errorf("Circular Queue is empty!")
+		return zero, fmt.Errorf("circular queue is empty")
 	}
 
 	data := c.data[c.front]              // retrieves the element in front of the queue
@@ -72,7 +72,7 @@ func (c *CircularQueue[T]) Dequeue() (T, error) {
 // e.g. with a backtracking algorithm.
 func (c *CircularQueue[T]) Push(data T) error {
 	if c.IsFull() {
-		return fmt.Errorf("Circular Queue is Full!")
+		return fmt.Errorf("circular queue is full")
 	}
 
 	c.front = (c.front + 1) % c.capacity // to effectively wrap around (ensuring the queue uses all available slots)
@@ -87,7 +87,7 @@ func (c *CircularQueue[T]) Push(data T) error {
 func (c *CircularQueue[T]) Peek() (T, error) {
 	if c.IsEmpty() {
 		var zero T
-		return zero, fmt.Errorf("Circular Queue is empty!")
+		return zero, fmt.Errorf("circular queue is empty")
 	}
 
 	value := c.data[c.front]

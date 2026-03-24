@@ -38,7 +38,7 @@ func postEventsRegister(upstreamAPIBase, callbackURL string) {
 	body := fmt.Sprintf(`{"callbackUrl":%q}`, callbackURL)
 	resp, err := http.Post(upstreamAPIBase+"/events/register", "application/json", bytes.NewReader([]byte(body)))
 	Expect(err).NotTo(HaveOccurred())
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 	Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 }
 
