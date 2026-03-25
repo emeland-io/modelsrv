@@ -16,6 +16,8 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +26,12 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a new resource in the landscape",
 	Long:  `Create a new resource in the Emerging Enterprise Landscape (EmELand).`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			return cmd.Help()
+		}
+		return fmt.Errorf("unknown resource type %q; see 'emelandctl create --help' for available types", args[0])
+	},
 }
 
 func init() {
