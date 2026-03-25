@@ -23,9 +23,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var apiCmd = &cobra.Command{
-	Use:   "api [displayName]",
-	Short: "Create an API resource",
+var nodeCmd = &cobra.Command{
+	Use:   "node [displayName]",
+	Short: "Create a Node resource",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		displayName, err := resolveDisplayName(cmd, args)
@@ -35,24 +35,21 @@ var apiCmd = &cobra.Command{
 
 		id := uuid.New()
 		spec := map[string]any{
-			"apiId":       id.String(),
+			"nodeId":      id.String(),
 			"displayName": displayName,
 		}
 
 		if v, _ := cmd.Flags().GetString("desc"); v != "" {
 			spec["description"] = v
 		}
-		if v, _ := cmd.Flags().GetString("type"); v != "" {
-			spec["type"] = v
-		}
-		if v, _ := cmd.Flags().GetString("system"); v != "" {
-			spec["system"] = v
+		if v, _ := cmd.Flags().GetString("node-type"); v != "" {
+			spec["nodeType"] = v
 		}
 		if ann, _ := cmd.Flags().GetStringSlice("annotation"); len(ann) > 0 {
 			spec["annotations"] = parseAnnotations(ann)
 		}
 
-		r := Resource{Version: resourceVersion, Kind: "API", Spec: spec}
+		r := Resource{Version: resourceVersion, Kind: "Node", Spec: spec}
 		if err := writeResource(r, id); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -62,10 +59,9 @@ var apiCmd = &cobra.Command{
 }
 
 func init() {
-	createCmd.AddCommand(apiCmd)
-	apiCmd.Flags().StringP("name", "n", "", "Display name of the resource")
-	apiCmd.Flags().String("desc", "", "Description of the API")
-	apiCmd.Flags().String("type", "", "API type (OpenAPI, GraphQL, GRPC, Other)")
-	apiCmd.Flags().String("system", "", "System UUID this API belongs to")
-	apiCmd.Flags().StringSlice("annotation", nil, "Annotation in key=value format (repeatable)")
+	createCmd.AddCommand(nodeCmd)
+	nodeCmd.Flags().StringP("name", "n", "", "Display name of the resource")
+	nodeCmd.Flags().String("desc", "", "Description of the node")
+	nodeCmd.Flags().String("node-type", "", "Node type UUID")
+	nodeCmd.Flags().StringSlice("annotation", nil, "Annotation in key=value format (repeatable)")
 }
