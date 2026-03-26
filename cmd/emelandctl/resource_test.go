@@ -49,7 +49,7 @@ func readYAMLFile(t *testing.T, pattern string) Resource {
 
 func TestCreateSystemPositionalArg(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "system", "Order Service", "--desc", "Handles orders")
+	err := executeCmd("create", "-d", dir, "system", "Order Service", "--desc", "Handles orders")
 	require.NoError(t, err)
 
 	r := readYAMLFile(t, filepath.Join(dir, "system-*.yaml"))
@@ -62,7 +62,7 @@ func TestCreateSystemPositionalArg(t *testing.T) {
 
 func TestCreateComponentWithNameFlag(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "component",
+	err := executeCmd("create", "-d", dir, "component",
 		"-n", "policy proxy",
 		"--desc", "Governs access",
 		"--system", "019beb6c-d1a1-73bd-893b-2aef9497b59a",
@@ -83,7 +83,7 @@ func TestCreateComponentWithNameFlag(t *testing.T) {
 
 func TestCreateAPIWithAllFlags(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "api", "Order API",
+	err := executeCmd("create", "-d", dir, "api", "Order API",
 		"--desc", "REST API",
 		"--type", "OpenAPI",
 		"--system", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -99,7 +99,7 @@ func TestCreateAPIWithAllFlags(t *testing.T) {
 
 func TestCreateFindingUsesSummaryField(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "finding", "Missing TLS")
+	err := executeCmd("create", "-d", dir, "finding", "Missing TLS")
 	require.NoError(t, err)
 
 	r := readYAMLFile(t, filepath.Join(dir, "finding-*.yaml"))
@@ -110,7 +110,7 @@ func TestCreateFindingUsesSummaryField(t *testing.T) {
 
 func TestCreateSystemWithAbstractFlag(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "system", "Abstract Sys", "--abstract")
+	err := executeCmd("create", "-d", dir, "system", "Abstract Sys", "--abstract")
 	require.NoError(t, err)
 
 	r := readYAMLFile(t, filepath.Join(dir, "system-*.yaml"))
@@ -119,7 +119,7 @@ func TestCreateSystemWithAbstractFlag(t *testing.T) {
 
 func TestCreateFailsWithoutDisplayName(t *testing.T) {
 	dir := t.TempDir()
-	err := executeCmd("create", "-o", dir, "system")
+	err := executeCmd("create", "-d", dir, "system")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "display name is required")
 }
@@ -128,7 +128,7 @@ func TestCreateAllResourceTypes(t *testing.T) {
 	for _, def := range resourceTypes {
 		t.Run(def.kind, func(t *testing.T) {
 			dir := t.TempDir()
-			err := executeCmd("create", "-o", dir, def.use, "Test "+def.kind)
+			err := executeCmd("create", "-d", dir, def.use, "Test "+def.kind)
 			require.NoError(t, err)
 
 			r := readYAMLFile(t, filepath.Join(dir, strings.ToLower(def.kind)+"-*.yaml"))
@@ -159,6 +159,20 @@ func TestCreateWritesToDefaultDataDir(t *testing.T) {
 	matches, err := filepath.Glob(filepath.Join(dir, "data", "nodetype-*.yaml"))
 	require.NoError(t, err)
 	assert.Len(t, matches, 1)
+}
+
+func TestCreateWithOutputFlag(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "sub", "my-system.yaml")
+	err := executeCmd("create", "-o", outFile, "system", "My System")
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(outFile)
+	require.NoError(t, err)
+
+	var r Resource
+	require.NoError(t, yaml.Unmarshal(data, &r))
+	assert.Equal(t, "System", r.Kind)
+	assert.Equal(t, "My System", r.Spec["displayName"])
 }
 
 func TestCreateFailsWithInvalidResourceType(t *testing.T) {

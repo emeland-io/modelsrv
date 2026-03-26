@@ -54,10 +54,15 @@ type resourceDef struct {
 	flags      []flagDef
 }
 
-var outputDir string
+var (
+	outputDir  string
+	outputFile string
+)
 
 func init() {
-	createCmd.PersistentFlags().StringVarP(&outputDir, "output-dir", "o", "data", "Directory to save the generated YAML file")
+	createCmd.PersistentFlags().StringVarP(&outputDir, "output-dir", "d", "data", "Directory to save the generated YAML file (auto-generated filename)")
+	createCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Write to this exact file path")
+	createCmd.MarkFlagsMutuallyExclusive("output-dir", "output")
 }
 
 // registerResourceCmd creates and registers a cobra subcommand from a resourceDef.
@@ -118,18 +123,28 @@ func registerResourceCmd(def resourceDef) {
 	createCmd.AddCommand(cmd)
 }
 
-// writeResource marshals a Resource to YAML and writes it into outputDir.
+// writeResource marshals a Resource to YAML and writes it to the path
+// determined by --output or --output-dir.
 func writeResource(r Resource, id uuid.UUID) error {
-	if err := os.MkdirAll(outputDir, 0o755); err != nil {
-		return fmt.Errorf("creating output directory: %w", err)
-	}
-
 	data, err := yaml.Marshal(r)
 	if err != nil {
 		return fmt.Errorf("marshalling YAML: %w", err)
 	}
 
-	filename := filepath.Join(outputDir, fmt.Sprintf("%s-%s.yaml", strings.ToLower(r.Kind), id.String()))
+	filename := outputFile
+	if filename == "" {
+		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+			return fmt.Errorf("creating output directory: %w", err)
+		}
+		filename = filepath.Join(outputDir, fmt.Sprintf("%s-%s.yaml", strings.ToLower(r.Kind), id.String()))
+	} else {
+		if dir := filepath.Dir(filename); dir != "." {
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				return fmt.Errorf("creating output directory: %w", err)
+			}
+		}
+	}
+
 	if err := os.WriteFile(filename, data, 0o644); err != nil {
 		return fmt.Errorf("writing file: %w", err)
 	}
