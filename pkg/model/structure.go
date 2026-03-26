@@ -33,6 +33,7 @@ var (
 )
 
 type Model interface {
+	EventApplier
 	GetSink() events.EventSink
 
 	AddNode(node Node) error

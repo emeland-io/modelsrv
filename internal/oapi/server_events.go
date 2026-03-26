@@ -62,7 +62,11 @@ func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRe
 	if request.Body == nil {
 		return nil, fmt.Errorf("missing event body")
 	}
-	if err := ApplyPushEvent(a.Backend, request.Body); err != nil {
+	ev, err := ReplicationEventFromWire(a.Backend, request.Body)
+	if err != nil {
+		return nil, err
+	}
+	if err := a.Backend.Apply(ev); err != nil {
 		return nil, err
 	}
 	return PostEventsPush200Response{}, nil

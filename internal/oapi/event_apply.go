@@ -1,8 +1,8 @@
 package oapi
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -10,37 +10,53 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
-// ApplyPushEvent applies a replicated wire event to the local model. It uses the same Model add/delete
-// paths as normal mutations so the recording sink records once and forwards to downstream subscribers.
-func ApplyPushEvent(m model.Model, ev *Event) error {
+// ReplicationEventFromWire converts an OpenAPI push body into a domain [events.Event] for [model.EventApplier.Apply].
+func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {
 	if m == nil {
-		return fmt.Errorf("nil model")
+		return events.Event{}, fmt.Errorf("nil model")
 	}
 	if ev == nil {
-		return fmt.Errorf("nil event")
+		return events.Event{}, fmt.Errorf("nil event")
 	}
 
 	kind := wireString(ev.Kind)
 	op := wireString(ev.Operation)
 	rt := events.ParseWireKind(kind)
 	if rt == events.UnknownResourceType {
-		return fmt.Errorf("unknown event kind %q", kind)
+		return events.Event{}, fmt.Errorf("unknown event kind %q", kind)
 	}
 	wop := events.ParseWireOperation(op)
 	if wop == events.UnknownOperation {
-		return fmt.Errorf("unknown event operation %q", op)
+		return events.Event{}, fmt.Errorf("unknown event operation %q", op)
 	}
 
 	switch wop {
 	case events.DeleteOperation:
-		return applyDelete(m, rt, ev.ResourceId)
+		if ev.ResourceId == nil {
+			return events.Event{}, fmt.Errorf("delete event missing resourceId")
+		}
+		id := uuid.UUID(*ev.ResourceId)
+		return events.Event{
+			ResourceType: rt,
+			Operation:    wop,
+			ResourceId:   id,
+		}, nil
 	case events.CreateOperation, events.UpdateOperation:
 		if ev.Resource == nil {
-			return fmt.Errorf("missing resource payload for %s %s", kind, op)
+			return events.Event{}, fmt.Errorf("missing resource payload for %s %s", kind, op)
 		}
-		return applyUpsert(m, rt, ev.Resource)
+		id, obj, err := replicationObjectFromWire(m, rt, ev.Resource)
+		if err != nil {
+			return events.Event{}, err
+		}
+		return events.Event{
+			ResourceType: rt,
+			Operation:    wop,
+			ResourceId:   id,
+			Objects:      []any{obj},
+		}, nil
 	default:
-		return fmt.Errorf("unsupported operation %q", op)
+		return events.Event{}, fmt.Errorf("unsupported operation %q", op)
 	}
 }
 
@@ -56,89 +72,76 @@ func wireString(v interface{}) string {
 	}
 }
 
-func applyDelete(m model.Model, rt events.ResourceType, rid *openapi_types.UUID) error {
-	if rid == nil {
-		return fmt.Errorf("delete event missing resourceId")
-	}
-	id := uuid.UUID(*rid)
-	var err error
-	switch rt {
-	case events.SystemResource:
-		err = m.DeleteSystemById(id)
-	case events.SystemInstanceResource:
-		err = m.DeleteSystemInstanceById(id)
-	case events.APIResource:
-		err = m.DeleteApiById(id)
-	case events.APIInstanceResource:
-		err = m.DeleteApiInstanceById(id)
-	case events.ComponentResource:
-		err = m.DeleteComponentById(id)
-	case events.ComponentInstanceResource:
-		err = m.DeleteComponentInstanceById(id)
-	default:
-		return fmt.Errorf("unsupported resource type for delete: %s", rt)
-	}
-	if err != nil && !isNotFound(err) {
-		return err
-	}
-	return nil
-}
-
-func isNotFound(err error) bool {
-	return errors.Is(err, model.ErrSystemNotFound) ||
-		errors.Is(err, model.ErrSystemInstanceNotFound) ||
-		errors.Is(err, model.ErrApiNotFound) ||
-		errors.Is(err, model.ErrApiInstanceNotFound) ||
-		errors.Is(err, model.ErrComponentNotFound) ||
-		errors.Is(err, model.ErrComponentInstanceNotFound)
-}
-
-func applyUpsert(m model.Model, rt events.ResourceType, res *Event_Resource) error {
+func replicationObjectFromWire(m model.Model, rt events.ResourceType, res *Event_Resource) (uuid.UUID, any, error) {
 	switch rt {
 	case events.SystemResource:
 		os, err := res.AsSystem()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applySystem(m, os)
+		s, err := systemFromWire(m, os)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return s.GetSystemId(), s, nil
 	case events.SystemInstanceResource:
 		os, err := res.AsSystemInstance()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applySystemInstance(m, os)
+		s, err := systemInstanceFromWire(m, os)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return s.GetInstanceId(), s, nil
 	case events.APIResource:
 		oa, err := res.AsAPI()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applyAPI(m, oa)
+		a, err := apiFromWire(m, oa)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return a.GetApiId(), a, nil
 	case events.APIInstanceResource:
 		oa, err := res.AsApiInstance()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applyAPIInstance(m, oa)
+		a, err := apiInstanceFromWire(m, oa)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return a.GetInstanceId(), a, nil
 	case events.ComponentResource:
 		oc, err := res.AsComponent()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applyComponent(m, oc)
+		c, err := componentFromWire(m, oc)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return c.GetComponentId(), c, nil
 	case events.ComponentInstanceResource:
 		oc, err := res.AsComponentInstance()
 		if err != nil {
-			return err
+			return uuid.Nil, nil, err
 		}
-		return applyComponentInstance(m, oc)
+		c, err := componentInstanceFromWire(m, oc)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return c.GetInstanceId(), c, nil
 	default:
-		return fmt.Errorf("unsupported resource type for upsert: %s", rt)
+		return uuid.Nil, nil, fmt.Errorf("unsupported resource type for upsert: %s", rt)
 	}
 }
 
-func applySystem(m model.Model, os System) error {
+func systemFromWire(m model.Model, os System) (model.System, error) {
 	if os.SystemId == nil {
-		return fmt.Errorf("system event missing systemId")
+		return nil, fmt.Errorf("system event missing systemId")
 	}
 	id := uuid.UUID(*os.SystemId)
 	sys := model.NewSystem(m.GetSink(), id)
@@ -154,10 +157,10 @@ func applySystem(m model.Model, os System) error {
 		sys.SetParent(refSystem(m, uuid.UUID(*os.Parent)))
 	}
 	mergeOapiAnnotations(sys.GetAnnotations(), os.Annotations)
-	return m.AddSystem(sys)
+	return sys, nil
 }
 
-func applySystemInstance(m model.Model, os SystemInstance) error {
+func systemInstanceFromWire(m model.Model, os SystemInstance) (model.SystemInstance, error) {
 	id := uuid.UUID(os.SystemInstanceId)
 	si := model.NewSystemInstance(m, id)
 	si.SetDisplayName(os.DisplayName)
@@ -166,12 +169,12 @@ func applySystemInstance(m model.Model, os SystemInstance) error {
 		si.SetContextRef(&model.ContextRef{ContextId: uuid.UUID(*os.Context)})
 	}
 	mergeOapiAnnotations(si.GetAnnotations(), os.Annotations)
-	return m.AddSystemInstance(si)
+	return si, nil
 }
 
-func applyAPI(m model.Model, oa API) error {
+func apiFromWire(m model.Model, oa API) (model.API, error) {
 	if oa.ApiId == nil {
-		return fmt.Errorf("API event missing apiId")
+		return nil, fmt.Errorf("API event missing apiId")
 	}
 	id := uuid.UUID(*oa.ApiId)
 	api := model.NewAPI(m, id)
@@ -187,10 +190,10 @@ func applyAPI(m model.Model, oa API) error {
 		api.SetSystem(refSystem(m, uuid.UUID(*oa.System)))
 	}
 	mergeOapiAnnotations(api.GetAnnotations(), oa.Annotations)
-	return m.AddApi(api)
+	return api, nil
 }
 
-func applyAPIInstance(m model.Model, oa ApiInstance) error {
+func apiInstanceFromWire(m model.Model, oa ApiInstance) (model.ApiInstance, error) {
 	id := uuid.UUID(oa.ApiInstanceId)
 	ai := model.NewApiInstance(m.GetSink(), id)
 	ai.SetDisplayName(oa.DisplayName)
@@ -201,12 +204,12 @@ func applyAPIInstance(m model.Model, oa ApiInstance) error {
 		ai.SetSystemInstance(refSystemInstance(m, uuid.UUID(*oa.SystemInstance)))
 	}
 	mergeOapiAnnotations(ai.GetAnnotations(), oa.Annotations)
-	return m.AddApiInstance(ai)
+	return ai, nil
 }
 
-func applyComponent(m model.Model, oc Component) error {
+func componentFromWire(m model.Model, oc Component) (model.Component, error) {
 	if oc.ComponentId == nil {
-		return fmt.Errorf("component event missing componentId")
+		return nil, fmt.Errorf("component event missing componentId")
 	}
 	id := uuid.UUID(*oc.ComponentId)
 	c := model.NewComponent(m, id)
@@ -225,17 +228,17 @@ func applyComponent(m model.Model, oc Component) error {
 		c.SetProvides(apiRefsFromUUIDs(m, *oc.Provides))
 	}
 	mergeOapiAnnotations(c.GetAnnotations(), oc.Annotations)
-	return m.AddComponent(c)
+	return c, nil
 }
 
-func applyComponentInstance(m model.Model, oc ComponentInstance) error {
+func componentInstanceFromWire(m model.Model, oc ComponentInstance) (model.ComponentInstance, error) {
 	id := uuid.UUID(oc.ComponentInstanceId)
 	ci := model.NewComponentInstance(m, id)
 	ci.SetDisplayName(oc.DisplayName)
 	ci.SetComponentRef(refComponent(m, uuid.UUID(oc.Component)))
 	ci.SetSystemInstance(refSystemInstance(m, uuid.UUID(oc.SystemInstance)))
 	mergeOapiAnnotations(ci.GetAnnotations(), oc.Annotations)
-	return m.AddComponentInstance(ci)
+	return ci, nil
 }
 
 func refSystem(m model.Model, id uuid.UUID) *model.SystemRef {
@@ -309,14 +312,14 @@ func oapiVersionToModel(v *Version) model.Version {
 
 func parseAPIType(v interface{}) model.ApiType {
 	s, _ := v.(string)
-	switch s {
-	case "OpenAPI":
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "openapi":
 		return model.OpenAPI
-	case "GraphQL":
+	case "graphql":
 		return model.GraphQL
-	case "GRPC", "gRPC":
+	case "grpc":
 		return model.GRPC
-	case "Other":
+	case "other":
 		return model.Other
 	default:
 		return model.Unknown
