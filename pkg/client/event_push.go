@@ -9,7 +9,10 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
-	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/annotations"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 func phase1Resource(rt events.ResourceType) bool {
@@ -115,7 +118,7 @@ func firstObject(ev *events.Event) (any, bool) {
 
 func minimalSystem(ev *events.Event) oapi.System {
 	if o, ok := firstObject(ev); ok {
-		if s, ok := o.(model.System); ok {
+		if s, ok := o.(system.System); ok {
 			sid := openapi_types.UUID(s.GetSystemId())
 			dn := s.GetDisplayName()
 			desc := s.GetDescription()
@@ -140,7 +143,7 @@ func minimalSystem(ev *events.Event) oapi.System {
 
 func minimalSystemInstance(ev *events.Event) oapi.SystemInstance {
 	if o, ok := firstObject(ev); ok {
-		if si, ok := o.(model.SystemInstance); ok {
+		if si, ok := o.(system.SystemInstance); ok {
 			iid := openapi_types.UUID(si.GetInstanceId())
 			dn := si.GetDisplayName()
 			out := oapi.SystemInstance{
@@ -167,7 +170,7 @@ func minimalSystemInstance(ev *events.Event) oapi.SystemInstance {
 
 func minimalAPI(ev *events.Event) oapi.API {
 	if o, ok := firstObject(ev); ok {
-		if a, ok := o.(model.API); ok {
+		if a, ok := o.(mdlapi.API); ok {
 			id := openapi_types.UUID(a.GetApiId())
 			dn := a.GetDisplayName()
 			desc := a.GetDescription()
@@ -191,7 +194,7 @@ func minimalAPI(ev *events.Event) oapi.API {
 
 func minimalAPIInstance(ev *events.Event) oapi.ApiInstance {
 	if o, ok := firstObject(ev); ok {
-		if a, ok := o.(model.ApiInstance); ok {
+		if a, ok := o.(mdlapi.ApiInstance); ok {
 			id := openapi_types.UUID(a.GetInstanceId())
 			dn := a.GetDisplayName()
 			out := oapi.ApiInstance{
@@ -218,7 +221,7 @@ func minimalAPIInstance(ev *events.Event) oapi.ApiInstance {
 
 func minimalComponent(ev *events.Event) oapi.Component {
 	if o, ok := firstObject(ev); ok {
-		if c, ok := o.(model.Component); ok {
+		if c, ok := o.(component.Component); ok {
 			id := openapi_types.UUID(c.GetComponentId())
 			dn := c.GetDisplayName()
 			desc := c.GetDescription()
@@ -240,7 +243,7 @@ func minimalComponent(ev *events.Event) oapi.Component {
 
 func minimalComponentInstance(ev *events.Event) oapi.ComponentInstance {
 	if o, ok := firstObject(ev); ok {
-		if c, ok := o.(model.ComponentInstance); ok {
+		if c, ok := o.(component.ComponentInstance); ok {
 			id := openapi_types.UUID(c.GetInstanceId())
 			dn := c.GetDisplayName()
 			var comp, sys openapi_types.UUID
@@ -271,7 +274,7 @@ func minimalComponentInstance(ev *events.Event) oapi.ComponentInstance {
 	}
 }
 
-func cloneAnn(a model.Annotations) *[]oapi.Annotation {
+func cloneAnn(a annotations.Annotations) *[]oapi.Annotation {
 	if a == nil {
 		return nil
 	}
