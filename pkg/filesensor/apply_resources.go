@@ -7,6 +7,13 @@ import (
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/node"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 func firstUUIDField(spec map[string]any, keys ...string) (uuid.UUID, error) {
@@ -35,7 +42,7 @@ func parseResourceTypeForRef(s string) (events.ResourceType, error) {
 	}
 }
 
-func parseResourceRefs(spec map[string]any) ([]*model.ResourceRef, error) {
+func parseResourceRefs(spec map[string]any) ([]*common.ResourceRef, error) {
 	raw, ok := spec["resources"]
 	if !ok || raw == nil {
 		return nil, nil
@@ -44,7 +51,7 @@ func parseResourceRefs(spec map[string]any) ([]*model.ResourceRef, error) {
 	if !ok {
 		return nil, fmt.Errorf("resources must be an array")
 	}
-	var out []*model.ResourceRef
+	var out []*common.ResourceRef
 	for i, item := range arr {
 		m, ok := item.(map[string]any)
 		if !ok {
@@ -62,12 +69,12 @@ func parseResourceRefs(spec map[string]any) ([]*model.ResourceRef, error) {
 		if err != nil {
 			return nil, fmt.Errorf("resources[%d]: %w", i, err)
 		}
-		out = append(out, &model.ResourceRef{ResourceId: id, ResourceType: rt})
+		out = append(out, &common.ResourceRef{ResourceId: id, ResourceType: rt})
 	}
 	return out, nil
 }
 
-func parseApiRefSlice(spec map[string]any, key string) ([]model.ApiRef, error) {
+func parseApiRefSlice(spec map[string]any, key string) ([]mdlapi.ApiRef, error) {
 	raw, ok := spec[key]
 	if !ok || raw == nil {
 		return nil, nil
@@ -76,7 +83,7 @@ func parseApiRefSlice(spec map[string]any, key string) ([]model.ApiRef, error) {
 	if !ok {
 		return nil, fmt.Errorf("%s must be an array", key)
 	}
-	var out []model.ApiRef
+	var out []mdlapi.ApiRef
 	for i, item := range arr {
 		switch t := item.(type) {
 		case string:
@@ -87,13 +94,13 @@ func parseApiRefSlice(spec map[string]any, key string) ([]model.ApiRef, error) {
 			if id == uuid.Nil {
 				return nil, fmt.Errorf("%s[%d]: UUID must not be nil", key, i)
 			}
-			out = append(out, model.ApiRef{ApiID: id})
+			out = append(out, mdlapi.ApiRef{ApiID: id})
 		case map[string]any:
 			id, err := parseUUIDField(t, "apiId")
 			if err != nil {
 				return nil, fmt.Errorf("%s[%d]: %w", key, i, err)
 			}
-			out = append(out, model.ApiRef{ApiID: id})
+			out = append(out, mdlapi.ApiRef{ApiID: id})
 		default:
 			return nil, fmt.Errorf("%s[%d]: must be a UUID string or object with apiId", key, i)
 		}
@@ -117,7 +124,7 @@ func applyContextType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ct := model.NewContextType(m.GetSink(), id)
+	ct := mdlctx.NewContextType(m.GetSink(), id)
 	ct.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ct.SetDescription(desc)
@@ -137,7 +144,7 @@ func applyNodeType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	nt := model.NewNodeType(m.GetSink(), id)
+	nt := node.NewNodeType(m.GetSink(), id)
 	nt.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		nt.SetDescription(desc)
@@ -157,7 +164,7 @@ func applyNode(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	n := model.NewNode(m.GetSink(), id)
+	n := node.NewNode(m.GetSink(), id)
 	n.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		n.SetDescription(desc)
@@ -165,7 +172,7 @@ func applyNode(spec map[string]any, m model.Model) error {
 	if typeID, has, err := optionalUUIDRef(spec, "nodeTypeId"); err != nil {
 		return err
 	} else if has {
-		n.SetTypeRef(&model.NodeTypeRef{NodeTypeId: typeID})
+		n.SetTypeRef(&node.NodeTypeRef{NodeTypeId: typeID})
 	}
 	if err := applyAnnotations(n.GetAnnotations(), spec); err != nil {
 		return err
@@ -186,13 +193,13 @@ func applySystemInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	si := model.NewSystemInstance(m, id)
+	si := system.NewSystemInstance(m.GetSink(), id)
 	si.SetDisplayName(name)
-	si.SetSystemRef(&model.SystemRef{SystemId: sid})
+	si.SetSystemRef(&system.SystemRef{SystemId: sid})
 	if cid, has, err := optionalFirstUUIDRef(spec, "context", "contextId"); err != nil {
 		return err
 	} else if has {
-		si.SetContextRef(&model.ContextRef{ContextId: cid})
+		si.SetContextRef(&mdlctx.ContextRef{ContextId: cid})
 	}
 	if err := applyAnnotations(si.GetAnnotations(), spec); err != nil {
 		return err
@@ -213,13 +220,13 @@ func applyAPIInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ai := model.NewApiInstance(m.GetSink(), id)
+	ai := mdlapi.NewApiInstance(m.GetSink(), id)
 	ai.SetDisplayName(name)
-	ai.SetApiRef(&model.ApiRef{ApiID: apiID})
+	ai.SetApiRef(&mdlapi.ApiRef{ApiID: apiID})
 	if sid, has, err := optionalFirstUUIDRef(spec, "systemInstance", "systemInstanceId"); err != nil {
 		return err
 	} else if has {
-		ai.SetSystemInstance(&model.SystemInstanceRef{InstanceId: sid})
+		ai.SetSystemInstance(&system.SystemInstanceRef{InstanceId: sid})
 	}
 	if err := applyAnnotations(ai.GetAnnotations(), spec); err != nil {
 		return err
@@ -240,7 +247,7 @@ func applyComponent(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	c := model.NewComponent(m, id)
+	c := component.NewComponent(m.GetSink(), id)
 	c.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		c.SetDescription(desc)
@@ -250,7 +257,7 @@ func applyComponent(spec map[string]any, m model.Model) error {
 	} else {
 		c.SetVersion(ver)
 	}
-	c.SetSystem(&model.SystemRef{SystemId: sysID})
+	c.SetSystem(&system.SystemRef{SystemId: sysID})
 	if cons, err := parseApiRefSlice(spec, "consumes"); err != nil {
 		return err
 	} else if len(cons) > 0 {
@@ -280,13 +287,13 @@ func applyComponentInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ci := model.NewComponentInstance(m, id)
+	ci := component.NewComponentInstance(m.GetSink(), id)
 	ci.SetDisplayName(name)
-	ci.SetComponentRef(&model.ComponentRef{ComponentId: compID})
+	ci.SetComponentRef(&component.ComponentRef{ComponentId: compID})
 	if sid, has, err := optionalFirstUUIDRef(spec, "systemInstance", "systemInstanceId"); err != nil {
 		return err
 	} else if has {
-		ci.SetSystemInstance(&model.SystemInstanceRef{InstanceId: sid})
+		ci.SetSystemInstance(&system.SystemInstanceRef{InstanceId: sid})
 	}
 	if err := applyAnnotations(ci.GetAnnotations(), spec); err != nil {
 		return err
@@ -303,7 +310,7 @@ func applyFinding(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	f := model.NewFinding(m, id)
+	f := finding.NewFinding(m.GetSink(), id)
 	f.SetSummary(title)
 	if desc, ok := stringField(spec, "description"); ok {
 		f.SetDescription(desc)
@@ -330,7 +337,7 @@ func applyFindingType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ft := model.NewFindingType(m.GetSink(), id)
+	ft := finding.NewFindingType(m.GetSink(), id)
 	ft.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ft.SetDescription(desc)
