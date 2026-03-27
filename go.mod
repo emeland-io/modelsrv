@@ -1,8 +1,6 @@
 module go.emeland.io/modelsrv
 
-go 1.24.0
-
-toolchain go1.24.10
+go 1.26.1
 
 require (
 	github.com/getkin/kin-openapi v0.133.0
