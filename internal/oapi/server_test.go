@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:errcheck
 package oapi_test
 
 import (
@@ -31,6 +31,7 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -200,7 +201,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
-	eventMgr, err = events.NewEventManager()
+	eventMgr, err = eventmgr.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
@@ -239,7 +240,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	ctx := context.Background()
 
 	It("should call GET on /events/query/{sequenceId} for sequenceId 0", func() {
-		eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		err := eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		Expect(err).NotTo(HaveOccurred())
 
 		url := fmt.Sprintf("http://localhost/events/query/%d", 0)
 		req := httptest.NewRequest("GET", url, nil)
@@ -291,7 +293,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 
 		Expect(len(eventMgr.GetSubscribers())).To(Equal(1))
-		Expect(eventMgr.GetSubscribers()[0]).To(Equal("http://remote-server.example.com/emeland/"))
+		Expect(eventMgr.GetSubscribers()[0].GetURL()).To(Equal("http://remote-server.example.com/emeland/"))
 	})
 
 	It("should call POST on /events/unregister to remove a subscriber", func() {
@@ -310,7 +312,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		resp.Body.Close()
 
 		// now remove the existing subscriber
-		eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		err := eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		Expect(err).NotTo(HaveOccurred())
 
 		postData = []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
 		req = httptest.NewRequest("POST", url, bytes.NewBuffer(postData))

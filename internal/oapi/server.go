@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +42,13 @@ const (
 	OWNER_KEY            ContextLabel = "owner"
 	CONTENT_TYPE_JSON                 = HeaderLabel("application/json")
 	CONTENT_TYPE_HTML                 = HeaderLabel("text/html")
+)
+
+// ctxKey is the type for context.WithValue keys in this package (SA1029).
+type ctxKey int
+
+const (
+	ctxKeyNegotiatedContentType ctxKey = iota
 )
 
 type ApiServer struct {
@@ -125,7 +131,7 @@ func ProcessContentTypeRequest(f StrictHandlerFunc, _ string) StrictHandlerFunc 
 			contentType = "application/json" // default to HTML if no header is set
 		}
 
-		newCtx = context.WithValue(ctx, HEADER_ACCEPT, contentType)
+		newCtx = context.WithValue(ctx, ctxKeyNegotiatedContentType, contentType)
 
 		return f(newCtx, w, r, request)
 	}
@@ -159,36 +165,6 @@ func NewApiHandler(server *ApiServer) ServerInterface {
 		[]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeader, ProcessContentTypeRequest})
 
 	return handler
-}
-
-// GetEventsQuerySequenceId implements StrictServerInterface.
-func (a *ApiServer) GetEventsQuerySequenceId(ctx context.Context, request GetEventsQuerySequenceIdRequestObject) (GetEventsQuerySequenceIdResponseObject, error) {
-	var requestSequenceId uint64
-
-	// parse sequenceId
-	requestSequenceId, err := strconv.ParseUint(request.SequenceId, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	currSequenceId, err := a.Events.GetCurrentSequenceId(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if requestSequenceId == currSequenceId {
-		// no new events
-		resp := GetEventsQuerySequenceId200Response{}
-		return GetEventsQuerySequenceId200Response(resp), nil
-	} else if requestSequenceId < currSequenceId {
-		// there are new events
-		resp := GetEventsQuerySequenceId308Response{}
-		return GetEventsQuerySequenceId308Response(resp), nil
-	} else {
-		// client is ahead of server?
-		resp := ""
-		return GetEventsQuerySequenceId404JSONResponse(resp), nil
-	}
 }
 
 // GetLandscapeApiInstances implements StrictServerInterface.
@@ -436,28 +412,9 @@ func (a *ApiServer) GetTest(ctx context.Context, request GetTestRequestObject) (
 	return GetTest200Response{}, nil
 }
 
-// PostEventsRegister implements StrictServerInterface.
-func (a *ApiServer) PostEventsRegister(ctx context.Context, request PostEventsRegisterRequestObject) (PostEventsRegisterResponseObject, error) {
-	a.Events.AddSubscriber(request.Body.CallbackUrl)
-
-	return PostEventsRegister201Response{}, nil
-}
-
-// PostEventsUnregister implements [StrictServerInterface].
-func (a *ApiServer) PostEventsUnregister(ctx context.Context, request PostEventsUnregisterRequestObject) (PostEventsUnregisterResponseObject, error) {
-	error := a.Events.RemoveSubscriber(request.Body.CallbackUrl)
-	if error != nil {
-		return PostEventsUnregister404JSONResponse(error.Error()), nil
-	}
-	return PostEventsUnregister200Response{}, nil
-}
-
-// GetEventsSubscribers implements [StrictServerInterface].
-func (a *ApiServer) GetEventsSubscribers(ctx context.Context, request GetEventsSubscribersRequestObject) (GetEventsSubscribersResponseObject, error) {
-	panic("unimplemented")
-}
-
 // parseISO8601 is more tolerant when parsing the input string, than the rfc3339 compliant parsing implemented by the golang default
+//
+//nolint:unused
 func parseISO8601(input string) (*types.Date, error) {
 	parseError := &time.ParseError{}
 

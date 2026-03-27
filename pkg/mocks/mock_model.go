@@ -224,6 +224,20 @@ func (mr *MockModelMockRecorder) ApiRefByID(apiId any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApiRefByID", reflect.TypeOf((*MockModel)(nil).ApiRefByID), apiId)
 }
 
+// Apply mocks base method.
+func (m *MockModel) Apply(ev events.Event) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Apply", ev)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Apply indicates an expected call of Apply.
+func (mr *MockModelMockRecorder) Apply(ev any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockModel)(nil).Apply), ev)
+}
+
 // DeleteApiById mocks base method.
 func (m *MockModel) DeleteApiById(id uuid.UUID) error {
 	m.ctrl.T.Helper()

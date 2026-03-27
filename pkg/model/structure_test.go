@@ -141,7 +141,7 @@ func TestDeleteSystemById(t *testing.T) {
 
 	// Test deleting non-existent system
 	err = testModel.DeleteSystemById(uuid.New())
-	assert.Equal(t, model.SystemNotFoundError, err)
+	assert.Equal(t, model.ErrSystemNotFound, err)
 
 	// Add a system and verify it exists
 	sys := model.MakeTestSystem(sink, systemId, "test-system", model.Version{})
@@ -159,7 +159,7 @@ func TestDeleteSystemById(t *testing.T) {
 
 	// Try deleting again should return error
 	err = testModel.DeleteSystemById(systemId)
-	assert.Equal(t, model.SystemNotFoundError, err)
+	assert.Equal(t, model.ErrSystemNotFound, err)
 }
 
 func TestGetSystemBySystemId(t *testing.T) {

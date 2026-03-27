@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"iter"
 	"maps"
 
@@ -41,19 +42,25 @@ func (a *annotationsData) Add(key string, value string) {
 		} else {
 			// updating existing value
 			a.records[key] = value
-			a.sink.Receive(events.AnnotationsResource, events.UpdateOperation, uuid.Nil, map[string]string{key: value})
+			if err := a.sink.Receive(events.AnnotationsResource, events.UpdateOperation, uuid.Nil, map[string]string{key: value}); err != nil {
+				fmt.Println("Error receiving annotations update event: ", err)
+			}
 			return
 		}
 	}
 
 	a.records[key] = value
-	a.sink.Receive(events.AnnotationsResource, events.CreateOperation, uuid.Nil, map[string]string{key: value})
+	if err := a.sink.Receive(events.AnnotationsResource, events.CreateOperation, uuid.Nil, map[string]string{key: value}); err != nil {
+		fmt.Println("Error receiving annotations create event: ", err)
+	}
 }
 
 // Delete implements [Annotations].
 func (a *annotationsData) Delete(key string) {
 	delete(a.records, key)
-	a.sink.Receive(events.AnnotationsResource, events.DeleteOperation, uuid.Nil, key)
+	if err := a.sink.Receive(events.AnnotationsResource, events.DeleteOperation, uuid.Nil, key); err != nil {
+		fmt.Println("Error receiving annotations delete event: ", err)
+	}
 }
 
 // GetValue implements [Annotations].

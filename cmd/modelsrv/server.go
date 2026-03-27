@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/endpoint"
-	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
@@ -18,7 +18,7 @@ var serverCmd = &cobra.Command{
 	Long:  `minimal model server instance that serves the model via REST API and provides a minimal web UI.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		eventMgr, err := events.NewEventManager()
+		eventMgr, err := eventmgr.NewEventManager()
 		if err != nil {
 			fmt.Println("Error creating event manager: ", err)
 			return
@@ -37,7 +37,11 @@ var serverCmd = &cobra.Command{
 		}
 
 		fmt.Println("Starting server...")
-		endpoint.StarWebListener(model, eventMgr, serviceAddr)
+		if err := endpoint.StarWebListener(model, eventMgr, serviceAddr); err != nil {
+			fmt.Println("Error starting web listener: ", err)
+			return
+		}
+		fmt.Println("Server started successfully")
 	},
 }
 

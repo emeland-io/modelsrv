@@ -16,23 +16,24 @@ import (
 )
 
 var (
-	NodeNotFoundError              error = fmt.Errorf("Node not found")
-	NodeTypeNotFoundError          error = fmt.Errorf("Node Type not found")
-	ContextNotFoundError           error = fmt.Errorf("Context not found")
-	ContextTypeNotFoundError       error = fmt.Errorf("Context Type not found")
-	SystemNotFoundError            error = fmt.Errorf("System not found")
-	SystemInstanceNotFoundError    error = fmt.Errorf("System Instance not found")
-	ApiNotFoundError               error = fmt.Errorf("API not found")
-	ApiInstanceNotFoundError       error = fmt.Errorf("API Instance not found")
-	ComponentNotFoundError         error = fmt.Errorf("Component not found")
-	ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
-	FindingNotFoundError           error = fmt.Errorf("Finding not found")
-	FindingTypeNotFoundError       error = fmt.Errorf("Finding Type not found")
+	ErrNodeNotFound              error = fmt.Errorf("Node not found")
+	ErrNodeTypeNotFound          error = fmt.Errorf("Node Type not found")
+	ErrContextNotFound           error = fmt.Errorf("Context not found")
+	ErrContextTypeNotFound       error = fmt.Errorf("Context Type not found")
+	ErrSystemNotFound            error = fmt.Errorf("System not found")
+	ErrSystemInstanceNotFound    error = fmt.Errorf("System Instance not found")
+	ErrApiNotFound               error = fmt.Errorf("API not found")
+	ErrApiInstanceNotFound       error = fmt.Errorf("API Instance not found")
+	ErrComponentNotFound         error = fmt.Errorf("Component not found")
+	ErrComponentInstanceNotFound error = fmt.Errorf("Component Instance not found")
+	ErrFindingNotFound           error = fmt.Errorf("Finding not found")
+	ErrFindingTypeNotFound       error = fmt.Errorf("Finding Type not found")
 
-	UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
+	ErrUUIDNotSet error = fmt.Errorf("resource identifier UUID not set")
 )
 
 type Model interface {
+	EventApplier
 	GetSink() events.EventSink
 
 	AddNode(node Node) error
@@ -233,7 +234,7 @@ func addEventEnabled[T any](
 ) error {
 	id := getId(obj)
 	if id == uuid.Nil {
-		return UUIDNotSetError
+		return ErrUUIDNotSet
 	}
 	op := events.CreateOperation
 	if _, exists := store[id]; exists {
@@ -241,7 +242,9 @@ func addEventEnabled[T any](
 	}
 	setRegistered(obj)
 	store[id] = obj
-	m.sink.Receive(resourceType, op, id, obj)
+	if err := m.sink.Receive(resourceType, op, id, obj); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", op, " event: ", err)
+	}
 	return nil
 }
 
@@ -258,7 +261,9 @@ func deleteEventEnabled[T any](
 		return notFoundError
 	}
 	delete(store, id)
-	m.sink.Receive(resourceType, events.DeleteOperation, id)
+	if err := m.sink.Receive(resourceType, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
@@ -286,7 +291,7 @@ func (m *modelData) AddContext(context Context) error {
 	// TODO: parse parent ref if set
 
 	if context.GetContextId() == uuid.Nil {
-		return UUIDNotSetError
+		return ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -296,7 +301,9 @@ func (m *modelData) AddContext(context Context) error {
 		op = events.UpdateOperation
 	}
 
-	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
+	if err := m.sink.Receive(events.ContextResource, op, context.GetContextId(), context); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
+	}
 
 	m.contextsByUUID[context.GetContextId()] = context
 
@@ -310,7 +317,7 @@ func (m *modelData) AddContext(context Context) error {
 func (m *modelData) DeleteContextById(id uuid.UUID) error {
 	_, exists := m.contextsByUUID[id]
 	if !exists {
-		return ContextNotFoundError
+		return ErrContextNotFound
 	}
 
 	// invalidate the cache
@@ -318,7 +325,9 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 
 	delete(m.contextsByUUID, id)
 
-	m.sink.Receive(events.ContextResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -352,7 +361,7 @@ func (m *modelData) GetContexts() ([]Context, error) {
 // AddContextType implements [Model].
 func (m *modelData) AddContextType(contextType ContextType) error {
 	if contextType.GetContextTypeId() == uuid.Nil {
-		return UUIDNotSetError
+		return ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -361,7 +370,9 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 	if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType)
+	if err := m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
 
@@ -375,12 +386,14 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
 	_, exists := m.contextTypesByUUID[id]
 	if !exists {
-		return ContextTypeNotFoundError
+		return ErrContextTypeNotFound
 	}
 
 	delete(m.contextTypesByUUID, id)
 
-	m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -407,7 +420,7 @@ func (m *modelData) AddNode(node Node) error {
 
 // DeleteNodeById implements [Model].
 func (m *modelData) DeleteNodeById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.nodesByUUID, events.NodeResource, NodeNotFoundError)
+	return deleteEventEnabled(m, id, m.nodesByUUID, events.NodeResource, ErrNodeNotFound)
 }
 
 // GetNodeById implements [Model].
@@ -427,7 +440,7 @@ func (m *modelData) AddNodeType(nodeType NodeType) error {
 
 // DeleteNodeTypeById implements [Model].
 func (m *modelData) DeleteNodeTypeById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.nodeTypesByUUID, events.NodeTypeResource, NodeTypeNotFoundError)
+	return deleteEventEnabled(m, id, m.nodeTypesByUUID, events.NodeTypeResource, ErrNodeTypeNotFound)
 }
 
 // GetNodeTypeById implements [Model].
@@ -445,7 +458,7 @@ func (m *modelData) AddSystem(sys System) error {
 
 	// parse parent ref if set
 	if sys.GetSystemId() == uuid.Nil {
-		return UUIDNotSetError
+		return ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -454,7 +467,9 @@ func (m *modelData) AddSystem(sys System) error {
 	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys)
+	if err := m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", op, " event: ", err)
+	}
 
 	m.systemsByUUID[sys.GetSystemId()] = sys
 
@@ -468,12 +483,14 @@ func (m *modelData) AddSystem(sys System) error {
 func (m *modelData) DeleteSystemById(id uuid.UUID) error {
 	_, exists := m.systemsByUUID[id]
 	if !exists {
-		return SystemNotFoundError
+		return ErrSystemNotFound
 	}
 
 	delete(m.systemsByUUID, id)
 
-	m.sink.Receive(events.SystemResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.SystemResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
@@ -520,27 +537,27 @@ func (m *modelData) AddSystemInstance(instance SystemInstance) error {
 
 // DeleteApiByResourceName implements Model.
 func (m *modelData) DeleteApiById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.apisByUUID, events.APIResource, ApiNotFoundError)
+	return deleteEventEnabled(m, id, m.apisByUUID, events.APIResource, ErrApiNotFound)
 }
 
 // DeleteApiInstanceByResourceName implements Model.
 func (m *modelData) DeleteApiInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.apiInstancesByUUID, events.APIInstanceResource, ApiInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.apiInstancesByUUID, events.APIInstanceResource, ErrApiInstanceNotFound)
 }
 
 // DeleteComponentByResourceName implements Model.
 func (m *modelData) DeleteComponentById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.componentsByUUID, events.ComponentResource, ComponentNotFoundError)
+	return deleteEventEnabled(m, id, m.componentsByUUID, events.ComponentResource, ErrComponentNotFound)
 }
 
 // DeleteComponentInstanceByResourceName implements Model.
 func (m *modelData) DeleteComponentInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.componentInstancesByUUID, events.ComponentInstanceResource, ComponentInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.componentInstancesByUUID, events.ComponentInstanceResource, ErrComponentInstanceNotFound)
 }
 
 // DeleteSystemInstanceByResourceName implements Model.
 func (m *modelData) DeleteSystemInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.systemInstancesByUUID, events.SystemInstanceResource, SystemInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.systemInstancesByUUID, events.SystemInstanceResource, ErrSystemInstanceNotFound)
 }
 
 // GetApiById implements Model.
@@ -625,7 +642,9 @@ func (m *modelData) AddFinding(finding Finding, name string) error {
 	if finding.GetFindingId() != uuid.Nil {
 		finding.Register()
 		m.findingsByUUID[finding.GetFindingId()] = finding
-		m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding)
+		if err := m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding); err != nil {
+			fmt.Println("Error receiving ", events.FindingResource, "| ", events.CreateOperation, " event: ", err)
+		}
 	}
 	return nil
 }
@@ -634,10 +653,12 @@ func (m *modelData) AddFinding(finding Finding, name string) error {
 func (m *modelData) DeleteFindingById(id uuid.UUID) error {
 	_, exists := m.findingsByUUID[id]
 	if !exists {
-		return FindingNotFoundError
+		return ErrFindingNotFound
 	}
 	delete(m.findingsByUUID, id)
-	m.sink.Receive(events.FindingResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
@@ -655,7 +676,7 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 
 	// parse parent ref if set
 	if findingType.GetFindingTypeId() == uuid.Nil {
-		return UUIDNotSetError
+		return ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -664,7 +685,9 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 	if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType)
+	if err := m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
 
@@ -679,12 +702,14 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
 	_, exists := m.findingTypesByUUID[id]
 	if !exists {
-		return FindingTypeNotFoundError
+		return ErrFindingTypeNotFound
 	}
 
 	delete(m.findingTypesByUUID, id)
 
-	m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }

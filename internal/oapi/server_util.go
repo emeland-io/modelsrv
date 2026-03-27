@@ -27,15 +27,20 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
+//nolint:unused
 func acceptsHTML(ctx context.Context) bool {
-	return strings.EqualFold(ctx.Value(HEADER_ACCEPT).(string),
+	return strings.EqualFold(ctx.Value(ctxKeyNegotiatedContentType).(string),
 		string(CONTENT_TYPE_HTML))
 }
 
+//nolint:unused
 func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 	body := new(strings.Builder)
 
-	template.Execute(body, resp)
+	if err := template.Execute(body, resp); err != nil {
+		return nil, 0
+	}
+
 	return strings.NewReader(body.String()), int64(body.Len())
 }
 
