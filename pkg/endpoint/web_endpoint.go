@@ -53,6 +53,9 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 }
 
 func StopWebListener() {
+	if webServer == nil {
+		return
+	}
 	if err := webServer.Shutdown(context.Background()); err != nil {
 		setupLog.Error("Error shutting down web server: ", err)
 	}
