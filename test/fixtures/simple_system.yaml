@@ -32,4 +32,6 @@ version: emeland.io/v1alpha1
 kind: API
 spec:
   apiId: c649f2f3-462b-4a6d-8337-0d2e7403c44d
+  displayName: Orders API
+  type: OpenAPI
   systemId: b4eaa9f0-0242-4a26-9496-fa2b1a3b9330
