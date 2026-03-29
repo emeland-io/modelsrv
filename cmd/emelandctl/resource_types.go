@@ -114,9 +114,3 @@ var resourceTypes = []resourceDef{
 		},
 	},
 }
-
-func init() {
-	for _, def := range resourceTypes {
-		registerResourceCmd(def)
-	}
-}

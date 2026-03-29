@@ -26,10 +26,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// executeCmd runs rootCmd with the given args and returns the error (if any).
+// executeCmd builds a fresh command tree and runs it with the given args.
 func executeCmd(args ...string) error {
-	rootCmd.SetArgs(args)
-	return rootCmd.Execute()
+	cmd := newRootCmd()
+	cmd.SetArgs(args)
+	return cmd.Execute()
 }
 
 // readYAMLFile finds the single YAML file matching the glob and unmarshals it.
@@ -149,9 +150,6 @@ func TestCreateWritesToDefaultDataDir(t *testing.T) {
 
 	dir := t.TempDir()
 	require.NoError(t, os.Chdir(dir))
-
-	// Reset outputDir to the flag default so -o is not needed.
-	outputDir = "data"
 
 	err = executeCmd("create", "node-type", "Compute")
 	require.NoError(t, err)

@@ -21,19 +21,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// createCmd represents the create command
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a new resource in the landscape",
-	Long:  `Create a new resource in the Emerging Enterprise Landscape (EmELand).`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			return cmd.Help()
-		}
-		return fmt.Errorf("unknown resource type %q; see 'emelandctl create --help' for available types", args[0])
-	},
-}
+// newCreateCmd builds the "create" subcommand with all resource type subcommands.
+func newCreateCmd() *cobra.Command {
+	var outputDir string
+	var outputFile string
 
-func init() {
-	rootCmd.AddCommand(createCmd)
+	createCmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a new resource in the landscape",
+		Long:  `Create a new resource in the Emerging Enterprise Landscape (EmELand).`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
+			return fmt.Errorf("unknown resource type %q; see 'emelandctl create --help' for available types", args[0])
+		},
+	}
+
+	createCmd.PersistentFlags().StringVarP(&outputDir, "output-dir", "d", "data", "Directory to save the generated YAML file (auto-generated filename)")
+	createCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Write to this exact file path")
+	createCmd.MarkFlagsMutuallyExclusive("output-dir", "output")
+
+	for _, def := range resourceTypes {
+		registerResourceCmd(createCmd, def, &outputDir, &outputFile)
+	}
+
+	return createCmd
 }

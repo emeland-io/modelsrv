@@ -37,36 +37,26 @@ type Resource struct {
 
 // flagDef describes an optional flag for a resource subcommand.
 type flagDef struct {
-	name     string // flag name (e.g. "system")
-	short    string // single-char shorthand, or ""
-	specKey  string // key in the YAML spec (e.g. "system")
-	usage    string
-	isBool   bool
+	name    string // flag name (e.g. "system")
+	short   string // single-char shorthand, or ""
+	specKey string // key in the YAML spec (e.g. "system")
+	usage   string
+	isBool  bool
 }
 
 // resourceDef declares everything needed to generate a create subcommand.
 type resourceDef struct {
-	use        string // cobra Use (subcommand name)
-	short      string // short description
-	kind       string // YAML Kind value
-	idField    string // spec key for the generated UUID (e.g. "systemId")
-	nameField  string // spec key for the display name (default "displayName")
-	flags      []flagDef
-}
-
-var (
-	outputDir  string
-	outputFile string
-)
-
-func init() {
-	createCmd.PersistentFlags().StringVarP(&outputDir, "output-dir", "d", "data", "Directory to save the generated YAML file (auto-generated filename)")
-	createCmd.PersistentFlags().StringVarP(&outputFile, "output", "o", "", "Write to this exact file path")
-	createCmd.MarkFlagsMutuallyExclusive("output-dir", "output")
+	use       string // cobra Use (subcommand name)
+	short     string // short description
+	kind      string // YAML Kind value
+	idField   string // spec key for the generated UUID (e.g. "systemId")
+	nameField string // spec key for the display name (default "displayName")
+	flags     []flagDef
 }
 
 // registerResourceCmd creates and registers a cobra subcommand from a resourceDef.
-func registerResourceCmd(def resourceDef) {
+// outputDir and outputFile are pointers to the parent command's flag variables.
+func registerResourceCmd(createCmd *cobra.Command, def resourceDef, outputDir, outputFile *string) {
 	if def.nameField == "" {
 		def.nameField = "displayName"
 	}
@@ -104,7 +94,7 @@ func registerResourceCmd(def resourceDef) {
 			}
 
 			r := Resource{Version: resourceVersion, Kind: def.kind, Spec: spec}
-			return writeResource(r, id)
+			return writeResource(r, id, *outputDir, *outputFile)
 		},
 	}
 
@@ -124,8 +114,8 @@ func registerResourceCmd(def resourceDef) {
 }
 
 // writeResource marshals a Resource to YAML and writes it to the path
-// determined by --output or --output-dir.
-func writeResource(r Resource, id uuid.UUID) error {
+// determined by outputFile or outputDir.
+func writeResource(r Resource, id uuid.UUID, outputDir, outputFile string) error {
 	data, err := yaml.Marshal(r)
 	if err != nil {
 		return fmt.Errorf("marshalling YAML: %w", err)
