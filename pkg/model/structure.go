@@ -1,8 +1,8 @@
 //go:generate go run generate_events.go
 package model
 
-//go:generate mockgen -destination=../mocks/mock_model.go -package=mocks . Model
-//go:generate mockgen -destination=../mocks/mock_finding_type.go -package=mocks . FindingType
+//go:generate ../../bin/mockgen -destination=../mocks/mock_model.go -package=mocks . Model
+//go:generate ../../bin/mockgen -destination=../mocks/mock_finding_type.go -package=mocks . FindingType
 
 import (
 	"context"
