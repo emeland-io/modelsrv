@@ -1,3 +1,3 @@
 package system
 
-//go:generate mockgen -destination=../../mocks/mock_system.go -package=mocks . System
+//go:generate ../../../bin/mockgen -destination=../../mocks/mock_system.go -package=mocks . System

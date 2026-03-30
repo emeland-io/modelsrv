@@ -318,18 +318,7 @@ func oapiVersionToModel(v *Version) common.Version {
 
 func parseAPIType(v interface{}) mdlapi.ApiType {
 	s, _ := v.(string)
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "openapi":
-		return mdlapi.OpenAPI
-	case "graphql":
-		return mdlapi.GraphQL
-	case "grpc":
-		return mdlapi.GRPC
-	case "other":
-		return mdlapi.Other
-	default:
-		return mdlapi.Unknown
-	}
+	return mdlapi.ParseApiType(strings.TrimSpace(s))
 }
 
 func mergeOapiAnnotations(dst annotations.Annotations, src *[]Annotation) {

@@ -1,7 +1,7 @@
 //go:generate go run ./gen
 package model
 
-//go:generate mockgen -destination=../mocks/mock_model.go -package=mocks . Model
+//go:generate ../../bin/mockgen -destination=../mocks/mock_model.go -package=mocks . Model
 
 import (
 	"context"

@@ -9,7 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
-//go:generate mockgen -destination=../../mocks/mock_annotations.go -package=mocks . Annotations
+//go:generate ../../../bin/mockgen -destination=../../mocks/mock_annotations.go -package=mocks . Annotations
 
 var _ Annotations = (*annotationsData)(nil)
 
