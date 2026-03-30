@@ -9,6 +9,11 @@ import (
 
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/annotations"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 // AnnotationContextTypeID is the annotation key used to store a Context's context-type UUID when the domain type has no dedicated field.
@@ -88,7 +93,7 @@ func optionalFirstUUIDRef(spec map[string]any, keys ...string) (uuid.UUID, bool,
 	return uuid.Nil, false, nil
 }
 
-func applyAnnotations(ann model.Annotations, spec map[string]any) error {
+func applyAnnotations(ann annotations.Annotations, spec map[string]any) error {
 	raw, ok := spec["annotations"]
 	if !ok || raw == nil {
 		return nil
@@ -110,8 +115,8 @@ func applyAnnotations(ann model.Annotations, spec map[string]any) error {
 	return nil
 }
 
-func parseVersionSpec(v any) (model.Version, error) {
-	var out model.Version
+func parseVersionSpec(v any) (common.Version, error) {
+	var out common.Version
 	if v == nil {
 		return out, nil
 	}
@@ -166,20 +171,20 @@ func parseOptionalTime(m map[string]any, key string) (*time.Time, error) {
 	}
 }
 
-func parseApiType(s string) (model.ApiType, error) {
+func parseApiType(s string) (mdlapi.ApiType, error) {
 	switch strings.TrimSpace(s) {
 	case "OpenAPI":
-		return model.OpenAPI, nil
+		return mdlapi.OpenAPI, nil
 	case "GraphQL":
-		return model.GraphQL, nil
+		return mdlapi.GraphQL, nil
 	case "GRPC":
-		return model.GRPC, nil
+		return mdlapi.GRPC, nil
 	case "Other":
-		return model.Other, nil
+		return mdlapi.Other, nil
 	case "Unknown":
-		return model.Unknown, nil
+		return mdlapi.Unknown, nil
 	default:
-		return model.Unknown, fmt.Errorf("invalid API type %q (expected OpenAPI, GraphQL, GRPC, Other, or Unknown)", s)
+		return mdlapi.Unknown, fmt.Errorf("invalid API type %q (expected OpenAPI, GraphQL, GRPC, Other, or Unknown)", s)
 	}
 }
 
@@ -235,7 +240,7 @@ func applyContext(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	ctx := model.NewContext(m.GetSink(), id)
+	ctx := mdlctx.NewContext(m.GetSink(), id)
 	ctx.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ctx.SetDescription(desc)
@@ -270,7 +275,7 @@ func applySystem(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	sys := model.NewSystem(m.GetSink(), id)
+	sys := system.NewSystem(m.GetSink(), id)
 	sys.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		sys.SetDescription(desc)
@@ -291,7 +296,7 @@ func applySystem(spec map[string]any, m model.Model) error {
 	if parentID, hasParent, err := optionalUUIDRef(spec, "parent"); err != nil {
 		return err
 	} else if hasParent {
-		sys.SetParent(&model.SystemRef{SystemId: parentID})
+		sys.SetParent(&system.SystemRef{SystemId: parentID})
 	}
 
 	if err := applyAnnotations(sys.GetAnnotations(), spec); err != nil {
@@ -338,7 +343,7 @@ func applyAPI(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	api := model.NewAPI(m, id)
+	api := mdlapi.NewAPI(m.GetSink(), id)
 	api.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		api.SetDescription(desc)
@@ -349,7 +354,7 @@ func applyAPI(spec map[string]any, m model.Model) error {
 	} else {
 		api.SetVersion(ver)
 	}
-	api.SetSystem(&model.SystemRef{SystemId: systemID})
+	api.SetSystem(&system.SystemRef{SystemId: systemID})
 
 	if err := applyAnnotations(api.GetAnnotations(), spec); err != nil {
 		return err

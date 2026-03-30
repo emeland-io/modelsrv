@@ -12,7 +12,7 @@ import (
 
 	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/events"
-	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 func newPushCountingServer() (*httptest.Server, *int32) {
@@ -30,7 +30,7 @@ func newPushCountingServer() (*httptest.Server, *int32) {
 }
 
 func emitSystemCreate(sink events.EventSink, id uuid.UUID) error {
-	sys := model.NewSystem(sink, id)
+	sys := system.NewSystem(sink, id)
 	sys.SetDisplayName("bdd-system")
 	return sink.Receive(events.SystemResource, events.CreateOperation, id, sys)
 }

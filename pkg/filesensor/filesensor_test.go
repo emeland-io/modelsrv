@@ -11,6 +11,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 )
 
 var _ = Describe("DecodeDocuments", func() {
@@ -128,7 +129,7 @@ spec:
 		api := m.GetApiById(apiID)
 		Expect(api).NotTo(BeNil())
 		Expect(api.GetDisplayName()).To(Equal("Order API"))
-		Expect(api.GetType()).To(Equal(model.OpenAPI))
+		Expect(api.GetType()).To(Equal(mdlapi.OpenAPI))
 		Expect(api.GetSystem()).NotTo(BeNil())
 		Expect(api.GetSystem().SystemId).To(Equal(sysID))
 	})

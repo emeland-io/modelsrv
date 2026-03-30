@@ -8,6 +8,12 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/annotations"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 // ReplicationEventFromWire converts an OpenAPI push body into a domain [events.Event] for [model.EventApplier.Apply].
@@ -139,12 +145,12 @@ func replicationObjectFromWire(m model.Model, rt events.ResourceType, res *Event
 	}
 }
 
-func systemFromWire(m model.Model, os System) (model.System, error) {
+func systemFromWire(m model.Model, os System) (system.System, error) {
 	if os.SystemId == nil {
 		return nil, fmt.Errorf("system event missing systemId")
 	}
 	id := uuid.UUID(*os.SystemId)
-	sys := model.NewSystem(m.GetSink(), id)
+	sys := system.NewSystem(m.GetSink(), id)
 	sys.SetDisplayName(os.DisplayName)
 	if os.Description != nil {
 		sys.SetDescription(*os.Description)
@@ -160,42 +166,42 @@ func systemFromWire(m model.Model, os System) (model.System, error) {
 	return sys, nil
 }
 
-func systemInstanceFromWire(m model.Model, os SystemInstance) (model.SystemInstance, error) {
+func systemInstanceFromWire(m model.Model, os SystemInstance) (system.SystemInstance, error) {
 	id := uuid.UUID(os.SystemInstanceId)
-	si := model.NewSystemInstance(m, id)
+	si := system.NewSystemInstance(m.GetSink(), id)
 	si.SetDisplayName(os.DisplayName)
 	si.SetSystemRef(refSystem(m, uuid.UUID(os.System)))
 	if os.Context != nil {
-		si.SetContextRef(&model.ContextRef{ContextId: uuid.UUID(*os.Context)})
+		si.SetContextRef(&mdlctx.ContextRef{ContextId: uuid.UUID(*os.Context)})
 	}
 	mergeOapiAnnotations(si.GetAnnotations(), os.Annotations)
 	return si, nil
 }
 
-func apiFromWire(m model.Model, oa API) (model.API, error) {
+func apiFromWire(m model.Model, oa API) (mdlapi.API, error) {
 	if oa.ApiId == nil {
 		return nil, fmt.Errorf("API event missing apiId")
 	}
 	id := uuid.UUID(*oa.ApiId)
-	api := model.NewAPI(m, id)
-	api.SetDisplayName(oa.DisplayName)
+	dom := mdlapi.NewAPI(m.GetSink(), id)
+	dom.SetDisplayName(oa.DisplayName)
 	if oa.Description != nil {
-		api.SetDescription(*oa.Description)
+		dom.SetDescription(*oa.Description)
 	}
-	api.SetType(parseAPIType(oa.Type))
+	dom.SetType(parseAPIType(oa.Type))
 	if oa.Version != nil {
-		api.SetVersion(oapiVersionToModel(oa.Version))
+		dom.SetVersion(oapiVersionToModel(oa.Version))
 	}
 	if oa.System != nil {
-		api.SetSystem(refSystem(m, uuid.UUID(*oa.System)))
+		dom.SetSystem(refSystem(m, uuid.UUID(*oa.System)))
 	}
-	mergeOapiAnnotations(api.GetAnnotations(), oa.Annotations)
-	return api, nil
+	mergeOapiAnnotations(dom.GetAnnotations(), oa.Annotations)
+	return dom, nil
 }
 
-func apiInstanceFromWire(m model.Model, oa ApiInstance) (model.ApiInstance, error) {
+func apiInstanceFromWire(m model.Model, oa ApiInstance) (mdlapi.ApiInstance, error) {
 	id := uuid.UUID(oa.ApiInstanceId)
-	ai := model.NewApiInstance(m.GetSink(), id)
+	ai := mdlapi.NewApiInstance(m.GetSink(), id)
 	ai.SetDisplayName(oa.DisplayName)
 	if oa.Api != nil {
 		ai.SetApiRef(refAPI(m, uuid.UUID(*oa.Api)))
@@ -207,12 +213,12 @@ func apiInstanceFromWire(m model.Model, oa ApiInstance) (model.ApiInstance, erro
 	return ai, nil
 }
 
-func componentFromWire(m model.Model, oc Component) (model.Component, error) {
+func componentFromWire(m model.Model, oc Component) (component.Component, error) {
 	if oc.ComponentId == nil {
 		return nil, fmt.Errorf("component event missing componentId")
 	}
 	id := uuid.UUID(*oc.ComponentId)
-	c := model.NewComponent(m, id)
+	c := component.NewComponent(m.GetSink(), id)
 	c.SetDisplayName(oc.DisplayName)
 	if oc.Description != nil {
 		c.SetDescription(*oc.Description)
@@ -231,9 +237,9 @@ func componentFromWire(m model.Model, oc Component) (model.Component, error) {
 	return c, nil
 }
 
-func componentInstanceFromWire(m model.Model, oc ComponentInstance) (model.ComponentInstance, error) {
+func componentInstanceFromWire(m model.Model, oc ComponentInstance) (component.ComponentInstance, error) {
 	id := uuid.UUID(oc.ComponentInstanceId)
-	ci := model.NewComponentInstance(m, id)
+	ci := component.NewComponentInstance(m.GetSink(), id)
 	ci.SetDisplayName(oc.DisplayName)
 	ci.SetComponentRef(refComponent(m, uuid.UUID(oc.Component)))
 	ci.SetSystemInstance(refSystemInstance(m, uuid.UUID(oc.SystemInstance)))
@@ -241,48 +247,48 @@ func componentInstanceFromWire(m model.Model, oc ComponentInstance) (model.Compo
 	return ci, nil
 }
 
-func refSystem(m model.Model, id uuid.UUID) *model.SystemRef {
+func refSystem(m model.Model, id uuid.UUID) *system.SystemRef {
 	if id == uuid.Nil {
 		return nil
 	}
 	if s := m.GetSystemById(id); s != nil {
-		return &model.SystemRef{System: s, SystemId: id}
+		return &system.SystemRef{System: s, SystemId: id}
 	}
-	return &model.SystemRef{SystemId: id}
+	return &system.SystemRef{SystemId: id}
 }
 
-func refAPI(m model.Model, id uuid.UUID) *model.ApiRef {
+func refAPI(m model.Model, id uuid.UUID) *mdlapi.ApiRef {
 	if id == uuid.Nil {
 		return nil
 	}
 	if a := m.GetApiById(id); a != nil {
-		return &model.ApiRef{API: a, ApiID: id}
+		return &mdlapi.ApiRef{API: a, ApiID: id}
 	}
-	return &model.ApiRef{ApiID: id}
+	return &mdlapi.ApiRef{ApiID: id}
 }
 
-func refSystemInstance(m model.Model, id uuid.UUID) *model.SystemInstanceRef {
+func refSystemInstance(m model.Model, id uuid.UUID) *system.SystemInstanceRef {
 	if id == uuid.Nil {
 		return nil
 	}
 	if si := m.GetSystemInstanceById(id); si != nil {
-		return &model.SystemInstanceRef{SystemInstance: si, InstanceId: id}
+		return &system.SystemInstanceRef{SystemInstance: si, InstanceId: id}
 	}
-	return &model.SystemInstanceRef{InstanceId: id}
+	return &system.SystemInstanceRef{InstanceId: id}
 }
 
-func refComponent(m model.Model, id uuid.UUID) *model.ComponentRef {
+func refComponent(m model.Model, id uuid.UUID) *component.ComponentRef {
 	if id == uuid.Nil {
 		return nil
 	}
 	if c := m.GetComponentById(id); c != nil {
-		return &model.ComponentRef{Component: c, ComponentId: id}
+		return &component.ComponentRef{Component: c, ComponentId: id}
 	}
-	return &model.ComponentRef{ComponentId: id}
+	return &component.ComponentRef{ComponentId: id}
 }
 
-func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []model.ApiRef {
-	out := make([]model.ApiRef, 0, len(ids))
+func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []mdlapi.ApiRef {
+	out := make([]mdlapi.ApiRef, 0, len(ids))
 	for _, x := range ids {
 		id := uuid.UUID(x)
 		out = append(out, *refAPI(m, id))
@@ -290,11 +296,11 @@ func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []model.ApiRef {
 	return out
 }
 
-func oapiVersionToModel(v *Version) model.Version {
+func oapiVersionToModel(v *Version) common.Version {
 	if v == nil {
-		return model.Version{}
+		return common.Version{}
 	}
-	out := model.Version{Version: v.Version}
+	out := common.Version{Version: v.Version}
 	if v.AvailableFrom != nil {
 		t := *v.AvailableFrom
 		out.AvailableFrom = &t
@@ -310,12 +316,12 @@ func oapiVersionToModel(v *Version) model.Version {
 	return out
 }
 
-func parseAPIType(v interface{}) model.ApiType {
+func parseAPIType(v interface{}) mdlapi.ApiType {
 	s, _ := v.(string)
-	return model.ParseApiType(strings.TrimSpace(s))
+	return mdlapi.ParseApiType(strings.TrimSpace(s))
 }
 
-func mergeOapiAnnotations(dst model.Annotations, src *[]Annotation) {
+func mergeOapiAnnotations(dst annotations.Annotations, src *[]Annotation) {
 	if src == nil {
 		return
 	}

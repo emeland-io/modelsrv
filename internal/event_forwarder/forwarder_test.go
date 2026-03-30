@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 var _ = Describe("Event Forwarder", func() {
@@ -13,7 +14,7 @@ var _ = Describe("Event Forwarder", func() {
 		forwarder *eventForwarder
 		testModel model.Model
 		contextId uuid.UUID
-		ctx       model.Context
+		testCtx   mdlctx.Context
 	)
 
 	BeforeEach(func() {
@@ -23,15 +24,15 @@ var _ = Describe("Event Forwarder", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		contextId = uuid.New()
-		ctx = model.NewContext(forwarder, contextId)
-		ctx.SetDisplayName("Test Context")
-		ctx.SetDescription("a test context")
-		ctx.GetAnnotations().Add("a key", "a value")
+		testCtx = mdlctx.NewContext(forwarder, contextId)
+		testCtx.SetDisplayName("Test Context")
+		testCtx.SetDescription("a test context")
+		testCtx.GetAnnotations().Add("a key", "a value")
 	})
 
 	When("a context is added to the model", func() {
 		BeforeEach(func() {
-			err := testModel.AddContext(ctx)
+			err := testModel.AddContext(testCtx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

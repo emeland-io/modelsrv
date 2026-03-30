@@ -12,6 +12,11 @@ import (
 	"go.emeland.io/modelsrv/pkg/endpoint"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 func TestClient(t *testing.T) {
@@ -85,7 +90,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Context by ID", func() {
 			// first try with an invalid ID
 			context, err := testClient.GetContextById(uuid.New())
-			Expect(err).Should(Equal(model.ErrContextNotFound))
+			Expect(err).Should(Equal(common.ErrContextNotFound))
 			Expect(context).To(BeNil())
 
 			// now try with a valid ID
@@ -109,7 +114,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a System by ID", func() {
 			// first try with an invalid ID
 			system, err := testClient.GetSystemById(uuid.New())
-			Expect(err).Should(Equal(model.ErrSystemNotFound))
+			Expect(err).Should(Equal(common.ErrSystemNotFound))
 			Expect(system).To(BeNil())
 
 			// now try with a valid ID
@@ -133,7 +138,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a SystemInstance by ID", func() {
 			// first try with an invalid ID
 			systemInstance, err := testClient.GetSystemInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.ErrSystemInstanceNotFound))
+			Expect(err).Should(Equal(common.ErrSystemInstanceNotFound))
 			Expect(systemInstance).To(BeNil())
 
 			systemInstance, err = testClient.GetSystemInstanceById(systemInstanceId)
@@ -156,7 +161,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a API by ID", func() {
 			// first try with an invalid ID
 			api, err := testClient.GetAPIById(uuid.New())
-			Expect(err).Should(Equal(model.ErrApiNotFound))
+			Expect(err).Should(Equal(common.ErrApiNotFound))
 			Expect(api).To(BeNil())
 
 			api, err = testClient.GetAPIById(apiId)
@@ -179,7 +184,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a ApiInstance by ID", func() {
 			// first try with an invalid ID
 			apiInstance, err := testClient.GetApiInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.ErrApiInstanceNotFound))
+			Expect(err).Should(Equal(common.ErrApiInstanceNotFound))
 			Expect(apiInstance).To(BeNil())
 
 			apiInstance, err = testClient.GetApiInstanceById(apiInstanceId)
@@ -202,7 +207,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Component by ID", func() {
 			// first try with an invalid ID
 			component, err := testClient.GetComponentById(uuid.New())
-			Expect(err).Should(Equal(model.ErrComponentNotFound))
+			Expect(err).Should(Equal(common.ErrComponentNotFound))
 			Expect(component).To(BeNil())
 
 			component, err = testClient.GetComponentById(componentId)
@@ -225,7 +230,7 @@ var _ = Describe("Client", Ordered, func() {
 		It("return a Component Instance by ID", func() {
 			// first try with an invalid ID
 			componentInstance, err := testClient.GetComponentInstanceById(uuid.New())
-			Expect(err).Should(Equal(model.ErrComponentInstanceNotFound))
+			Expect(err).Should(Equal(common.ErrComponentInstanceNotFound))
 			Expect(componentInstance).To(BeNil())
 
 			componentInstance, err = testClient.GetComponentInstanceById(componentInstanceId)
@@ -241,65 +246,65 @@ var _ = Describe("Client", Ordered, func() {
 func loadModel(target model.Model) error {
 	// create simple System with single Component and API
 
-	context := model.NewContext(target.GetSink(), contextId)
-	context.SetDisplayName("Test Context")
+	c := mdlctx.NewContext(target.GetSink(), contextId)
+	c.SetDisplayName("Test Context")
 
-	err := target.AddContext(context)
+	err := target.AddContext(c)
 	if err != nil {
 		return err
 	}
 
-	system := model.NewSystem(target.GetSink(), systemId)
-	system.SetDisplayName("Test System")
-	system.SetVersion(model.Version{})
-	err = target.AddSystem(system)
+	sys := system.NewSystem(target.GetSink(), systemId)
+	sys.SetDisplayName("Test System")
+	sys.SetVersion(common.Version{})
+	err = target.AddSystem(sys)
 	if err != nil {
 		return err
 	}
 
-	component := model.NewComponent(target, componentId)
-	component.SetDisplayName("Test Component")
-	component.SetSystem(&model.SystemRef{
-		System: system,
+	comp := component.NewComponent(target.GetSink(), componentId)
+	comp.SetDisplayName("Test Component")
+	comp.SetSystem(&system.SystemRef{
+		System: sys,
 	})
-	err = target.AddComponent(component)
+	err = target.AddComponent(comp)
 	if err != nil {
 		return err
 	}
 
-	componentInstance := model.NewComponentInstance(target, componentInstanceId)
+	componentInstance := component.NewComponentInstance(target.GetSink(), componentInstanceId)
 	componentInstance.SetDisplayName("Test ComponentInstance")
-	componentInstance.SetComponentRef(&model.ComponentRef{
-		Component: component,
+	componentInstance.SetComponentRef(&component.ComponentRef{
+		Component: comp,
 	})
 	err = target.AddComponentInstance(componentInstance)
 	if err != nil {
 		return err
 	}
 
-	api := model.NewAPI(target, apiId)
-	api.SetDisplayName("Test API")
-	api.SetSystem(&model.SystemRef{
-		System: system,
+	a := mdlapi.NewAPI(target.GetSink(), apiId)
+	a.SetDisplayName("Test API")
+	a.SetSystem(&system.SystemRef{
+		System: sys,
 	})
-	err = target.AddApi(api)
+	err = target.AddApi(a)
 	if err != nil {
 		return err
 	}
 
-	apiInstance := model.NewApiInstance(target.GetSink(), apiInstanceId)
+	apiInstance := mdlapi.NewApiInstance(target.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("Test ApiInstance")
-	apiInstance.SetApiRefByRef(api)
+	apiInstance.SetApiRefByRef(a)
 	err = target.AddApiInstance(apiInstance)
 	if err != nil {
 		return err
 	}
 
 	// TODO: set context in which this instance exists
-	systemInstance := model.NewSystemInstance(target, systemInstanceId)
+	systemInstance := system.NewSystemInstance(target.GetSink(), systemInstanceId)
 	systemInstance.SetDisplayName("Test SystemInstances")
-	systemInstance.SetSystemRef(&model.SystemRef{
-		System: system,
+	systemInstance.SetSystemRef(&system.SystemRef{
+		System: sys,
 	})
 	err = target.AddSystemInstance(systemInstance)
 	if err != nil {

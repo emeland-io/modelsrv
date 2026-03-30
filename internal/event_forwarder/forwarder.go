@@ -8,7 +8,8 @@ import (
 	"go.emeland.io/modelsrv/internal/util"
 	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/events"
-	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/annotations"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 type event struct {
@@ -38,8 +39,8 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 		switch o := obj.(type) {
 		case string:
 			objJsons = append(objJsons, o)
-		case model.Context:
-			jsonStr, err := json.Marshal(convertContextToDTO(obj.(model.Context)))
+		case mdlctx.Context:
+			jsonStr, err := json.Marshal(convertContextToDTO(obj.(mdlctx.Context)))
 			if err != nil {
 				return fmt.Errorf("failed to marshal context: %w", err)
 			}
@@ -58,7 +59,7 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 	return e.queue.Enqueue(event)
 }
 
-func convertContextToDTO(context model.Context) client.Context {
+func convertContextToDTO(context mdlctx.Context) client.Context {
 	description := context.GetDescription()
 
 	retval := client.Context{
@@ -71,7 +72,7 @@ func convertContextToDTO(context model.Context) client.Context {
 	return retval
 }
 
-func convertAnnotationsToDTO(modelAnnons model.Annotations) *[]client.Annotation {
+func convertAnnotationsToDTO(modelAnnons annotations.Annotations) *[]client.Annotation {
 
 	retval := make([]client.Annotation, 0)
 	for key := range modelAnnons.GetKeys() {

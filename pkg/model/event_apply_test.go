@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 var _ = Describe("EventApplier.Apply (replication)", func() {
@@ -24,7 +25,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 	When("operation is create or update", func() {
 		It("adds a system when Objects holds a System", func() {
 			sysID := uuid.New()
-			sys := model.NewSystem(sink, sysID)
+			sys := system.NewSystem(sink, sysID)
 			sys.SetDisplayName("replicated-system")
 
 			err := m.Apply(events.Event{
@@ -40,7 +41,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 
 		It("treats update like create for an existing system id", func() {
 			sysID := uuid.New()
-			first := model.NewSystem(sink, sysID)
+			first := system.NewSystem(sink, sysID)
 			first.SetDisplayName("v1")
 			Expect(m.Apply(events.Event{
 				ResourceType: events.SystemResource,
@@ -49,7 +50,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 				Objects:      []any{first},
 			})).To(Succeed())
 
-			second := model.NewSystem(sink, sysID)
+			second := system.NewSystem(sink, sysID)
 			second.SetDisplayName("v2")
 			err := m.Apply(events.Event{
 				ResourceType: events.SystemResource,
@@ -98,7 +99,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 	When("operation is delete", func() {
 		It("removes an existing system", func() {
 			sysID := uuid.New()
-			sys := model.NewSystem(sink, sysID)
+			sys := system.NewSystem(sink, sysID)
 			sys.SetDisplayName("to-delete")
 			Expect(m.AddSystem(sys)).To(Succeed())
 
@@ -138,7 +139,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 				ResourceType: events.SystemResource,
 				Operation:    events.UnknownOperation,
 				ResourceId:   uuid.New(),
-				Objects:      []any{model.NewSystem(sink, uuid.New())},
+				Objects:      []any{system.NewSystem(sink, uuid.New())},
 			})
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unsupported operation"))
