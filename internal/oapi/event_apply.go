@@ -318,7 +318,8 @@ func oapiVersionToModel(v *Version) common.Version {
 
 func parseAPIType(v interface{}) mdlapi.ApiType {
 	s, _ := v.(string)
-	return mdlapi.ParseApiType(strings.TrimSpace(s))
+	r, _ := mdlapi.ParseApiType(strings.TrimSpace(s))
+	return r
 }
 
 func mergeOapiAnnotations(dst annotations.Annotations, src *[]Annotation) {

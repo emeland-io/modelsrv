@@ -172,20 +172,7 @@ func parseOptionalTime(m map[string]any, key string) (*time.Time, error) {
 }
 
 func parseApiType(s string) (mdlapi.ApiType, error) {
-	switch strings.TrimSpace(s) {
-	case "OpenAPI":
-		return mdlapi.OpenAPI, nil
-	case "GraphQL":
-		return mdlapi.GraphQL, nil
-	case "GRPC":
-		return mdlapi.GRPC, nil
-	case "Other":
-		return mdlapi.Other, nil
-	case "Unknown":
-		return mdlapi.Unknown, nil
-	default:
-		return mdlapi.Unknown, fmt.Errorf("invalid API type %q (expected OpenAPI, GraphQL, GRPC, Other, or Unknown)", s)
-	}
+	return mdlapi.ParseApiType(strings.TrimSpace(s))
 }
 
 // ApplyDocument validates and applies a single decoded [Document] to the model.

@@ -1,6 +1,9 @@
 package api
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // ApiType classifies an API (aligned with the Emerging Enterprise Landscape OpenAPI enum).
 type ApiType int
@@ -31,11 +34,11 @@ func (t ApiType) String() string {
 
 // ParseApiType parses a string into an ApiType, ignoring case. Unknown is returned for invalid values.
 // The function does not trim the input string, so leading/trailing whitespace will cause parsing to fail. Use strings.TrimSpace before calling if needed.
-func ParseApiType(s string) ApiType {
+func ParseApiType(s string) (ApiType, error) {
 	for key, val := range apiTypeValues {
 		if strings.EqualFold(val, s) {
-			return key
+			return key, nil
 		}
 	}
-	return Unknown
+	return Unknown, fmt.Errorf("invalid API type %q (expected OpenAPI, GraphQL, GRPC, Other, or Unknown)", s)
 }
