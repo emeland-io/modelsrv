@@ -1,4 +1,4 @@
-//go:generate go run ./gen
+//go:generate go run ../../tools/gen
 package model
 
 //go:generate ../../bin/mockgen -destination=../mocks/mock_model.go -package=mocks . Model
@@ -93,7 +93,8 @@ type Model interface {
 }
 
 type modelData struct {
-	sink events.EventSink
+	sink     events.EventSink
+	handlers map[events.ResourceType]resourceHandler
 
 	nodeTypesByUUID map[uuid.UUID]node.NodeType
 	nodesByUUID     map[uuid.UUID]node.Node
@@ -123,7 +124,8 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 	}
 
 	model := &modelData{
-		sink: sink,
+		sink:     sink,
+		handlers: maps.Clone(handlerRegistry),
 
 		nodesByUUID:     make(map[uuid.UUID]node.Node),
 		nodeTypesByUUID: make(map[uuid.UUID]node.NodeType),
