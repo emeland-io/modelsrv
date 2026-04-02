@@ -1,127 +1,118 @@
-//go:generate go run generate_events.go
+//go:generate go run ../../tools/gen
 package model
 
-//go:generate mockgen -destination=../mocks/mock_model.go -package=mocks . Model
-//go:generate mockgen -destination=../mocks/mock_finding_type.go -package=mocks . FindingType
+//go:generate ../../bin/mockgen -destination=../mocks/mock_model.go -package=mocks . Model
 
 import (
 	"context"
 	"fmt"
 	"maps"
 	"slices"
-	"time"
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
-)
-
-var (
-	NodeNotFoundError              error = fmt.Errorf("Node not found")
-	NodeTypeNotFoundError          error = fmt.Errorf("Node Type not found")
-	ContextNotFoundError           error = fmt.Errorf("Context not found")
-	ContextTypeNotFoundError       error = fmt.Errorf("Context Type not found")
-	SystemNotFoundError            error = fmt.Errorf("System not found")
-	SystemInstanceNotFoundError    error = fmt.Errorf("System Instance not found")
-	ApiNotFoundError               error = fmt.Errorf("API not found")
-	ApiInstanceNotFoundError       error = fmt.Errorf("API Instance not found")
-	ComponentNotFoundError         error = fmt.Errorf("Component not found")
-	ComponentInstanceNotFoundError error = fmt.Errorf("Component Instance not found")
-	FindingNotFoundError           error = fmt.Errorf("Finding not found")
-	FindingTypeNotFoundError       error = fmt.Errorf("Finding Type not found")
-
-	UUIDNotSetError error = fmt.Errorf("resource identifier UUID not set")
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlevent "go.emeland.io/modelsrv/pkg/model/event"
+	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/node"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 type Model interface {
+	mdlevent.EventApplier
 	GetSink() events.EventSink
 
-	AddNode(node Node) error
+	AddNode(n node.Node) error
 	DeleteNodeById(id uuid.UUID) error
-	GetNodes() ([]Node, error)
-	GetNodeById(id uuid.UUID) Node
+	GetNodes() ([]node.Node, error)
+	GetNodeById(id uuid.UUID) node.Node
 
-	AddNodeType(nodeType NodeType) error
+	AddNodeType(nodeType node.NodeType) error
 	DeleteNodeTypeById(id uuid.UUID) error
-	GetNodeTypes() ([]NodeType, error)
-	GetNodeTypeById(id uuid.UUID) NodeType
+	GetNodeTypes() ([]node.NodeType, error)
+	GetNodeTypeById(id uuid.UUID) node.NodeType
 
-	AddContext(context Context) error
+	AddContext(c mdlctx.Context) error
 	DeleteContextById(id uuid.UUID) error
-	GetContexts() ([]Context, error)
-	GetContextById(id uuid.UUID) Context
+	GetContexts() ([]mdlctx.Context, error)
+	GetContextById(id uuid.UUID) mdlctx.Context
 
-	AddContextType(contextType ContextType) error
+	AddContextType(contextType mdlctx.ContextType) error
 	DeleteContextTypeById(id uuid.UUID) error
-	GetContextTypes() ([]ContextType, error)
-	GetContextTypeById(id uuid.UUID) ContextType
+	GetContextTypes() ([]mdlctx.ContextType, error)
+	GetContextTypeById(id uuid.UUID) mdlctx.ContextType
 
-	AddSystem(sys System) error
+	AddSystem(sys system.System) error
 	DeleteSystemById(id uuid.UUID) error
-	GetSystems() ([]System, error)
-	GetSystemById(id uuid.UUID) System
+	GetSystems() ([]system.System, error)
+	GetSystemById(id uuid.UUID) system.System
 
-	AddApi(api API) error
+	AddApi(a mdlapi.API) error
 	DeleteApiById(id uuid.UUID) error
-	GetApis() ([]API, error)
-	GetApiById(id uuid.UUID) API
+	GetApis() ([]mdlapi.API, error)
+	GetApiById(id uuid.UUID) mdlapi.API
 
-	// ApiRefByID builds an [ApiRef] for a registered API, or nil if not found.
-	ApiRefByID(apiId uuid.UUID) *ApiRef
+	// ApiRefByID builds an [mdlapi.ApiRef] for a registered API, or nil if not found.
+	ApiRefByID(apiId uuid.UUID) *mdlapi.ApiRef
 
-	AddComponent(comp Component) error
+	AddComponent(comp component.Component) error
 	DeleteComponentById(id uuid.UUID) error
-	GetComponents() ([]Component, error)
-	GetComponentById(id uuid.UUID) Component
+	GetComponents() ([]component.Component, error)
+	GetComponentById(id uuid.UUID) component.Component
 
-	AddSystemInstance(instance SystemInstance) error
+	AddSystemInstance(instance system.SystemInstance) error
 	DeleteSystemInstanceById(id uuid.UUID) error
-	GetSystemInstances() ([]SystemInstance, error)
-	GetSystemInstanceById(id uuid.UUID) SystemInstance
+	GetSystemInstances() ([]system.SystemInstance, error)
+	GetSystemInstanceById(id uuid.UUID) system.SystemInstance
 
-	// SystemInstanceRefByID builds a [SystemInstanceRef] for a registered instance, or nil if not found.
-	SystemInstanceRefByID(instanceId uuid.UUID) *SystemInstanceRef
+	// SystemInstanceRefByID builds a [system.SystemInstanceRef] for a registered instance, or nil if not found.
+	SystemInstanceRefByID(instanceId uuid.UUID) *system.SystemInstanceRef
 
-	AddApiInstance(instance ApiInstance) error
+	AddApiInstance(instance mdlapi.ApiInstance) error
 	DeleteApiInstanceById(id uuid.UUID) error
-	GetApiInstances() ([]ApiInstance, error)
-	GetApiInstanceById(id uuid.UUID) ApiInstance
+	GetApiInstances() ([]mdlapi.ApiInstance, error)
+	GetApiInstanceById(id uuid.UUID) mdlapi.ApiInstance
 
-	AddComponentInstance(instance ComponentInstance) error
+	AddComponentInstance(instance component.ComponentInstance) error
 	DeleteComponentInstanceById(id uuid.UUID) error
-	GetComponentInstances() ([]ComponentInstance, error)
-	GetComponentInstanceById(id uuid.UUID) ComponentInstance
+	GetComponentInstances() ([]component.ComponentInstance, error)
+	GetComponentInstanceById(id uuid.UUID) component.ComponentInstance
 
-	AddFinding(finding Finding, name string) error
+	AddFinding(f finding.Finding, name string) error
 	DeleteFindingById(id uuid.UUID) error
-	GetFindings() ([]Finding, error)
-	GetFindingById(id uuid.UUID) Finding
+	GetFindings() ([]finding.Finding, error)
+	GetFindingById(id uuid.UUID) finding.Finding
 
-	AddFindingType(findingType FindingType) error
+	AddFindingType(findingType finding.FindingType) error
 	DeleteFindingTypeById(id uuid.UUID) error
-	GetFindingTypes() ([]FindingType, error)
-	GetFindingTypeById(id uuid.UUID) FindingType
+	GetFindingTypes() ([]finding.FindingType, error)
+	GetFindingTypeById(id uuid.UUID) finding.FindingType
 }
 
 type modelData struct {
-	sink events.EventSink
+	sink     events.EventSink
+	handlers map[events.ResourceType]resourceHandler
 
-	nodeTypesByUUID map[uuid.UUID]NodeType
-	nodesByUUID     map[uuid.UUID]Node
+	nodeTypesByUUID map[uuid.UUID]node.NodeType
+	nodesByUUID     map[uuid.UUID]node.Node
 
-	contextsByUUID     map[uuid.UUID]Context
-	contextTypesByUUID map[uuid.UUID]ContextType
-	contextsCache      []Context
+	contextsByUUID     map[uuid.UUID]mdlctx.Context
+	contextTypesByUUID map[uuid.UUID]mdlctx.ContextType
+	contextsCache      []mdlctx.Context
 
-	systemsByUUID    map[uuid.UUID]System
-	apisByUUID       map[uuid.UUID]API
-	componentsByUUID map[uuid.UUID]Component
+	systemsByUUID    map[uuid.UUID]system.System
+	apisByUUID       map[uuid.UUID]mdlapi.API
+	componentsByUUID map[uuid.UUID]component.Component
 
-	systemInstancesByUUID    map[uuid.UUID]SystemInstance
-	apiInstancesByUUID       map[uuid.UUID]ApiInstance
-	componentInstancesByUUID map[uuid.UUID]ComponentInstance
+	systemInstancesByUUID    map[uuid.UUID]system.SystemInstance
+	apiInstancesByUUID       map[uuid.UUID]mdlapi.ApiInstance
+	componentInstancesByUUID map[uuid.UUID]component.ComponentInstance
 
-	findingsByUUID     map[uuid.UUID]Finding
-	findingTypesByUUID map[uuid.UUID]FindingType
+	findingsByUUID     map[uuid.UUID]finding.Finding
+	findingTypesByUUID map[uuid.UUID]finding.FindingType
 }
 
 // ensure Model interface is implemented correctly
@@ -133,24 +124,25 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 	}
 
 	model := &modelData{
-		sink: sink,
+		sink:     sink,
+		handlers: maps.Clone(handlerRegistry),
 
-		nodesByUUID:     make(map[uuid.UUID]Node),
-		nodeTypesByUUID: make(map[uuid.UUID]NodeType),
+		nodesByUUID:     make(map[uuid.UUID]node.Node),
+		nodeTypesByUUID: make(map[uuid.UUID]node.NodeType),
 
-		contextsByUUID:     make(map[uuid.UUID]Context),
-		contextTypesByUUID: make(map[uuid.UUID]ContextType),
+		contextsByUUID:     make(map[uuid.UUID]mdlctx.Context),
+		contextTypesByUUID: make(map[uuid.UUID]mdlctx.ContextType),
 
-		systemsByUUID:    make(map[uuid.UUID]System),
-		apisByUUID:       make(map[uuid.UUID]API),
-		componentsByUUID: make(map[uuid.UUID]Component),
+		systemsByUUID:    make(map[uuid.UUID]system.System),
+		apisByUUID:       make(map[uuid.UUID]mdlapi.API),
+		componentsByUUID: make(map[uuid.UUID]component.Component),
 
-		systemInstancesByUUID:    make(map[uuid.UUID]SystemInstance),
-		apiInstancesByUUID:       make(map[uuid.UUID]ApiInstance),
-		componentInstancesByUUID: make(map[uuid.UUID]ComponentInstance),
+		systemInstancesByUUID:    make(map[uuid.UUID]system.SystemInstance),
+		apiInstancesByUUID:       make(map[uuid.UUID]mdlapi.ApiInstance),
+		componentInstancesByUUID: make(map[uuid.UUID]component.ComponentInstance),
 
-		findingsByUUID:     make(map[uuid.UUID]Finding),
-		findingTypesByUUID: make(map[uuid.UUID]FindingType),
+		findingsByUUID:     make(map[uuid.UUID]finding.Finding),
+		findingTypesByUUID: make(map[uuid.UUID]finding.FindingType),
 	}
 
 	return model, nil
@@ -158,63 +150,6 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 func (m *modelData) GetCurrentEventSequenceId(ctx context.Context) (string, error) {
 	return "forty-two", nil
-}
-
-type Version struct {
-	Version        string
-	AvailableFrom  *time.Time
-	DeprecatedFrom *time.Time
-	TerminatedFrom *time.Time
-}
-
-func (v Version) IsEqual(other Version) bool {
-	if v.Version != other.Version {
-		return false
-	}
-
-	if (v.AvailableFrom == nil) != (other.AvailableFrom == nil) {
-		return false
-	}
-	if v.AvailableFrom != nil && !v.AvailableFrom.Equal(*other.AvailableFrom) {
-		return false
-	}
-
-	if (v.DeprecatedFrom == nil) != (other.DeprecatedFrom == nil) {
-		return false
-	}
-	if v.DeprecatedFrom != nil && !v.DeprecatedFrom.Equal(*other.DeprecatedFrom) {
-		return false
-	}
-
-	if (v.TerminatedFrom == nil) != (other.TerminatedFrom == nil) {
-		return false
-	}
-	if v.TerminatedFrom != nil && !v.TerminatedFrom.Equal(*other.TerminatedFrom) {
-		return false
-	}
-
-	return true
-}
-
-type EntityVersion struct {
-	Name    string
-	Version string
-}
-
-type ComponentRef struct {
-	Component    Component
-	ComponentId  uuid.UUID
-	ComponentRef *EntityVersion
-}
-
-type SystemInstanceRef struct {
-	SystemInstance SystemInstance
-	InstanceId     uuid.UUID
-}
-
-type ResourceRef struct {
-	ResourceId   uuid.UUID
-	ResourceType events.ResourceType
 }
 
 // GetSink implements [Model].
@@ -233,7 +168,7 @@ func addEventEnabled[T any](
 ) error {
 	id := getId(obj)
 	if id == uuid.Nil {
-		return UUIDNotSetError
+		return common.ErrUUIDNotSet
 	}
 	op := events.CreateOperation
 	if _, exists := store[id]; exists {
@@ -241,7 +176,9 @@ func addEventEnabled[T any](
 	}
 	setRegistered(obj)
 	store[id] = obj
-	m.sink.Receive(resourceType, op, id, obj)
+	if err := m.sink.Receive(resourceType, op, id, obj); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", op, " event: ", err)
+	}
 	return nil
 }
 
@@ -258,7 +195,9 @@ func deleteEventEnabled[T any](
 		return notFoundError
 	}
 	delete(store, id)
-	m.sink.Receive(resourceType, events.DeleteOperation, id)
+	if err := m.sink.Receive(resourceType, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", resourceType, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
@@ -278,30 +217,32 @@ func getAllEventEnabled[T any](store map[uuid.UUID]T) ([]T, error) {
 }
 
 // AddContext implements Model.
-func (m *modelData) AddContext(context Context) error {
+func (m *modelData) AddContext(c mdlctx.Context) error {
 
 	// invalidate the cache
 	m.contextsCache = nil
 
 	// TODO: parse parent ref if set
 
-	if context.GetContextId() == uuid.Nil {
-		return UUIDNotSetError
+	if c.GetContextId() == uuid.Nil {
+		return common.ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
 
 	// check if this would overwrite an existing entry -> an update
-	if _, ok := m.contextsByUUID[context.GetContextId()]; ok {
+	if _, ok := m.contextsByUUID[c.GetContextId()]; ok {
 		op = events.UpdateOperation
 	}
 
-	m.sink.Receive(events.ContextResource, op, context.GetContextId(), context)
+	if err := m.sink.Receive(events.ContextResource, op, c.GetContextId(), c); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
+	}
 
-	m.contextsByUUID[context.GetContextId()] = context
+	m.contextsByUUID[c.GetContextId()] = c
 
 	// mark Context as registered to activate sending events when updating fields
-	context.Register()
+	c.Register()
 
 	return nil
 }
@@ -310,7 +251,7 @@ func (m *modelData) AddContext(context Context) error {
 func (m *modelData) DeleteContextById(id uuid.UUID) error {
 	_, exists := m.contextsByUUID[id]
 	if !exists {
-		return ContextNotFoundError
+		return common.ErrContextNotFound
 	}
 
 	// invalidate the cache
@@ -318,21 +259,23 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 
 	delete(m.contextsByUUID, id)
 
-	m.sink.Receive(events.ContextResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
 
-func (m *modelData) GetContextById(id uuid.UUID) Context {
-	ctx, exists := m.contextsByUUID[id]
+func (m *modelData) GetContextById(id uuid.UUID) mdlctx.Context {
+	dctx, exists := m.contextsByUUID[id]
 	if !exists {
 		return nil
 	}
-	return ctx
+	return dctx
 }
 
 // GetContexts implements Model.
-func (m *modelData) GetContexts() ([]Context, error) {
+func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
 	/* since this operation would require O(n) and is therfore potentially quite costly, lets cache that
 	   Any write operations to contextsByUUID must invalidate that
 	*/
@@ -340,9 +283,9 @@ func (m *modelData) GetContexts() ([]Context, error) {
 		return m.contextsCache, nil
 	}
 
-	contextArr := make([]Context, 0)
-	for ctx := range maps.Values(m.contextsByUUID) {
-		contextArr = append(contextArr, ctx)
+	contextArr := make([]mdlctx.Context, 0)
+	for c := range maps.Values(m.contextsByUUID) {
+		contextArr = append(contextArr, c)
 	}
 	m.contextsCache = contextArr
 
@@ -350,9 +293,9 @@ func (m *modelData) GetContexts() ([]Context, error) {
 }
 
 // AddContextType implements [Model].
-func (m *modelData) AddContextType(contextType ContextType) error {
+func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
 	if contextType.GetContextTypeId() == uuid.Nil {
-		return UUIDNotSetError
+		return common.ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -361,7 +304,9 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 	if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType)
+	if err := m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
 
@@ -375,18 +320,20 @@ func (m *modelData) AddContextType(contextType ContextType) error {
 func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
 	_, exists := m.contextTypesByUUID[id]
 	if !exists {
-		return ContextTypeNotFoundError
+		return common.ErrContextTypeNotFound
 	}
 
 	delete(m.contextTypesByUUID, id)
 
-	m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
 
 // GetContextTypeById implements [Model].
-func (m *modelData) GetContextTypeById(id uuid.UUID) ContextType {
+func (m *modelData) GetContextTypeById(id uuid.UUID) mdlctx.ContextType {
 	contextType, exists := m.contextTypesByUUID[id]
 	if !exists {
 		return nil
@@ -395,57 +342,57 @@ func (m *modelData) GetContextTypeById(id uuid.UUID) ContextType {
 }
 
 // GetContextTypes implements [Model].
-func (m *modelData) GetContextTypes() ([]ContextType, error) {
+func (m *modelData) GetContextTypes() ([]mdlctx.ContextType, error) {
 	contextTypeArr := slices.Collect(maps.Values(m.contextTypesByUUID))
 	return contextTypeArr, nil
 }
 
 // AddNode implements [Model].
-func (m *modelData) AddNode(node Node) error {
-	return addEventEnabled(m, node, Node.GetNodeId, func(n Node) { n.Register() }, m.nodesByUUID, events.NodeResource)
+func (m *modelData) AddNode(n node.Node) error {
+	return addEventEnabled(m, n, node.Node.GetNodeId, func(x node.Node) { x.Register() }, m.nodesByUUID, events.NodeResource)
 }
 
 // DeleteNodeById implements [Model].
 func (m *modelData) DeleteNodeById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.nodesByUUID, events.NodeResource, NodeNotFoundError)
+	return deleteEventEnabled(m, id, m.nodesByUUID, events.NodeResource, common.ErrNodeNotFound)
 }
 
 // GetNodeById implements [Model].
-func (m *modelData) GetNodeById(id uuid.UUID) Node {
+func (m *modelData) GetNodeById(id uuid.UUID) node.Node {
 	return getEventEnabled(id, m.nodesByUUID)
 }
 
 // GetNodes implements [Model].
-func (m *modelData) GetNodes() ([]Node, error) {
+func (m *modelData) GetNodes() ([]node.Node, error) {
 	return getAllEventEnabled(m.nodesByUUID)
 }
 
 // AddNodeType implements [Model].
-func (m *modelData) AddNodeType(nodeType NodeType) error {
-	return addEventEnabled(m, nodeType, NodeType.GetNodeTypeId, func(nt NodeType) { nt.Register() }, m.nodeTypesByUUID, events.NodeTypeResource)
+func (m *modelData) AddNodeType(nodeType node.NodeType) error {
+	return addEventEnabled(m, nodeType, node.NodeType.GetNodeTypeId, func(nt node.NodeType) { nt.Register() }, m.nodeTypesByUUID, events.NodeTypeResource)
 }
 
 // DeleteNodeTypeById implements [Model].
 func (m *modelData) DeleteNodeTypeById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.nodeTypesByUUID, events.NodeTypeResource, NodeTypeNotFoundError)
+	return deleteEventEnabled(m, id, m.nodeTypesByUUID, events.NodeTypeResource, common.ErrNodeTypeNotFound)
 }
 
 // GetNodeTypeById implements [Model].
-func (m *modelData) GetNodeTypeById(id uuid.UUID) NodeType {
+func (m *modelData) GetNodeTypeById(id uuid.UUID) node.NodeType {
 	return getEventEnabled(id, m.nodeTypesByUUID)
 }
 
 // GetNodeTypes implements [Model].
-func (m *modelData) GetNodeTypes() ([]NodeType, error) {
+func (m *modelData) GetNodeTypes() ([]node.NodeType, error) {
 	return getAllEventEnabled(m.nodeTypesByUUID)
 }
 
 // AddSystem implements Model.
-func (m *modelData) AddSystem(sys System) error {
+func (m *modelData) AddSystem(sys system.System) error {
 
 	// parse parent ref if set
 	if sys.GetSystemId() == uuid.Nil {
-		return UUIDNotSetError
+		return common.ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -454,7 +401,9 @@ func (m *modelData) AddSystem(sys System) error {
 	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys)
+	if err := m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", op, " event: ", err)
+	}
 
 	m.systemsByUUID[sys.GetSystemId()] = sys
 
@@ -468,164 +417,168 @@ func (m *modelData) AddSystem(sys System) error {
 func (m *modelData) DeleteSystemById(id uuid.UUID) error {
 	_, exists := m.systemsByUUID[id]
 	if !exists {
-		return SystemNotFoundError
+		return common.ErrSystemNotFound
 	}
 
 	delete(m.systemsByUUID, id)
 
-	m.sink.Receive(events.SystemResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.SystemResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.SystemResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
 
 // GetSystems implements Model.
-func (m *modelData) GetSystems() ([]System, error) {
+func (m *modelData) GetSystems() ([]system.System, error) {
 	systemArr := slices.Collect(maps.Values(m.systemsByUUID))
 	return systemArr, nil
 }
 
 // GetSystemById implements Model.
-func (m *modelData) GetSystemById(id uuid.UUID) System {
-	system, exists := m.systemsByUUID[id]
+func (m *modelData) GetSystemById(id uuid.UUID) system.System {
+	sys, exists := m.systemsByUUID[id]
 	if !exists {
 		return nil
 	}
-	return system
+	return sys
 }
 
 // AddApi implements Model.
-func (m *modelData) AddApi(api API) error {
-	return addEventEnabled(m, api, API.GetApiId, func(a API) { a.Register() }, m.apisByUUID, events.APIResource)
+func (m *modelData) AddApi(a mdlapi.API) error {
+	return addEventEnabled(m, a, mdlapi.API.GetApiId, func(x mdlapi.API) { x.Register() }, m.apisByUUID, events.APIResource)
 }
 
 // AddApiInstance implements Model.
-func (m *modelData) AddApiInstance(instance ApiInstance) error {
-	return addEventEnabled(m, instance, ApiInstance.GetInstanceId, func(i ApiInstance) { i.Register() }, m.apiInstancesByUUID, events.APIInstanceResource)
+func (m *modelData) AddApiInstance(instance mdlapi.ApiInstance) error {
+	return addEventEnabled(m, instance, mdlapi.ApiInstance.GetInstanceId, func(i mdlapi.ApiInstance) { i.Register() }, m.apiInstancesByUUID, events.APIInstanceResource)
 }
 
 // AddComponent implements Model.
-func (m *modelData) AddComponent(comp Component) error {
-	return addEventEnabled(m, comp, Component.GetComponentId, func(c Component) { c.Register() }, m.componentsByUUID, events.ComponentResource)
+func (m *modelData) AddComponent(comp component.Component) error {
+	return addEventEnabled(m, comp, component.Component.GetComponentId, func(c component.Component) { c.Register() }, m.componentsByUUID, events.ComponentResource)
 }
 
 // AddComponentInstance implements Model.
-func (m *modelData) AddComponentInstance(instance ComponentInstance) error {
-	return addEventEnabled(m, instance, ComponentInstance.GetInstanceId, func(i ComponentInstance) { i.Register() }, m.componentInstancesByUUID, events.ComponentInstanceResource)
+func (m *modelData) AddComponentInstance(instance component.ComponentInstance) error {
+	return addEventEnabled(m, instance, component.ComponentInstance.GetInstanceId, func(i component.ComponentInstance) { i.Register() }, m.componentInstancesByUUID, events.ComponentInstanceResource)
 }
 
 // AddSystemInstance implements Model.
-func (m *modelData) AddSystemInstance(instance SystemInstance) error {
-	return addEventEnabled(m, instance, SystemInstance.GetInstanceId, func(i SystemInstance) { i.Register() }, m.systemInstancesByUUID, events.SystemInstanceResource)
+func (m *modelData) AddSystemInstance(instance system.SystemInstance) error {
+	return addEventEnabled(m, instance, system.SystemInstance.GetInstanceId, func(i system.SystemInstance) { i.Register() }, m.systemInstancesByUUID, events.SystemInstanceResource)
 }
 
 // DeleteApiByResourceName implements Model.
 func (m *modelData) DeleteApiById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.apisByUUID, events.APIResource, ApiNotFoundError)
+	return deleteEventEnabled(m, id, m.apisByUUID, events.APIResource, common.ErrApiNotFound)
 }
 
 // DeleteApiInstanceByResourceName implements Model.
 func (m *modelData) DeleteApiInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.apiInstancesByUUID, events.APIInstanceResource, ApiInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.apiInstancesByUUID, events.APIInstanceResource, common.ErrApiInstanceNotFound)
 }
 
 // DeleteComponentByResourceName implements Model.
 func (m *modelData) DeleteComponentById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.componentsByUUID, events.ComponentResource, ComponentNotFoundError)
+	return deleteEventEnabled(m, id, m.componentsByUUID, events.ComponentResource, common.ErrComponentNotFound)
 }
 
 // DeleteComponentInstanceByResourceName implements Model.
 func (m *modelData) DeleteComponentInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.componentInstancesByUUID, events.ComponentInstanceResource, ComponentInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.componentInstancesByUUID, events.ComponentInstanceResource, common.ErrComponentInstanceNotFound)
 }
 
 // DeleteSystemInstanceByResourceName implements Model.
 func (m *modelData) DeleteSystemInstanceById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.systemInstancesByUUID, events.SystemInstanceResource, SystemInstanceNotFoundError)
+	return deleteEventEnabled(m, id, m.systemInstancesByUUID, events.SystemInstanceResource, common.ErrSystemInstanceNotFound)
 }
 
 // GetApiById implements Model.
-func (m *modelData) GetApiById(id uuid.UUID) API {
+func (m *modelData) GetApiById(id uuid.UUID) mdlapi.API {
 	return getEventEnabled(id, m.apisByUUID)
 }
 
 // ApiRefByID implements [Model].
-func (m *modelData) ApiRefByID(apiId uuid.UUID) *ApiRef {
-	api := m.GetApiById(apiId)
-	if api == nil {
+func (m *modelData) ApiRefByID(apiId uuid.UUID) *mdlapi.ApiRef {
+	a := m.GetApiById(apiId)
+	if a == nil {
 		return nil
 	}
-	return &ApiRef{API: api, ApiID: api.GetApiId()}
+	return &mdlapi.ApiRef{API: a, ApiID: a.GetApiId()}
 }
 
 // GetApiInstanceById implements Model.
-func (m *modelData) GetApiInstanceById(id uuid.UUID) ApiInstance {
+func (m *modelData) GetApiInstanceById(id uuid.UUID) mdlapi.ApiInstance {
 	return getEventEnabled(id, m.apiInstancesByUUID)
 }
 
 // GetComponentById implements Model.
-func (m *modelData) GetComponentById(id uuid.UUID) Component {
+func (m *modelData) GetComponentById(id uuid.UUID) component.Component {
 	return getEventEnabled(id, m.componentsByUUID)
 }
 
 // GetComponentInstanceById implements Model.
-func (m *modelData) GetComponentInstanceById(id uuid.UUID) ComponentInstance {
+func (m *modelData) GetComponentInstanceById(id uuid.UUID) component.ComponentInstance {
 	return getEventEnabled(id, m.componentInstancesByUUID)
 }
 
 // GetSystemInstanceById implements Model.
-func (m *modelData) GetSystemInstanceById(id uuid.UUID) SystemInstance {
+func (m *modelData) GetSystemInstanceById(id uuid.UUID) system.SystemInstance {
 	return getEventEnabled(id, m.systemInstancesByUUID)
 }
 
 // SystemInstanceRefByID implements [Model].
-func (m *modelData) SystemInstanceRefByID(instanceId uuid.UUID) *SystemInstanceRef {
+func (m *modelData) SystemInstanceRefByID(instanceId uuid.UUID) *system.SystemInstanceRef {
 	inst := m.GetSystemInstanceById(instanceId)
 	if inst == nil {
 		return nil
 	}
-	return &SystemInstanceRef{
+	return &system.SystemInstanceRef{
 		SystemInstance: inst,
 		InstanceId:     inst.GetInstanceId(),
 	}
 }
 
 // GetApiInstances implements Model.
-func (m *modelData) GetApiInstances() ([]ApiInstance, error) {
+func (m *modelData) GetApiInstances() ([]mdlapi.ApiInstance, error) {
 	return getAllEventEnabled(m.apiInstancesByUUID)
 }
 
 // GetApis implements Model.
-func (m *modelData) GetApis() ([]API, error) {
+func (m *modelData) GetApis() ([]mdlapi.API, error) {
 	return getAllEventEnabled(m.apisByUUID)
 }
 
 // GetComponentInstances implements Model.
-func (m *modelData) GetComponentInstances() ([]ComponentInstance, error) {
+func (m *modelData) GetComponentInstances() ([]component.ComponentInstance, error) {
 	return getAllEventEnabled(m.componentInstancesByUUID)
 }
 
 // GetComponents implements Model.
-func (m *modelData) GetComponents() ([]Component, error) {
+func (m *modelData) GetComponents() ([]component.Component, error) {
 	return getAllEventEnabled(m.componentsByUUID)
 }
 
 // GetSystemInstances implements Model.
-func (m *modelData) GetSystemInstances() ([]SystemInstance, error) {
+func (m *modelData) GetSystemInstances() ([]system.SystemInstance, error) {
 	return getAllEventEnabled(m.systemInstancesByUUID)
 }
 
 // GetFindings implements Model.
-func (m modelData) GetFindings() ([]Finding, error) {
+func (m modelData) GetFindings() ([]finding.Finding, error) {
 	findingArr := slices.Collect(maps.Values(m.findingsByUUID))
 	return findingArr, nil
 }
 
 // AddFinding implements Model.
-func (m *modelData) AddFinding(finding Finding, name string) error {
-	if finding.GetFindingId() != uuid.Nil {
-		finding.Register()
-		m.findingsByUUID[finding.GetFindingId()] = finding
-		m.sink.Receive(events.FindingResource, events.CreateOperation, finding.GetFindingId(), finding)
+func (m *modelData) AddFinding(f finding.Finding, name string) error {
+	if f.GetFindingId() != uuid.Nil {
+		f.Register()
+		m.findingsByUUID[f.GetFindingId()] = f
+		if err := m.sink.Receive(events.FindingResource, events.CreateOperation, f.GetFindingId(), f); err != nil {
+			fmt.Println("Error receiving ", events.FindingResource, "| ", events.CreateOperation, " event: ", err)
+		}
 	}
 	return nil
 }
@@ -634,28 +587,30 @@ func (m *modelData) AddFinding(finding Finding, name string) error {
 func (m *modelData) DeleteFindingById(id uuid.UUID) error {
 	_, exists := m.findingsByUUID[id]
 	if !exists {
-		return FindingNotFoundError
+		return common.ErrFindingNotFound
 	}
 	delete(m.findingsByUUID, id)
-	m.sink.Receive(events.FindingResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 	return nil
 }
 
 // GetFindingById implements Model.
-func (m *modelData) GetFindingById(id uuid.UUID) Finding {
-	finding, exists := m.findingsByUUID[id]
+func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
+	fobj, exists := m.findingsByUUID[id]
 	if !exists {
 		return nil
 	}
-	return finding
+	return fobj
 }
 
 // AddFindingType implements [Model].
-func (m *modelData) AddFindingType(findingType FindingType) error {
+func (m *modelData) AddFindingType(findingType finding.FindingType) error {
 
 	// parse parent ref if set
 	if findingType.GetFindingTypeId() == uuid.Nil {
-		return UUIDNotSetError
+		return common.ErrUUIDNotSet
 	}
 
 	op := events.CreateOperation
@@ -664,7 +619,9 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 	if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
 		op = events.UpdateOperation
 	}
-	m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType)
+	if err := m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", op, " event: ", err)
+	}
 
 	m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
 
@@ -679,18 +636,20 @@ func (m *modelData) AddFindingType(findingType FindingType) error {
 func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
 	_, exists := m.findingTypesByUUID[id]
 	if !exists {
-		return FindingTypeNotFoundError
+		return common.ErrFindingTypeNotFound
 	}
 
 	delete(m.findingTypesByUUID, id)
 
-	m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id)
+	if err := m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id); err != nil {
+		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", events.DeleteOperation, " event: ", err)
+	}
 
 	return nil
 }
 
 // GetFindingTypeById implements [Model].
-func (m *modelData) GetFindingTypeById(id uuid.UUID) FindingType {
+func (m *modelData) GetFindingTypeById(id uuid.UUID) finding.FindingType {
 	findingType, exists := m.findingTypesByUUID[id]
 	if !exists {
 		return nil
@@ -699,7 +658,7 @@ func (m *modelData) GetFindingTypeById(id uuid.UUID) FindingType {
 }
 
 // GetFindingTypes implements [Model].
-func (m *modelData) GetFindingTypes() ([]FindingType, error) {
+func (m *modelData) GetFindingTypes() ([]finding.FindingType, error) {
 	findingTypeArr := slices.Collect(maps.Values(m.findingTypesByUUID))
 	return findingTypeArr, nil
 }

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:errcheck
 package oapi_test
 
 import (
@@ -31,9 +31,17 @@ import (
 	"github.com/gorilla/mux"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/node"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 var ctx context.Context
@@ -88,13 +96,13 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
-	contextType := model.NewContextType(backend.GetSink(), contextTypeId)
+	contextType := mdlctx.NewContextType(backend.GetSink(), contextTypeId)
 	contextType.SetDisplayName("Test Context Type")
 	contextType.SetDescription("A test context type for testing purposes")
 	err = backend.AddContextType(contextType)
 	Expect(err).NotTo(HaveOccurred())
 
-	testContext := model.NewContext(backend.GetSink(), contextId)
+	testContext := mdlctx.NewContext(backend.GetSink(), contextId)
 	testContext.SetParentById(parentContextId)
 	testContext.SetDisplayName("the real test context")
 	// TODO: not implemented yet
@@ -102,23 +110,23 @@ var _ = BeforeSuite(func() {
 	err = backend.AddContext(testContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	parentContext := model.NewContext(backend.GetSink(), parentContextId)
+	parentContext := mdlctx.NewContext(backend.GetSink(), parentContextId)
 	err = backend.AddContext(parentContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	node := model.NewNode(backend.GetSink(), nodeId)
-	err = backend.AddNode(node)
+	testNode := node.NewNode(backend.GetSink(), nodeId)
+	err = backend.AddNode(testNode)
 	Expect(err).NotTo(HaveOccurred())
 
-	nodeType := model.NewNodeType(backend.GetSink(), nodeTypeId)
+	nodeType := node.NewNodeType(backend.GetSink(), nodeTypeId)
 	nodeType.SetDisplayName("Test Node Type")
 	nodeType.SetDescription("A test node type for testing purposes")
 	err = backend.AddNodeType(nodeType)
 	Expect(err).NotTo(HaveOccurred())
 
-	api := model.NewAPI(backend, apiId)
+	api := mdlapi.NewAPI(backend.GetSink(), apiId)
 	api.SetDisplayName("First API")
-	api.SetVersion(model.Version{
+	api.SetVersion(common.Version{
 		Version:        "1.0.0",
 		AvailableFrom:  mustParseDate("2023-01-01"),
 		DeprecatedFrom: mustParseDate("2024-01-01"),
@@ -127,36 +135,36 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := model.NewApiInstance(backend.GetSink(), apiInstanceId)
+	apiInstance := mdlapi.NewApiInstance(backend.GetSink(), apiInstanceId)
 	apiInstance.SetDisplayName("First API Instance")
 	apiInstance.SetApiRef(backend.ApiRefByID(apiId))
 	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	component := model.NewComponent(backend, componentId)
-	component.SetDisplayName("First Component")
-	component.SetVersion(model.Version{
+	comp := component.NewComponent(backend.GetSink(), componentId)
+	comp.SetDisplayName("First Component")
+	comp.SetVersion(common.Version{
 		Version:        "1.0.0",
 		AvailableFrom:  mustParseDate("2023-01-01"),
 		DeprecatedFrom: mustParseDate("2024-01-01"),
 		TerminatedFrom: mustParseDate("2025-01-01"),
 	})
-	err = backend.AddComponent(component)
+	err = backend.AddComponent(comp)
 	Expect(err).NotTo(HaveOccurred())
 
-	componentInstance := model.NewComponentInstance(backend, componentInstanceId)
+	componentInstance := component.NewComponentInstance(backend.GetSink(), componentInstanceId)
 	componentInstance.SetDisplayName("First Component Instance")
-	componentInstance.SetComponentRef(&model.ComponentRef{
+	componentInstance.SetComponentRef(&component.ComponentRef{
 		ComponentId: componentId,
 	})
 	err = backend.AddComponentInstance(componentInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	system := model.MakeTestSystem(
+	firstSystem := model.MakeTestSystem(
 		backend.GetSink(),
 		systemId,
 		"First System",
-		model.Version{
+		common.Version{
 			Version:        "1.0.0",
 			AvailableFrom:  mustParseDate("2023-01-01"),
 			DeprecatedFrom: mustParseDate("2024-01-01"),
@@ -164,24 +172,24 @@ var _ = BeforeSuite(func() {
 		},
 	)
 
-	err = backend.AddSystem(system)
+	err = backend.AddSystem(firstSystem)
 	Expect(err).NotTo(HaveOccurred())
 
-	systemInstance := model.NewSystemInstance(backend, systemInstanceId)
+	systemInstance := system.NewSystemInstance(backend.GetSink(), systemInstanceId)
 	systemInstance.SetDisplayName("First System Instance")
-	systemInstance.SetSystemRef(&model.SystemRef{
+	systemInstance.SetSystemRef(&system.SystemRef{
 		SystemId: systemId,
 	})
-	systemInstance.SetContextRef(&model.ContextRef{
+	systemInstance.SetContextRef(&mdlctx.ContextRef{
 		ContextId: contextId,
 	})
 	err = backend.AddSystemInstance(systemInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	finding := model.NewFinding(backend, findingId)
-	finding.SetSummary("First Finding")
-	finding.SetDescription("This is the first test finding.")
-	finding.SetResources([]*model.ResourceRef{
+	fd := finding.NewFinding(backend.GetSink(), findingId)
+	fd.SetSummary("First Finding")
+	fd.SetDescription("This is the first test finding.")
+	fd.SetResources([]*common.ResourceRef{
 		{
 			ResourceType: events.ParseResourceType("API"),
 			ResourceId:   apiId,
@@ -191,16 +199,16 @@ var _ = BeforeSuite(func() {
 			ResourceId:   componentId,
 		},
 	})
-	err = backend.AddFinding(finding, finding.GetSummary())
+	err = backend.AddFinding(fd, fd.GetSummary())
 	Expect(err).NotTo(HaveOccurred())
 
-	findingType := model.NewFindingType(backend.GetSink(), findingTypeId)
+	findingType := finding.NewFindingType(backend.GetSink(), findingTypeId)
 	findingType.SetDisplayName("Test Finding Type")
 	findingType.SetDescription("A test finding type for testing purposes")
 	err = backend.AddFindingType(findingType)
 	Expect(err).NotTo(HaveOccurred())
 
-	eventMgr, err = events.NewEventManager()
+	eventMgr, err = eventmgr.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
 
 	By("bootstrapping test environment")
@@ -239,7 +247,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 	ctx := context.Background()
 
 	It("should call GET on /events/query/{sequenceId} for sequenceId 0", func() {
-		eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		err := eventMgr.IncrementSequenceId(ctx) // make sure sequenceId 0 does not exist
+		Expect(err).NotTo(HaveOccurred())
 
 		url := fmt.Sprintf("http://localhost/events/query/%d", 0)
 		req := httptest.NewRequest("GET", url, nil)
@@ -291,7 +300,7 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 
 		Expect(len(eventMgr.GetSubscribers())).To(Equal(1))
-		Expect(eventMgr.GetSubscribers()[0]).To(Equal("http://remote-server.example.com/emeland/"))
+		Expect(eventMgr.GetSubscribers()[0].GetURL()).To(Equal("http://remote-server.example.com/emeland/"))
 	})
 
 	It("should call POST on /events/unregister to remove a subscriber", func() {
@@ -310,7 +319,8 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		resp.Body.Close()
 
 		// now remove the existing subscriber
-		eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		err := eventMgr.AddSubscriber("http://remote-server.example.com/emeland/")
+		Expect(err).NotTo(HaveOccurred())
 
 		postData = []byte(`{"callbackUrl":"http://remote-server.example.com/emeland/"}`)
 		req = httptest.NewRequest("POST", url, bytes.NewBuffer(postData))

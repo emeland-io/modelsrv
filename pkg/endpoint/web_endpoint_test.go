@@ -3,6 +3,7 @@ package endpoint
 import (
 	"testing"
 
+	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
@@ -14,7 +15,7 @@ func TestStartUIListener(t *testing.T) {
 		t.Fatalf("failed to create model backend: %v", err)
 	}
 
-	eventMgr, err := events.NewEventManager()
+	eventMgr, err := eventmgr.NewEventManager()
 	if err != nil {
 		t.Fatalf("failed to create event manager: %v", err)
 	}

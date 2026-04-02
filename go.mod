@@ -3,6 +3,7 @@ module go.emeland.io/modelsrv
 go 1.26.1
 
 require (
+	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
@@ -15,13 +16,13 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
-	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
@@ -51,5 +52,4 @@ require (
 	golang.org/x/tools v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

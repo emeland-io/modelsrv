@@ -5,7 +5,11 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION ?= latest
+GOLANGCI_LINT_VERSION ?= v2.11.3
+
+MOCKGEN = $(LOCALBIN)/mockgen
+MOCKGEN_VERSION ?= v0.6.0
+
 
 .PHONY: build
 build: test ## Build the project binary.
@@ -40,7 +44,13 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	# v2.x releases use the /v2 module path (see https://golangci-lint.run/welcome/install/#install-from-sources)
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+
+.PHONY: tools
+tools: $(MOCKGEN)
+$(MOCKGEN): $(LOCALBIN)
+	$(call go-install-tool,$(MOCKGEN),go.uber.org/mock/mockgen,$(MOCKGEN_VERSION))
 
 # go-install-tool will 'go install' any package with custom target and name of binary, if it doesn't exist
 # $1 - target path with name of binary

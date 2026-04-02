@@ -14,7 +14,12 @@ import (
 
 	uuid "github.com/google/uuid"
 	events "go.emeland.io/modelsrv/pkg/events"
-	model "go.emeland.io/modelsrv/pkg/model"
+	api "go.emeland.io/modelsrv/pkg/model/api"
+	component "go.emeland.io/modelsrv/pkg/model/component"
+	context "go.emeland.io/modelsrv/pkg/model/context"
+	finding "go.emeland.io/modelsrv/pkg/model/finding"
+	node "go.emeland.io/modelsrv/pkg/model/node"
+	system "go.emeland.io/modelsrv/pkg/model/system"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -43,21 +48,21 @@ func (m *MockModel) EXPECT() *MockModelMockRecorder {
 }
 
 // AddApi mocks base method.
-func (m *MockModel) AddApi(api model.API) error {
+func (m *MockModel) AddApi(a api.API) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddApi", api)
+	ret := m.ctrl.Call(m, "AddApi", a)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddApi indicates an expected call of AddApi.
-func (mr *MockModelMockRecorder) AddApi(api any) *gomock.Call {
+func (mr *MockModelMockRecorder) AddApi(a any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddApi", reflect.TypeOf((*MockModel)(nil).AddApi), api)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddApi", reflect.TypeOf((*MockModel)(nil).AddApi), a)
 }
 
 // AddApiInstance mocks base method.
-func (m *MockModel) AddApiInstance(instance model.ApiInstance) error {
+func (m *MockModel) AddApiInstance(instance api.ApiInstance) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddApiInstance", instance)
 	ret0, _ := ret[0].(error)
@@ -71,7 +76,7 @@ func (mr *MockModelMockRecorder) AddApiInstance(instance any) *gomock.Call {
 }
 
 // AddComponent mocks base method.
-func (m *MockModel) AddComponent(comp model.Component) error {
+func (m *MockModel) AddComponent(comp component.Component) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddComponent", comp)
 	ret0, _ := ret[0].(error)
@@ -85,7 +90,7 @@ func (mr *MockModelMockRecorder) AddComponent(comp any) *gomock.Call {
 }
 
 // AddComponentInstance mocks base method.
-func (m *MockModel) AddComponentInstance(instance model.ComponentInstance) error {
+func (m *MockModel) AddComponentInstance(instance component.ComponentInstance) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddComponentInstance", instance)
 	ret0, _ := ret[0].(error)
@@ -99,21 +104,21 @@ func (mr *MockModelMockRecorder) AddComponentInstance(instance any) *gomock.Call
 }
 
 // AddContext mocks base method.
-func (m *MockModel) AddContext(context model.Context) error {
+func (m *MockModel) AddContext(c context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddContext", context)
+	ret := m.ctrl.Call(m, "AddContext", c)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddContext indicates an expected call of AddContext.
-func (mr *MockModelMockRecorder) AddContext(context any) *gomock.Call {
+func (mr *MockModelMockRecorder) AddContext(c any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddContext", reflect.TypeOf((*MockModel)(nil).AddContext), context)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddContext", reflect.TypeOf((*MockModel)(nil).AddContext), c)
 }
 
 // AddContextType mocks base method.
-func (m *MockModel) AddContextType(contextType model.ContextType) error {
+func (m *MockModel) AddContextType(contextType context.ContextType) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddContextType", contextType)
 	ret0, _ := ret[0].(error)
@@ -127,21 +132,21 @@ func (mr *MockModelMockRecorder) AddContextType(contextType any) *gomock.Call {
 }
 
 // AddFinding mocks base method.
-func (m *MockModel) AddFinding(finding model.Finding, name string) error {
+func (m *MockModel) AddFinding(f finding.Finding, name string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddFinding", finding, name)
+	ret := m.ctrl.Call(m, "AddFinding", f, name)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddFinding indicates an expected call of AddFinding.
-func (mr *MockModelMockRecorder) AddFinding(finding, name any) *gomock.Call {
+func (mr *MockModelMockRecorder) AddFinding(f, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFinding", reflect.TypeOf((*MockModel)(nil).AddFinding), finding, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFinding", reflect.TypeOf((*MockModel)(nil).AddFinding), f, name)
 }
 
 // AddFindingType mocks base method.
-func (m *MockModel) AddFindingType(findingType model.FindingType) error {
+func (m *MockModel) AddFindingType(findingType finding.FindingType) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddFindingType", findingType)
 	ret0, _ := ret[0].(error)
@@ -155,21 +160,21 @@ func (mr *MockModelMockRecorder) AddFindingType(findingType any) *gomock.Call {
 }
 
 // AddNode mocks base method.
-func (m *MockModel) AddNode(node model.Node) error {
+func (m *MockModel) AddNode(n node.Node) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddNode", node)
+	ret := m.ctrl.Call(m, "AddNode", n)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddNode indicates an expected call of AddNode.
-func (mr *MockModelMockRecorder) AddNode(node any) *gomock.Call {
+func (mr *MockModelMockRecorder) AddNode(n any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNode", reflect.TypeOf((*MockModel)(nil).AddNode), node)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNode", reflect.TypeOf((*MockModel)(nil).AddNode), n)
 }
 
 // AddNodeType mocks base method.
-func (m *MockModel) AddNodeType(nodeType model.NodeType) error {
+func (m *MockModel) AddNodeType(nodeType node.NodeType) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddNodeType", nodeType)
 	ret0, _ := ret[0].(error)
@@ -183,7 +188,7 @@ func (mr *MockModelMockRecorder) AddNodeType(nodeType any) *gomock.Call {
 }
 
 // AddSystem mocks base method.
-func (m *MockModel) AddSystem(sys model.System) error {
+func (m *MockModel) AddSystem(sys system.System) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSystem", sys)
 	ret0, _ := ret[0].(error)
@@ -197,7 +202,7 @@ func (mr *MockModelMockRecorder) AddSystem(sys any) *gomock.Call {
 }
 
 // AddSystemInstance mocks base method.
-func (m *MockModel) AddSystemInstance(instance model.SystemInstance) error {
+func (m *MockModel) AddSystemInstance(instance system.SystemInstance) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSystemInstance", instance)
 	ret0, _ := ret[0].(error)
@@ -211,10 +216,10 @@ func (mr *MockModelMockRecorder) AddSystemInstance(instance any) *gomock.Call {
 }
 
 // ApiRefByID mocks base method.
-func (m *MockModel) ApiRefByID(apiId uuid.UUID) *model.ApiRef {
+func (m *MockModel) ApiRefByID(apiId uuid.UUID) *api.ApiRef {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ApiRefByID", apiId)
-	ret0, _ := ret[0].(*model.ApiRef)
+	ret0, _ := ret[0].(*api.ApiRef)
 	return ret0
 }
 
@@ -222,6 +227,20 @@ func (m *MockModel) ApiRefByID(apiId uuid.UUID) *model.ApiRef {
 func (mr *MockModelMockRecorder) ApiRefByID(apiId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApiRefByID", reflect.TypeOf((*MockModel)(nil).ApiRefByID), apiId)
+}
+
+// Apply mocks base method.
+func (m *MockModel) Apply(ev events.Event) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Apply", ev)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Apply indicates an expected call of Apply.
+func (mr *MockModelMockRecorder) Apply(ev any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockModel)(nil).Apply), ev)
 }
 
 // DeleteApiById mocks base method.
@@ -393,10 +412,10 @@ func (mr *MockModelMockRecorder) DeleteSystemInstanceById(id any) *gomock.Call {
 }
 
 // GetApiById mocks base method.
-func (m *MockModel) GetApiById(id uuid.UUID) model.API {
+func (m *MockModel) GetApiById(id uuid.UUID) api.API {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApiById", id)
-	ret0, _ := ret[0].(model.API)
+	ret0, _ := ret[0].(api.API)
 	return ret0
 }
 
@@ -407,10 +426,10 @@ func (mr *MockModelMockRecorder) GetApiById(id any) *gomock.Call {
 }
 
 // GetApiInstanceById mocks base method.
-func (m *MockModel) GetApiInstanceById(id uuid.UUID) model.ApiInstance {
+func (m *MockModel) GetApiInstanceById(id uuid.UUID) api.ApiInstance {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApiInstanceById", id)
-	ret0, _ := ret[0].(model.ApiInstance)
+	ret0, _ := ret[0].(api.ApiInstance)
 	return ret0
 }
 
@@ -421,10 +440,10 @@ func (mr *MockModelMockRecorder) GetApiInstanceById(id any) *gomock.Call {
 }
 
 // GetApiInstances mocks base method.
-func (m *MockModel) GetApiInstances() ([]model.ApiInstance, error) {
+func (m *MockModel) GetApiInstances() ([]api.ApiInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApiInstances")
-	ret0, _ := ret[0].([]model.ApiInstance)
+	ret0, _ := ret[0].([]api.ApiInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -436,10 +455,10 @@ func (mr *MockModelMockRecorder) GetApiInstances() *gomock.Call {
 }
 
 // GetApis mocks base method.
-func (m *MockModel) GetApis() ([]model.API, error) {
+func (m *MockModel) GetApis() ([]api.API, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApis")
-	ret0, _ := ret[0].([]model.API)
+	ret0, _ := ret[0].([]api.API)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -451,10 +470,10 @@ func (mr *MockModelMockRecorder) GetApis() *gomock.Call {
 }
 
 // GetComponentById mocks base method.
-func (m *MockModel) GetComponentById(id uuid.UUID) model.Component {
+func (m *MockModel) GetComponentById(id uuid.UUID) component.Component {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComponentById", id)
-	ret0, _ := ret[0].(model.Component)
+	ret0, _ := ret[0].(component.Component)
 	return ret0
 }
 
@@ -465,10 +484,10 @@ func (mr *MockModelMockRecorder) GetComponentById(id any) *gomock.Call {
 }
 
 // GetComponentInstanceById mocks base method.
-func (m *MockModel) GetComponentInstanceById(id uuid.UUID) model.ComponentInstance {
+func (m *MockModel) GetComponentInstanceById(id uuid.UUID) component.ComponentInstance {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComponentInstanceById", id)
-	ret0, _ := ret[0].(model.ComponentInstance)
+	ret0, _ := ret[0].(component.ComponentInstance)
 	return ret0
 }
 
@@ -479,10 +498,10 @@ func (mr *MockModelMockRecorder) GetComponentInstanceById(id any) *gomock.Call {
 }
 
 // GetComponentInstances mocks base method.
-func (m *MockModel) GetComponentInstances() ([]model.ComponentInstance, error) {
+func (m *MockModel) GetComponentInstances() ([]component.ComponentInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComponentInstances")
-	ret0, _ := ret[0].([]model.ComponentInstance)
+	ret0, _ := ret[0].([]component.ComponentInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -494,10 +513,10 @@ func (mr *MockModelMockRecorder) GetComponentInstances() *gomock.Call {
 }
 
 // GetComponents mocks base method.
-func (m *MockModel) GetComponents() ([]model.Component, error) {
+func (m *MockModel) GetComponents() ([]component.Component, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetComponents")
-	ret0, _ := ret[0].([]model.Component)
+	ret0, _ := ret[0].([]component.Component)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -509,10 +528,10 @@ func (mr *MockModelMockRecorder) GetComponents() *gomock.Call {
 }
 
 // GetContextById mocks base method.
-func (m *MockModel) GetContextById(id uuid.UUID) model.Context {
+func (m *MockModel) GetContextById(id uuid.UUID) context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContextById", id)
-	ret0, _ := ret[0].(model.Context)
+	ret0, _ := ret[0].(context.Context)
 	return ret0
 }
 
@@ -523,10 +542,10 @@ func (mr *MockModelMockRecorder) GetContextById(id any) *gomock.Call {
 }
 
 // GetContextTypeById mocks base method.
-func (m *MockModel) GetContextTypeById(id uuid.UUID) model.ContextType {
+func (m *MockModel) GetContextTypeById(id uuid.UUID) context.ContextType {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContextTypeById", id)
-	ret0, _ := ret[0].(model.ContextType)
+	ret0, _ := ret[0].(context.ContextType)
 	return ret0
 }
 
@@ -537,10 +556,10 @@ func (mr *MockModelMockRecorder) GetContextTypeById(id any) *gomock.Call {
 }
 
 // GetContextTypes mocks base method.
-func (m *MockModel) GetContextTypes() ([]model.ContextType, error) {
+func (m *MockModel) GetContextTypes() ([]context.ContextType, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContextTypes")
-	ret0, _ := ret[0].([]model.ContextType)
+	ret0, _ := ret[0].([]context.ContextType)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -552,10 +571,10 @@ func (mr *MockModelMockRecorder) GetContextTypes() *gomock.Call {
 }
 
 // GetContexts mocks base method.
-func (m *MockModel) GetContexts() ([]model.Context, error) {
+func (m *MockModel) GetContexts() ([]context.Context, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContexts")
-	ret0, _ := ret[0].([]model.Context)
+	ret0, _ := ret[0].([]context.Context)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -567,10 +586,10 @@ func (mr *MockModelMockRecorder) GetContexts() *gomock.Call {
 }
 
 // GetFindingById mocks base method.
-func (m *MockModel) GetFindingById(id uuid.UUID) model.Finding {
+func (m *MockModel) GetFindingById(id uuid.UUID) finding.Finding {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFindingById", id)
-	ret0, _ := ret[0].(model.Finding)
+	ret0, _ := ret[0].(finding.Finding)
 	return ret0
 }
 
@@ -581,10 +600,10 @@ func (mr *MockModelMockRecorder) GetFindingById(id any) *gomock.Call {
 }
 
 // GetFindingTypeById mocks base method.
-func (m *MockModel) GetFindingTypeById(id uuid.UUID) model.FindingType {
+func (m *MockModel) GetFindingTypeById(id uuid.UUID) finding.FindingType {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFindingTypeById", id)
-	ret0, _ := ret[0].(model.FindingType)
+	ret0, _ := ret[0].(finding.FindingType)
 	return ret0
 }
 
@@ -595,10 +614,10 @@ func (mr *MockModelMockRecorder) GetFindingTypeById(id any) *gomock.Call {
 }
 
 // GetFindingTypes mocks base method.
-func (m *MockModel) GetFindingTypes() ([]model.FindingType, error) {
+func (m *MockModel) GetFindingTypes() ([]finding.FindingType, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFindingTypes")
-	ret0, _ := ret[0].([]model.FindingType)
+	ret0, _ := ret[0].([]finding.FindingType)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -610,10 +629,10 @@ func (mr *MockModelMockRecorder) GetFindingTypes() *gomock.Call {
 }
 
 // GetFindings mocks base method.
-func (m *MockModel) GetFindings() ([]model.Finding, error) {
+func (m *MockModel) GetFindings() ([]finding.Finding, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFindings")
-	ret0, _ := ret[0].([]model.Finding)
+	ret0, _ := ret[0].([]finding.Finding)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -625,10 +644,10 @@ func (mr *MockModelMockRecorder) GetFindings() *gomock.Call {
 }
 
 // GetNodeById mocks base method.
-func (m *MockModel) GetNodeById(id uuid.UUID) model.Node {
+func (m *MockModel) GetNodeById(id uuid.UUID) node.Node {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeById", id)
-	ret0, _ := ret[0].(model.Node)
+	ret0, _ := ret[0].(node.Node)
 	return ret0
 }
 
@@ -639,10 +658,10 @@ func (mr *MockModelMockRecorder) GetNodeById(id any) *gomock.Call {
 }
 
 // GetNodeTypeById mocks base method.
-func (m *MockModel) GetNodeTypeById(id uuid.UUID) model.NodeType {
+func (m *MockModel) GetNodeTypeById(id uuid.UUID) node.NodeType {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeTypeById", id)
-	ret0, _ := ret[0].(model.NodeType)
+	ret0, _ := ret[0].(node.NodeType)
 	return ret0
 }
 
@@ -653,10 +672,10 @@ func (mr *MockModelMockRecorder) GetNodeTypeById(id any) *gomock.Call {
 }
 
 // GetNodeTypes mocks base method.
-func (m *MockModel) GetNodeTypes() ([]model.NodeType, error) {
+func (m *MockModel) GetNodeTypes() ([]node.NodeType, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeTypes")
-	ret0, _ := ret[0].([]model.NodeType)
+	ret0, _ := ret[0].([]node.NodeType)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -668,10 +687,10 @@ func (mr *MockModelMockRecorder) GetNodeTypes() *gomock.Call {
 }
 
 // GetNodes mocks base method.
-func (m *MockModel) GetNodes() ([]model.Node, error) {
+func (m *MockModel) GetNodes() ([]node.Node, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodes")
-	ret0, _ := ret[0].([]model.Node)
+	ret0, _ := ret[0].([]node.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -697,10 +716,10 @@ func (mr *MockModelMockRecorder) GetSink() *gomock.Call {
 }
 
 // GetSystemById mocks base method.
-func (m *MockModel) GetSystemById(id uuid.UUID) model.System {
+func (m *MockModel) GetSystemById(id uuid.UUID) system.System {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSystemById", id)
-	ret0, _ := ret[0].(model.System)
+	ret0, _ := ret[0].(system.System)
 	return ret0
 }
 
@@ -711,10 +730,10 @@ func (mr *MockModelMockRecorder) GetSystemById(id any) *gomock.Call {
 }
 
 // GetSystemInstanceById mocks base method.
-func (m *MockModel) GetSystemInstanceById(id uuid.UUID) model.SystemInstance {
+func (m *MockModel) GetSystemInstanceById(id uuid.UUID) system.SystemInstance {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSystemInstanceById", id)
-	ret0, _ := ret[0].(model.SystemInstance)
+	ret0, _ := ret[0].(system.SystemInstance)
 	return ret0
 }
 
@@ -725,10 +744,10 @@ func (mr *MockModelMockRecorder) GetSystemInstanceById(id any) *gomock.Call {
 }
 
 // GetSystemInstances mocks base method.
-func (m *MockModel) GetSystemInstances() ([]model.SystemInstance, error) {
+func (m *MockModel) GetSystemInstances() ([]system.SystemInstance, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSystemInstances")
-	ret0, _ := ret[0].([]model.SystemInstance)
+	ret0, _ := ret[0].([]system.SystemInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -740,10 +759,10 @@ func (mr *MockModelMockRecorder) GetSystemInstances() *gomock.Call {
 }
 
 // GetSystems mocks base method.
-func (m *MockModel) GetSystems() ([]model.System, error) {
+func (m *MockModel) GetSystems() ([]system.System, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSystems")
-	ret0, _ := ret[0].([]model.System)
+	ret0, _ := ret[0].([]system.System)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -755,10 +774,10 @@ func (mr *MockModelMockRecorder) GetSystems() *gomock.Call {
 }
 
 // SystemInstanceRefByID mocks base method.
-func (m *MockModel) SystemInstanceRefByID(instanceId uuid.UUID) *model.SystemInstanceRef {
+func (m *MockModel) SystemInstanceRefByID(instanceId uuid.UUID) *system.SystemInstanceRef {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SystemInstanceRefByID", instanceId)
-	ret0, _ := ret[0].(*model.SystemInstanceRef)
+	ret0, _ := ret[0].(*system.SystemInstanceRef)
 	return ret0
 }
 

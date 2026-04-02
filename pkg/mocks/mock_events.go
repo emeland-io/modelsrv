@@ -130,10 +130,10 @@ func (mr *MockEventManagerMockRecorder) GetSink() *gomock.Call {
 }
 
 // GetSubscribers mocks base method.
-func (m *MockEventManager) GetSubscribers() []string {
+func (m *MockEventManager) GetSubscribers() []events.Subscriber {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSubscribers")
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].([]events.Subscriber)
 	return ret0
 }
 
