@@ -10,10 +10,9 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	eventmgr "go.emeland.io/modelsrv/internal/events"
+	"go.emeland.io/modelsrv/pkg/backend"
 	"go.emeland.io/modelsrv/pkg/endpoint"
 	"go.emeland.io/modelsrv/pkg/filesensor"
-	"go.emeland.io/modelsrv/pkg/model"
 	"go.uber.org/zap"
 )
 
@@ -38,21 +37,9 @@ var serverCmd = &cobra.Command{
 
 		logger := log.Sugar()
 
-		eventMgr, err := eventmgr.NewEventManager()
+		b, err := backend.New()
 		if err != nil {
-			logger.Errorw("error creating event manager", "error", err)
-			return
-		}
-
-		sink, err := eventMgr.GetSink()
-		if err != nil {
-			logger.Errorw("error getting event sink", "error", err)
-			return
-		}
-
-		model, err := model.NewModel(sink)
-		if err != nil {
-			logger.Errorw("error creating model", "error", err)
+			logger.Errorw("error creating backend", "error", err)
 			return
 		}
 
@@ -70,9 +57,9 @@ var serverCmd = &cobra.Command{
 		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
 		logger.Info("file sensor: watching for YAML in data directory")
 
-		filesensor.Start(context.Background(), dataPath, model, logger)
+		filesensor.Start(context.Background(), dataPath, b.GetModel(), logger)
 
-		if err := endpoint.StarWebListener(model, eventMgr, serviceAddr); err != nil {
+		if err := endpoint.StarWebListener(b.GetModel(), b.GetEventManager(), serviceAddr); err != nil {
 			logger.Errorw("error starting web listener", "error", err)
 			return
 		}
