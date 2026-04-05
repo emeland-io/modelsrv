@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"go/format"
 	"os"
@@ -10,6 +11,12 @@ import (
 	"strings"
 	"text/template"
 )
+
+//go:embed handler.tmpl
+var handlerTemplate string
+
+//go:embed type.tmpl
+var typeTemplate string
 
 func main() {
 	funcMap := template.FuncMap{
