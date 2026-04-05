@@ -15,6 +15,9 @@ var (
 	ErrComponentInstanceNotFound = fmt.Errorf("component Instance not found")
 	ErrFindingNotFound           = fmt.Errorf("finding not found")
 	ErrFindingTypeNotFound       = fmt.Errorf("finding Type not found")
+	ErrOrgUnitNotFound           = fmt.Errorf("organizational unit not found")
+	ErrIdentityNotFound          = fmt.Errorf("identity not found")
+	ErrGroupNotFound             = fmt.Errorf("group not found")
 
 	ErrUUIDNotSet = fmt.Errorf("resource identifier UUID not set")
 )

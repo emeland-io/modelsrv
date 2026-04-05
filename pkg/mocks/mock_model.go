@@ -18,6 +18,7 @@ import (
 	component "go.emeland.io/modelsrv/pkg/model/component"
 	context "go.emeland.io/modelsrv/pkg/model/context"
 	finding "go.emeland.io/modelsrv/pkg/model/finding"
+	iam "go.emeland.io/modelsrv/pkg/model/iam"
 	node "go.emeland.io/modelsrv/pkg/model/node"
 	system "go.emeland.io/modelsrv/pkg/model/system"
 	gomock "go.uber.org/mock/gomock"
@@ -159,6 +160,34 @@ func (mr *MockModelMockRecorder) AddFindingType(findingType any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFindingType", reflect.TypeOf((*MockModel)(nil).AddFindingType), findingType)
 }
 
+// AddGroup mocks base method.
+func (m *MockModel) AddGroup(arg0 iam.Group) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddGroup", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddGroup indicates an expected call of AddGroup.
+func (mr *MockModelMockRecorder) AddGroup(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddGroup", reflect.TypeOf((*MockModel)(nil).AddGroup), arg0)
+}
+
+// AddIdentity mocks base method.
+func (m *MockModel) AddIdentity(arg0 iam.Identity) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddIdentity", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddIdentity indicates an expected call of AddIdentity.
+func (mr *MockModelMockRecorder) AddIdentity(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddIdentity", reflect.TypeOf((*MockModel)(nil).AddIdentity), arg0)
+}
+
 // AddNode mocks base method.
 func (m *MockModel) AddNode(n node.Node) error {
 	m.ctrl.T.Helper()
@@ -185,6 +214,20 @@ func (m *MockModel) AddNodeType(nodeType node.NodeType) error {
 func (mr *MockModelMockRecorder) AddNodeType(nodeType any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodeType", reflect.TypeOf((*MockModel)(nil).AddNodeType), nodeType)
+}
+
+// AddOrgUnit mocks base method.
+func (m *MockModel) AddOrgUnit(arg0 iam.OrgUnit) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrgUnit", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddOrgUnit indicates an expected call of AddOrgUnit.
+func (mr *MockModelMockRecorder) AddOrgUnit(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgUnit", reflect.TypeOf((*MockModel)(nil).AddOrgUnit), arg0)
 }
 
 // AddSystem mocks base method.
@@ -355,6 +398,34 @@ func (mr *MockModelMockRecorder) DeleteFindingTypeById(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFindingTypeById", reflect.TypeOf((*MockModel)(nil).DeleteFindingTypeById), id)
 }
 
+// DeleteGroup mocks base method.
+func (m *MockModel) DeleteGroup(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteGroup", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteGroup indicates an expected call of DeleteGroup.
+func (mr *MockModelMockRecorder) DeleteGroup(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroup", reflect.TypeOf((*MockModel)(nil).DeleteGroup), arg0)
+}
+
+// DeleteIdentity mocks base method.
+func (m *MockModel) DeleteIdentity(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentity", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdentity indicates an expected call of DeleteIdentity.
+func (mr *MockModelMockRecorder) DeleteIdentity(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentity", reflect.TypeOf((*MockModel)(nil).DeleteIdentity), arg0)
+}
+
 // DeleteNodeById mocks base method.
 func (m *MockModel) DeleteNodeById(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -381,6 +452,20 @@ func (m *MockModel) DeleteNodeTypeById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteNodeTypeById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNodeTypeById", reflect.TypeOf((*MockModel)(nil).DeleteNodeTypeById), id)
+}
+
+// DeleteOrgUnit mocks base method.
+func (m *MockModel) DeleteOrgUnit(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrgUnit", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrgUnit indicates an expected call of DeleteOrgUnit.
+func (mr *MockModelMockRecorder) DeleteOrgUnit(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgUnit", reflect.TypeOf((*MockModel)(nil).DeleteOrgUnit), arg0)
 }
 
 // DeleteSystemById mocks base method.
@@ -643,6 +728,64 @@ func (mr *MockModelMockRecorder) GetFindings() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindings", reflect.TypeOf((*MockModel)(nil).GetFindings))
 }
 
+// GetGroupById mocks base method.
+func (m *MockModel) GetGroupById(arg0 uuid.UUID) iam.Group {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroupById", arg0)
+	ret0, _ := ret[0].(iam.Group)
+	return ret0
+}
+
+// GetGroupById indicates an expected call of GetGroupById.
+func (mr *MockModelMockRecorder) GetGroupById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupById", reflect.TypeOf((*MockModel)(nil).GetGroupById), arg0)
+}
+
+// GetGroups mocks base method.
+func (m *MockModel) GetGroups() ([]iam.Group, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetGroups")
+	ret0, _ := ret[0].([]iam.Group)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroups indicates an expected call of GetGroups.
+func (mr *MockModelMockRecorder) GetGroups() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroups", reflect.TypeOf((*MockModel)(nil).GetGroups))
+}
+
+// GetIdentities mocks base method.
+func (m *MockModel) GetIdentities() ([]iam.Identity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdentities")
+	ret0, _ := ret[0].([]iam.Identity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdentities indicates an expected call of GetIdentities.
+func (mr *MockModelMockRecorder) GetIdentities() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentities", reflect.TypeOf((*MockModel)(nil).GetIdentities))
+}
+
+// GetIdentityById mocks base method.
+func (m *MockModel) GetIdentityById(arg0 uuid.UUID) iam.Identity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdentityById", arg0)
+	ret0, _ := ret[0].(iam.Identity)
+	return ret0
+}
+
+// GetIdentityById indicates an expected call of GetIdentityById.
+func (mr *MockModelMockRecorder) GetIdentityById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityById", reflect.TypeOf((*MockModel)(nil).GetIdentityById), arg0)
+}
+
 // GetNodeById mocks base method.
 func (m *MockModel) GetNodeById(id uuid.UUID) node.Node {
 	m.ctrl.T.Helper()
@@ -699,6 +842,35 @@ func (m *MockModel) GetNodes() ([]node.Node, error) {
 func (mr *MockModelMockRecorder) GetNodes() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodes", reflect.TypeOf((*MockModel)(nil).GetNodes))
+}
+
+// GetOrgUnitById mocks base method.
+func (m *MockModel) GetOrgUnitById(arg0 uuid.UUID) iam.OrgUnit {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgUnitById", arg0)
+	ret0, _ := ret[0].(iam.OrgUnit)
+	return ret0
+}
+
+// GetOrgUnitById indicates an expected call of GetOrgUnitById.
+func (mr *MockModelMockRecorder) GetOrgUnitById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgUnitById", reflect.TypeOf((*MockModel)(nil).GetOrgUnitById), arg0)
+}
+
+// GetOrgUnits mocks base method.
+func (m *MockModel) GetOrgUnits() ([]iam.OrgUnit, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrgUnits")
+	ret0, _ := ret[0].([]iam.OrgUnit)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgUnits indicates an expected call of GetOrgUnits.
+func (mr *MockModelMockRecorder) GetOrgUnits() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgUnits", reflect.TypeOf((*MockModel)(nil).GetOrgUnits))
 }
 
 // GetSink mocks base method.
