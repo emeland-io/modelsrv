@@ -9,7 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/internal/oapi"
-	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model"
+	mdlcommon "go.emeland.io/modelsrv/pkg/model/common"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 type ModelSrvClient struct {
@@ -65,13 +67,13 @@ func (c *ModelSrvClient) GetContexts() (*oapi.InstanceList, error) {
 * an existing model.
 * The function will NOT add the retrieved context to theModel, so the caller is responsible for doing that if needed.
  */
-func (c *ModelSrvClient) GetContextById(contextId uuid.UUID, theModel model.Model) (model.Context, error) {
+func (c *ModelSrvClient) GetContextById(contextId uuid.UUID, theModel model.Model) (mdlctx.Context, error) {
 	resp, err := c.oapi_client.GetLandscapeContextsContextIdWithResponse(context.TODO(), contextId)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrContextNotFound
+		return nil, mdlcommon.ErrContextNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -103,7 +105,7 @@ func (c *ModelSrvClient) GetSystemById(systemId uuid.UUID) (*oapi.System, error)
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrSystemNotFound
+		return nil, mdlcommon.ErrSystemNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -130,7 +132,7 @@ func (c *ModelSrvClient) GetSystemInstanceById(systemInstanceId uuid.UUID) (*oap
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrSystemInstanceNotFound
+		return nil, mdlcommon.ErrSystemInstanceNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -157,7 +159,7 @@ func (c *ModelSrvClient) GetAPIById(apiId uuid.UUID) (*oapi.API, error) {
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrApiNotFound
+		return nil, mdlcommon.ErrApiNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -184,7 +186,7 @@ func (c *ModelSrvClient) GetApiInstanceById(apiInstanceId uuid.UUID) (*oapi.ApiI
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrApiInstanceNotFound
+		return nil, mdlcommon.ErrApiInstanceNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -211,7 +213,7 @@ func (c *ModelSrvClient) GetComponentById(componentId uuid.UUID) (*oapi.Componen
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrComponentNotFound
+		return nil, mdlcommon.ErrComponentNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
@@ -238,7 +240,7 @@ func (c *ModelSrvClient) GetComponentInstanceById(componentId uuid.UUID) (*oapi.
 		return nil, err
 	}
 	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrComponentInstanceNotFound
+		return nil, mdlcommon.ErrComponentInstanceNotFound
 	}
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())

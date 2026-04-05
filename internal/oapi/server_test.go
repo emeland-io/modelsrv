@@ -102,16 +102,17 @@ var _ = BeforeSuite(func() {
 	err = backend.AddContextType(contextType)
 	Expect(err).NotTo(HaveOccurred())
 
+	parentContext := mdlctx.NewContext(backend.GetSink(), parentContextId)
+	err = backend.AddContext(parentContext)
+	Expect(err).NotTo(HaveOccurred())
+
 	testContext := mdlctx.NewContext(backend.GetSink(), contextId)
 	testContext.SetParentById(parentContextId)
+	Expect(testContext.GetParent()).NotTo(BeNil())
 	testContext.SetDisplayName("the real test context")
 	// TODO: not implemented yet
 	// testContext.SetTypeById(contextTypeId)
 	err = backend.AddContext(testContext)
-	Expect(err).NotTo(HaveOccurred())
-
-	parentContext := mdlctx.NewContext(backend.GetSink(), parentContextId)
-	err = backend.AddContext(parentContext)
 	Expect(err).NotTo(HaveOccurred())
 
 	testNode := node.NewNode(backend.GetSink(), nodeId)

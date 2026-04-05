@@ -14,6 +14,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/common"
+	mdlcommon "go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -89,8 +90,8 @@ var _ = Describe("Client", Ordered, func() {
 		})
 		It("return a Context by ID", func() {
 			// first try with an invalid ID
-			context, err := testClient.GetContextById(uuid.New())
-			Expect(err).Should(Equal(common.ErrContextNotFound))
+			context, err := testClient.GetContextById(uuid.New(), testModel)
+			Expect(err).Should(Equal(mdlcommon.ErrContextNotFound))
 			Expect(context).To(BeNil())
 
 			// now try with a valid ID

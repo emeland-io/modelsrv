@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 // GetLandscapeContexts implements StrictServerInterface.
@@ -174,7 +175,7 @@ They are functions rather than methods of the internal model to avoid circular d
   They are functions rather than methods of the internal model to avoid circular dependencies between the internal model and the API DTOs.
 */
 
-func ContextToDto(context model.Context) (*Context, error) {
+func ContextToDto(context mdlctx.Context) (*Context, error) {
 	displayName := context.GetDisplayName()
 	contextId := context.GetContextId()
 	var parentContextId uuid.UUID
@@ -195,12 +196,12 @@ func ContextToDto(context model.Context) (*Context, error) {
 	return contextDto, nil
 }
 
-func ContextFromDto(theModel model.Model, contextDto *Context) (model.Context, error) {
+func ContextFromDto(theModel model.Model, contextDto *Context) (mdlctx.Context, error) {
 	if contextDto == nil {
 		return nil, fmt.Errorf("contextDto is nil")
 	}
 
-	context := model.NewContext(theModel.GetSink(), contextDto.ContextId)
+	context := mdlctx.NewContext(theModel.GetSink(), contextDto.ContextId)
 
 	context.SetDisplayName(contextDto.DisplayName)
 	if contextDto.Description != nil {
@@ -218,7 +219,7 @@ func ContextFromDto(theModel model.Model, contextDto *Context) (model.Context, e
 	return context, nil
 }
 
-func ContextTypeToDto(contextType model.ContextType) (*ContextType, error) {
+func ContextTypeToDto(contextType mdlctx.ContextType) (*ContextType, error) {
 	displayName := contextType.GetDisplayName()
 	contextTypeId := contextType.GetContextTypeId()
 
@@ -231,12 +232,12 @@ func ContextTypeToDto(contextType model.ContextType) (*ContextType, error) {
 	return contextTypeDto, nil
 }
 
-func ContextTypeFromDto(theModel model.Model, contextTypeDto *ContextType) (model.ContextType, error) {
+func ContextTypeFromDto(theModel model.Model, contextTypeDto *ContextType) (mdlctx.ContextType, error) {
 	if contextTypeDto == nil {
 		return nil, fmt.Errorf("contextTypeDto is nil")
 	}
 
-	contextType := model.NewContextType(theModel.GetSink(), contextTypeDto.ContextTypeId)
+	contextType := mdlctx.NewContextType(theModel.GetSink(), contextTypeDto.ContextTypeId)
 
 	contextType.SetDisplayName(contextTypeDto.DisplayName)
 	contextType.SetDescription(*contextTypeDto.Description)
