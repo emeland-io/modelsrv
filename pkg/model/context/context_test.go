@@ -59,7 +59,7 @@ var _ = Describe("Context functionalities", func() {
 				})
 			})
 
-			When("Parent gets updated", func() {
+			When("Parent gets updated (by Ref)", func() {
 				It("updates the parent by ref", func() {
 					parentContext := mdlctx.NewContext(sinkMock, uuid.New())
 					testCtx.SetParentByRef(parentContext)
@@ -70,6 +70,19 @@ var _ = Describe("Context functionalities", func() {
 					Expect(retrievedParent.GetContextId()).To(Equal(parentContext.GetContextId()))
 				})
 			})
+
+			When("Parent gets updated (by Id)", func() {
+				It("updates the parent by id", func() {
+					parentContext := mdlctx.NewContext(sinkMock, uuid.New())
+					testCtx.SetParentById(parentContext.GetContextId())
+
+					retrievedParent, err := testCtx.GetParent()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(retrievedParent).NotTo(BeNil())
+					Expect(retrievedParent.GetContextId()).To(Equal(parentContext.GetContextId()))
+				})
+			})
+
 		})
 	})
 
