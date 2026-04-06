@@ -11,9 +11,6 @@ type SystemRef struct {
 
 // ResolvedSystem returns the embedded [System] when present, or nil.
 func (r *SystemRef) ResolvedSystem() System {
-	if r == nil {
-		return nil
-	}
 	return r.System
 }
 

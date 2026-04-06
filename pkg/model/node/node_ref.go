@@ -10,8 +10,5 @@ type NodeTypeRef struct {
 
 // ResolvedNodeType returns the embedded [NodeType] when present, or nil.
 func (r *NodeTypeRef) ResolvedNodeType() NodeType {
-	if r == nil {
-		return nil
-	}
 	return r.NodeType
 }
