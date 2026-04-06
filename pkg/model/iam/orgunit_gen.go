@@ -27,9 +27,6 @@ type OrgUnit interface {
 	GetDescription() string
 	SetDescription(string)
 
-	GetParent() *OrgUnitRef
-	SetParent(*OrgUnitRef)
-
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
@@ -103,20 +100,6 @@ func (o *orgunitData) SetDescription(val string) {
 	}
 }
 
-// GetParent implements [Parent].
-func (o *orgunitData) GetParent() *OrgUnitRef {
-	return o.Parent
-}
-
-// SetParent implements [OrgUnit].
-func (o *orgunitData) SetParent(val *OrgUnitRef) {
-	o.Parent = val
-
-	if o.isRegistered {
-		o.sink.Receive(events.OrgUnitResource, events.UpdateOperation, o.OrgUnitId, o)
-	}
-}
-
 // GetAnnotations implements [Annotations].
 func (o *orgunitData) GetAnnotations() annotations.Annotations {
 	return o.Annotations
@@ -131,18 +114,50 @@ func (o *orgunitData) SetAnnotations(val annotations.Annotations) {
 	}
 }
 
-// SetParentByRef sets the reference from the given [OrgUnit].
-func (o *orgunitData) SetParentByRef(orgUnit OrgUnit) {
+// GetParent returns the embedded parent [OrgUnit] when present (otherwise nil). Resolve by id via [Model.GetOrgUnitById].
+func (o *orgunitData) GetParent() (OrgUnit, error) {
+	if o.Parent == nil {
+		return nil, nil
+	}
+	return o.Parent.ResolvedOrgUnit(), nil
+}
 
-	if orgUnit == nil {
+// GetParentId returns the parent id when set.
+func (o *orgunitData) GetParentId() uuid.UUID {
+	if o.Parent == nil {
+		return uuid.Nil
+	}
+	return o.Parent.EffectiveParentOrgUnitID()
+}
+
+// SetParent sets the low-level parent reference and emits when registered.
+func (o *orgunitData) SetParent(val *OrgUnitRef) {
+	o.Parent = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.OrgUnitResource, events.UpdateOperation, o.OrgUnitId, o)
+	}
+}
+
+// SetParentByRef sets the parent from a [OrgUnit] by building a [OrgUnitRef].
+func (o *orgunitData) SetParentByRef(parent OrgUnit) {
+	if parent == nil {
 		o.SetParent(nil)
 		return
 	}
-
 	o.SetParent(&OrgUnitRef{
-		OrgUnit:   orgUnit,
-		OrgUnitId: orgUnit.GetOrgUnitId(),
+		OrgUnit:   parent,
+		OrgUnitId: parent.GetOrgUnitId(),
 	})
+}
+
+// SetParentById records only the parent id (resolved object may be nil).
+func (o *orgunitData) SetParentById(parentId uuid.UUID) {
+	if parentId == uuid.Nil {
+		o.SetParent(nil)
+		return
+	}
+	o.SetParent(&OrgUnitRef{OrgUnitId: parentId})
 }
 
 // Register implements [OrgUnit].
