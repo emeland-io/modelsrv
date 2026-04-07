@@ -17,6 +17,7 @@ import (
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	mdlevent "go.emeland.io/modelsrv/pkg/model/event"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -90,6 +91,10 @@ type Model interface {
 	DeleteFindingTypeById(id uuid.UUID) error
 	GetFindingTypes() ([]finding.FindingType, error)
 	GetFindingTypeById(id uuid.UUID) finding.FindingType
+
+	iam.OrgUnitModel
+	iam.GroupModel
+	iam.IdentityModel
 }
 
 type modelData struct {
@@ -113,6 +118,10 @@ type modelData struct {
 
 	findingsByUUID     map[uuid.UUID]finding.Finding
 	findingTypesByUUID map[uuid.UUID]finding.FindingType
+
+	orgUnitsByUUID   map[uuid.UUID]iam.OrgUnit
+	groupsByUUID     map[uuid.UUID]iam.Group
+	identitiesByUUID map[uuid.UUID]iam.Identity
 }
 
 // ensure Model interface is implemented correctly
@@ -143,6 +152,10 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 		findingsByUUID:     make(map[uuid.UUID]finding.Finding),
 		findingTypesByUUID: make(map[uuid.UUID]finding.FindingType),
+
+		orgUnitsByUUID:   make(map[uuid.UUID]iam.OrgUnit),
+		groupsByUUID:     make(map[uuid.UUID]iam.Group),
+		identitiesByUUID: make(map[uuid.UUID]iam.Identity),
 	}
 
 	return model, nil
@@ -661,4 +674,64 @@ func (m *modelData) GetFindingTypeById(id uuid.UUID) finding.FindingType {
 func (m *modelData) GetFindingTypes() ([]finding.FindingType, error) {
 	findingTypeArr := slices.Collect(maps.Values(m.findingTypesByUUID))
 	return findingTypeArr, nil
+}
+
+// AddGroup implements [Model].
+func (m *modelData) AddGroup(g iam.Group) error {
+	return addEventEnabled(m, g, iam.Group.GetGroupId, func(x iam.Group) { x.Register() }, m.groupsByUUID, events.GroupResource)
+}
+
+// AddIdentity implements [Model].
+func (m *modelData) AddIdentity(i iam.Identity) error {
+	return addEventEnabled(m, i, iam.Identity.GetIdentityId, func(x iam.Identity) { x.Register() }, m.identitiesByUUID, events.IdentityResource)
+}
+
+// AddOrgUnit implements [Model].
+func (m *modelData) AddOrgUnit(o iam.OrgUnit) error {
+	return addEventEnabled(m, o, iam.OrgUnit.GetOrgUnitId, func(x iam.OrgUnit) { x.Register() }, m.orgUnitsByUUID, events.OrgUnitResource)
+}
+
+// DeleteGroup implements [Model].
+func (m *modelData) DeleteGroup(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.groupsByUUID, events.GroupResource, common.ErrGroupNotFound)
+}
+
+// DeleteIdentity implements [Model].
+func (m *modelData) DeleteIdentity(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.identitiesByUUID, events.IdentityResource, common.ErrIdentityNotFound)
+}
+
+// DeleteOrgUnit implements [Model].
+func (m *modelData) DeleteOrgUnit(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.orgUnitsByUUID, events.OrgUnitResource, common.ErrOrgUnitNotFound)
+}
+
+// GetGroupById implements [Model].
+func (m *modelData) GetGroupById(id uuid.UUID) iam.Group {
+	return getEventEnabled(id, m.groupsByUUID)
+}
+
+// GetGroups implements [Model].
+func (m *modelData) GetGroups() ([]iam.Group, error) {
+	return getAllEventEnabled(m.groupsByUUID)
+}
+
+// GetIdentities implements [Model].
+func (m *modelData) GetIdentities() ([]iam.Identity, error) {
+	return getAllEventEnabled(m.identitiesByUUID)
+}
+
+// GetIdentityById implements [Model].
+func (m *modelData) GetIdentityById(id uuid.UUID) iam.Identity {
+	return getEventEnabled(id, m.identitiesByUUID)
+}
+
+// GetOrgUnitById implements [Model].
+func (m *modelData) GetOrgUnitById(id uuid.UUID) iam.OrgUnit {
+	return getEventEnabled(id, m.orgUnitsByUUID)
+}
+
+// GetOrgUnits implements [Model].
+func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
+	return getAllEventEnabled(m.orgUnitsByUUID)
 }

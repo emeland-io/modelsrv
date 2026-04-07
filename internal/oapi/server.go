@@ -480,3 +480,33 @@ func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, r
 	return GetLandscapeFindingTypesFindingTypeId200JSONResponse(respBody), nil
 
 }
+
+// GetLandscapeGroups implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeGroups(ctx context.Context, request GetLandscapeGroupsRequestObject) (GetLandscapeGroupsResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeGroupsGroupId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeGroupsGroupId(ctx context.Context, request GetLandscapeGroupsGroupIdRequestObject) (GetLandscapeGroupsGroupIdResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeIdentities implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeIdentities(ctx context.Context, request GetLandscapeIdentitiesRequestObject) (GetLandscapeIdentitiesResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeIdentitiesIdentityId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, request GetLandscapeIdentitiesIdentityIdRequestObject) (GetLandscapeIdentitiesIdentityIdResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeOrgUnits implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandscapeOrgUnitsRequestObject) (GetLandscapeOrgUnitsResponseObject, error) {
+	panic("unimplemented")
+}
+
+// GetLandscapeOrgUnitsOrgUnitId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, request GetLandscapeOrgUnitsOrgUnitIdRequestObject) (GetLandscapeOrgUnitsOrgUnitIdResponseObject, error) {
+	panic("unimplemented")
+}

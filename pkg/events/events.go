@@ -63,6 +63,7 @@ const (
 	// Phase 0
 	ContextResource
 	ContextTypeResource
+
 	// Phase 1
 	SystemResource
 	SystemInstanceResource
@@ -70,6 +71,11 @@ const (
 	APIInstanceResource
 	ComponentResource
 	ComponentInstanceResource
+
+	// Phase 2
+	OrgUnitResource
+	GroupResource
+	IdentityResource
 
 	//Phase 5
 	FindingResource
