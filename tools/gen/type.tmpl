@@ -160,6 +160,25 @@ func (o *{{.Name | lower}}Data) Set{{.TypeRefLink.ResourceTypeName}}ByRef(res {{
 		{{.TypeRefLink.RefIDFieldName}}: res.{{.TypeRefLink.ResourceIDGetter}}(),
 	})
 }
+{{if .TypeRefLink.EffectiveIDMethod}}
+// Get{{.TypeRefLink.RefIDFieldName}} returns the type id when set.
+func (o *{{.Name | lower}}Data) Get{{.TypeRefLink.RefIDFieldName}}() uuid.UUID {
+	if o.{{.TypeRefLink.FieldName}} == nil {
+		return uuid.Nil
+	}
+	return o.{{.TypeRefLink.FieldName}}.{{.TypeRefLink.EffectiveIDMethod}}()
+}
+{{end}}
+{{if .TypeRefLink.SetByID}}
+// Set{{.TypeRefLink.ResourceTypeName}}ById records only the type id (resolved object may be nil).
+func (o *{{.Name | lower}}Data) Set{{.TypeRefLink.ResourceTypeName}}ById({{.TypeRefLink.SetByIDParamName}} uuid.UUID) {
+	if {{.TypeRefLink.SetByIDParamName}} == uuid.Nil {
+		o.Set{{.TypeRefLink.FieldName}}(nil)
+		return
+	}
+	o.Set{{.TypeRefLink.FieldName}}(&{{.TypeRefLink.RefTypeName}}{{"{"}}{{.TypeRefLink.RefIDFieldName}}: {{.TypeRefLink.SetByIDParamName}}})
+}
+{{end}}
 {{end}}
 {{range .RefByRefs}}
 // {{.MethodName}} sets the reference from the given [{{.ResourceTypeName}}].

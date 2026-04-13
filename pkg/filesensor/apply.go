@@ -242,7 +242,7 @@ func applyContext(spec map[string]any, m model.Model) error {
 	if typeID, hasType, err := optionalUUIDRef(spec, "type"); err != nil {
 		return err
 	} else if hasType {
-		ctx.GetAnnotations().Add(AnnotationContextTypeID, typeID.String())
+		ctx.SetContextTypeById(typeID)
 	}
 
 	if err := applyAnnotations(ctx.GetAnnotations(), spec); err != nil {

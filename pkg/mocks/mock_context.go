@@ -70,6 +70,35 @@ func (mr *MockContextMockRecorder) GetContextId() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextId", reflect.TypeOf((*MockContext)(nil).GetContextId))
 }
 
+// GetContextType mocks base method.
+func (m *MockContext) GetContextType() (context.ContextType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextType")
+	ret0, _ := ret[0].(context.ContextType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContextType indicates an expected call of GetContextType.
+func (mr *MockContextMockRecorder) GetContextType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextType", reflect.TypeOf((*MockContext)(nil).GetContextType))
+}
+
+// GetContextTypeId mocks base method.
+func (m *MockContext) GetContextTypeId() uuid.UUID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextTypeId")
+	ret0, _ := ret[0].(uuid.UUID)
+	return ret0
+}
+
+// GetContextTypeId indicates an expected call of GetContextTypeId.
+func (mr *MockContextMockRecorder) GetContextTypeId() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextTypeId", reflect.TypeOf((*MockContext)(nil).GetContextTypeId))
+}
+
 // GetDescription mocks base method.
 func (m *MockContext) GetDescription() string {
 	m.ctrl.T.Helper()
@@ -179,6 +208,30 @@ func (mr *MockContextMockRecorder) SetAnnotations(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAnnotations", reflect.TypeOf((*MockContext)(nil).SetAnnotations), arg0)
 }
 
+// SetContextTypeById mocks base method.
+func (m *MockContext) SetContextTypeById(contextTypeId uuid.UUID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetContextTypeById", contextTypeId)
+}
+
+// SetContextTypeById indicates an expected call of SetContextTypeById.
+func (mr *MockContextMockRecorder) SetContextTypeById(contextTypeId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetContextTypeById", reflect.TypeOf((*MockContext)(nil).SetContextTypeById), contextTypeId)
+}
+
+// SetContextTypeByRef mocks base method.
+func (m *MockContext) SetContextTypeByRef(contextType context.ContextType) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetContextTypeByRef", contextType)
+}
+
+// SetContextTypeByRef indicates an expected call of SetContextTypeByRef.
+func (mr *MockContextMockRecorder) SetContextTypeByRef(contextType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetContextTypeByRef", reflect.TypeOf((*MockContext)(nil).SetContextTypeByRef), contextType)
+}
+
 // SetDescription mocks base method.
 func (m *MockContext) SetDescription(arg0 string) {
 	m.ctrl.T.Helper()
@@ -237,4 +290,16 @@ func (m *MockContext) SetParentByRef(parent context.Context) {
 func (mr *MockContextMockRecorder) SetParentByRef(parent any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetParentByRef", reflect.TypeOf((*MockContext)(nil).SetParentByRef), parent)
+}
+
+// SetTypeRef mocks base method.
+func (m *MockContext) SetTypeRef(arg0 *context.ContextTypeRef) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTypeRef", arg0)
+}
+
+// SetTypeRef indicates an expected call of SetTypeRef.
+func (mr *MockContextMockRecorder) SetTypeRef(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTypeRef", reflect.TypeOf((*MockContext)(nil).SetTypeRef), arg0)
 }

@@ -30,6 +30,11 @@ type Context interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
+	GetContextType() (ContextType, error)
+	GetContextTypeId() uuid.UUID
+	SetTypeRef(*ContextTypeRef)
+	SetContextTypeByRef(contextType ContextType)
+	SetContextTypeById(contextTypeId uuid.UUID)
 	GetParent() (Context, error)
 	GetParentId() uuid.UUID
 	SetParent(*ContextRef)
@@ -46,6 +51,7 @@ type contextData struct {
 	ContextId   uuid.UUID
 	DisplayName string
 	Description string
+	TypeRef     *ContextTypeRef
 	Parent      *ContextRef
 	Annotations annotations.Annotations
 }
@@ -164,6 +170,52 @@ func (o *contextData) SetParentById(parentId uuid.UUID) {
 		return
 	}
 	o.SetParent(&ContextRef{ContextId: parentId})
+}
+
+// GetContextType returns the embedded [ContextType] when present (otherwise nil). Resolve by id via [Model.GetContextTypeById].
+func (o *contextData) GetContextType() (ContextType, error) {
+	if o.TypeRef == nil {
+		return nil, nil
+	}
+	return o.TypeRef.ResolvedContextType(), nil
+}
+
+// SetTypeRef sets the low-level type reference and emits when registered.
+func (o *contextData) SetTypeRef(val *ContextTypeRef) {
+	o.TypeRef = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.ContextResource, events.UpdateOperation, o.ContextId, o)
+	}
+}
+
+// SetContextTypeByRef sets the type from a [ContextType] by building a [ContextTypeRef].
+func (o *contextData) SetContextTypeByRef(res ContextType) {
+	if res == nil {
+		o.SetTypeRef(nil)
+		return
+	}
+	o.SetTypeRef(&ContextTypeRef{
+		ContextType:   res,
+		ContextTypeId: res.GetContextTypeId(),
+	})
+}
+
+// GetContextTypeId returns the type id when set.
+func (o *contextData) GetContextTypeId() uuid.UUID {
+	if o.TypeRef == nil {
+		return uuid.Nil
+	}
+	return o.TypeRef.EffectiveContextTypeID()
+}
+
+// SetContextTypeById records only the type id (resolved object may be nil).
+func (o *contextData) SetContextTypeById(contextTypeId uuid.UUID) {
+	if contextTypeId == uuid.Nil {
+		o.SetTypeRef(nil)
+		return
+	}
+	o.SetTypeRef(&ContextTypeRef{ContextTypeId: contextTypeId})
 }
 
 // Register implements [Context].

@@ -26,3 +26,28 @@ func (r *ContextRef) EffectiveParentContextID() uuid.UUID {
 	}
 	return r.ContextId
 }
+
+// ContextTypeRef references a [ContextType] by resolved object and/or id.
+type ContextTypeRef struct {
+	ContextType   ContextType
+	ContextTypeId uuid.UUID
+}
+
+// ResolvedContextType returns the embedded [ContextType] when present, or nil.
+func (r *ContextTypeRef) ResolvedContextType() ContextType {
+	if r == nil {
+		return nil
+	}
+	return r.ContextType
+}
+
+// EffectiveContextTypeID returns the type id from the embedded object or from [ContextTypeRef.ContextTypeId].
+func (r *ContextTypeRef) EffectiveContextTypeID() uuid.UUID {
+	if r == nil {
+		return uuid.Nil
+	}
+	if r.ContextType != nil {
+		return r.ContextType.GetContextTypeId()
+	}
+	return r.ContextTypeId
+}

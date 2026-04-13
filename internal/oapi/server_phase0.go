@@ -117,12 +117,47 @@ func (a *ApiServer) GetLandscapeContextTypesContextTypeId(ctx context.Context, r
 
 // GetLandscapeNodeTypes implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeNodeTypes(ctx context.Context, request GetLandscapeNodeTypesRequestObject) (GetLandscapeNodeTypesResponseObject, error) {
-	panic("unimplemented")
+	nodeTypesArr, err := a.Backend.GetNodeTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	respBody := []InstanceListItem{}
+
+	for _, nodeType := range nodeTypesArr {
+		nodeTypeId := nodeType.GetNodeTypeId()
+		displayName := nodeType.GetDisplayName()
+		reference := fmt.Sprintf("%s/landscape/nodeTypes/%s", a.BaseURL, nodeTypeId.String())
+
+		item := InstanceListItem{
+			InstanceId:  &nodeTypeId,
+			DisplayName: &displayName,
+			Reference:   &reference,
+		}
+		respBody = append(respBody, item)
+	}
+
+	return GetLandscapeNodeTypes200JSONResponse(respBody), nil
 }
 
 // GetLandscapeNodeTypesNodeTypeId implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeNodeTypesNodeTypeId(ctx context.Context, request GetLandscapeNodeTypesNodeTypeIdRequestObject) (GetLandscapeNodeTypesNodeTypeIdResponseObject, error) {
-	panic("unimplemented")
+	nodeType := a.Backend.GetNodeTypeById(request.NodeTypeId)
+	if nodeType == nil {
+		errorstr := fmt.Sprintf("node type %s not found", request.NodeTypeId.String())
+		return GetLandscapeNodeTypesNodeTypeId404JSONResponse(errorstr), nil
+	}
+
+	displayName := nodeType.GetDisplayName()
+	nodeTypeId := nodeType.GetNodeTypeId()
+
+	respBody := NodeType{
+		NodeTypeId:  nodeTypeId,
+		DisplayName: displayName,
+		Annotations: cloneAnnotations(nodeType.GetAnnotations()),
+	}
+
+	return GetLandscapeNodeTypesNodeTypeId200JSONResponse(respBody), nil
 }
 
 // GetLandscapeNodes implements [StrictServerInterface].

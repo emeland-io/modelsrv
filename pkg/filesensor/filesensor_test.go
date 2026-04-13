@@ -118,7 +118,7 @@ spec:
 		ctx := m.GetContextById(ctxID)
 		Expect(ctx).NotTo(BeNil())
 		Expect(ctx.GetDisplayName()).To(Equal("Production"))
-		Expect(ctx.GetAnnotations().GetValue(filesensor.AnnotationContextTypeID)).To(Equal("11111111-1111-1111-1111-111111111111"))
+		Expect(ctx.GetContextTypeId()).To(Equal(uuid.MustParse("11111111-1111-1111-1111-111111111111")))
 
 		sysID := uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 		sys := m.GetSystemById(sysID)
@@ -132,6 +132,50 @@ spec:
 		Expect(api.GetType()).To(Equal(mdlapi.OpenAPI))
 		Expect(api.GetSystem()).NotTo(BeNil())
 		Expect(api.GetSystem().SystemId).To(Equal(sysID))
+	})
+
+	It("links a Context to its ContextType by id after ingestion", func() {
+		data := `---
+version: emeland.io/v1
+kind: ContextType
+spec:
+  contextTypeId: "11111111-1111-1111-1111-111111111111"
+  displayName: "Environment"
+---
+version: emeland.io/v1
+kind: Context
+spec:
+  contextId: "22222222-2222-2222-2222-222222222222"
+  displayName: "Production"
+  type: "11111111-1111-1111-1111-111111111111"
+`
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		dir := GinkgoT().TempDir()
+		path := filepath.Join(dir, "context-with-type.yaml")
+		Expect(os.WriteFile(path, []byte(data), 0644)).To(Succeed())
+
+		res, err := filesensor.ProcessFile(path, m)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(res.Applied).To(Equal(2))
+		Expect(res.Failed).To(BeEmpty())
+
+		ctxID := uuid.MustParse("22222222-2222-2222-2222-222222222222")
+		typeID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
+		ctx := m.GetContextById(ctxID)
+		Expect(ctx).NotTo(BeNil())
+
+		// GetContextTypeId returns the stored UUID directly from the TypeRef
+		Expect(ctx.GetContextTypeId()).To(Equal(typeID))
+
+		// Resolve to the full ContextType via the model (refs only store ids after file-sensor ingestion)
+		resolvedType := m.GetContextTypeById(ctx.GetContextTypeId())
+		Expect(resolvedType).NotTo(BeNil())
+		Expect(resolvedType.GetContextTypeId()).To(Equal(typeID))
+		Expect(resolvedType.GetDisplayName()).To(Equal("Environment"))
 	})
 
 	It("applies valid documents and skips invalid ones in the same file", func() {

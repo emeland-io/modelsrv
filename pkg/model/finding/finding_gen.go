@@ -34,6 +34,12 @@ type Finding interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
+	GetFindingType() (FindingType, error)
+	GetFindingTypeId() uuid.UUID
+	SetTypeRef(*FindingTypeRef)
+	SetFindingTypeByRef(findingType FindingType)
+	SetFindingTypeById(findingTypeId uuid.UUID)
+
 	Register()
 }
 
@@ -44,6 +50,7 @@ type findingData struct {
 	FindingId   uuid.UUID
 	Summary     string
 	Description string
+	TypeRef     *FindingTypeRef
 	Resources   []*common.ResourceRef
 	Annotations annotations.Annotations
 }
@@ -130,6 +137,52 @@ func (o *findingData) SetAnnotations(val annotations.Annotations) {
 	if o.isRegistered {
 		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
 	}
+}
+
+// GetFindingType returns the embedded [FindingType] when present (otherwise nil). Resolve by id via [Model.GetFindingTypeById].
+func (o *findingData) GetFindingType() (FindingType, error) {
+	if o.TypeRef == nil {
+		return nil, nil
+	}
+	return o.TypeRef.ResolvedFindingType(), nil
+}
+
+// SetTypeRef sets the low-level type reference and emits when registered.
+func (o *findingData) SetTypeRef(val *FindingTypeRef) {
+	o.TypeRef = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
+	}
+}
+
+// SetFindingTypeByRef sets the type from a [FindingType] by building a [FindingTypeRef].
+func (o *findingData) SetFindingTypeByRef(res FindingType) {
+	if res == nil {
+		o.SetTypeRef(nil)
+		return
+	}
+	o.SetTypeRef(&FindingTypeRef{
+		FindingType:   res,
+		FindingTypeId: res.GetFindingTypeId(),
+	})
+}
+
+// GetFindingTypeId returns the type id when set.
+func (o *findingData) GetFindingTypeId() uuid.UUID {
+	if o.TypeRef == nil {
+		return uuid.Nil
+	}
+	return o.TypeRef.EffectiveFindingTypeID()
+}
+
+// SetFindingTypeById records only the type id (resolved object may be nil).
+func (o *findingData) SetFindingTypeById(findingTypeId uuid.UUID) {
+	if findingTypeId == uuid.Nil {
+		o.SetTypeRef(nil)
+		return
+	}
+	o.SetTypeRef(&FindingTypeRef{FindingTypeId: findingTypeId})
 }
 
 // Register implements [Finding].
