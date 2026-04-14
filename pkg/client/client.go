@@ -218,6 +218,18 @@ func (c *ModelSrvClient) GetComponentInstances() (*oapi.InstanceList, error) {
 	return (*oapi.InstanceList)(resp.JSON200), nil
 }
 
+func (c *ModelSrvClient) GetFindings() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeFindingsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
 func (c *ModelSrvClient) GetComponentInstanceById(componentId uuid.UUID) (*oapi.ComponentInstance, error) {
 	resp, err := c.oapi_client.GetLandscapeComponentInstancesComponentInstanceIdWithResponse(context.TODO(), componentId)
 	if err != nil {
