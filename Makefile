@@ -13,6 +13,11 @@ GOLANGCI_LINT_VERSION ?= v2.11.3
 MOCKGEN = $(LOCALBIN)/mockgen
 MOCKGEN_VERSION ?= v0.6.0
 
+NILAWAY = $(LOCALBIN)/nilaway
+# Pinned pseudo-version (go.uber.org/nilaway); bump when adopting newer nilaway fixes.
+NILAWAY_VERSION ?= v0.0.0-20260318203545-ad240b12fb4c
+NILAWAY_INCLUDE_PKGS ?= go.emeland.io/modelsrv
+
 
 .PHONY: build
 build: test ## Build the project binary.
@@ -37,8 +42,9 @@ vet: ## Run go vet against code.
 
 
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter
+lint: golangci-lint $(NILAWAY) ## Run golangci-lint and nilaway
 	$(GOLANGCI_LINT) run
+	$(NILAWAY) -include-pkgs=$(NILAWAY_INCLUDE_PKGS) ./...
 
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
@@ -50,8 +56,15 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 	# v2.x releases use the /v2 module path (see https://golangci-lint.run/welcome/install/#install-from-sources)
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
+.PHONY: nilaway
+nilaway: $(NILAWAY) ## Run Uber NilAway nilness checks on this module
+	$(NILAWAY) -include-pkgs=$(NILAWAY_INCLUDE_PKGS) ./...
+
+$(NILAWAY): $(LOCALBIN)
+	$(call go-install-tool,$(NILAWAY),go.uber.org/nilaway/cmd/nilaway,$(NILAWAY_VERSION))
+
 .PHONY: tools
-tools: $(MOCKGEN)
+tools: $(MOCKGEN) $(NILAWAY)
 $(MOCKGEN): $(LOCALBIN)
 	$(call go-install-tool,$(MOCKGEN),go.uber.org/mock/mockgen,$(MOCKGEN_VERSION))
 
