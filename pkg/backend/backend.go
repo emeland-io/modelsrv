@@ -17,6 +17,7 @@ package backend
 import (
 	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/eventfilter"
+	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
@@ -71,6 +72,7 @@ func New() (Backend, error) {
 	}
 
 	chain.SetModel(m)
+	chain.Register(phase0.NewFilterFunc())
 
 	return &backendData{
 		model:    m,

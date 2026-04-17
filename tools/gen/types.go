@@ -32,6 +32,15 @@ type TypeRefLinkSpec struct {
 	RefIDFieldName   string
 	ResourceIDGetter string
 	ModelLookupByID  string
+
+	// EffectiveIDMethod is the method on RefTypeName that returns the effective type id
+	// (e.g. "EffectiveContextTypeID"). When set, a Get<RefIDFieldName>() accessor is generated.
+	EffectiveIDMethod string
+	// SetByID, when true, generates a Set<ResourceTypeName>ById() helper.
+	SetByID bool
+	// SetByIDParamName is the Go parameter name used in the generated Set<ResourceTypeName>ById()
+	// method (e.g. "contextTypeId"). Required when SetByID is true.
+	SetByIDParamName string
 }
 
 type RefByRefSpec struct {

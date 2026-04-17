@@ -70,6 +70,42 @@ var _ = Describe("Context functionalities", func() {
 					Expect(retrievedParent.GetContextId()).To(Equal(parentContext.GetContextId()))
 				})
 			})
+
+			When("ContextType gets updated", func() {
+				It("updates the context type by ref", func() {
+					contextType := mdlctx.NewContextType(sinkMock, uuid.New())
+					testCtx.SetContextTypeByRef(contextType)
+
+					Expect(testCtx.GetContextTypeId()).To(Equal(contextType.GetContextTypeId()))
+
+					resolvedType, err := testCtx.GetContextType()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resolvedType).NotTo(BeNil())
+					Expect(resolvedType.GetContextTypeId()).To(Equal(contextType.GetContextTypeId()))
+				})
+
+				It("updates the context type by id", func() {
+					typeId := uuid.New()
+					testCtx.SetContextTypeById(typeId)
+
+					Expect(testCtx.GetContextTypeId()).To(Equal(typeId))
+
+					// TypeRef holds only the id; GetContextType returns nil until resolved via model
+					resolvedType, err := testCtx.GetContextType()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resolvedType).To(BeNil())
+				})
+
+				It("clears the context type when set to nil ref", func() {
+					testCtx.SetContextTypeByRef(nil)
+					Expect(testCtx.GetContextTypeId()).To(Equal(uuid.Nil))
+				})
+
+				It("clears the context type when set to nil uuid", func() {
+					testCtx.SetContextTypeById(uuid.Nil)
+					Expect(testCtx.GetContextTypeId()).To(Equal(uuid.Nil))
+				})
+			})
 		})
 	})
 
