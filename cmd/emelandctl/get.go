@@ -54,7 +54,9 @@ func newGetCmd() *cobra.Command {
 				return enc.Encode(findings)
 			}
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "ID\tNAME\tREFERENCE")
+			if _, err := fmt.Fprintln(w, "ID\tNAME\tREFERENCE"); err != nil {
+				return err
+			}
 			for _, f := range *findings {
 				id, name, ref := "", "", ""
 				if f.InstanceId != nil {
@@ -66,7 +68,9 @@ func newGetCmd() *cobra.Command {
 				if f.Reference != nil {
 					ref = *f.Reference
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", id, name, ref)
+				if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", id, name, ref); err != nil {
+					return err
+				}
 			}
 			return w.Flush()
 		},

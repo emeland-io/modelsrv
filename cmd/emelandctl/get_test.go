@@ -39,9 +39,9 @@ func executeCmdOut(args ...string) (string, error) {
 
 func TestGetFindingsTable(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/landscape/findings", r.URL.Path)
+		assert.Equal(t, "/api/landscape/findings", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`[
+		_, _ = w.Write([]byte(`[
 			{"instanceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Missing TLS","reference":"/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
 			{"instanceId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","displayName":"Open Port"}
 		]`))
@@ -61,7 +61,7 @@ func TestGetFindingsTable(t *testing.T) {
 func TestGetFindingsJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`[{"instanceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Missing TLS"}]`))
+		_, _ = w.Write([]byte(`[{"instanceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Missing TLS"}]`))
 	}))
 	defer srv.Close()
 
@@ -77,7 +77,7 @@ func TestGetFindingsJSON(t *testing.T) {
 func TestGetFindingsEmpty(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`[]`))
+		_, _ = w.Write([]byte(`[]`))
 	}))
 	defer srv.Close()
 

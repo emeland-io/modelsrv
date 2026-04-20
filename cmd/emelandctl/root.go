@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -42,7 +43,7 @@ func newRootCmd() *cobra.Command {
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.modelsrv.yaml)")
-	rootCmd.PersistentFlags().String("server", "", "EmELand server URL")
+	rootCmd.PersistentFlags().String("server", "", "EmELand server base URL (e.g. http://localhost:8082)")
 	_ = viper.BindPFlag("server.url", rootCmd.PersistentFlags().Lookup("server"))
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
@@ -85,7 +86,7 @@ func serverURL() (string, error) {
 		return "", fmt.Errorf("server URL required: use --server flag or set server.url in %s",
 			filepath.Join(home, ".modelsrv.yaml"))
 	}
-	return u, nil
+	return strings.TrimRight(u, "/") + "/api", nil
 }
 
 // Execute builds the command tree and runs it. Called by main.
