@@ -25,7 +25,7 @@ func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {
 		return events.Event{}, fmt.Errorf("nil event")
 	}
 
-	kind := wireString(ev.Kind)
+	kind := strings.TrimSpace(ev.Kind)
 	op := wireString(ev.Operation)
 	rt := events.ParseWireKind(kind)
 	if rt == events.UnknownResourceType {
@@ -51,7 +51,7 @@ func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {
 		if ev.Resource == nil {
 			return events.Event{}, fmt.Errorf("missing resource payload for %s %s", kind, op)
 		}
-		id, obj, err := replicationObjectFromWire(m, rt, ev.Resource)
+		id, obj, err := decodeReplicationResourceFromMap(m, rt, ev.Resource)
 		if err != nil {
 			return events.Event{}, err
 		}
@@ -75,73 +75,6 @@ func wireString(v interface{}) string {
 		return s
 	default:
 		return fmt.Sprint(v)
-	}
-}
-
-func replicationObjectFromWire(m model.Model, rt events.ResourceType, res *Event_Resource) (uuid.UUID, any, error) {
-	switch rt {
-	case events.SystemResource:
-		os, err := res.AsSystem()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		s, err := systemFromWire(m, os)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return s.GetSystemId(), s, nil
-	case events.SystemInstanceResource:
-		os, err := res.AsSystemInstance()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		s, err := systemInstanceFromWire(m, os)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return s.GetInstanceId(), s, nil
-	case events.APIResource:
-		oa, err := res.AsAPI()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		a, err := apiFromWire(m, oa)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return a.GetApiId(), a, nil
-	case events.APIInstanceResource:
-		oa, err := res.AsApiInstance()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		a, err := apiInstanceFromWire(m, oa)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return a.GetInstanceId(), a, nil
-	case events.ComponentResource:
-		oc, err := res.AsComponent()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		c, err := componentFromWire(m, oc)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return c.GetComponentId(), c, nil
-	case events.ComponentInstanceResource:
-		oc, err := res.AsComponentInstance()
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		c, err := componentInstanceFromWire(m, oc)
-		if err != nil {
-			return uuid.Nil, nil, err
-		}
-		return c.GetInstanceId(), c, nil
-	default:
-		return uuid.Nil, nil, fmt.Errorf("unsupported resource type for upsert: %s", rt)
 	}
 }
 

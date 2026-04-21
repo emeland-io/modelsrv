@@ -64,10 +64,10 @@ func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRe
 	}
 	ev, err := ReplicationEventFromWire(a.Backend, request.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("replication decode: %w", err)
 	}
 	if err := a.Backend.Apply(ev); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("replication apply: %w", err)
 	}
 	return PostEventsPush200Response{}, nil
 }
