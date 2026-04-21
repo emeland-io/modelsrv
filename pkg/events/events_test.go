@@ -58,7 +58,12 @@ var _ = Describe("ResourceType", func() {
 		})
 
 		It("returns UnknownResourceType for unknown kind strings", func() {
-			Expect(events.ParseWireKind("Node")).To(Equal(events.UnknownResourceType))
+			Expect(events.ParseWireKind("NoSuchKind")).To(Equal(events.UnknownResourceType))
+		})
+
+		It("maps Node and Context kinds", func() {
+			Expect(events.ParseWireKind("Node")).To(Equal(events.NodeResource))
+			Expect(events.ParseWireKind("Context")).To(Equal(events.ContextResource))
 		})
 	})
 })
