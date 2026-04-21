@@ -74,4 +74,8 @@ type TypeSpec struct {
 	NotFoundErr         string // e.g. "ErrApiNotFound" from pkg/model/common
 	HandlerPkgAlias     string // import alias for this type's package; empty → use Dir
 	HandlerMethodSuffix string // override for Add*/Delete* method suffix; empty → use Name
+	// HandlerAddExtraArgs is appended immediately after "v" in the Add call (e.g. ", v.GetSummary()" for AddFinding).
+	HandlerAddExtraArgs string
+	// HandlerDeleteName, if set, is the full Model delete method name (e.g. "DeleteOrgUnit"); otherwise Delete<Name>ById is used.
+	HandlerDeleteName string
 }
