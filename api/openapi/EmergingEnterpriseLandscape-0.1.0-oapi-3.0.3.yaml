@@ -1167,28 +1167,20 @@ components:
             - Update
             - Delete
         kind:
-          description: The type of the resource this event refers to (phase-1 structure types for replication).
-          enum:
-            - System
-            - SystemInstance
-            - API
-            - ApiInstance
-            - Component
-            - ComponentInstance
+          type: string
+          description: >
+            Discriminator for the replicated resource. Interpretation matches domain resource names
+            (e.g. Node, Context, System, ApiInstance, OrgUnit). Subscribers unmarshal `resource` based on this value.
         resourceId:
           type: string
           format: uuid
           description: Set for delete events when no resource body is sent.
         resource:
-          description: Resource payload; structure depends on kind.
+          description: >
+            JSON object for create/update events. Shape aligns with the corresponding landscape GET entity
+            response for that kind where one exists.
           type: object
-          oneOf:
-            - $ref: '#/components/schemas/System'
-            - $ref: '#/components/schemas/SystemInstance'
-            - $ref: '#/components/schemas/API'
-            - $ref: '#/components/schemas/ApiInstance'
-            - $ref: '#/components/schemas/Component'
-            - $ref: '#/components/schemas/ComponentInstance'
+          additionalProperties: true
       required:
         - operation
         - kind

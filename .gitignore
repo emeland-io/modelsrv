@@ -2,3 +2,7 @@ cover.out
 .vscode/
 bin/
 /data/*
+
+.gomodcache/
+.gocache/
+.gopath/
