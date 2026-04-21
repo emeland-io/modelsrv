@@ -23,6 +23,10 @@ build: test ## Build the project binary.
 generate: 
 	go generate ./...
 
+.PHONY: gen
+gen: ## Regenerate OpenAPI server, client, and pkg/client models (same packages as go:generate directives).
+	GOTOOLCHAIN=$(GOVERSION) go generate ./internal/oapi/... ./pkg/client/...
+
 .PHONY: test
 test: generate fmt vet ## Run tests.
 	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
