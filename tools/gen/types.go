@@ -78,4 +78,35 @@ type TypeSpec struct {
 	HandlerAddExtraArgs string
 	// HandlerDeleteName, if set, is the full Model delete method name (e.g. "DeleteOrgUnit"); otherwise Delete<Name>ById is used.
 	HandlerDeleteName string
+
+	// --- Client integration test fields ---
+
+	// HasClientTest enables generation of a client integration test for this type.
+	HasClientTest bool
+	// GenClientMethods, when true, generates List and GetById wrapper methods on ModelSrvClient.
+	GenClientMethods bool
+	// ClientListMethod is the ModelSrvClient method name for listing (e.g. "GetSystems").
+	ClientListMethod string
+	// ClientGetByIdMethod is the ModelSrvClient method name for get-by-id (e.g. "GetSystemById").
+	ClientGetByIdMethod string
+	// ClientListOapiMethod is the oapi-codegen generated method prefix for list (e.g. "GetLandscapeSystems").
+	ClientListOapiMethod string
+	// ClientGetByIdOapiMethod is the oapi-codegen generated method prefix for get-by-id (e.g. "GetLandscapeSystemsSystemId").
+	ClientGetByIdOapiMethod string
+	// OapiTypeName is the oapi/client type name returned by get-by-id (e.g. "System").
+	OapiTypeName string
+	// TestDisplayName is the display name set on the test resource.
+	TestDisplayName string
+	// TestIDAssertExpr is the Go expression to extract the ID from the oapi response (e.g. "*got.SystemId").
+	TestIDAssertExpr string
+	// TestNameAssertExpr is the Go expression to extract the display name from the oapi response (e.g. "got.DisplayName").
+	TestNameAssertExpr string
+	// NotFoundSentinel is the sentinel error for 404 (e.g. "common.ErrSystemNotFound").
+	NotFoundSentinel string
+	// TestSetup is Go code to create and add the resource to the model. Uses testID as the uuid and sink as the event sink.
+	TestSetup string
+	// TestDeps lists Names of TypeSpecs that must be set up before this one.
+	TestDeps []string
+	// WireKind is the Event.kind string for this resource type (e.g. "System", "ApiInstance").
+	WireKind string
 }
