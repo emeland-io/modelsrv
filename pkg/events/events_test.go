@@ -61,6 +61,10 @@ var _ = Describe("ResourceType", func() {
 			Expect(events.ParseWireKind("NoSuchKind")).To(Equal(events.UnknownResourceType))
 		})
 
+		It("does not treat Annotations as a standalone replication kind", func() {
+			Expect(events.ParseWireKind("Annotations")).To(Equal(events.UnknownResourceType))
+		})
+
 		It("maps Node and Context kinds", func() {
 			Expect(events.ParseWireKind("Node")).To(Equal(events.NodeResource))
 			Expect(events.ParseWireKind("Context")).To(Equal(events.ContextResource))

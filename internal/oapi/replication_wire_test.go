@@ -39,6 +39,18 @@ var _ = Describe("replication wire: PushWireEventFromDomain (encode)", func() {
 		Expect(err.Error()).To(ContainSubstring("missing resource object"))
 	})
 
+	It("returns an error for standalone Annotations replication events", func() {
+		ev := &events.Event{
+			ResourceType: events.AnnotationsResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   uuid.Nil,
+			Objects:      []any{map[string]string{"k": "v"}},
+		}
+		_, err := oapi.PushWireEventFromDomain(ev)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("not replicated as standalone"))
+	})
+
 	It("builds a delete wire event with kind, operation, and resourceId", func() {
 		rid := uuid.New()
 		ev := &events.Event{
@@ -83,6 +95,19 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		_, err := oapi.ReplicationEventFromWire(m, &ev)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("missing resource payload"))
+	})
+
+	It("returns an error for unknown replication kind Annotations", func() {
+		m := replicationTestModel()
+		res := map[string]interface{}{"k": "v"}
+		ev := oapi.Event{
+			Kind:      "Annotations",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		_, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("unknown event kind"))
 	})
 
 	It("decodes a system after stripping an empty annotations object", func() {

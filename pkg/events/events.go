@@ -202,6 +202,10 @@ func (o Operation) WireOperation() string {
 }
 
 // ParseWireKind maps JSON Event.kind strings (see WireKind) to ResourceType.
+//
+// Annotation key/value changes are not replicated as a top-level kind "Annotations":
+// registered resources forward annotation updates as updates on the enclosing resource
+// (for example a system update), and POST /events/push decodes only those entity kinds.
 func ParseWireKind(s string) ResourceType {
 	switch s {
 	case "Node":
@@ -234,8 +238,6 @@ func ParseWireKind(s string) ResourceType {
 		return FindingResource
 	case "FindingType":
 		return FindingTypeResource
-	case "Annotations":
-		return AnnotationsResource
 	default:
 		return UnknownResourceType
 	}

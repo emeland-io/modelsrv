@@ -21,6 +21,9 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 	if ev == nil {
 		return Event{}, fmt.Errorf("nil event")
 	}
+	if ev.ResourceType == events.AnnotationsResource {
+		return Event{}, fmt.Errorf("annotations are not replicated as standalone events; they are carried on resource payloads")
+	}
 	kind := ev.ResourceType.WireKind()
 	op := ev.Operation.WireOperation()
 	if ev.Operation == events.DeleteOperation {
