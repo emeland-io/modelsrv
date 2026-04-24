@@ -85,7 +85,7 @@ func (e *eventManager) AddSubscriber(subURL string) error {
 		ev := past[i]
 		evCopy := ev
 		if err := newSub.Notify(context.Background(), &evCopy); err != nil {
-			fmt.Printf("failed to notify subscriber %s during replay: %v\n", newSub.GetURL(), err)
+			fmt.Printf("failed to notify subscriber %s during replay: %v\n", newSub.GetURL(), err) // TODO: handle errors in the middle of the replay
 		}
 	}
 	return nil

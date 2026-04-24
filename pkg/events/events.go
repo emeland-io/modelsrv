@@ -103,6 +103,11 @@ var resourceTypeValues = map[ResourceType]string{
 	ComponentResource:         "Component",
 	ComponentInstanceResource: "ComponentInstance",
 
+	// Phase 2
+	OrgUnitResource:  "OrgUnit",
+	GroupResource:    "Group",
+	IdentityResource: "Identity",
+
 	//Phase 5
 	FindingResource:     "Finding",
 	FindingTypeResource: "FindingType",
@@ -127,7 +132,7 @@ func (t ResourceType) String() string {
 	return resourceTypeValues[UnknownResourceType]
 }
 
-// WireKind returns the JSON event "kind" value for phase-1 replication (matches OpenAPI Event.kind enum).
+// WireKind returns the JSON event "kind" value for replication (matches Event.kind on the wire).
 func (t ResourceType) WireKind() string {
 	if t == APIInstanceResource {
 		return "ApiInstance"
@@ -197,20 +202,42 @@ func (o Operation) WireOperation() string {
 }
 
 // ParseWireKind maps JSON Event.kind strings (see WireKind) to ResourceType.
+//
+// Annotation key/value changes are not replicated as a top-level kind "Annotations":
+// registered resources forward annotation updates as updates on the enclosing resource
+// (for example a system update), and POST /events/push decodes only those entity kinds.
 func ParseWireKind(s string) ResourceType {
 	switch s {
+	case "Node":
+		return NodeResource
+	case "NodeType":
+		return NodeTypeResource
+	case "Context":
+		return ContextResource
+	case "ContextType":
+		return ContextTypeResource
 	case "System":
 		return SystemResource
 	case "SystemInstance":
 		return SystemInstanceResource
 	case "API":
 		return APIResource
-	case "ApiInstance":
+	case "ApiInstance", "APIInstance":
 		return APIInstanceResource
 	case "Component":
 		return ComponentResource
 	case "ComponentInstance":
 		return ComponentInstanceResource
+	case "OrgUnit":
+		return OrgUnitResource
+	case "Group":
+		return GroupResource
+	case "Identity":
+		return IdentityResource
+	case "Finding":
+		return FindingResource
+	case "FindingType":
+		return FindingTypeResource
 	default:
 		return UnknownResourceType
 	}

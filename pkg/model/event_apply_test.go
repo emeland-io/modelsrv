@@ -86,7 +86,7 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 
 		It("returns an error for an unsupported upsert resource type", func() {
 			err := m.Apply(events.Event{
-				ResourceType: events.NodeResource,
+				ResourceType: events.AnnotationsResource,
 				Operation:    events.CreateOperation,
 				ResourceId:   uuid.New(),
 				Objects:      []any{struct{}{}},
@@ -122,15 +122,6 @@ var _ = Describe("EventApplier.Apply (replication)", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns an error for an unsupported delete resource type", func() {
-			err := m.Apply(events.Event{
-				ResourceType: events.NodeResource,
-				Operation:    events.DeleteOperation,
-				ResourceId:   uuid.New(),
-			})
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unsupported resource type for delete"))
-		})
 	})
 
 	When("operation is not supported", func() {
