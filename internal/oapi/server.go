@@ -312,7 +312,8 @@ func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request GetLandscapeFindingsFindingIdRequestObject) (GetLandscapeFindingsFindingIdResponseObject, error) {
 	finding := a.Backend.GetFindingById(request.FindingId)
 	if finding == nil {
-		return nil, fmt.Errorf("finding %s not found", request.FindingId.String())
+		errorstr := ErrorString(fmt.Sprintf("finding %s not found", request.FindingId.String()))
+		return GetLandscapeFindingsFindingId404JSONResponse(errorstr), nil
 	}
 
 	description := finding.GetDescription()
@@ -483,30 +484,75 @@ func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, r
 
 // GetLandscapeGroups implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeGroups(ctx context.Context, request GetLandscapeGroupsRequestObject) (GetLandscapeGroupsResponseObject, error) {
-	panic("unimplemented")
+	groups, err := a.Backend.GetGroups()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeGroups200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/groups", groups)), nil
 }
 
 // GetLandscapeGroupsGroupId implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeGroupsGroupId(ctx context.Context, request GetLandscapeGroupsGroupIdRequestObject) (GetLandscapeGroupsGroupIdResponseObject, error) {
-	panic("unimplemented")
+	g := a.Backend.GetGroupById(request.GroupId)
+	if g == nil {
+		errorstr := ErrorString(fmt.Sprintf("group %s not found", request.GroupId.String()))
+		return GetLandscapeGroupsGroupId404JSONResponse(errorstr), nil
+	}
+	description := g.GetDescription()
+	return GetLandscapeGroupsGroupId200JSONResponse(Group{
+		GroupId:     g.GetGroupId(),
+		DisplayName: g.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(g.GetAnnotations()),
+	}), nil
 }
 
 // GetLandscapeIdentities implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeIdentities(ctx context.Context, request GetLandscapeIdentitiesRequestObject) (GetLandscapeIdentitiesResponseObject, error) {
-	panic("unimplemented")
+	identities, err := a.Backend.GetIdentities()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeIdentities200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/identities", identities)), nil
 }
 
 // GetLandscapeIdentitiesIdentityId implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, request GetLandscapeIdentitiesIdentityIdRequestObject) (GetLandscapeIdentitiesIdentityIdResponseObject, error) {
-	panic("unimplemented")
+	i := a.Backend.GetIdentityById(request.IdentityId)
+	if i == nil {
+		errorstr := ErrorString(fmt.Sprintf("identity %s not found", request.IdentityId.String()))
+		return GetLandscapeIdentitiesIdentityId404JSONResponse(errorstr), nil
+	}
+	description := i.GetDescription()
+	return GetLandscapeIdentitiesIdentityId200JSONResponse(Identity{
+		IdentityId:  i.GetIdentityId(),
+		DisplayName: i.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(i.GetAnnotations()),
+	}), nil
 }
 
 // GetLandscapeOrgUnits implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandscapeOrgUnitsRequestObject) (GetLandscapeOrgUnitsResponseObject, error) {
-	panic("unimplemented")
+	orgUnits, err := a.Backend.GetOrgUnits()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeOrgUnits200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orgUnits", orgUnits)), nil
 }
 
 // GetLandscapeOrgUnitsOrgUnitId implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, request GetLandscapeOrgUnitsOrgUnitIdRequestObject) (GetLandscapeOrgUnitsOrgUnitIdResponseObject, error) {
-	panic("unimplemented")
+	o := a.Backend.GetOrgUnitById(request.OrgUnitId)
+	if o == nil {
+		errorstr := ErrorString(fmt.Sprintf("organizational unit %s not found", request.OrgUnitId.String()))
+		return GetLandscapeOrgUnitsOrgUnitId404JSONResponse(errorstr), nil
+	}
+	description := o.GetDescription()
+	return GetLandscapeOrgUnitsOrgUnitId200JSONResponse(OrgUnit{
+		OrgUnitId:   o.GetOrgUnitId(),
+		DisplayName: o.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(o.GetAnnotations()),
+	}), nil
 }

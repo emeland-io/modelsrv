@@ -18,6 +18,12 @@ var handlerTemplate string
 //go:embed type.tmpl
 var typeTemplate string
 
+//go:embed client.tmpl
+var clientTemplate string
+
+//go:embed client_test.tmpl
+var clientTestTemplate string
+
 func main() {
 	funcMap := template.FuncMap{
 		"lower": strings.ToLower,
@@ -43,6 +49,8 @@ func main() {
 
 	tmpl := template.Must(template.New("type").Funcs(funcMap).Parse(typeTemplate))
 	handlerTmpl := template.Must(template.New("handler").Funcs(funcMap).Parse(handlerTemplate))
+	clientTmpl := template.Must(template.New("client").Funcs(funcMap).Parse(clientTemplate))
+	clientTestTmpl := template.Must(template.New("client_test").Funcs(funcMap).Parse(clientTestTemplate))
 
 	_, genFile, _, ok := runtime.Caller(0)
 	if !ok {
@@ -101,6 +109,47 @@ func main() {
 			os.Exit(1)
 		}
 
+		fmt.Printf("Generated %s\n", filename)
+	}
+
+	// --- Generate client wrapper methods ---
+	clientDir := filepath.Clean(filepath.Join(filepath.Dir(genFile), "../../pkg/client"))
+	{
+		var buf bytes.Buffer
+		if err := clientTmpl.Execute(&buf, allTypes); err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing client template: %v\n", err)
+			os.Exit(1)
+		}
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error formatting client code: %v\n%s\n", err, buf.String())
+			os.Exit(1)
+		}
+		filename := filepath.Join(clientDir, "client_gen.go")
+		if err := os.WriteFile(filename, formatted, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", filename, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Generated %s\n", filename)
+	}
+
+	// --- Generate client integration test ---
+	{
+		var buf bytes.Buffer
+		if err := clientTestTmpl.Execute(&buf, allTypes); err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing client_test template: %v\n", err)
+			os.Exit(1)
+		}
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error formatting client_test code: %v\n%s\n", err, buf.String())
+			os.Exit(1)
+		}
+		filename := filepath.Join(clientDir, "client_gen_test.go")
+		if err := os.WriteFile(filename, formatted, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", filename, err)
+			os.Exit(1)
+		}
 		fmt.Printf("Generated %s\n", filename)
 	}
 }
