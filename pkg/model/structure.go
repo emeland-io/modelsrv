@@ -91,6 +91,9 @@ type Model interface {
 	DeleteFindingTypeById(id uuid.UUID) error
 	GetFindingTypes() ([]finding.FindingType, error)
 	GetFindingTypeById(id uuid.UUID) finding.FindingType
+	// GetFindingTypeByName returns the first registered FindingType whose display
+	// name equals name, or nil if none match. An empty name yields nil.
+	GetFindingTypeByName(name string) finding.FindingType
 
 	iam.OrgUnitModel
 	iam.GroupModel
@@ -248,14 +251,12 @@ func (m *modelData) AddContext(c mdlctx.Context) error {
 		op = events.UpdateOperation
 	}
 
+	// Register and persist before notifying the sink so filters see consistent model state.
+	c.Register()
+	m.contextsByUUID[c.GetContextId()] = c
 	if err := m.sink.Receive(events.ContextResource, op, c.GetContextId(), c); err != nil {
 		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
 	}
-
-	m.contextsByUUID[c.GetContextId()] = c
-
-	// mark Context as registered to activate sending events when updating fields
-	c.Register()
 
 	return nil
 }
@@ -317,14 +318,13 @@ func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
 	if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
 		op = events.UpdateOperation
 	}
+
+	// Register and persist before notifying the sink so filters see consistent model state.
+	contextType.Register()
+	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
 	if err := m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType); err != nil {
 		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
 	}
-
-	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
-
-	// mark ContextType as registered to activate sending events when updating fields
-	contextType.Register()
 
 	return nil
 }
@@ -668,6 +668,19 @@ func (m *modelData) GetFindingTypeById(id uuid.UUID) finding.FindingType {
 		return nil
 	}
 	return findingType
+}
+
+// GetFindingTypeByName implements [Model].
+func (m *modelData) GetFindingTypeByName(name string) finding.FindingType {
+	if name == "" {
+		return nil
+	}
+	for _, ft := range m.findingTypesByUUID {
+		if ft.GetDisplayName() == name {
+			return ft
+		}
+	}
+	return nil
 }
 
 // GetFindingTypes implements [Model].
