@@ -46,9 +46,8 @@ vet: ## Run go vet against code.
 
 
 .PHONY: lint
-lint: golangci-lint $(NILAWAY) ## Run golangci-lint and nilaway
+lint: golangci-lint nilaway ## Run golangci-lint and nilaway
 	$(GOLANGCI_LINT) run
-	$(NILAWAY) -include-pkgs=$(NILAWAY_INCLUDE_PKGS) ./...
 
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes

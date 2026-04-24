@@ -2,6 +2,7 @@ package oapi
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/google/uuid"
@@ -224,11 +225,9 @@ func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []mdlapi.ApiRef {
 	out := make([]mdlapi.ApiRef, 0, len(ids))
 	for _, x := range ids {
 		id := uuid.UUID(x)
-		if id == uuid.Nil {
-			continue
-		}
 		ref := refAPI(m, id)
 		if ref == nil {
+			log.Printf("WARNING: skipping unresolvable API ref %s", id)
 			continue
 		}
 		out = append(out, *ref)
