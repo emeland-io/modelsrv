@@ -12,6 +12,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.emeland.io/modelsrv/pkg/model/common"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 var _ = Describe("Backend", func() {
@@ -94,6 +95,38 @@ var _ = Describe("Backend", func() {
 			seqID, err := b.GetEventManager().GetCurrentSequenceId(context.Background())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(seqID).To(Equal(uint64(2))) // 1 for the system creation, 1 for the finding creation
+		})
+	})
+
+	Describe("phase0 finding negation", func() {
+		It("propagates a Finding delete through the chain when a missing ContextType is added", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			var intercepted []events.Event
+			b.GetChain().Register(func(_ model.Model, ev events.Event) []events.Event {
+				intercepted = append(intercepted, ev)
+				return []events.Event{ev}
+			})
+
+			m := b.GetModel()
+			typeID := uuid.New()
+			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx.SetContextTypeById(typeID)
+			Expect(m.AddContext(ctx)).To(Succeed())
+
+			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct.SetDisplayName("t")
+			Expect(m.AddContextType(ct)).To(Succeed())
+
+			var sawFindingDelete bool
+			for _, ev := range intercepted {
+				if ev.ResourceType == events.FindingResource && ev.Operation == events.DeleteOperation {
+					sawFindingDelete = true
+					break
+				}
+			}
+			Expect(sawFindingDelete).To(BeTrue())
 		})
 	})
 

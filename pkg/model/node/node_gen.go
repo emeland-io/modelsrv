@@ -31,8 +31,10 @@ type Node interface {
 	SetAnnotations(annotations.Annotations)
 
 	GetNodeType() (NodeType, error)
+	GetNodeTypeId() uuid.UUID
 	SetTypeRef(*NodeTypeRef)
 	SetNodeTypeByRef(nodeType NodeType)
+	SetNodeTypeById(nodeTypeId uuid.UUID)
 
 	Register()
 }
@@ -145,6 +147,23 @@ func (o *nodeData) SetNodeTypeByRef(res NodeType) {
 		NodeType:   res,
 		NodeTypeId: res.GetNodeTypeId(),
 	})
+}
+
+// GetNodeTypeId returns the type id when set.
+func (o *nodeData) GetNodeTypeId() uuid.UUID {
+	if o.TypeRef == nil {
+		return uuid.Nil
+	}
+	return o.TypeRef.EffectiveNodeTypeID()
+}
+
+// SetNodeTypeById records only the type id (resolved object may be nil).
+func (o *nodeData) SetNodeTypeById(nodeTypeId uuid.UUID) {
+	if nodeTypeId == uuid.Nil {
+		o.SetTypeRef(nil)
+		return
+	}
+	o.SetTypeRef(&NodeTypeRef{NodeTypeId: nodeTypeId})
 }
 
 // Register implements [Node].

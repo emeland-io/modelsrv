@@ -113,6 +113,20 @@ func (mr *MockNodeMockRecorder) GetNodeType() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeType", reflect.TypeOf((*MockNode)(nil).GetNodeType))
 }
 
+// GetNodeTypeId mocks base method.
+func (m *MockNode) GetNodeTypeId() uuid.UUID {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNodeTypeId")
+	ret0, _ := ret[0].(uuid.UUID)
+	return ret0
+}
+
+// GetNodeTypeId indicates an expected call of GetNodeTypeId.
+func (mr *MockNodeMockRecorder) GetNodeTypeId() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeTypeId", reflect.TypeOf((*MockNode)(nil).GetNodeTypeId))
+}
+
 // GetResourceId mocks base method.
 func (m *MockNode) GetResourceId() uuid.UUID {
 	m.ctrl.T.Helper()
@@ -187,6 +201,18 @@ func (m *MockNode) SetDisplayName(arg0 string) {
 func (mr *MockNodeMockRecorder) SetDisplayName(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDisplayName", reflect.TypeOf((*MockNode)(nil).SetDisplayName), arg0)
+}
+
+// SetNodeTypeById mocks base method.
+func (m *MockNode) SetNodeTypeById(nodeTypeId uuid.UUID) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetNodeTypeById", nodeTypeId)
+}
+
+// SetNodeTypeById indicates an expected call of SetNodeTypeById.
+func (mr *MockNodeMockRecorder) SetNodeTypeById(nodeTypeId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNodeTypeById", reflect.TypeOf((*MockNode)(nil).SetNodeTypeById), nodeTypeId)
 }
 
 // SetNodeTypeByRef mocks base method.
