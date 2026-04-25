@@ -224,7 +224,14 @@ func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []mdlapi.ApiRef {
 	out := make([]mdlapi.ApiRef, 0, len(ids))
 	for _, x := range ids {
 		id := uuid.UUID(x)
-		out = append(out, *refAPI(m, id))
+		if id == uuid.Nil {
+			continue
+		}
+		ref := refAPI(m, id)
+		if ref == nil {
+			continue
+		}
+		out = append(out, *ref)
 	}
 	return out
 }
