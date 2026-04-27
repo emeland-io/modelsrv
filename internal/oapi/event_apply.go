@@ -140,7 +140,7 @@ func apiInstanceFromWire(m model.Model, oa ApiInstance) (mdlapi.ApiInstance, err
 	if oa.Api != nil {
 		if ref := refAPI(m, uuid.UUID(*oa.Api)); ref != nil {
 			ai.SetApiRef(ref)
-		} else {
+		} else { // ref may arrive later during eventual-consistency replication
 			log.Printf("WARNING: skipping unresolvable API ref %s", *oa.Api)
 		}
 	}
@@ -241,6 +241,9 @@ func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []mdlapi.ApiRef {
 	out := make([]mdlapi.ApiRef, 0, len(ids))
 	for _, x := range ids {
 		id := uuid.UUID(x)
+		if id == uuid.Nil {
+			continue
+		}
 		ref := refAPI(m, id)
 		if ref == nil {
 			log.Printf("WARNING: skipping unresolvable API ref %s", id)
