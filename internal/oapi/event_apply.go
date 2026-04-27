@@ -138,10 +138,18 @@ func apiInstanceFromWire(m model.Model, oa ApiInstance) (mdlapi.ApiInstance, err
 	ai := mdlapi.NewApiInstance(m.GetSink(), id)
 	ai.SetDisplayName(oa.DisplayName)
 	if oa.Api != nil {
-		ai.SetApiRef(refAPI(m, uuid.UUID(*oa.Api)))
+		if ref := refAPI(m, uuid.UUID(*oa.Api)); ref != nil {
+			ai.SetApiRef(ref)
+		} else {
+			log.Printf("WARNING: skipping unresolvable API ref %s", *oa.Api)
+		}
 	}
 	if oa.SystemInstance != nil {
-		ai.SetSystemInstance(refSystemInstance(m, uuid.UUID(*oa.SystemInstance)))
+		if ref := refSystemInstance(m, uuid.UUID(*oa.SystemInstance)); ref != nil {
+			ai.SetSystemInstance(ref)
+		} else {
+			log.Printf("WARNING: skipping unresolvable SystemInstance ref %s", *oa.SystemInstance)
+		}
 	}
 	mergeOapiAnnotations(ai.GetAnnotations(), oa.Annotations)
 	return ai, nil
@@ -175,8 +183,16 @@ func componentInstanceFromWire(m model.Model, oc ComponentInstance) (component.C
 	id := uuid.UUID(oc.ComponentInstanceId)
 	ci := component.NewComponentInstance(m.GetSink(), id)
 	ci.SetDisplayName(oc.DisplayName)
-	ci.SetComponentRef(refComponent(m, uuid.UUID(oc.Component)))
-	ci.SetSystemInstance(refSystemInstance(m, uuid.UUID(oc.SystemInstance)))
+	if ref := refComponent(m, uuid.UUID(oc.Component)); ref != nil {
+		ci.SetComponentRef(ref)
+	} else {
+		log.Printf("WARNING: skipping unresolvable Component ref %s", oc.Component)
+	}
+	if ref := refSystemInstance(m, uuid.UUID(oc.SystemInstance)); ref != nil {
+		ci.SetSystemInstance(ref)
+	} else {
+		log.Printf("WARNING: skipping unresolvable SystemInstance ref %s", oc.SystemInstance)
+	}
 	mergeOapiAnnotations(ci.GetAnnotations(), oc.Annotations)
 	return ci, nil
 }
