@@ -29,14 +29,59 @@ func normalizeReplicationWireMap(rt events.ResourceType, wire map[string]interfa
 		coalesceObjectToUUIDScalar(wire, "SystemInstance", "systemInstance", "InstanceId", "instanceId")
 
 	case events.ContextResource:
-		coalesceObjectToUUIDScalar(wire, "Parent", "parent", "ContextId", "contextId")
-		coalesceObjectToUUIDScalar(wire, "Type", "type", "ContextTypeId", "contextTypeId")
+		coalesceRefSourcesToOpenAPIField(wire, []string{"TypeRef", "Type", "type"}, "type", "ContextTypeId", "contextTypeId")
+		coalesceRefSourcesToOpenAPIField(wire, []string{"Parent", "parent"}, "parent", "ContextId", "contextId")
 
 	case events.NodeResource:
-		coalesceObjectToUUIDScalar(wire, "NodeType", "nodeType", "NodeTypeId", "nodeTypeId")
+		coalesceRefSourcesToOpenAPIField(wire, []string{"TypeRef", "NodeType", "nodeType"}, "nodeType", "NodeTypeId", "nodeTypeId")
 
 	case events.FindingResource:
 		coalesceObjectToUUIDScalar(wire, "Type", "type", "FindingTypeId", "findingTypeId")
+	}
+}
+
+// coalesceRefSourcesToOpenAPIField sets wire[openAPIJSONKey] from the first non-nil source key.
+// Values may be bare UUID scalars (from OpenAPI-shaped payloads) or nested ref objects whose id
+// appears under one of idKeys (domain TypeRef / Parent shapes from encoding/json).
+func coalesceRefSourcesToOpenAPIField(wire map[string]interface{}, sourceKeys []string, openAPIJSONKey string, idKeys ...string) {
+	for _, sk := range sourceKeys {
+		if sk == "" {
+			continue
+		}
+		v, ok := wire[sk]
+		if !ok || v == nil {
+			continue
+		}
+		switch t := v.(type) {
+		case string:
+			wire[openAPIJSONKey] = t
+			deleteConflictingRefSourceKeys(wire, sourceKeys, openAPIJSONKey)
+			return
+		case float64:
+			wire[openAPIJSONKey] = t
+			deleteConflictingRefSourceKeys(wire, sourceKeys, openAPIJSONKey)
+			return
+		case map[string]interface{}:
+			for _, ik := range idKeys {
+				if x, ok := t[ik]; ok && x != nil {
+					wire[openAPIJSONKey] = x
+					deleteConflictingRefSourceKeys(wire, sourceKeys, openAPIJSONKey)
+					return
+				}
+			}
+		default:
+			// Unexpected shape; try next source key.
+		}
+	}
+}
+
+// deleteConflictingRefSourceKeys removes domain / alternate wire keys so json.Unmarshal into OpenAPI DTOs
+// does not see both "Parent" and "parent" (Go's decoder may bind case-variant keys to one field).
+func deleteConflictingRefSourceKeys(wire map[string]interface{}, sourceKeys []string, openAPIJSONKey string) {
+	for _, sk := range sourceKeys {
+		if sk != "" && sk != openAPIJSONKey {
+			delete(wire, sk)
+		}
 	}
 }
 
