@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"go.emeland.io/modelsrv/pkg/eventfilter"
 	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -19,6 +20,19 @@ func newModel() model.Model {
 	m, err := model.NewModel(events.NewDummySink())
 	Expect(err).NotTo(HaveOccurred())
 	return m
+}
+
+// newModelWithPhase0Chain returns a model whose sink runs phase0 like the real
+// backend, recording downstream events in listSink.
+func newModelWithPhase0Chain() (model.Model, *events.ListSink) {
+	listSink := events.NewListSink()
+	chain := eventfilter.NewChain(nil)
+	filtered := eventfilter.NewFilteringSink(chain, listSink)
+	m, err := model.NewModel(filtered)
+	Expect(err).NotTo(HaveOccurred())
+	chain.SetModel(m)
+	chain.Register(phase0.NewFilterFunc())
+	return m, listSink
 }
 
 // applyFilter calls the phase0 FilterFunc with the given event and returns
@@ -48,15 +62,24 @@ func nodeEvent(n node.Node) events.Event {
 	}
 }
 
-// findingsOfKind returns all findings in m whose FindingType UUID matches the
-// well-known type for the given FindingKind.
+// findingsOfKind returns all findings in m classified with the given
+// FindingKind: either the type id matches [finding.TypeIDForKind], or the
+// resolved FindingType's display name equals the kind string (for types matched
+// by name during upsert).
 func findingsOfKind(m model.Model, kind finding.FindingKind) []finding.Finding {
+	wantName := string(kind)
 	typeID := finding.TypeIDForKind(kind)
 	all, err := m.GetFindings()
 	Expect(err).NotTo(HaveOccurred())
 	var out []finding.Finding
 	for _, f := range all {
-		if f.GetFindingTypeId() == typeID {
+		ftID := f.GetFindingTypeId()
+		if ftID == typeID {
+			out = append(out, f)
+			continue
+		}
+		ft := m.GetFindingTypeById(ftID)
+		if ft != nil && ft.GetDisplayName() == wantName {
 			out = append(out, f)
 		}
 	}
@@ -73,6 +96,34 @@ var _ = Describe("phase0 FilterFunc", func() {
 				applyFilter(m, contextEvent(ctx))
 
 				Expect(findingsOfKind(m, finding.ContextTypeMissing)).To(HaveLen(1))
+			})
+
+			It("registers a FindingType in the model when inferring a finding", func() {
+				m := newModel()
+				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+
+				applyFilter(m, contextEvent(ctx))
+
+				ftid := finding.TypeIDForKind(finding.ContextTypeMissing)
+				ft := m.GetFindingTypeById(ftid)
+				Expect(ft).NotTo(BeNil())
+				Expect(ft.GetDisplayName()).To(Equal(string(finding.ContextTypeMissing)))
+			})
+
+			It("reuses an existing FindingType matched by display name", func() {
+				m := newModel()
+				customID := uuid.New()
+				existing := finding.NewFindingType(m.GetSink(), customID)
+				existing.SetDisplayName(string(finding.ContextTypeMissing))
+				Expect(m.AddFindingType(existing)).To(Succeed())
+
+				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				applyFilter(m, contextEvent(ctx))
+
+				finds := findingsOfKind(m, finding.ContextTypeMissing)
+				Expect(finds).To(HaveLen(1))
+				Expect(finds[0].GetFindingTypeId()).To(Equal(customID))
+				Expect(m.GetFindingTypeById(finding.TypeIDForKind(finding.ContextTypeMissing))).To(BeNil())
 			})
 
 			It("creates a ContextTypeMissing finding when the referenced ContextType does not exist in the model", func() {
@@ -277,6 +328,79 @@ var _ = Describe("phase0 FilterFunc", func() {
 				applyFilter(m, updateEv)
 				Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
 			})
+		})
+	})
+
+	Describe("Finding negation (issue #59)", func() {
+		It("clears ContextTypeMissing when ContextType is registered after the Context", func() {
+			m, _ := newModelWithPhase0Chain()
+			typeID := uuid.New()
+
+			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx.SetContextTypeById(typeID)
+			Expect(m.AddContext(ctx)).To(Succeed())
+			Expect(findingsOfKind(m, finding.ContextTypeMissing)).To(HaveLen(1))
+
+			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct.SetDisplayName("env-type")
+			Expect(m.AddContextType(ct)).To(Succeed())
+
+			Expect(findingsOfKind(m, finding.ContextTypeMissing)).To(BeEmpty())
+		})
+
+		It("emits a Finding delete event when ContextTypeMissing is negated", func() {
+			m, sink := newModelWithPhase0Chain()
+			typeID := uuid.New()
+
+			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx.SetContextTypeById(typeID)
+			Expect(m.AddContext(ctx)).To(Succeed())
+
+			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct.SetDisplayName("env-type")
+			Expect(m.AddContextType(ct)).To(Succeed())
+
+			var sawFindingDelete bool
+			for _, e := range sink.GetEvents() {
+				if e.ResourceType == events.FindingResource && e.Operation == events.DeleteOperation {
+					sawFindingDelete = true
+					break
+				}
+			}
+			Expect(sawFindingDelete).To(BeTrue())
+		})
+
+		It("clears ContextParentNotFound when the parent Context is added later", func() {
+			m, _ := newModelWithPhase0Chain()
+			parentID := uuid.New()
+
+			child := mdlctx.NewContext(m.GetSink(), uuid.New())
+			child.SetParentById(parentID)
+			Expect(m.AddContext(child)).To(Succeed())
+			Expect(findingsOfKind(m, finding.ContextParentNotFound)).To(HaveLen(1))
+
+			parent := mdlctx.NewContext(m.GetSink(), parentID)
+			parent.SetDisplayName("parent")
+			Expect(m.AddContext(parent)).To(Succeed())
+
+			Expect(findingsOfKind(m, finding.ContextParentNotFound)).To(BeEmpty())
+		})
+
+		It("clears NodeTypeMissing when NodeType is registered after the Node (id-only ref)", func() {
+			m, _ := newModelWithPhase0Chain()
+			typeID := uuid.New()
+
+			n := node.NewNode(m.GetSink(), uuid.New())
+			n.SetDisplayName("n")
+			n.SetNodeTypeById(typeID)
+			Expect(m.AddNode(n)).To(Succeed())
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(HaveLen(1))
+
+			nt := node.NewNodeType(m.GetSink(), typeID)
+			nt.SetDisplayName("nt")
+			Expect(m.AddNodeType(nt)).To(Succeed())
+
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
 		})
 	})
 

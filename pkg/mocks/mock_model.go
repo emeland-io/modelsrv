@@ -698,6 +698,20 @@ func (mr *MockModelMockRecorder) GetFindingTypeById(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindingTypeById", reflect.TypeOf((*MockModel)(nil).GetFindingTypeById), id)
 }
 
+// GetFindingTypeByName mocks base method.
+func (m *MockModel) GetFindingTypeByName(name string) finding.FindingType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFindingTypeByName", name)
+	ret0, _ := ret[0].(finding.FindingType)
+	return ret0
+}
+
+// GetFindingTypeByName indicates an expected call of GetFindingTypeByName.
+func (mr *MockModelMockRecorder) GetFindingTypeByName(name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindingTypeByName", reflect.TypeOf((*MockModel)(nil).GetFindingTypeByName), name)
+}
+
 // GetFindingTypes mocks base method.
 func (m *MockModel) GetFindingTypes() ([]finding.FindingType, error) {
 	m.ctrl.T.Helper()

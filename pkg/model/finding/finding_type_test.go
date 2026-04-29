@@ -36,6 +36,9 @@ func TestFindingTypeBasic(t *testing.T) {
 
 	// Verify retrieval by ID
 	assert.Same(t, findingType, testModel.GetFindingTypeById(findingTypeId))
+	assert.Same(t, findingType, testModel.GetFindingTypeByName("Test Finding Type"))
+	assert.Nil(t, testModel.GetFindingTypeByName("no such type"))
+	assert.Nil(t, testModel.GetFindingTypeByName(""))
 
 	// update the DisplayName. This MUST create an event, after the object has been registered
 	// Event 2: update
