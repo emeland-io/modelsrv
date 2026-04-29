@@ -6,8 +6,10 @@ import (
 	. "github.com/onsi/gomega"
 
 	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -18,6 +20,19 @@ func replicationTestModel() model.Model {
 	m, err := model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 	return m
+}
+
+func replicationFindingsOfKind(m model.Model, kind finding.FindingKind) []finding.Finding {
+	typeID := finding.TypeIDForKind(kind)
+	all, err := m.GetFindings()
+	Expect(err).NotTo(HaveOccurred())
+	var out []finding.Finding
+	for _, f := range all {
+		if f.GetFindingTypeId() == typeID {
+			out = append(out, f)
+		}
+	}
+	return out
 }
 
 var _ = Describe("replication wire: PushWireEventFromDomain (encode)", func() {
@@ -213,6 +228,58 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		Expect(ntOut.GetNodeTypeId()).To(Equal(ntid))
 	})
 
+	It("coalesces Context TypeRef and Parent (domain-shaped) into type and parent scalars", func() {
+		m := replicationTestModel()
+		ctid := uuid.New()
+		pid := uuid.New()
+		cid := uuid.New()
+		res := map[string]interface{}{
+			"contextId":   cid.String(),
+			"displayName": "ctx1",
+			"TypeRef":     map[string]interface{}{"contextTypeId": ctid.String()},
+			"Parent":      map[string]interface{}{"contextId": pid.String()},
+			"annotations": []interface{}{},
+		}
+		ev := oapi.Event{
+			Kind:      "Context",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		ctx, ok := out.Objects[0].(mdlctx.Context)
+		Expect(ok).To(BeTrue())
+		Expect(ctx.GetContextTypeId()).To(Equal(ctid))
+		Expect(ctx.GetParentId()).To(Equal(pid))
+	})
+
+	It("coalesces Node TypeRef (domain-shaped from json.Marshal) into nodeType", func() {
+		m := replicationTestModel()
+		ntid := uuid.New()
+		nid := uuid.New()
+		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt.SetDisplayName("nt")
+		Expect(m.AddNodeType(nt)).To(Succeed())
+		res := map[string]interface{}{
+			"nodeId":      nid.String(),
+			"displayName": "n1",
+			"TypeRef":     map[string]interface{}{"nodeTypeId": ntid.String()},
+		}
+		ev := oapi.Event{
+			Kind:      "Node",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		n, ok := out.Objects[0].(node.Node)
+		Expect(ok).To(BeTrue())
+		ntOut, err := n.GetNodeType()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ntOut).NotTo(BeNil())
+		Expect(ntOut.GetNodeTypeId()).To(Equal(ntid))
+	})
+
 	It("coalesces Finding nested type ref", func() {
 		m := replicationTestModel()
 		fid := uuid.New()
@@ -262,5 +329,123 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(ok).To(BeTrue())
 		Expect(out.GetSystemId()).To(Equal(sysID))
 		Expect(out.GetDisplayName()).To(Equal("round-trip"))
+	})
+
+	It("preserves context id, context type id, and parent id", func() {
+		m := replicationTestModel()
+		ctid := uuid.New()
+		parentID := uuid.New()
+		cid := uuid.New()
+		ct := mdlctx.NewContextType(m.GetSink(), ctid)
+		ct.SetDisplayName("ct")
+		Expect(m.AddContextType(ct)).To(Succeed())
+		parent := mdlctx.NewContext(m.GetSink(), parentID)
+		parent.SetDisplayName("parent-ctx")
+		Expect(m.AddContext(parent)).To(Succeed())
+
+		c := mdlctx.NewContext(m.GetSink(), cid)
+		c.SetDisplayName("child-ctx")
+		c.SetContextTypeById(ctid)
+		c.SetParentById(parentID)
+
+		dom := &events.Event{
+			ResourceType: events.ContextResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   cid,
+			Objects:      []any{c},
+		}
+		wire, err := oapi.PushWireEventFromDomain(dom)
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		ctxOut, ok := back.Objects[0].(mdlctx.Context)
+		Expect(ok).To(BeTrue())
+		Expect(ctxOut.GetContextId()).To(Equal(cid))
+		Expect(ctxOut.GetContextTypeId()).To(Equal(ctid))
+		Expect(ctxOut.GetParentId()).To(Equal(parentID))
+	})
+
+	It("preserves node id and node type id", func() {
+		m := replicationTestModel()
+		ntid := uuid.New()
+		nid := uuid.New()
+		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt.SetDisplayName("nt")
+		Expect(m.AddNodeType(nt)).To(Succeed())
+		n := node.NewNode(m.GetSink(), nid)
+		n.SetDisplayName("round-trip-node")
+		n.SetNodeTypeByRef(nt)
+
+		dom := &events.Event{
+			ResourceType: events.NodeResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   nid,
+			Objects:      []any{n},
+		}
+		wire, err := oapi.PushWireEventFromDomain(dom)
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		nOut, ok := back.Objects[0].(node.Node)
+		Expect(ok).To(BeTrue())
+		Expect(nOut.GetNodeId()).To(Equal(nid))
+		ntOut, err := nOut.GetNodeType()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ntOut).NotTo(BeNil())
+		Expect(ntOut.GetNodeTypeId()).To(Equal(ntid))
+	})
+})
+
+var _ = Describe("replication wire: phase0 after push/decode", func() {
+	It("does not emit ContextTypeMissing or NodeTypeMissing for clean domain refs", func() {
+		m := replicationTestModel()
+		ctid := uuid.New()
+		ntid := uuid.New()
+		ct := mdlctx.NewContextType(m.GetSink(), ctid)
+		ct.SetDisplayName("ct")
+		Expect(m.AddContextType(ct)).To(Succeed())
+		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt.SetDisplayName("nt")
+		Expect(m.AddNodeType(nt)).To(Succeed())
+		parentID := uuid.New()
+		parent := mdlctx.NewContext(m.GetSink(), parentID)
+		parent.SetDisplayName("p")
+		Expect(m.AddContext(parent)).To(Succeed())
+
+		cid := uuid.New()
+		c := mdlctx.NewContext(m.GetSink(), cid)
+		c.SetContextTypeById(ctid)
+		c.SetParentById(parentID)
+		wireCtx, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.ContextResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   cid,
+			Objects:      []any{c},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		evCtx, err := oapi.ReplicationEventFromWire(m, &wireCtx)
+		Expect(err).NotTo(HaveOccurred())
+
+		nid := uuid.New()
+		n := node.NewNode(m.GetSink(), nid)
+		n.SetNodeTypeByRef(nt)
+		wireNode, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.NodeResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   nid,
+			Objects:      []any{n},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		evNode, err := oapi.ReplicationEventFromWire(m, &wireNode)
+		Expect(err).NotTo(HaveOccurred())
+
+		fn := phase0.NewFilterFunc()
+		fn(m, evCtx)
+		fn(m, evNode)
+
+		Expect(replicationFindingsOfKind(m, finding.ContextTypeMissing)).To(BeEmpty())
+		Expect(replicationFindingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
 	})
 })
