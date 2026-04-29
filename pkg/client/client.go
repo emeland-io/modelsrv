@@ -99,7 +99,7 @@ func (c *ModelSrvClient) GetSystemById(systemId uuid.UUID) (*oapi.System, error)
 }
 
 func (c *ModelSrvClient) GetSystemInstances() (*oapi.InstanceList, error) {
-	resp, err := c.oapi_client.GetLandscapeSystemsWithResponse(context.TODO())
+	resp, err := c.oapi_client.GetLandscapeSystemInstancesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
 	}
