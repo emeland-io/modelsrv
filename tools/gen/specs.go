@@ -18,6 +18,21 @@ var allTypes = []TypeSpec{
 			{Name: "Description", Type: "string"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetContextTypes",
+		ClientGetByIdMethod: "GetContextTypeById",
+		ClientListOapiMethod:      "GetLandscapeContextTypes",
+		ClientGetByIdOapiMethod:   "GetLandscapeContextTypesContextTypeId",
+		OapiTypeName:       "ContextType",
+		TestDisplayName:    "Test ContextType",
+		TestIDAssertExpr:   "uuid.UUID(got.ContextTypeId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrContextTypeNotFound",
+		WireKind:           "ContextType",
+		TestSetup: `ct := mdlctx.NewContextType(sink, testIDs["ContextType"])
+			ct.SetDisplayName("Test ContextType")
+			require.NoError(t, m.AddContextType(ct))`,
 	},
 	{
 		Name:            "Context",
@@ -38,6 +53,20 @@ var allTypes = []TypeSpec{
 			{Name: "Parent", Type: "*ContextRef", SkipAccessor: true},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetContexts",
+		ClientGetByIdMethod: "GetContextById",
+		OapiTypeName:       "Context",
+		TestDisplayName:    "Test Context",
+		TestIDAssertExpr:   "uuid.UUID(got.ContextId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrContextNotFound",
+		TestDeps:           []string{"ContextType"},
+		WireKind:           "Context",
+		TestSetup: `c := mdlctx.NewContext(sink, testIDs["Context"])
+			c.SetDisplayName("Test Context")
+			c.SetContextTypeById(testIDs["ContextType"])
+			require.NoError(t, m.AddContext(c))`,
 		CustomMethods: []string{
 			"GetContextType() (ContextType, error)",
 			"GetContextTypeId() uuid.UUID",
@@ -96,6 +125,18 @@ var allTypes = []TypeSpec{
 			{Name: "Parent", Type: "*SystemRef", SkipAccessor: true},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetSystems",
+		ClientGetByIdMethod: "GetSystemById",
+		OapiTypeName:       "System",
+		TestDisplayName:    "Test System",
+		TestIDAssertExpr:   "uuid.UUID(*got.SystemId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrSystemNotFound",
+		WireKind:           "System",
+		TestSetup: `sys := system.NewSystem(sink, testIDs["System"])
+			sys.SetDisplayName("Test System")
+			require.NoError(t, m.AddSystem(sys))`,
 		CustomMethods: []string{
 			"GetParent() (System, error)",
 			"SetParent(*SystemRef)",
@@ -130,6 +171,21 @@ var allTypes = []TypeSpec{
 			{Name: "Description", Type: "string"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetNodeTypes",
+		ClientGetByIdMethod: "GetNodeTypeById",
+		ClientListOapiMethod:      "GetLandscapeNodeTypes",
+		ClientGetByIdOapiMethod:   "GetLandscapeNodeTypesNodeTypeId",
+		OapiTypeName:       "NodeType",
+		TestDisplayName:    "Test NodeType",
+		TestIDAssertExpr:   "uuid.UUID(got.NodeTypeId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrNodeTypeNotFound",
+		WireKind:           "NodeType",
+		TestSetup: `nt := node.NewNodeType(sink, testIDs["NodeType"])
+			nt.SetDisplayName("Test NodeType")
+			require.NoError(t, m.AddNodeType(nt))`,
 	},
 	{
 		Name:        "FindingType",
@@ -147,6 +203,21 @@ var allTypes = []TypeSpec{
 			{Name: "Description", Type: "string"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetFindingTypes",
+		ClientGetByIdMethod: "GetFindingTypeById",
+		ClientListOapiMethod:      "GetLandscapeFindingTypes",
+		ClientGetByIdOapiMethod:   "GetLandscapeFindingTypesFindingTypeId",
+		OapiTypeName:       "FindingType",
+		TestDisplayName:    "Test FindingType",
+		TestIDAssertExpr:   "uuid.UUID(*got.FindingTypeId)",
+		TestNameAssertExpr: "*got.DisplayName",
+		NotFoundSentinel:   "common.ErrFindingTypeNotFound",
+		WireKind:           "FindingType",
+		TestSetup: `ft := finding.NewFindingType(sink, testIDs["FindingType"])
+			ft.SetDisplayName("Test FindingType")
+			require.NoError(t, m.AddFindingType(ft))`,
 	},
 	{
 		Name:        "Node",
@@ -165,6 +236,23 @@ var allTypes = []TypeSpec{
 			{Name: "TypeRef", Type: "*NodeTypeRef", SkipAccessor: true},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetNodes",
+		ClientGetByIdMethod: "GetNodeById",
+		ClientListOapiMethod:      "GetLandscapeNodes",
+		ClientGetByIdOapiMethod:   "GetLandscapeNodesNodeId",
+		OapiTypeName:       "Node",
+		TestDisplayName:    "Test Node",
+		TestIDAssertExpr:   "uuid.UUID(got.NodeId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrNodeNotFound",
+		TestDeps:           []string{"NodeType"},
+		WireKind:           "Node",
+		TestSetup: `n := node.NewNode(sink, testIDs["Node"])
+			n.SetDisplayName("Test Node")
+			n.SetTypeRef(&node.NodeTypeRef{NodeTypeId: testIDs["NodeType"]})
+			require.NoError(t, m.AddNode(n))`,
 		CustomMethods: []string{
 			"GetNodeType() (NodeType, error)",
 			"GetNodeTypeId() uuid.UUID",
@@ -205,6 +293,20 @@ var allTypes = []TypeSpec{
 			{Name: "SystemInstance", Type: "*system.SystemInstanceRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetApiInstances",
+		ClientGetByIdMethod: "GetApiInstanceById",
+		OapiTypeName:       "ApiInstance",
+		TestDisplayName:    "Test ApiInstance",
+		TestIDAssertExpr:   "uuid.UUID(got.ApiInstanceId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrApiInstanceNotFound",
+		TestDeps:           []string{"API"},
+		WireKind:           "ApiInstance",
+		TestSetup: `ai := mdlapi.NewApiInstance(sink, testIDs["ApiInstance"])
+			ai.SetDisplayName("Test ApiInstance")
+			ai.SetApiRef(&mdlapi.ApiRef{ApiID: testIDs["API"]})
+			require.NoError(t, m.AddApiInstance(ai))`,
 		CustomMethods: []string{
 			"SetApiRefByRef(api API)",
 			"SetSystemInstanceByRef(instance system.SystemInstance)",
@@ -257,6 +359,20 @@ var allTypes = []TypeSpec{
 			{Name: "System", Type: "*system.SystemRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetAPIs",
+		ClientGetByIdMethod: "GetAPIById",
+		OapiTypeName:       "API",
+		TestDisplayName:    "Test API",
+		TestIDAssertExpr:   "uuid.UUID(*got.ApiId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrApiNotFound",
+		TestDeps:           []string{"System"},
+		WireKind:           "API",
+		TestSetup: `a := mdlapi.NewAPI(sink, testIDs["API"])
+			a.SetDisplayName("Test API")
+			a.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
+			require.NoError(t, m.AddApi(a))`,
 		CustomMethods: []string{
 			"SetSystemByRef(sys system.System)",
 		},
@@ -299,6 +415,20 @@ var allTypes = []TypeSpec{
 			{Name: "Provides", Type: "[]api.ApiRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetComponents",
+		ClientGetByIdMethod: "GetComponentById",
+		OapiTypeName:       "Component",
+		TestDisplayName:    "Test Component",
+		TestIDAssertExpr:   "uuid.UUID(*got.ComponentId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrComponentNotFound",
+		TestDeps:           []string{"System"},
+		WireKind:           "Component",
+		TestSetup: `comp := component.NewComponent(sink, testIDs["Component"])
+			comp.SetDisplayName("Test Component")
+			comp.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
+			require.NoError(t, m.AddComponent(comp))`,
 	},
 	{
 		Name:        "SystemInstance",
@@ -318,6 +448,20 @@ var allTypes = []TypeSpec{
 			{Name: "ContextRef", Type: "*context.ContextRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetSystemInstances",
+		ClientGetByIdMethod: "GetSystemInstanceById",
+		OapiTypeName:       "SystemInstance",
+		TestDisplayName:    "Test SystemInstance",
+		TestIDAssertExpr:   "uuid.UUID(got.SystemInstanceId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrSystemInstanceNotFound",
+		TestDeps:           []string{"System"},
+		WireKind:           "SystemInstance",
+		TestSetup: `si := system.NewSystemInstance(sink, testIDs["SystemInstance"])
+			si.SetDisplayName("Test SystemInstance")
+			si.SetSystemRef(&system.SystemRef{SystemId: testIDs["System"]})
+			require.NoError(t, m.AddSystemInstance(si))`,
 	},
 	{
 		Name:        "ComponentInstance",
@@ -337,6 +481,20 @@ var allTypes = []TypeSpec{
 			{Name: "SystemInstance", Type: "*system.SystemInstanceRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:      true,
+		ClientListMethod:   "GetComponentInstances",
+		ClientGetByIdMethod: "GetComponentInstanceById",
+		OapiTypeName:       "ComponentInstance",
+		TestDisplayName:    "Test ComponentInstance",
+		TestIDAssertExpr:   "uuid.UUID(got.ComponentInstanceId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrComponentInstanceNotFound",
+		TestDeps:           []string{"Component"},
+		WireKind:           "ComponentInstance",
+		TestSetup: `ci := component.NewComponentInstance(sink, testIDs["ComponentInstance"])
+			ci.SetDisplayName("Test ComponentInstance")
+			ci.SetComponentRef(&component.ComponentRef{ComponentId: testIDs["Component"]})
+			require.NoError(t, m.AddComponentInstance(ci))`,
 	},
 	{
 		Name:                "Finding",
@@ -358,6 +516,23 @@ var allTypes = []TypeSpec{
 			{Name: "Resources", Type: "[]*common.ResourceRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetFindings",
+		ClientGetByIdMethod: "GetFindingById",
+		ClientListOapiMethod:      "GetLandscapeFindings",
+		ClientGetByIdOapiMethod:   "GetLandscapeFindingsFindingId",
+		OapiTypeName:       "Finding",
+		TestDisplayName:    "Test Finding",
+		TestIDAssertExpr:   "uuid.UUID(got.FindingId)",
+		TestNameAssertExpr: "got.Summary",
+		NotFoundSentinel:   "common.ErrFindingNotFound",
+		TestDeps:           []string{"FindingType"},
+		WireKind:           "Finding",
+		TestSetup: `f := finding.NewFinding(sink, testIDs["Finding"])
+			f.SetSummary("Test Finding")
+			f.SetFindingTypeById(testIDs["FindingType"])
+			require.NoError(t, m.AddFinding(f, "Test Finding"))`,
 		CustomMethods: []string{
 			"GetFindingType() (FindingType, error)",
 			"GetFindingTypeId() uuid.UUID",
@@ -397,6 +572,21 @@ var allTypes = []TypeSpec{
 			{Name: "Parent", Type: "*OrgUnitRef", SkipAccessor: true},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetOrgUnits",
+		ClientGetByIdMethod: "GetOrgUnitById",
+		ClientListOapiMethod:      "GetLandscapeOrgUnits",
+		ClientGetByIdOapiMethod:   "GetLandscapeOrgUnitsOrgUnitId",
+		OapiTypeName:       "OrgUnit",
+		TestDisplayName:    "Test OrgUnit",
+		TestIDAssertExpr:   "uuid.UUID(got.OrgUnitId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrOrgUnitNotFound",
+		WireKind:           "OrgUnit",
+		TestSetup: `ou := iam.NewOrgUnit(sink, testIDs["OrgUnit"])
+			ou.SetDisplayName("Test OrgUnit")
+			require.NoError(t, m.AddOrgUnit(ou))`,
 		ParentLink: &ParentLinkSpec{
 			FieldName:         "Parent",
 			RefTypeName:       "OrgUnitRef",
@@ -429,6 +619,21 @@ var allTypes = []TypeSpec{
 			{Name: "OrgUnit", Type: "*OrgUnitRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetGroups",
+		ClientGetByIdMethod: "GetGroupById",
+		ClientListOapiMethod:      "GetLandscapeGroups",
+		ClientGetByIdOapiMethod:   "GetLandscapeGroupsGroupId",
+		OapiTypeName:       "Group",
+		TestDisplayName:    "Test Group",
+		TestIDAssertExpr:   "uuid.UUID(got.GroupId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrGroupNotFound",
+		WireKind:           "Group",
+		TestSetup: `g := iam.NewGroup(sink, testIDs["Group"])
+			g.SetDisplayName("Test Group")
+			require.NoError(t, m.AddGroup(g))`,
 		RefByRefs: []RefByRefSpec{
 			{
 				MethodName:       "SetOrgUnitByRef",
@@ -463,6 +668,21 @@ var allTypes = []TypeSpec{
 			{Name: "OrgUnit", Type: "*OrgUnitRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
+		HasClientTest:       true,
+		GenClientMethods:    true,
+		ClientListMethod:    "GetIdentities",
+		ClientGetByIdMethod: "GetIdentityById",
+		ClientListOapiMethod:      "GetLandscapeIdentities",
+		ClientGetByIdOapiMethod:   "GetLandscapeIdentitiesIdentityId",
+		OapiTypeName:       "Identity",
+		TestDisplayName:    "Test Identity",
+		TestIDAssertExpr:   "uuid.UUID(got.IdentityId)",
+		TestNameAssertExpr: "got.DisplayName",
+		NotFoundSentinel:   "common.ErrIdentityNotFound",
+		WireKind:           "Identity",
+		TestSetup: `id := iam.NewIdentity(sink, testIDs["Identity"])
+			id.SetDisplayName("Test Identity")
+			require.NoError(t, m.AddIdentity(id))`,
 		RefByRefs: []RefByRefSpec{
 			{
 				MethodName:       "SetOrgUnitByRef",

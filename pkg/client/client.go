@@ -99,7 +99,7 @@ func (c *ModelSrvClient) GetSystemById(systemId uuid.UUID) (*oapi.System, error)
 }
 
 func (c *ModelSrvClient) GetSystemInstances() (*oapi.InstanceList, error) {
-	resp, err := c.oapi_client.GetLandscapeSystemsWithResponse(context.TODO())
+	resp, err := c.oapi_client.GetLandscapeSystemInstancesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
 	}
@@ -208,18 +208,6 @@ func (c *ModelSrvClient) GetComponentById(componentId uuid.UUID) (*oapi.Componen
 
 func (c *ModelSrvClient) GetComponentInstances() (*oapi.InstanceList, error) {
 	resp, err := c.oapi_client.GetLandscapeComponentInstancesWithResponse(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
-	}
-
-	return (*oapi.InstanceList)(resp.JSON200), nil
-}
-
-func (c *ModelSrvClient) GetFindings() (*oapi.InstanceList, error) {
-	resp, err := c.oapi_client.GetLandscapeFindingsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
 	}
