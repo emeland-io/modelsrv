@@ -22,79 +22,175 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
-type Model interface {
-	mdlevent.EventApplier
-	GetSink() events.EventSink
-
+// NodeModel provides CRUD operations for [node.Node] resources.
+type NodeModel interface {
+	// AddNode registers a Node in the model. Returns an error if the node's UUID is nil.
 	AddNode(n node.Node) error
+	// DeleteNodeById removes the Node with the given id.
 	DeleteNodeById(id uuid.UUID) error
+	// GetNodes returns all registered Nodes.
 	GetNodes() ([]node.Node, error)
+	// GetNodeById returns the Node with the given id, or nil if not found.
 	GetNodeById(id uuid.UUID) node.Node
+}
 
+// NodeTypeModel provides CRUD operations for [node.NodeType] resources.
+type NodeTypeModel interface {
+	// AddNodeType registers a NodeType in the model.
 	AddNodeType(nodeType node.NodeType) error
+	// DeleteNodeTypeById removes the NodeType with the given id.
 	DeleteNodeTypeById(id uuid.UUID) error
+	// GetNodeTypes returns all registered NodeTypes.
 	GetNodeTypes() ([]node.NodeType, error)
+	// GetNodeTypeById returns the NodeType with the given id, or nil if not found.
 	GetNodeTypeById(id uuid.UUID) node.NodeType
+}
 
+// ContextModel provides CRUD operations for [mdlctx.Context] resources.
+type ContextModel interface {
+	// AddContext registers a Context in the model.
 	AddContext(c mdlctx.Context) error
+	// DeleteContextById removes the Context with the given id.
 	DeleteContextById(id uuid.UUID) error
+	// GetContexts returns all registered Contexts.
 	GetContexts() ([]mdlctx.Context, error)
+	// GetContextById returns the Context with the given id, or nil if not found.
 	GetContextById(id uuid.UUID) mdlctx.Context
+}
 
+// ContextTypeModel provides CRUD operations for [mdlctx.ContextType] resources.
+type ContextTypeModel interface {
+	// AddContextType registers a ContextType in the model.
 	AddContextType(contextType mdlctx.ContextType) error
+	// DeleteContextTypeById removes the ContextType with the given id.
 	DeleteContextTypeById(id uuid.UUID) error
+	// GetContextTypes returns all registered ContextTypes.
 	GetContextTypes() ([]mdlctx.ContextType, error)
+	// GetContextTypeById returns the ContextType with the given id, or nil if not found.
 	GetContextTypeById(id uuid.UUID) mdlctx.ContextType
+}
 
+// SystemModel provides CRUD operations for [system.System] resources.
+type SystemModel interface {
+	// AddSystem registers a System in the model.
 	AddSystem(sys system.System) error
+	// DeleteSystemById removes the System with the given id.
 	DeleteSystemById(id uuid.UUID) error
+	// GetSystems returns all registered Systems.
 	GetSystems() ([]system.System, error)
+	// GetSystemById returns the System with the given id, or nil if not found.
 	GetSystemById(id uuid.UUID) system.System
+}
 
+// ApiModel provides CRUD operations for [mdlapi.API] resources.
+type ApiModel interface {
+	// AddApi registers an API in the model.
 	AddApi(a mdlapi.API) error
+	// DeleteApiById removes the API with the given id.
 	DeleteApiById(id uuid.UUID) error
+	// GetApis returns all registered APIs.
 	GetApis() ([]mdlapi.API, error)
+	// GetApiById returns the API with the given id, or nil if not found.
 	GetApiById(id uuid.UUID) mdlapi.API
-
 	// ApiRefByID builds an [mdlapi.ApiRef] for a registered API, or nil if not found.
 	ApiRefByID(apiId uuid.UUID) *mdlapi.ApiRef
+}
 
+// ComponentModel provides CRUD operations for [component.Component] resources.
+type ComponentModel interface {
+	// AddComponent registers a Component in the model.
 	AddComponent(comp component.Component) error
+	// DeleteComponentById removes the Component with the given id.
 	DeleteComponentById(id uuid.UUID) error
+	// GetComponents returns all registered Components.
 	GetComponents() ([]component.Component, error)
+	// GetComponentById returns the Component with the given id, or nil if not found.
 	GetComponentById(id uuid.UUID) component.Component
+}
 
+// SystemInstanceModel provides CRUD operations for [system.SystemInstance] resources.
+type SystemInstanceModel interface {
+	// AddSystemInstance registers a SystemInstance in the model.
 	AddSystemInstance(instance system.SystemInstance) error
+	// DeleteSystemInstanceById removes the SystemInstance with the given id.
 	DeleteSystemInstanceById(id uuid.UUID) error
+	// GetSystemInstances returns all registered SystemInstances.
 	GetSystemInstances() ([]system.SystemInstance, error)
+	// GetSystemInstanceById returns the SystemInstance with the given id, or nil if not found.
 	GetSystemInstanceById(id uuid.UUID) system.SystemInstance
-
 	// SystemInstanceRefByID builds a [system.SystemInstanceRef] for a registered instance, or nil if not found.
 	SystemInstanceRefByID(instanceId uuid.UUID) *system.SystemInstanceRef
+}
 
+// ApiInstanceModel provides CRUD operations for [mdlapi.ApiInstance] resources.
+type ApiInstanceModel interface {
+	// AddApiInstance registers an ApiInstance in the model.
 	AddApiInstance(instance mdlapi.ApiInstance) error
+	// DeleteApiInstanceById removes the ApiInstance with the given id.
 	DeleteApiInstanceById(id uuid.UUID) error
+	// GetApiInstances returns all registered ApiInstances.
 	GetApiInstances() ([]mdlapi.ApiInstance, error)
+	// GetApiInstanceById returns the ApiInstance with the given id, or nil if not found.
 	GetApiInstanceById(id uuid.UUID) mdlapi.ApiInstance
+}
 
+// ComponentInstanceModel provides CRUD operations for [component.ComponentInstance] resources.
+type ComponentInstanceModel interface {
+	// AddComponentInstance registers a ComponentInstance in the model.
 	AddComponentInstance(instance component.ComponentInstance) error
+	// DeleteComponentInstanceById removes the ComponentInstance with the given id.
 	DeleteComponentInstanceById(id uuid.UUID) error
+	// GetComponentInstances returns all registered ComponentInstances.
 	GetComponentInstances() ([]component.ComponentInstance, error)
+	// GetComponentInstanceById returns the ComponentInstance with the given id, or nil if not found.
 	GetComponentInstanceById(id uuid.UUID) component.ComponentInstance
+}
 
+// FindingModel provides CRUD operations for [finding.Finding] resources.
+type FindingModel interface {
+	// AddFinding registers a Finding in the model with the given display name.
 	AddFinding(f finding.Finding, name string) error
+	// DeleteFindingById removes the Finding with the given id.
 	DeleteFindingById(id uuid.UUID) error
+	// GetFindings returns all registered Findings.
 	GetFindings() ([]finding.Finding, error)
+	// GetFindingById returns the Finding with the given id, or nil if not found.
 	GetFindingById(id uuid.UUID) finding.Finding
+}
 
+// FindingTypeModel provides CRUD operations for [finding.FindingType] resources.
+type FindingTypeModel interface {
+	// AddFindingType registers a FindingType in the model.
 	AddFindingType(findingType finding.FindingType) error
+	// DeleteFindingTypeById removes the FindingType with the given id.
 	DeleteFindingTypeById(id uuid.UUID) error
+	// GetFindingTypes returns all registered FindingTypes.
 	GetFindingTypes() ([]finding.FindingType, error)
+	// GetFindingTypeById returns the FindingType with the given id, or nil if not found.
 	GetFindingTypeById(id uuid.UUID) finding.FindingType
 	// GetFindingTypeByName returns the first registered FindingType whose display
 	// name equals name, or nil if none match. An empty name yields nil.
 	GetFindingTypeByName(name string) finding.FindingType
+}
 
+// Model is the aggregate interface for the landscape model, composed of per-resource sub-interfaces.
+type Model interface {
+	mdlevent.EventApplier
+	// GetSink returns the event sink used by this model for recording mutations.
+	GetSink() events.EventSink
+
+	NodeModel
+	NodeTypeModel
+	ContextModel
+	ContextTypeModel
+	SystemModel
+	ApiModel
+	ComponentModel
+	SystemInstanceModel
+	ApiInstanceModel
+	ComponentInstanceModel
+	FindingModel
+	FindingTypeModel
 	iam.OrgUnitModel
 	iam.GroupModel
 	iam.IdentityModel
