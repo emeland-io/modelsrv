@@ -93,17 +93,16 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check whether a file exists or is a directory at the given path
 	fi, err := os.Stat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			path = filepath.Join(h.staticPath, h.indexPath)
-			setupLog.Info("SPA Handler will serve index file", "path", path)
-			http.ServeFile(w, r, path)
+		if !os.IsNotExist(err) {
+			setupLog.Error("SPA Handler stat error", "path", path, "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		// any other stat error: return 500
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-	if fi.IsDir() {
+
+	// file does not exist or path is a directory: serve index file
+	// fi is only non-nil when err == nil, so IsDir() is safe here.
+	if err != nil || fi.IsDir() {
 		path = filepath.Join(h.staticPath, h.indexPath)
 		setupLog.Info("SPA Handler will serve index file", "path", path)
 		http.ServeFile(w, r, path)
