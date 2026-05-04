@@ -21,7 +21,7 @@ import (
 func newServer() (model.Model, events.EventManager, *httptest.Server) {
 	em, err := eventmgr.NewEventManager()
 	Expect(err).NotTo(HaveOccurred())
-	if em == nil {
+	if em == nil { // required by nilaway
 		Fail("NewEventManager returned nil manager")
 	}
 	sink, err := em.GetSink()
@@ -42,7 +42,7 @@ func postEventsRegister(upstreamAPIBase, callbackURL string) {
 	body := fmt.Sprintf(`{"callbackUrl":%q}`, callbackURL)
 	resp, err := http.Post(upstreamAPIBase+"/events/register", "application/json", bytes.NewReader([]byte(body)))
 	Expect(err).NotTo(HaveOccurred())
-	if resp == nil {
+	if resp == nil { // required by nilaway
 		Fail("http.Post returned nil response")
 	}
 	defer resp.Body.Close() //nolint:errcheck
