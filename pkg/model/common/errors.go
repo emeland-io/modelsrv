@@ -18,6 +18,8 @@ var (
 	ErrOrgUnitNotFound           = fmt.Errorf("organizational unit not found")
 	ErrIdentityNotFound          = fmt.Errorf("identity not found")
 	ErrGroupNotFound             = fmt.Errorf("group not found")
+	ErrArtifactNotFound          = fmt.Errorf("artifact not found")
+	ErrArtifactInstanceNotFound  = fmt.Errorf("artifact instance not found")
 
 	ErrUUIDNotSet = fmt.Errorf("resource identifier UUID not set")
 )
