@@ -556,3 +556,59 @@ func (a *ApiServer) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, request G
 		Annotations: cloneAnnotations(o.GetAnnotations()),
 	}), nil
 }
+
+// GetLandscapeArtifacts implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifacts(ctx context.Context, request GetLandscapeArtifactsRequestObject) (GetLandscapeArtifactsResponseObject, error) {
+	artifacts, err := a.Backend.GetArtifacts()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeArtifacts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifacts", artifacts)), nil
+}
+
+// GetLandscapeArtifactsArtifactId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactsArtifactId(ctx context.Context, request GetLandscapeArtifactsArtifactIdRequestObject) (GetLandscapeArtifactsArtifactIdResponseObject, error) {
+	art := a.Backend.GetArtifactById(request.ArtifactId)
+	if art == nil {
+		errorstr := ErrorString(fmt.Sprintf("artifact %s not found", request.ArtifactId.String()))
+		return GetLandscapeArtifactsArtifactId404JSONResponse(errorstr), nil
+	}
+	description := art.GetDescription()
+	hash := art.GetHash()
+	return GetLandscapeArtifactsArtifactId200JSONResponse(Artifact{
+		ArtifactId:  request.ArtifactId,
+		DisplayName: art.GetDisplayName(),
+		Description: &description,
+		Hash:        &hash,
+		Annotations: cloneAnnotations(art.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapeArtifactInstances implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactInstances(ctx context.Context, request GetLandscapeArtifactInstancesRequestObject) (GetLandscapeArtifactInstancesResponseObject, error) {
+	instances, err := a.Backend.GetArtifactInstances()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeArtifactInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifactInstances", instances)), nil
+}
+
+// GetLandscapeArtifactInstancesArtifactInstanceId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactInstancesArtifactInstanceId(ctx context.Context, request GetLandscapeArtifactInstancesArtifactInstanceIdRequestObject) (GetLandscapeArtifactInstancesArtifactInstanceIdResponseObject, error) {
+	ai := a.Backend.GetArtifactInstanceById(request.ArtifactInstanceId)
+	if ai == nil {
+		errorstr := ErrorString(fmt.Sprintf("artifact instance %s not found", request.ArtifactInstanceId.String()))
+		return GetLandscapeArtifactInstancesArtifactInstanceId404JSONResponse(errorstr), nil
+	}
+	description := ai.GetDescription()
+	resp := ArtifactInstance{
+		ArtifactInstanceId: request.ArtifactInstanceId,
+		DisplayName:        ai.GetDisplayName(),
+		Description:        &description,
+		Annotations:        cloneAnnotations(ai.GetAnnotations()),
+	}
+	if ref := ai.GetArtifactRef(); ref != nil {
+		resp.Artifact = &ref.ArtifactId
+	}
+	return GetLandscapeArtifactInstancesArtifactInstanceId200JSONResponse(resp), nil
+}
