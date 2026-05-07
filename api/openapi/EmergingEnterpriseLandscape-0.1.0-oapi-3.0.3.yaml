@@ -554,6 +554,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/artifacts:
+    get:
+      description: Retrieve all artifacts in the landscape.
+      tags: [landscape, p8_data_catalog]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/artifacts/{artifactId}:
+    get:
+      description: Retrieve details of a specific artifact by its UUID.
+      tags: [landscape, p8_data_catalog]
+      parameters:
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/artifactInstances:
+    get:
+      description: Retrieve all artifact instances in the landscape.
+      tags: [landscape, p8_data_catalog]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/artifactInstances/{artifactInstanceId}:
+    get:
+      description: Retrieve details of a specific artifact instance by its UUID.
+      tags: [landscape, p8_data_catalog]
+      parameters:
+        - name: artifactInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactInstance'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -763,6 +833,9 @@ components:
             # phase-5 risk types
             - Finding
             - FindingType
+            # phase-8 artifact types
+            - Artifact
+            - ArtifactInstance
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.
@@ -1154,6 +1227,59 @@ components:
             $ref: '#/components/schemas/Annotation'
       required:
         - identityId
+        - displayName
+    Artifact:
+      type: object
+      description: Represents a binary artefact (e.g. software package, archive, binary executable) tracked in the landscape.
+      properties:
+        artifactId:
+          type: string
+          description: UUID that uniquely identifies the artifact.
+          format: uuid
+        displayName:
+          type: string
+          description: A human-readable name of the artifact.
+        description:
+          type: string
+          description: A description of the artifact.
+        hash:
+          type: string
+          description: 'Hash of the binary object in the format algorithm:hex (e.g. "SHA256:9e9b...").'
+          pattern: '^[A-Za-z0-9]+:[0-9a-f]+$'
+          example: 'SHA256:9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the artifact.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - artifactId
+        - displayName
+    ArtifactInstance:
+      type: object
+      description: Represents a specific instance (copy/location) of an Artifact.
+      properties:
+        artifactInstanceId:
+          type: string
+          description: UUID that uniquely identifies the artifact instance.
+          format: uuid
+        displayName:
+          type: string
+          description: A human-readable name of the artifact instance.
+        description:
+          type: string
+          description: A description of the artifact instance.
+        artifact:
+          type: string
+          description: UUID of the referenced Artifact.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the artifact instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - artifactInstanceId
         - displayName
     Event:
       type: object
