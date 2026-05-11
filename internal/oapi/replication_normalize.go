@@ -35,6 +35,9 @@ func normalizeReplicationWireMap(rt events.ResourceType, wire map[string]interfa
 	case events.NodeResource:
 		coalesceRefSourcesToOpenAPIField(wire, []string{"TypeRef", "NodeType", "nodeType"}, "nodeType", "NodeTypeId", "nodeTypeId")
 
+	case events.ProductResource:
+		coalesceRefSourcesToOpenAPIField(wire, []string{"Vendor", "vendor"}, "vendor", "OrgUnitId", "orgUnitId")
+
 	case events.FindingResource:
 		coalesceObjectToUUIDScalar(wire, "Type", "type", "FindingTypeId", "findingTypeId")
 	}

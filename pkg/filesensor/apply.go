@@ -13,6 +13,8 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -175,6 +177,85 @@ func parseApiType(s string) (mdlapi.ApiType, error) {
 	return mdlapi.ParseApiType(strings.TrimSpace(s))
 }
 
+func parseProductionVersionMap(m map[string]any) (mdlprod.ProductionVersion, error) {
+	var out mdlprod.ProductionVersion
+	var err error
+	if out.AvailableFrom, err = parseOptionalTime(m, "availableFrom"); err != nil {
+		return out, err
+	}
+	if out.DeprecatedFrom, err = parseOptionalTime(m, "deprecatedFrom"); err != nil {
+		return out, err
+	}
+	if out.TerminatedFrom, err = parseOptionalTime(m, "terminatedFrom"); err != nil {
+		return out, err
+	}
+	raw, ok := m["artefacts"]
+	if !ok || raw == nil {
+		return out, nil
+	}
+	arr, ok := raw.([]any)
+	if !ok {
+		return out, fmt.Errorf("artefacts must be an array")
+	}
+	for i, item := range arr {
+		s, ok := item.(string)
+		if !ok {
+			return out, fmt.Errorf("artefacts[%d] must be a UUID string", i)
+		}
+		aid, err := uuid.Parse(strings.TrimSpace(s))
+		if err != nil {
+			return out, fmt.Errorf("artefacts[%d]: %w", i, err)
+		}
+		out.Artefacts = append(out.Artefacts, aid)
+	}
+	return out, nil
+}
+
+func applyProduct(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "productId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	p := mdlprod.NewProduct(m.GetSink(), id)
+	p.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		p.SetDescription(desc)
+	}
+	if vendorID, has, err := optionalUUIDRef(spec, "vendor"); err != nil {
+		return err
+	} else if has {
+		p.SetVendor(&iam.OrgUnitRef{OrgUnitId: vendorID})
+	}
+	raw, ok := spec["versions"]
+	if ok && raw != nil {
+		arr, ok := raw.([]any)
+		if !ok {
+			return fmt.Errorf("versions must be an array")
+		}
+		vers := make([]mdlprod.ProductionVersion, 0, len(arr))
+		for i, item := range arr {
+			vm, ok := item.(map[string]any)
+			if !ok {
+				return fmt.Errorf("versions[%d] must be an object", i)
+			}
+			pv, err := parseProductionVersionMap(vm)
+			if err != nil {
+				return fmt.Errorf("versions[%d]: %w", i, err)
+			}
+			vers = append(vers, pv)
+		}
+		p.SetVersions(vers)
+	}
+	if err := applyAnnotations(p.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddProduct(p)
+}
+
 // ApplyDocument validates and applies a single decoded [Document] to the model.
 func ApplyDocument(doc Document, m model.Model) error {
 	if !ValidVersion(doc.Version) {
@@ -214,6 +295,8 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyArtifact(doc.Spec, m)
 	case events.ArtifactInstanceResource:
 		return applyArtifactInstance(doc.Spec, m)
+	case events.ProductResource:
+		return applyProduct(doc.Spec, m)
 	case events.UnknownResourceType:
 		return fmt.Errorf("kind is required")
 	default:

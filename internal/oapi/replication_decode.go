@@ -13,6 +13,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 )
 
 func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res *map[string]interface{}) (uuid.UUID, any, error) {
@@ -168,6 +169,17 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 		}
 		return i.GetIdentityId(), i, nil
 
+	case events.ProductResource:
+		var op Product
+		if err := json.Unmarshal(raw, &op); err != nil {
+			return uuid.Nil, nil, err
+		}
+		p, err := productFromWire(m, op)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return p.GetProductId(), p, nil
+
 	case events.FindingResource:
 		var of Finding
 		if err := json.Unmarshal(raw, &of); err != nil {
@@ -295,6 +307,40 @@ func identityFromWire(m model.Model, oi Identity) (iam.Identity, error) {
 	}
 	mergeOapiAnnotations(i.GetAnnotations(), oi.Annotations)
 	return i, nil
+}
+
+func productFromWire(m model.Model, op Product) (mdlprod.Product, error) {
+	id := uuid.UUID(op.ProductId)
+	p := mdlprod.NewProduct(m.GetSink(), id)
+	p.SetDisplayName(op.DisplayName)
+	if op.Description != nil {
+		p.SetDescription(*op.Description)
+	}
+	if op.Vendor != nil {
+		p.SetVendor(refOrgUnit(m, uuid.UUID(*op.Vendor)))
+	}
+	if op.Versions != nil {
+		list := make([]mdlprod.ProductionVersion, 0, len(*op.Versions))
+		for i := range *op.Versions {
+			list = append(list, productionVersionFromWire((*op.Versions)[i]))
+		}
+		p.SetVersions(list)
+	}
+	mergeOapiAnnotations(p.GetAnnotations(), op.Annotations)
+	return p, nil
+}
+
+func productionVersionFromWire(in ProductionVersion) mdlprod.ProductionVersion {
+	var out mdlprod.ProductionVersion
+	out.AvailableFrom = in.AvailableFrom
+	out.DeprecatedFrom = in.DeprecatedFrom
+	out.TerminatedFrom = in.TerminatedFrom
+	if in.Artefacts != nil {
+		for _, aid := range *in.Artefacts {
+			out.Artefacts = append(out.Artefacts, uuid.UUID(aid))
+		}
+	}
+	return out
 }
 
 func findingFromWire(m model.Model, of Finding) (finding.Finding, error) {

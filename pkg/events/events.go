@@ -76,6 +76,7 @@ const (
 	OrgUnitResource
 	GroupResource
 	IdentityResource
+	ProductResource
 
 	//Phase 5
 	FindingResource
@@ -111,6 +112,7 @@ var resourceTypeValues = map[ResourceType]string{
 	OrgUnitResource:  "OrgUnit",
 	GroupResource:    "Group",
 	IdentityResource: "Identity",
+	ProductResource:  "Product",
 
 	//Phase 5
 	FindingResource:     "Finding",
@@ -242,6 +244,8 @@ func ParseWireKind(s string) ResourceType {
 		return GroupResource
 	case "Identity":
 		return IdentityResource
+	case "Product":
+		return ProductResource
 	case "Finding":
 		return FindingResource
 	case "FindingType":
