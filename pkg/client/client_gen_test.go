@@ -24,6 +24,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -37,6 +38,7 @@ var (
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = node.NewNode
+	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
 
