@@ -33,6 +33,9 @@ var documentKinds = map[events.ResourceType]struct{}{
 
 	events.FindingResource:     {},
 	events.FindingTypeResource: {},
+
+	events.ArtifactResource:         {},
+	events.ArtifactInstanceResource: {},
 }
 
 // ResourceType returns the underlying [events.ResourceType].
