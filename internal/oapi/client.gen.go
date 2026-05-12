@@ -123,6 +123,18 @@ type ClientInterface interface {
 	// GetLandscapeApisApiId request
 	GetLandscapeApisApiId(ctx context.Context, apiId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeArtifactInstances request
+	GetLandscapeArtifactInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeArtifactInstancesArtifactInstanceId request
+	GetLandscapeArtifactInstancesArtifactInstanceId(ctx context.Context, artifactInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeArtifacts request
+	GetLandscapeArtifacts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeArtifactsArtifactId request
+	GetLandscapeArtifactsArtifactId(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeComponentInstances request
 	GetLandscapeComponentInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -339,6 +351,54 @@ func (c *Client) GetLandscapeApis(ctx context.Context, reqEditors ...RequestEdit
 
 func (c *Client) GetLandscapeApisApiId(ctx context.Context, apiId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeApisApiIdRequest(c.Server, apiId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeArtifactInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeArtifactInstancesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeArtifactInstancesArtifactInstanceId(ctx context.Context, artifactInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeArtifactInstancesArtifactInstanceIdRequest(c.Server, artifactInstanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeArtifacts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeArtifactsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeArtifactsArtifactId(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeArtifactsArtifactIdRequest(c.Server, artifactId)
 	if err != nil {
 		return nil, err
 	}
@@ -959,6 +1019,128 @@ func NewGetLandscapeApisApiIdRequest(server string, apiId openapi_types.UUID) (*
 	}
 
 	operationPath := fmt.Sprintf("/landscape/apis/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeArtifactInstancesRequest generates requests for GetLandscapeArtifactInstances
+func NewGetLandscapeArtifactInstancesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/artifactInstances")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeArtifactInstancesArtifactInstanceIdRequest generates requests for GetLandscapeArtifactInstancesArtifactInstanceId
+func NewGetLandscapeArtifactInstancesArtifactInstanceIdRequest(server string, artifactInstanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "artifactInstanceId", runtime.ParamLocationPath, artifactInstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/artifactInstances/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeArtifactsRequest generates requests for GetLandscapeArtifacts
+func NewGetLandscapeArtifactsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/artifacts")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeArtifactsArtifactIdRequest generates requests for GetLandscapeArtifactsArtifactId
+func NewGetLandscapeArtifactsArtifactIdRequest(server string, artifactId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "artifactId", runtime.ParamLocationPath, artifactId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/artifacts/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1872,6 +2054,18 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeApisApiIdWithResponse request
 	GetLandscapeApisApiIdWithResponse(ctx context.Context, apiId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeApisApiIdResponse, error)
 
+	// GetLandscapeArtifactInstancesWithResponse request
+	GetLandscapeArtifactInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactInstancesResponse, error)
+
+	// GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse request
+	GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse(ctx context.Context, artifactInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactInstancesArtifactInstanceIdResponse, error)
+
+	// GetLandscapeArtifactsWithResponse request
+	GetLandscapeArtifactsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactsResponse, error)
+
+	// GetLandscapeArtifactsArtifactIdWithResponse request
+	GetLandscapeArtifactsArtifactIdWithResponse(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactsArtifactIdResponse, error)
+
 	// GetLandscapeComponentInstancesWithResponse request
 	GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error)
 
@@ -2146,6 +2340,96 @@ func (r GetLandscapeApisApiIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeApisApiIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeArtifactInstancesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeArtifactInstancesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeArtifactInstancesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeArtifactInstancesArtifactInstanceIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ArtifactInstance
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeArtifactInstancesArtifactInstanceIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeArtifactInstancesArtifactInstanceIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeArtifactsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeArtifactsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeArtifactsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeArtifactsArtifactIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeArtifactsArtifactIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeArtifactsArtifactIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2863,6 +3147,42 @@ func (c *ClientWithResponses) GetLandscapeApisApiIdWithResponse(ctx context.Cont
 	return ParseGetLandscapeApisApiIdResponse(rsp)
 }
 
+// GetLandscapeArtifactInstancesWithResponse request returning *GetLandscapeArtifactInstancesResponse
+func (c *ClientWithResponses) GetLandscapeArtifactInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactInstancesResponse, error) {
+	rsp, err := c.GetLandscapeArtifactInstances(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeArtifactInstancesResponse(rsp)
+}
+
+// GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse request returning *GetLandscapeArtifactInstancesArtifactInstanceIdResponse
+func (c *ClientWithResponses) GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse(ctx context.Context, artifactInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactInstancesArtifactInstanceIdResponse, error) {
+	rsp, err := c.GetLandscapeArtifactInstancesArtifactInstanceId(ctx, artifactInstanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeArtifactInstancesArtifactInstanceIdResponse(rsp)
+}
+
+// GetLandscapeArtifactsWithResponse request returning *GetLandscapeArtifactsResponse
+func (c *ClientWithResponses) GetLandscapeArtifactsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactsResponse, error) {
+	rsp, err := c.GetLandscapeArtifacts(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeArtifactsResponse(rsp)
+}
+
+// GetLandscapeArtifactsArtifactIdWithResponse request returning *GetLandscapeArtifactsArtifactIdResponse
+func (c *ClientWithResponses) GetLandscapeArtifactsArtifactIdWithResponse(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactsArtifactIdResponse, error) {
+	rsp, err := c.GetLandscapeArtifactsArtifactId(ctx, artifactId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeArtifactsArtifactIdResponse(rsp)
+}
+
 // GetLandscapeComponentInstancesWithResponse request returning *GetLandscapeComponentInstancesResponse
 func (c *ClientWithResponses) GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error) {
 	rsp, err := c.GetLandscapeComponentInstances(ctx, reqEditors...)
@@ -3317,6 +3637,124 @@ func ParseGetLandscapeApisApiIdResponse(rsp *http.Response) (*GetLandscapeApisAp
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest API
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeArtifactInstancesResponse parses an HTTP response from a GetLandscapeArtifactInstancesWithResponse call
+func ParseGetLandscapeArtifactInstancesResponse(rsp *http.Response) (*GetLandscapeArtifactInstancesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeArtifactInstancesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeArtifactInstancesArtifactInstanceIdResponse parses an HTTP response from a GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse call
+func ParseGetLandscapeArtifactInstancesArtifactInstanceIdResponse(rsp *http.Response) (*GetLandscapeArtifactInstancesArtifactInstanceIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeArtifactInstancesArtifactInstanceIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ArtifactInstance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeArtifactsResponse parses an HTTP response from a GetLandscapeArtifactsWithResponse call
+func ParseGetLandscapeArtifactsResponse(rsp *http.Response) (*GetLandscapeArtifactsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeArtifactsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeArtifactsArtifactIdResponse parses an HTTP response from a GetLandscapeArtifactsArtifactIdWithResponse call
+func ParseGetLandscapeArtifactsArtifactIdResponse(rsp *http.Response) (*GetLandscapeArtifactsArtifactIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeArtifactsArtifactIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

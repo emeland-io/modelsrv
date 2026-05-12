@@ -60,6 +60,42 @@ type ApiInstance struct {
 	SystemInstance *openapi_types.UUID `json:"systemInstance,omitempty"`
 }
 
+// Artifact Represents a binary artefact (e.g. software package, archive, binary executable) tracked in the landscape.
+type Artifact struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the artifact.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// ArtifactId UUID that uniquely identifies the artifact.
+	ArtifactId openapi_types.UUID `json:"artifactId"`
+
+	// Description A description of the artifact.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName A human-readable name of the artifact.
+	DisplayName string `json:"displayName"`
+
+	// Hash Hash of the binary object in the format algorithm:hex (e.g. "SHA256:9e9b...").
+	Hash *string `json:"hash,omitempty"`
+}
+
+// ArtifactInstance Represents a specific instance (copy/location) of an Artifact.
+type ArtifactInstance struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the artifact instance.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Artifact UUID of the referenced Artifact.
+	Artifact *openapi_types.UUID `json:"artifact,omitempty"`
+
+	// ArtifactInstanceId UUID that uniquely identifies the artifact instance.
+	ArtifactInstanceId openapi_types.UUID `json:"artifactInstanceId"`
+
+	// Description A description of the artifact instance.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName A human-readable name of the artifact instance.
+	DisplayName string `json:"displayName"`
+}
+
 // Component defines model for Component.
 type Component struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the component.
