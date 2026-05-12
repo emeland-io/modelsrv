@@ -210,6 +210,10 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyFinding(doc.Spec, m)
 	case events.FindingTypeResource:
 		return applyFindingType(doc.Spec, m)
+	case events.ArtifactResource:
+		return applyArtifact(doc.Spec, m)
+	case events.ArtifactInstanceResource:
+		return applyArtifactInstance(doc.Spec, m)
 	case events.UnknownResourceType:
 		return fmt.Errorf("kind is required")
 	default:
