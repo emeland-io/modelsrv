@@ -30,6 +30,7 @@ import (
 	"github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 )
 
 type ContextLabel string
@@ -530,6 +531,62 @@ func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, reques
 		Description: &description,
 		Annotations: cloneAnnotations(i.GetAnnotations()),
 	}), nil
+}
+
+// GetLandscapeProducts implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeProducts(ctx context.Context, request GetLandscapeProductsRequestObject) (GetLandscapeProductsResponseObject, error) {
+	prods, err := a.Backend.GetProducts()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeProducts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/products", prods)), nil
+}
+
+// GetLandscapeProductsProductId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeProductsProductId(ctx context.Context, request GetLandscapeProductsProductIdRequestObject) (GetLandscapeProductsProductIdResponseObject, error) {
+	p := a.Backend.GetProductById(request.ProductId)
+	if p == nil {
+		errorstr := ErrorString(fmt.Sprintf("product %s not found", request.ProductId.String()))
+		return GetLandscapeProductsProductId404JSONResponse(errorstr), nil
+	}
+	description := p.GetDescription()
+	respBody := Product{
+		ProductId:   types.UUID(p.GetProductId()),
+		DisplayName: p.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(p.GetAnnotations()),
+	}
+	if v := p.GetVendor(); v != nil {
+		vid := types.UUID(v.OrgUnitId)
+		if v.OrgUnit != nil {
+			vid = types.UUID(v.OrgUnit.GetOrgUnitId())
+		}
+		respBody.Vendor = &vid
+	}
+	if vers := domainProductionVersionsToAPI(p.GetVersions()); vers != nil {
+		respBody.Versions = vers
+	}
+	return GetLandscapeProductsProductId200JSONResponse(respBody), nil
+}
+
+func domainProductionVersionsToAPI(in []mdlprod.ProductionVersion) *[]ProductionVersion {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]ProductionVersion, len(in))
+	for i := range in {
+		out[i].AvailableFrom = in[i].AvailableFrom
+		out[i].DeprecatedFrom = in[i].DeprecatedFrom
+		out[i].TerminatedFrom = in[i].TerminatedFrom
+		if len(in[i].Artefacts) > 0 {
+			arts := make([]types.UUID, len(in[i].Artefacts))
+			for j, a := range in[i].Artefacts {
+				arts[j] = types.UUID(a)
+			}
+			out[i].Artefacts = &arts
+		}
+	}
+	return &out
 }
 
 // GetLandscapeOrgUnits implements [StrictServerInterface].

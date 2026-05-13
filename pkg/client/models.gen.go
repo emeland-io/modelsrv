@@ -312,6 +312,43 @@ type OrgUnit struct {
 	OrgUnitId openapi_types.UUID `json:"orgUnitId"`
 }
 
+// Product A product procured by the enterprise—software artefacts released together from the same legal or natural entity,
+// optionally tied to an organizational vendor and versioned lifecycle windows.
+type Product struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the product.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Description A brief description of the product.
+	Description *string `json:"description,omitempty"`
+
+	// DisplayName The human-readable name of the product.
+	DisplayName string `json:"displayName"`
+
+	// ProductId An UUID that uniquely identifies the product in the landscape.
+	ProductId openapi_types.UUID `json:"productId"`
+
+	// Vendor The UUID of the organizational unit acting as vendor or supplier for this product.
+	Vendor *openapi_types.UUID `json:"vendor,omitempty"`
+
+	// Versions Lifecycle windows for lines of artefacts released together under this product.
+	Versions *[]ProductionVersion `json:"versions,omitempty"`
+}
+
+// ProductionVersion A software release line or cut of a product identified by lifecycle dates and constituent artefacts.
+type ProductionVersion struct {
+	// Artefacts Identifiers of artefacts that belong to this release line together.
+	Artefacts *[]openapi_types.UUID `json:"artefacts,omitempty"`
+
+	// AvailableFrom When this release line becomes available for use.
+	AvailableFrom *time.Time `json:"availableFrom,omitempty"`
+
+	// DeprecatedFrom When consumers should begin migrating away from this release line.
+	DeprecatedFrom *time.Time `json:"deprecatedFrom,omitempty"`
+
+	// TerminatedFrom After this time the release line must not be used for new workloads.
+	TerminatedFrom *time.Time `json:"terminatedFrom,omitempty"`
+}
+
 // ResourceRef defines model for ResourceRef.
 type ResourceRef struct {
 	// Reference A URI reference to the resource.

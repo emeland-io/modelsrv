@@ -30,6 +30,7 @@ var documentKinds = map[events.ResourceType]struct{}{
 	events.OrgUnitResource:  {},
 	events.GroupResource:    {},
 	events.IdentityResource: {},
+	events.ProductResource:  {},
 
 	events.FindingResource:     {},
 	events.FindingTypeResource: {},

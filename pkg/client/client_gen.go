@@ -271,3 +271,28 @@ func (c *ModelSrvClient) GetArtifactInstanceById(id uuid.UUID) (*oapi.ArtifactIn
 	}
 	return (*oapi.ArtifactInstance)(resp.JSON200), nil
 }
+
+func (c *ModelSrvClient) GetProducts() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeProductsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetProductById(id uuid.UUID) (*oapi.Product, error) {
+	resp, err := c.oapi_client.GetLandscapeProductsProductIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrProductNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Product)(resp.JSON200), nil
+}

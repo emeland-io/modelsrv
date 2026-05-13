@@ -624,6 +624,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/products:
+    get:
+      description: Retrieve all externally procured products tracked in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/products/{productId}:
+    get:
+      description: Retrieve details of a specific product by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -830,6 +865,7 @@ components:
             - Identity
             - OrgUnit
             - Group
+            - Product
             # phase-5 risk types
             - Finding
             - FindingType
@@ -1094,6 +1130,62 @@ components:
             after this date. Format is 2006-01-02. Must be later than deprecatedFrom.
       required:
         - version
+    ProductionVersion:
+      description: |
+        A software release line or cut of a product identified by lifecycle dates and constituent artefacts.
+      type: object
+      properties:
+        availableFrom:
+          type: string
+          format: date-time
+          description: When this release line becomes available for use.
+        deprecatedFrom:
+          type: string
+          format: date-time
+          description: When consumers should begin migrating away from this release line.
+        terminatedFrom:
+          type: string
+          format: date-time
+          description: After this time the release line must not be used for new workloads.
+        artefacts:
+          type: array
+          description: Identifiers of artefacts that belong to this release line together.
+          items:
+            type: string
+            format: uuid
+    Product:
+      type: object
+      description: |
+        A product procured by the enterprise—software artefacts released together from the same legal or natural entity,
+        optionally tied to an organizational vendor and versioned lifecycle windows.
+      properties:
+        productId:
+          type: string
+          description: An UUID that uniquely identifies the product in the landscape.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the product.
+        description:
+          type: string
+          description: A brief description of the product.
+        vendor:
+          type: string
+          description: The UUID of the organizational unit acting as vendor or supplier for this product.
+          format: uuid
+        versions:
+          type: array
+          description: Lifecycle windows for lines of artefacts released together under this product.
+          items:
+            $ref: '#/components/schemas/ProductionVersion'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the product.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - productId
+        - displayName
     ContextType:
       type: object
       description: Represents a type of context in the EmELand model. A context type defines the characteristics and categorization of contexts.

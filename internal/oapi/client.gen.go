@@ -201,6 +201,12 @@ type ClientInterface interface {
 	// GetLandscapeOrgUnitsOrgUnitId request
 	GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, orgUnitId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeProducts request
+	GetLandscapeProducts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeProductsProductId request
+	GetLandscapeProductsProductId(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeSystemInstances request
 	GetLandscapeSystemInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -663,6 +669,30 @@ func (c *Client) GetLandscapeOrgUnits(ctx context.Context, reqEditors ...Request
 
 func (c *Client) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, orgUnitId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeOrgUnitsOrgUnitIdRequest(c.Server, orgUnitId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeProducts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeProductsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeProductsProductId(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeProductsProductIdRequest(c.Server, productId)
 	if err != nil {
 		return nil, err
 	}
@@ -1829,6 +1859,67 @@ func NewGetLandscapeOrgUnitsOrgUnitIdRequest(server string, orgUnitId openapi_ty
 	return req, nil
 }
 
+// NewGetLandscapeProductsRequest generates requests for GetLandscapeProducts
+func NewGetLandscapeProductsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/products")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeProductsProductIdRequest generates requests for GetLandscapeProductsProductId
+func NewGetLandscapeProductsProductIdRequest(server string, productId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "productId", runtime.ParamLocationPath, productId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/products/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeSystemInstancesRequest generates requests for GetLandscapeSystemInstances
 func NewGetLandscapeSystemInstancesRequest(server string) (*http.Request, error) {
 	var err error
@@ -2131,6 +2222,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetLandscapeOrgUnitsOrgUnitIdWithResponse request
 	GetLandscapeOrgUnitsOrgUnitIdWithResponse(ctx context.Context, orgUnitId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeOrgUnitsOrgUnitIdResponse, error)
+
+	// GetLandscapeProductsWithResponse request
+	GetLandscapeProductsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeProductsResponse, error)
+
+	// GetLandscapeProductsProductIdWithResponse request
+	GetLandscapeProductsProductIdWithResponse(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeProductsProductIdResponse, error)
 
 	// GetLandscapeSystemInstancesWithResponse request
 	GetLandscapeSystemInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeSystemInstancesResponse, error)
@@ -2931,6 +3028,51 @@ func (r GetLandscapeOrgUnitsOrgUnitIdResponse) StatusCode() int {
 	return 0
 }
 
+type GetLandscapeProductsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeProductsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeProductsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeProductsProductIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Product
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeProductsProductIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeProductsProductIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetLandscapeSystemInstancesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3379,6 +3521,24 @@ func (c *ClientWithResponses) GetLandscapeOrgUnitsOrgUnitIdWithResponse(ctx cont
 		return nil, err
 	}
 	return ParseGetLandscapeOrgUnitsOrgUnitIdResponse(rsp)
+}
+
+// GetLandscapeProductsWithResponse request returning *GetLandscapeProductsResponse
+func (c *ClientWithResponses) GetLandscapeProductsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeProductsResponse, error) {
+	rsp, err := c.GetLandscapeProducts(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeProductsResponse(rsp)
+}
+
+// GetLandscapeProductsProductIdWithResponse request returning *GetLandscapeProductsProductIdResponse
+func (c *ClientWithResponses) GetLandscapeProductsProductIdWithResponse(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeProductsProductIdResponse, error) {
+	rsp, err := c.GetLandscapeProductsProductId(ctx, productId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeProductsProductIdResponse(rsp)
 }
 
 // GetLandscapeSystemInstancesWithResponse request returning *GetLandscapeSystemInstancesResponse
@@ -4404,6 +4564,65 @@ func ParseGetLandscapeOrgUnitsOrgUnitIdResponse(rsp *http.Response) (*GetLandsca
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest OrgUnit
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeProductsResponse parses an HTTP response from a GetLandscapeProductsWithResponse call
+func ParseGetLandscapeProductsResponse(rsp *http.Response) (*GetLandscapeProductsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeProductsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeProductsProductIdResponse parses an HTTP response from a GetLandscapeProductsProductIdWithResponse call
+func ParseGetLandscapeProductsProductIdResponse(rsp *http.Response) (*GetLandscapeProductsProductIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeProductsProductIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Product
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

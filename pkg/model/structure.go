@@ -20,6 +20,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -221,6 +222,7 @@ type Model interface {
 	iam.OrgUnitModel
 	iam.GroupModel
 	iam.IdentityModel
+	mdlprod.ProductModel
 }
 
 type modelData struct {
@@ -251,6 +253,8 @@ type modelData struct {
 	orgUnitsByUUID   map[uuid.UUID]iam.OrgUnit
 	groupsByUUID     map[uuid.UUID]iam.Group
 	identitiesByUUID map[uuid.UUID]iam.Identity
+
+	productsByUUID map[uuid.UUID]mdlprod.Product
 }
 
 // ensure Model interface is implemented correctly
@@ -288,6 +292,8 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		orgUnitsByUUID:   make(map[uuid.UUID]iam.OrgUnit),
 		groupsByUUID:     make(map[uuid.UUID]iam.Group),
 		identitiesByUUID: make(map[uuid.UUID]iam.Identity),
+
+		productsByUUID: make(map[uuid.UUID]mdlprod.Product),
 	}
 
 	return model, nil
@@ -916,4 +922,24 @@ func (m *modelData) GetOrgUnitById(id uuid.UUID) iam.OrgUnit {
 // GetOrgUnits implements [Model].
 func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
 	return getAllEventEnabled(m.orgUnitsByUUID)
+}
+
+// AddProduct implements [Model].
+func (m *modelData) AddProduct(p mdlprod.Product) error {
+	return addEventEnabled(m, p, mdlprod.Product.GetProductId, func(x mdlprod.Product) { x.Register() }, m.productsByUUID, events.ProductResource)
+}
+
+// DeleteProductById implements [Model].
+func (m *modelData) DeleteProductById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.productsByUUID, events.ProductResource, common.ErrProductNotFound)
+}
+
+// GetProductById implements [Model].
+func (m *modelData) GetProductById(id uuid.UUID) mdlprod.Product {
+	return getEventEnabled(id, m.productsByUUID)
+}
+
+// GetProducts implements [Model].
+func (m *modelData) GetProducts() ([]mdlprod.Product, error) {
+	return getAllEventEnabled(m.productsByUUID)
 }
