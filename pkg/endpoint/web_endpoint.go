@@ -12,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
@@ -38,7 +39,7 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 	setupLog = *zap.NewExample().Sugar()
 
 	metricsReg = prometheus.NewRegistry()
-	metricsReg.MustRegister(prometheus.NewGoCollector())
+	metricsReg.MustRegister(collectors.NewGoCollector())
 	metricsReg.MustRegister(metrics.NewCollector(backend))
 
 	r := mux.NewRouter()
