@@ -21,10 +21,11 @@ import (
 )
 
 var (
-	webServer     *http.Server
-	metricsServer *http.Server
-	setupLog      zap.SugaredLogger
-	metricsReg    *prometheus.Registry
+	webServer      *http.Server
+	metricsServer  *http.Server
+	metricsHandler http.Handler
+	setupLog       zap.SugaredLogger
+	metricsReg     *prometheus.Registry
 )
 
 // StarWebListener starts the web endpoint serving the Swagger-UI and API
@@ -41,7 +42,10 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 	metricsReg.MustRegister(metrics.NewCollector(backend))
 
 	r := mux.NewRouter()
-	r.Handle("/metrics", promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{}))
+	metricsHandler = promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{})
+	r.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		metricsHandler.ServeHTTP(w, req)
+	}))
 
 	// TODO: turn staticPath in configurable value, especially for non-container setups
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
@@ -77,11 +81,14 @@ func StopWebListener() {
 }
 
 // StartMetricsListener starts a dedicated HTTP server for /metrics on the given address.
-// When a separate metrics port is configured, the main port's /metrics returns a redirect.
+// When called, the main port's /metrics is replaced with a redirect to the dedicated endpoint.
 func StartMetricsListener(addr string) error {
 	if metricsReg == nil {
 		return fmt.Errorf("metrics registry not initialized; call StarWebListener first")
 	}
+	metricsURL := fmt.Sprintf("http://%s/metrics", addr)
+	metricsHandler = http.RedirectHandler(metricsURL, http.StatusTemporaryRedirect)
+
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{}))
 	metricsServer = &http.Server{Handler: mux, Addr: addr}
@@ -90,7 +97,7 @@ func StartMetricsListener(addr string) error {
 			setupLog.Error("metrics server: ", err)
 		}
 	}()
-	setupLog.Info("Metrics endpoint: ", "http://", addr, "/metrics")
+	setupLog.Info("Metrics endpoint: ", metricsURL)
 	return nil
 }
 
