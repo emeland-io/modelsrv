@@ -11,15 +11,22 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/metrics"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.uber.org/zap"
 )
 
 var (
-	webServer *http.Server
-	setupLog  zap.SugaredLogger
+	webServer      *http.Server
+	metricsServer  *http.Server
+	metricsHandler http.Handler
+	setupLog       zap.SugaredLogger
+	metricsReg     *prometheus.Registry
 )
 
 // StarWebListener starts the web endpoint serving the Swagger-UI and API
@@ -31,7 +38,15 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 	strict := oapi.NewApiHandler(server)
 	setupLog = *zap.NewExample().Sugar()
 
+	metricsReg = prometheus.NewRegistry()
+	metricsReg.MustRegister(collectors.NewGoCollector())
+	metricsReg.MustRegister(metrics.NewCollector(backend))
+
 	r := mux.NewRouter()
+	metricsHandler = promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{})
+	r.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		metricsHandler.ServeHTTP(w, req)
+	}))
 
 	// TODO: turn staticPath in configurable value, especially for non-container setups
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
@@ -53,12 +68,38 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 }
 
 func StopWebListener() {
+	if metricsServer != nil {
+		if err := metricsServer.Shutdown(context.Background()); err != nil {
+			setupLog.Error("Error shutting down metrics server: ", err)
+		}
+	}
 	if webServer == nil {
 		return
 	}
 	if err := webServer.Shutdown(context.Background()); err != nil {
 		setupLog.Error("Error shutting down web server: ", err)
 	}
+}
+
+// StartMetricsListener starts a dedicated HTTP server for /metrics on the given address.
+// When called, the main port's /metrics is replaced with a redirect to the dedicated endpoint.
+func StartMetricsListener(addr string) error {
+	if metricsReg == nil {
+		return fmt.Errorf("metrics registry not initialized; call StarWebListener first")
+	}
+	metricsURL := fmt.Sprintf("http://%s/metrics", addr)
+	metricsHandler = http.RedirectHandler(metricsURL, http.StatusTemporaryRedirect)
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{}))
+	metricsServer = &http.Server{Handler: mux, Addr: addr}
+	go func() {
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			setupLog.Error("metrics server: ", err)
+		}
+	}()
+	setupLog.Info("Metrics endpoint: ", metricsURL)
+	return nil
 }
 
 func runListener(server *http.Server) {
