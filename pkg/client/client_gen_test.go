@@ -17,24 +17,28 @@ import (
 	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 // Ensure imports are used.
 var (
 	_ = mdlapi.NewAPI
+	_ = artifact.NewArtifact
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = node.NewNode
+	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
 
@@ -55,6 +59,9 @@ var testIDs = map[string]uuid.UUID{
 	"OrgUnit":           uuid.New(),
 	"Group":             uuid.New(),
 	"Identity":          uuid.New(),
+	"Artifact":          uuid.New(),
+	"ArtifactInstance":  uuid.New(),
+	"Product":           uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -194,6 +201,28 @@ func loadTestModel(t *testing.T, m model.Model) {
 		id := iam.NewIdentity(sink, testIDs["Identity"])
 		id.SetDisplayName("Test Identity")
 		require.NoError(t, m.AddIdentity(id))
+	}
+
+	// --- Artifact ---
+	{
+		a := artifact.NewArtifact(sink, testIDs["Artifact"])
+		a.SetDisplayName("Test Artifact")
+		require.NoError(t, m.AddArtifact(a))
+	}
+
+	// --- ArtifactInstance ---
+	{
+		ai := artifact.NewArtifactInstance(sink, testIDs["ArtifactInstance"])
+		ai.SetDisplayName("Test ArtifactInstance")
+		require.NoError(t, m.AddArtifactInstance(ai))
+	}
+
+	// --- Product ---
+	{
+		p := mdlproduct.NewProduct(sink, testIDs["Product"])
+		p.SetDisplayName("Test Product")
+		p.SetVendor(&iam.OrgUnitRef{OrgUnitId: testIDs["OrgUnit"]})
+		require.NoError(t, m.AddProduct(p))
 	}
 
 }
@@ -588,6 +617,84 @@ func TestGetByIdIdentity(t *testing.T) {
 	assert.Equal(t, "Test Identity", got.DisplayName)
 }
 
+func TestListArtifact(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetArtifacts()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "Artifact list should not be empty")
+}
+
+func TestGetByIdArtifact(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetArtifactById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrArtifactNotFound)
+
+	// known id → success
+	got, err := c.GetArtifactById(testIDs["Artifact"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Artifact"], uuid.UUID(got.ArtifactId))
+	assert.Equal(t, "Test Artifact", got.DisplayName)
+}
+
+func TestListArtifactInstance(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetArtifactInstances()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "ArtifactInstance list should not be empty")
+}
+
+func TestGetByIdArtifactInstance(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetArtifactInstanceById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrArtifactInstanceNotFound)
+
+	// known id → success
+	got, err := c.GetArtifactInstanceById(testIDs["ArtifactInstance"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["ArtifactInstance"], uuid.UUID(got.ArtifactInstanceId))
+	assert.Equal(t, "Test ArtifactInstance", got.DisplayName)
+}
+
+func TestListProduct(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetProducts()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "Product list should not be empty")
+}
+
+func TestGetByIdProduct(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetProductById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrProductNotFound)
+
+	// known id → success
+	got, err := c.GetProductById(testIDs["Product"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Product"], uuid.UUID(got.ProductId))
+	assert.Equal(t, "Test Product", got.DisplayName)
+}
+
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType
 // enum contains an entry for every resource type that has a wire kind.
 func TestResourceRefEnumCompleteness(t *testing.T) {
@@ -612,6 +719,9 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"OrgUnit",
 		"Group",
 		"Identity",
+		"Artifact",
+		"ArtifactInstance",
+		"Product",
 	}
 
 	for _, kind := range wireKinds {

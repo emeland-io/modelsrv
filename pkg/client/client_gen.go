@@ -221,3 +221,78 @@ func (c *ModelSrvClient) GetIdentityById(id uuid.UUID) (*oapi.Identity, error) {
 	}
 	return (*oapi.Identity)(resp.JSON200), nil
 }
+
+func (c *ModelSrvClient) GetArtifacts() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeArtifactsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetArtifactById(id uuid.UUID) (*oapi.Artifact, error) {
+	resp, err := c.oapi_client.GetLandscapeArtifactsArtifactIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrArtifactNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Artifact)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetArtifactInstances() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeArtifactInstancesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetArtifactInstanceById(id uuid.UUID) (*oapi.ArtifactInstance, error) {
+	resp, err := c.oapi_client.GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrArtifactInstanceNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.ArtifactInstance)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetProducts() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeProductsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetProductById(id uuid.UUID) (*oapi.Product, error) {
+	resp, err := c.oapi_client.GetLandscapeProductsProductIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrProductNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Product)(resp.JSON200), nil
+}

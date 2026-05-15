@@ -16,12 +16,14 @@ import (
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/client"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 	"go.emeland.io/modelsrv/pkg/model"
 )
@@ -29,12 +31,14 @@ import (
 // Ensure imports are used.
 var (
 	_ = mdlapi.NewAPI
+	_ = artifact.NewArtifact
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = node.NewNode
+	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
 

@@ -15,11 +15,13 @@ import (
 	uuid "github.com/google/uuid"
 	events "go.emeland.io/modelsrv/pkg/events"
 	api "go.emeland.io/modelsrv/pkg/model/api"
+	artifact "go.emeland.io/modelsrv/pkg/model/artifact"
 	component "go.emeland.io/modelsrv/pkg/model/component"
 	context "go.emeland.io/modelsrv/pkg/model/context"
 	finding "go.emeland.io/modelsrv/pkg/model/finding"
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
 	node "go.emeland.io/modelsrv/pkg/model/node"
+	product "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -74,6 +76,34 @@ func (m *MockModel) AddApiInstance(instance api.ApiInstance) error {
 func (mr *MockModelMockRecorder) AddApiInstance(instance any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddApiInstance", reflect.TypeOf((*MockModel)(nil).AddApiInstance), instance)
+}
+
+// AddArtifact mocks base method.
+func (m *MockModel) AddArtifact(a artifact.Artifact) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddArtifact", a)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddArtifact indicates an expected call of AddArtifact.
+func (mr *MockModelMockRecorder) AddArtifact(a any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddArtifact", reflect.TypeOf((*MockModel)(nil).AddArtifact), a)
+}
+
+// AddArtifactInstance mocks base method.
+func (m *MockModel) AddArtifactInstance(ai artifact.ArtifactInstance) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddArtifactInstance", ai)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddArtifactInstance indicates an expected call of AddArtifactInstance.
+func (mr *MockModelMockRecorder) AddArtifactInstance(ai any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddArtifactInstance", reflect.TypeOf((*MockModel)(nil).AddArtifactInstance), ai)
 }
 
 // AddComponent mocks base method.
@@ -230,6 +260,20 @@ func (mr *MockModelMockRecorder) AddOrgUnit(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgUnit", reflect.TypeOf((*MockModel)(nil).AddOrgUnit), arg0)
 }
 
+// AddProduct mocks base method.
+func (m *MockModel) AddProduct(arg0 product.Product) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddProduct", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddProduct indicates an expected call of AddProduct.
+func (mr *MockModelMockRecorder) AddProduct(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProduct", reflect.TypeOf((*MockModel)(nil).AddProduct), arg0)
+}
+
 // AddSystem mocks base method.
 func (m *MockModel) AddSystem(sys system.System) error {
 	m.ctrl.T.Helper()
@@ -312,6 +356,34 @@ func (m *MockModel) DeleteApiInstanceById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteApiInstanceById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteApiInstanceById", reflect.TypeOf((*MockModel)(nil).DeleteApiInstanceById), id)
+}
+
+// DeleteArtifactById mocks base method.
+func (m *MockModel) DeleteArtifactById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteArtifactById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteArtifactById indicates an expected call of DeleteArtifactById.
+func (mr *MockModelMockRecorder) DeleteArtifactById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArtifactById", reflect.TypeOf((*MockModel)(nil).DeleteArtifactById), id)
+}
+
+// DeleteArtifactInstanceById mocks base method.
+func (m *MockModel) DeleteArtifactInstanceById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteArtifactInstanceById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteArtifactInstanceById indicates an expected call of DeleteArtifactInstanceById.
+func (mr *MockModelMockRecorder) DeleteArtifactInstanceById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArtifactInstanceById", reflect.TypeOf((*MockModel)(nil).DeleteArtifactInstanceById), id)
 }
 
 // DeleteComponentById mocks base method.
@@ -468,6 +540,20 @@ func (mr *MockModelMockRecorder) DeleteOrgUnit(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgUnit", reflect.TypeOf((*MockModel)(nil).DeleteOrgUnit), arg0)
 }
 
+// DeleteProductById mocks base method.
+func (m *MockModel) DeleteProductById(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteProductById", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProductById indicates an expected call of DeleteProductById.
+func (mr *MockModelMockRecorder) DeleteProductById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProductById", reflect.TypeOf((*MockModel)(nil).DeleteProductById), arg0)
+}
+
 // DeleteSystemById mocks base method.
 func (m *MockModel) DeleteSystemById(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -552,6 +638,64 @@ func (m *MockModel) GetApis() ([]api.API, error) {
 func (mr *MockModelMockRecorder) GetApis() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApis", reflect.TypeOf((*MockModel)(nil).GetApis))
+}
+
+// GetArtifactById mocks base method.
+func (m *MockModel) GetArtifactById(id uuid.UUID) artifact.Artifact {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetArtifactById", id)
+	ret0, _ := ret[0].(artifact.Artifact)
+	return ret0
+}
+
+// GetArtifactById indicates an expected call of GetArtifactById.
+func (mr *MockModelMockRecorder) GetArtifactById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactById", reflect.TypeOf((*MockModel)(nil).GetArtifactById), id)
+}
+
+// GetArtifactInstanceById mocks base method.
+func (m *MockModel) GetArtifactInstanceById(id uuid.UUID) artifact.ArtifactInstance {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetArtifactInstanceById", id)
+	ret0, _ := ret[0].(artifact.ArtifactInstance)
+	return ret0
+}
+
+// GetArtifactInstanceById indicates an expected call of GetArtifactInstanceById.
+func (mr *MockModelMockRecorder) GetArtifactInstanceById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactInstanceById", reflect.TypeOf((*MockModel)(nil).GetArtifactInstanceById), id)
+}
+
+// GetArtifactInstances mocks base method.
+func (m *MockModel) GetArtifactInstances() ([]artifact.ArtifactInstance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetArtifactInstances")
+	ret0, _ := ret[0].([]artifact.ArtifactInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetArtifactInstances indicates an expected call of GetArtifactInstances.
+func (mr *MockModelMockRecorder) GetArtifactInstances() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactInstances", reflect.TypeOf((*MockModel)(nil).GetArtifactInstances))
+}
+
+// GetArtifacts mocks base method.
+func (m *MockModel) GetArtifacts() ([]artifact.Artifact, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetArtifacts")
+	ret0, _ := ret[0].([]artifact.Artifact)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetArtifacts indicates an expected call of GetArtifacts.
+func (mr *MockModelMockRecorder) GetArtifacts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifacts", reflect.TypeOf((*MockModel)(nil).GetArtifacts))
 }
 
 // GetComponentById mocks base method.
@@ -885,6 +1029,35 @@ func (m *MockModel) GetOrgUnits() ([]iam.OrgUnit, error) {
 func (mr *MockModelMockRecorder) GetOrgUnits() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgUnits", reflect.TypeOf((*MockModel)(nil).GetOrgUnits))
+}
+
+// GetProductById mocks base method.
+func (m *MockModel) GetProductById(arg0 uuid.UUID) product.Product {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProductById", arg0)
+	ret0, _ := ret[0].(product.Product)
+	return ret0
+}
+
+// GetProductById indicates an expected call of GetProductById.
+func (mr *MockModelMockRecorder) GetProductById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProductById", reflect.TypeOf((*MockModel)(nil).GetProductById), arg0)
+}
+
+// GetProducts mocks base method.
+func (m *MockModel) GetProducts() ([]product.Product, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProducts")
+	ret0, _ := ret[0].([]product.Product)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProducts indicates an expected call of GetProducts.
+func (mr *MockModelMockRecorder) GetProducts() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducts", reflect.TypeOf((*MockModel)(nil).GetProducts))
 }
 
 // GetSink mocks base method.

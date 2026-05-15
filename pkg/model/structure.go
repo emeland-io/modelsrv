@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -19,6 +20,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -173,6 +175,30 @@ type FindingTypeModel interface {
 	GetFindingTypeByName(name string) finding.FindingType
 }
 
+// ArtifactModel provides CRUD operations for [artifact.Artifact] resources.
+type ArtifactModel interface {
+	// AddArtifact registers an Artifact in the model.
+	AddArtifact(a artifact.Artifact) error
+	// DeleteArtifactById removes the Artifact with the given id.
+	DeleteArtifactById(id uuid.UUID) error
+	// GetArtifacts returns all registered Artifacts.
+	GetArtifacts() ([]artifact.Artifact, error)
+	// GetArtifactById returns the Artifact with the given id, or nil if not found.
+	GetArtifactById(id uuid.UUID) artifact.Artifact
+}
+
+// ArtifactInstanceModel provides CRUD operations for [artifact.ArtifactInstance] resources.
+type ArtifactInstanceModel interface {
+	// AddArtifactInstance registers an ArtifactInstance in the model.
+	AddArtifactInstance(ai artifact.ArtifactInstance) error
+	// DeleteArtifactInstanceById removes the ArtifactInstance with the given id.
+	DeleteArtifactInstanceById(id uuid.UUID) error
+	// GetArtifactInstances returns all registered ArtifactInstances.
+	GetArtifactInstances() ([]artifact.ArtifactInstance, error)
+	// GetArtifactInstanceById returns the ArtifactInstance with the given id, or nil if not found.
+	GetArtifactInstanceById(id uuid.UUID) artifact.ArtifactInstance
+}
+
 // Model is the aggregate interface for the landscape model, composed of per-resource sub-interfaces.
 type Model interface {
 	mdlevent.EventApplier
@@ -191,9 +217,12 @@ type Model interface {
 	ComponentInstanceModel
 	FindingModel
 	FindingTypeModel
+	ArtifactModel
+	ArtifactInstanceModel
 	iam.OrgUnitModel
 	iam.GroupModel
 	iam.IdentityModel
+	mdlprod.ProductModel
 }
 
 type modelData struct {
@@ -218,9 +247,14 @@ type modelData struct {
 	findingsByUUID     map[uuid.UUID]finding.Finding
 	findingTypesByUUID map[uuid.UUID]finding.FindingType
 
+	artifactsByUUID         map[uuid.UUID]artifact.Artifact
+	artifactInstancesByUUID map[uuid.UUID]artifact.ArtifactInstance
+
 	orgUnitsByUUID   map[uuid.UUID]iam.OrgUnit
 	groupsByUUID     map[uuid.UUID]iam.Group
 	identitiesByUUID map[uuid.UUID]iam.Identity
+
+	productsByUUID map[uuid.UUID]mdlprod.Product
 }
 
 // ensure Model interface is implemented correctly
@@ -252,9 +286,14 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		findingsByUUID:     make(map[uuid.UUID]finding.Finding),
 		findingTypesByUUID: make(map[uuid.UUID]finding.FindingType),
 
+		artifactsByUUID:         make(map[uuid.UUID]artifact.Artifact),
+		artifactInstancesByUUID: make(map[uuid.UUID]artifact.ArtifactInstance),
+
 		orgUnitsByUUID:   make(map[uuid.UUID]iam.OrgUnit),
 		groupsByUUID:     make(map[uuid.UUID]iam.Group),
 		identitiesByUUID: make(map[uuid.UUID]iam.Identity),
+
+		productsByUUID: make(map[uuid.UUID]mdlprod.Product),
 	}
 
 	return model, nil
@@ -785,6 +824,46 @@ func (m *modelData) GetFindingTypes() ([]finding.FindingType, error) {
 	return findingTypeArr, nil
 }
 
+// AddArtifact implements [Model].
+func (m *modelData) AddArtifact(a artifact.Artifact) error {
+	return addEventEnabled(m, a, artifact.Artifact.GetArtifactId, func(x artifact.Artifact) { x.Register() }, m.artifactsByUUID, events.ArtifactResource)
+}
+
+// DeleteArtifactById implements [Model].
+func (m *modelData) DeleteArtifactById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.artifactsByUUID, events.ArtifactResource, common.ErrArtifactNotFound)
+}
+
+// GetArtifacts implements [Model].
+func (m *modelData) GetArtifacts() ([]artifact.Artifact, error) {
+	return getAllEventEnabled(m.artifactsByUUID)
+}
+
+// GetArtifactById implements [Model].
+func (m *modelData) GetArtifactById(id uuid.UUID) artifact.Artifact {
+	return getEventEnabled(id, m.artifactsByUUID)
+}
+
+// AddArtifactInstance implements [Model].
+func (m *modelData) AddArtifactInstance(ai artifact.ArtifactInstance) error {
+	return addEventEnabled(m, ai, artifact.ArtifactInstance.GetArtifactInstanceId, func(x artifact.ArtifactInstance) { x.Register() }, m.artifactInstancesByUUID, events.ArtifactInstanceResource)
+}
+
+// DeleteArtifactInstanceById implements [Model].
+func (m *modelData) DeleteArtifactInstanceById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.artifactInstancesByUUID, events.ArtifactInstanceResource, common.ErrArtifactInstanceNotFound)
+}
+
+// GetArtifactInstances implements [Model].
+func (m *modelData) GetArtifactInstances() ([]artifact.ArtifactInstance, error) {
+	return getAllEventEnabled(m.artifactInstancesByUUID)
+}
+
+// GetArtifactInstanceById implements [Model].
+func (m *modelData) GetArtifactInstanceById(id uuid.UUID) artifact.ArtifactInstance {
+	return getEventEnabled(id, m.artifactInstancesByUUID)
+}
+
 // AddGroup implements [Model].
 func (m *modelData) AddGroup(g iam.Group) error {
 	return addEventEnabled(m, g, iam.Group.GetGroupId, func(x iam.Group) { x.Register() }, m.groupsByUUID, events.GroupResource)
@@ -843,4 +922,24 @@ func (m *modelData) GetOrgUnitById(id uuid.UUID) iam.OrgUnit {
 // GetOrgUnits implements [Model].
 func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
 	return getAllEventEnabled(m.orgUnitsByUUID)
+}
+
+// AddProduct implements [Model].
+func (m *modelData) AddProduct(p mdlprod.Product) error {
+	return addEventEnabled(m, p, mdlprod.Product.GetProductId, func(x mdlprod.Product) { x.Register() }, m.productsByUUID, events.ProductResource)
+}
+
+// DeleteProductById implements [Model].
+func (m *modelData) DeleteProductById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.productsByUUID, events.ProductResource, common.ErrProductNotFound)
+}
+
+// GetProductById implements [Model].
+func (m *modelData) GetProductById(id uuid.UUID) mdlprod.Product {
+	return getEventEnabled(id, m.productsByUUID)
+}
+
+// GetProducts implements [Model].
+func (m *modelData) GetProducts() ([]mdlprod.Product, error) {
+	return getAllEventEnabled(m.productsByUUID)
 }

@@ -554,6 +554,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/artifacts:
+    get:
+      description: Retrieve all artifacts in the landscape.
+      tags: [landscape, p8_data_catalog]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/artifacts/{artifactId}:
+    get:
+      description: Retrieve details of a specific artifact by its UUID.
+      tags: [landscape, p8_data_catalog]
+      parameters:
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/artifactInstances:
+    get:
+      description: Retrieve all artifact instances in the landscape.
+      tags: [landscape, p8_data_catalog]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/artifactInstances/{artifactInstanceId}:
+    get:
+      description: Retrieve details of a specific artifact instance by its UUID.
+      tags: [landscape, p8_data_catalog]
+      parameters:
+        - name: artifactInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArtifactInstance'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/products:
+    get:
+      description: Retrieve all externally procured products tracked in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/products/{productId}:
+    get:
+      description: Retrieve details of a specific product by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -760,9 +865,13 @@ components:
             - Identity
             - OrgUnit
             - Group
+            - Product
             # phase-5 risk types
             - Finding
             - FindingType
+            # phase-8 artifact types
+            - Artifact
+            - ArtifactInstance
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.
@@ -1021,6 +1130,62 @@ components:
             after this date. Format is 2006-01-02. Must be later than deprecatedFrom.
       required:
         - version
+    ProductionVersion:
+      description: |
+        A software release line or cut of a product identified by lifecycle dates and constituent artefacts.
+      type: object
+      properties:
+        availableFrom:
+          type: string
+          format: date-time
+          description: When this release line becomes available for use.
+        deprecatedFrom:
+          type: string
+          format: date-time
+          description: When consumers should begin migrating away from this release line.
+        terminatedFrom:
+          type: string
+          format: date-time
+          description: After this time the release line must not be used for new workloads.
+        artefacts:
+          type: array
+          description: Identifiers of artefacts that belong to this release line together.
+          items:
+            type: string
+            format: uuid
+    Product:
+      type: object
+      description: |
+        A product procured by the enterprise—software artefacts released together from the same legal or natural entity,
+        optionally tied to an organizational vendor and versioned lifecycle windows.
+      properties:
+        productId:
+          type: string
+          description: An UUID that uniquely identifies the product in the landscape.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the product.
+        description:
+          type: string
+          description: A brief description of the product.
+        vendor:
+          type: string
+          description: The UUID of the organizational unit acting as vendor or supplier for this product.
+          format: uuid
+        versions:
+          type: array
+          description: Lifecycle windows for lines of artefacts released together under this product.
+          items:
+            $ref: '#/components/schemas/ProductionVersion'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the product.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - productId
+        - displayName
     ContextType:
       type: object
       description: Represents a type of context in the EmELand model. A context type defines the characteristics and categorization of contexts.
@@ -1154,6 +1319,59 @@ components:
             $ref: '#/components/schemas/Annotation'
       required:
         - identityId
+        - displayName
+    Artifact:
+      type: object
+      description: Represents a binary artefact (e.g. software package, archive, binary executable) tracked in the landscape.
+      properties:
+        artifactId:
+          type: string
+          description: UUID that uniquely identifies the artifact.
+          format: uuid
+        displayName:
+          type: string
+          description: A human-readable name of the artifact.
+        description:
+          type: string
+          description: A description of the artifact.
+        hash:
+          type: string
+          description: 'Hash of the binary object in the format algorithm:hex (e.g. "SHA256:9e9b...").'
+          pattern: '^[A-Za-z0-9]+:[0-9a-f]+$'
+          example: 'SHA256:9e9b755d63b36acf30c12a9a3fc379243714c1c6d3dd72861da637f336ebb35b'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the artifact.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - artifactId
+        - displayName
+    ArtifactInstance:
+      type: object
+      description: Represents a specific instance (copy/location) of an Artifact.
+      properties:
+        artifactInstanceId:
+          type: string
+          description: UUID that uniquely identifies the artifact instance.
+          format: uuid
+        displayName:
+          type: string
+          description: A human-readable name of the artifact instance.
+        description:
+          type: string
+          description: A description of the artifact instance.
+        artifact:
+          type: string
+          description: UUID of the referenced Artifact.
+          format: uuid
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the artifact instance.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - artifactInstanceId
         - displayName
     Event:
       type: object

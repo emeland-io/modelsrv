@@ -30,6 +30,7 @@ import (
 	"github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 )
 
 type ContextLabel string
@@ -532,6 +533,62 @@ func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, reques
 	}), nil
 }
 
+// GetLandscapeProducts implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeProducts(ctx context.Context, request GetLandscapeProductsRequestObject) (GetLandscapeProductsResponseObject, error) {
+	prods, err := a.Backend.GetProducts()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeProducts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/products", prods)), nil
+}
+
+// GetLandscapeProductsProductId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeProductsProductId(ctx context.Context, request GetLandscapeProductsProductIdRequestObject) (GetLandscapeProductsProductIdResponseObject, error) {
+	p := a.Backend.GetProductById(request.ProductId)
+	if p == nil {
+		errorstr := ErrorString(fmt.Sprintf("product %s not found", request.ProductId.String()))
+		return GetLandscapeProductsProductId404JSONResponse(errorstr), nil
+	}
+	description := p.GetDescription()
+	respBody := Product{
+		ProductId:   types.UUID(p.GetProductId()),
+		DisplayName: p.GetDisplayName(),
+		Description: &description,
+		Annotations: cloneAnnotations(p.GetAnnotations()),
+	}
+	if v := p.GetVendor(); v != nil {
+		vid := types.UUID(v.OrgUnitId)
+		if v.OrgUnit != nil {
+			vid = types.UUID(v.OrgUnit.GetOrgUnitId())
+		}
+		respBody.Vendor = &vid
+	}
+	if vers := domainProductionVersionsToAPI(p.GetVersions()); vers != nil {
+		respBody.Versions = vers
+	}
+	return GetLandscapeProductsProductId200JSONResponse(respBody), nil
+}
+
+func domainProductionVersionsToAPI(in []mdlprod.ProductionVersion) *[]ProductionVersion {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]ProductionVersion, len(in))
+	for i := range in {
+		out[i].AvailableFrom = in[i].AvailableFrom
+		out[i].DeprecatedFrom = in[i].DeprecatedFrom
+		out[i].TerminatedFrom = in[i].TerminatedFrom
+		if len(in[i].Artefacts) > 0 {
+			arts := make([]types.UUID, len(in[i].Artefacts))
+			for j, a := range in[i].Artefacts {
+				arts[j] = types.UUID(a)
+			}
+			out[i].Artefacts = &arts
+		}
+	}
+	return &out
+}
+
 // GetLandscapeOrgUnits implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandscapeOrgUnitsRequestObject) (GetLandscapeOrgUnitsResponseObject, error) {
 	orgUnits, err := a.Backend.GetOrgUnits()
@@ -555,4 +612,60 @@ func (a *ApiServer) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, request G
 		Description: &description,
 		Annotations: cloneAnnotations(o.GetAnnotations()),
 	}), nil
+}
+
+// GetLandscapeArtifacts implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifacts(ctx context.Context, request GetLandscapeArtifactsRequestObject) (GetLandscapeArtifactsResponseObject, error) {
+	artifacts, err := a.Backend.GetArtifacts()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeArtifacts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifacts", artifacts)), nil
+}
+
+// GetLandscapeArtifactsArtifactId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactsArtifactId(ctx context.Context, request GetLandscapeArtifactsArtifactIdRequestObject) (GetLandscapeArtifactsArtifactIdResponseObject, error) {
+	art := a.Backend.GetArtifactById(request.ArtifactId)
+	if art == nil {
+		errorstr := ErrorString(fmt.Sprintf("artifact %s not found", request.ArtifactId.String()))
+		return GetLandscapeArtifactsArtifactId404JSONResponse(errorstr), nil
+	}
+	description := art.GetDescription()
+	hash := art.GetHash()
+	return GetLandscapeArtifactsArtifactId200JSONResponse(Artifact{
+		ArtifactId:  request.ArtifactId,
+		DisplayName: art.GetDisplayName(),
+		Description: &description,
+		Hash:        &hash,
+		Annotations: cloneAnnotations(art.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapeArtifactInstances implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactInstances(ctx context.Context, request GetLandscapeArtifactInstancesRequestObject) (GetLandscapeArtifactInstancesResponseObject, error) {
+	instances, err := a.Backend.GetArtifactInstances()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeArtifactInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifactInstances", instances)), nil
+}
+
+// GetLandscapeArtifactInstancesArtifactInstanceId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeArtifactInstancesArtifactInstanceId(ctx context.Context, request GetLandscapeArtifactInstancesArtifactInstanceIdRequestObject) (GetLandscapeArtifactInstancesArtifactInstanceIdResponseObject, error) {
+	ai := a.Backend.GetArtifactInstanceById(request.ArtifactInstanceId)
+	if ai == nil {
+		errorstr := ErrorString(fmt.Sprintf("artifact instance %s not found", request.ArtifactInstanceId.String()))
+		return GetLandscapeArtifactInstancesArtifactInstanceId404JSONResponse(errorstr), nil
+	}
+	description := ai.GetDescription()
+	resp := ArtifactInstance{
+		ArtifactInstanceId: request.ArtifactInstanceId,
+		DisplayName:        ai.GetDisplayName(),
+		Description:        &description,
+		Annotations:        cloneAnnotations(ai.GetAnnotations()),
+	}
+	if ref := ai.GetArtifactRef(); ref != nil {
+		resp.Artifact = &ref.ArtifactId
+	}
+	return GetLandscapeArtifactInstancesArtifactInstanceId200JSONResponse(resp), nil
 }

@@ -76,10 +76,15 @@ const (
 	OrgUnitResource
 	GroupResource
 	IdentityResource
+	ProductResource
 
 	//Phase 5
 	FindingResource
 	FindingTypeResource
+
+	// Phase 8
+	ArtifactResource
+	ArtifactInstanceResource
 
 	// Value objects
 	AnnotationsResource
@@ -107,10 +112,15 @@ var resourceTypeValues = map[ResourceType]string{
 	OrgUnitResource:  "OrgUnit",
 	GroupResource:    "Group",
 	IdentityResource: "Identity",
+	ProductResource:  "Product",
 
 	//Phase 5
 	FindingResource:     "Finding",
 	FindingTypeResource: "FindingType",
+
+	// Phase 8
+	ArtifactResource:         "Artifact",
+	ArtifactInstanceResource: "ArtifactInstance",
 
 	// Value objects
 	AnnotationsResource: "Annotations",
@@ -234,10 +244,16 @@ func ParseWireKind(s string) ResourceType {
 		return GroupResource
 	case "Identity":
 		return IdentityResource
+	case "Product":
+		return ProductResource
 	case "Finding":
 		return FindingResource
 	case "FindingType":
 		return FindingTypeResource
+	case "Artifact":
+		return ArtifactResource
+	case "ArtifactInstance":
+		return ArtifactInstanceResource
 	default:
 		return UnknownResourceType
 	}

@@ -7,11 +7,13 @@ import (
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 )
 
 func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res *map[string]interface{}) (uuid.UUID, any, error) {
@@ -167,6 +169,17 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 		}
 		return i.GetIdentityId(), i, nil
 
+	case events.ProductResource:
+		var op Product
+		if err := json.Unmarshal(raw, &op); err != nil {
+			return uuid.Nil, nil, err
+		}
+		p, err := productFromWire(m, op)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return p.GetProductId(), p, nil
+
 	case events.FindingResource:
 		var of Finding
 		if err := json.Unmarshal(raw, &of); err != nil {
@@ -188,6 +201,28 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 			return uuid.Nil, nil, err
 		}
 		return ft.GetFindingTypeId(), ft, nil
+
+	case events.ArtifactResource:
+		var oa Artifact
+		if err := json.Unmarshal(raw, &oa); err != nil {
+			return uuid.Nil, nil, err
+		}
+		a, err := artifactFromWire(m, oa)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return a.GetArtifactId(), a, nil
+
+	case events.ArtifactInstanceResource:
+		var oai ArtifactInstance
+		if err := json.Unmarshal(raw, &oai); err != nil {
+			return uuid.Nil, nil, err
+		}
+		ai, err := artifactInstanceFromWire(m, oai)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return ai.GetArtifactInstanceId(), ai, nil
 
 	default:
 		return uuid.Nil, nil, fmt.Errorf("unsupported resource type for upsert: %s", rt)
@@ -274,6 +309,40 @@ func identityFromWire(m model.Model, oi Identity) (iam.Identity, error) {
 	return i, nil
 }
 
+func productFromWire(m model.Model, op Product) (mdlprod.Product, error) {
+	id := uuid.UUID(op.ProductId)
+	p := mdlprod.NewProduct(m.GetSink(), id)
+	p.SetDisplayName(op.DisplayName)
+	if op.Description != nil {
+		p.SetDescription(*op.Description)
+	}
+	if op.Vendor != nil {
+		p.SetVendor(refOrgUnit(m, uuid.UUID(*op.Vendor)))
+	}
+	if op.Versions != nil {
+		list := make([]mdlprod.ProductionVersion, 0, len(*op.Versions))
+		for i := range *op.Versions {
+			list = append(list, productionVersionFromWire((*op.Versions)[i]))
+		}
+		p.SetVersions(list)
+	}
+	mergeOapiAnnotations(p.GetAnnotations(), op.Annotations)
+	return p, nil
+}
+
+func productionVersionFromWire(in ProductionVersion) mdlprod.ProductionVersion {
+	var out mdlprod.ProductionVersion
+	out.AvailableFrom = in.AvailableFrom
+	out.DeprecatedFrom = in.DeprecatedFrom
+	out.TerminatedFrom = in.TerminatedFrom
+	if in.Artefacts != nil {
+		for _, aid := range *in.Artefacts {
+			out.Artefacts = append(out.Artefacts, uuid.UUID(aid))
+		}
+	}
+	return out
+}
+
 func findingFromWire(m model.Model, of Finding) (finding.Finding, error) {
 	id := uuid.UUID(of.FindingId)
 	f := finding.NewFinding(m.GetSink(), id)
@@ -336,4 +405,36 @@ func findingTypeFromWire(m model.Model, oft FindingType) (finding.FindingType, e
 	}
 	mergeOapiAnnotations(ft.GetAnnotations(), oft.Annotations)
 	return ft, nil
+}
+
+func artifactFromWire(m model.Model, oa Artifact) (artifact.Artifact, error) {
+	id := uuid.UUID(oa.ArtifactId)
+	a := artifact.NewArtifact(m.GetSink(), id)
+	a.SetDisplayName(oa.DisplayName)
+	if oa.Description != nil {
+		a.SetDescription(*oa.Description)
+	}
+	if oa.Hash != nil {
+		a.SetHash(*oa.Hash)
+	}
+	mergeOapiAnnotations(a.GetAnnotations(), oa.Annotations)
+	return a, nil
+}
+
+func artifactInstanceFromWire(m model.Model, oai ArtifactInstance) (artifact.ArtifactInstance, error) {
+	id := uuid.UUID(oai.ArtifactInstanceId)
+	ai := artifact.NewArtifactInstance(m.GetSink(), id)
+	ai.SetDisplayName(oai.DisplayName)
+	if oai.Description != nil {
+		ai.SetDescription(*oai.Description)
+	}
+	if oai.Artifact != nil {
+		artId := uuid.UUID(*oai.Artifact)
+		ai.SetArtifactRef(&artifact.ArtifactRef{
+			ArtifactId: artId,
+			Artifact:   m.GetArtifactById(artId),
+		})
+	}
+	mergeOapiAnnotations(ai.GetAnnotations(), oai.Annotations)
+	return ai, nil
 }

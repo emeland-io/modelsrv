@@ -8,6 +8,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -346,4 +347,53 @@ func applyFindingType(spec map[string]any, m model.Model) error {
 		return err
 	}
 	return m.AddFindingType(ft)
+}
+
+func applyArtifact(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "artifactId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	a := artifact.NewArtifact(m.GetSink(), id)
+	a.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		a.SetDescription(desc)
+	}
+	if hash, ok := stringField(spec, "hash"); ok {
+		a.SetHash(hash)
+	}
+	if err := applyAnnotations(a.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddArtifact(a)
+}
+
+func applyArtifactInstance(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "artifactInstanceId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	ai := artifact.NewArtifactInstance(m.GetSink(), id)
+	ai.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		ai.SetDescription(desc)
+	}
+	if artRef, ok, err := optionalUUIDRef(spec, "artifact"); err == nil && ok && artRef != uuid.Nil {
+		ai.SetArtifactRef(&artifact.ArtifactRef{
+			ArtifactId: artRef,
+			Artifact:   m.GetArtifactById(artRef),
+		})
+	}
+	if err := applyAnnotations(ai.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddArtifactInstance(ai)
 }

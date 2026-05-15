@@ -14,6 +14,7 @@ var _ = Describe("ResourceType", func() {
 			Expect(events.ParseResourceType("System")).To(Equal(events.SystemResource))
 			Expect(events.ParseResourceType("APIInstance")).To(Equal(events.APIInstanceResource))
 			Expect(events.ParseResourceType("Finding")).To(Equal(events.FindingResource))
+			Expect(events.ParseResourceType("Product")).To(Equal(events.ProductResource))
 		})
 
 		It("returns UnknownResourceType for an unknown label", func() {
@@ -68,6 +69,7 @@ var _ = Describe("ResourceType", func() {
 		It("maps Node and Context kinds", func() {
 			Expect(events.ParseWireKind("Node")).To(Equal(events.NodeResource))
 			Expect(events.ParseWireKind("Context")).To(Equal(events.ContextResource))
+			Expect(events.ParseWireKind("Product")).To(Equal(events.ProductResource))
 		})
 	})
 })

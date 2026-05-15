@@ -113,4 +113,12 @@ var resourceTypes = []resourceDef{
 			{name: "system-instance", specKey: "systemInstance", usage: "SystemInstance UUID"},
 		},
 	},
+	{
+		use: "product", short: "Create a Product resource",
+		kind: "Product", idField: "productId",
+		flags: []flagDef{
+			{name: "desc", specKey: "description", usage: "Description of the product"},
+			{name: "vendor", specKey: "vendor", usage: "Vendor org unit UUID"},
+		},
+	},
 }

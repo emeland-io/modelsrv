@@ -14,6 +14,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -235,6 +236,16 @@ func refComponent(m model.Model, id uuid.UUID) *component.ComponentRef {
 		return &component.ComponentRef{Component: c, ComponentId: id}
 	}
 	return &component.ComponentRef{ComponentId: id}
+}
+
+func refOrgUnit(m model.Model, id uuid.UUID) *iam.OrgUnitRef {
+	if id == uuid.Nil {
+		return nil
+	}
+	if ou := m.GetOrgUnitById(id); ou != nil {
+		return &iam.OrgUnitRef{OrgUnit: ou, OrgUnitId: id}
+	}
+	return &iam.OrgUnitRef{OrgUnitId: id}
 }
 
 func apiRefsFromUUIDs(m model.Model, ids []openapi_types.UUID) []mdlapi.ApiRef {
