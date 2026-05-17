@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"sync"
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
@@ -226,6 +227,7 @@ type Model interface {
 }
 
 type modelData struct {
+	mu       sync.RWMutex
 	sink     events.EventSink
 	handlers map[events.ResourceType]resourceHandler
 
@@ -317,6 +319,9 @@ func addEventEnabled[T any](
 	store map[uuid.UUID]T,
 	resourceType events.ResourceType,
 ) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	id := getId(obj)
 	if id == uuid.Nil {
 		return common.ErrUUIDNotSet
@@ -341,6 +346,9 @@ func deleteEventEnabled[T any](
 	resourceType events.ResourceType,
 	notFoundError error,
 ) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := store[id]
 	if !exists {
 		return notFoundError
@@ -353,7 +361,10 @@ func deleteEventEnabled[T any](
 }
 
 // Generic get helper
-func getEventEnabled[T any](id uuid.UUID, store map[uuid.UUID]T) T {
+func getEventEnabled[T any](m *modelData, id uuid.UUID, store map[uuid.UUID]T) T {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	obj, exists := store[id]
 	if !exists {
 		var zero T
@@ -363,12 +374,17 @@ func getEventEnabled[T any](id uuid.UUID, store map[uuid.UUID]T) T {
 }
 
 // Generic getAll helper
-func getAllEventEnabled[T any](store map[uuid.UUID]T) ([]T, error) {
+func getAllEventEnabled[T any](m *modelData, store map[uuid.UUID]T) ([]T, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return slices.Collect(maps.Values(store)), nil
 }
 
 // AddContext implements Model.
 func (m *modelData) AddContext(c mdlctx.Context) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	// invalidate the cache
 	m.contextsCache = nil
@@ -398,6 +414,9 @@ func (m *modelData) AddContext(c mdlctx.Context) error {
 
 // DeleteContextById implements Model.
 func (m *modelData) DeleteContextById(id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := m.contextsByUUID[id]
 	if !exists {
 		return common.ErrContextNotFound
@@ -416,6 +435,9 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 }
 
 func (m *modelData) GetContextById(id uuid.UUID) mdlctx.Context {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	dctx, exists := m.contextsByUUID[id]
 	if !exists {
 		return nil
@@ -425,6 +447,9 @@ func (m *modelData) GetContextById(id uuid.UUID) mdlctx.Context {
 
 // GetContexts implements Model.
 func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	/* since this operation would require O(n) and is therfore potentially quite costly, lets cache that
 	   Any write operations to contextsByUUID must invalidate that
 	*/
@@ -443,6 +468,9 @@ func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
 
 // AddContextType implements [Model].
 func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if contextType.GetContextTypeId() == uuid.Nil {
 		return common.ErrUUIDNotSet
 	}
@@ -466,6 +494,9 @@ func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
 
 // DeleteContextTypeById implements [Model].
 func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := m.contextTypesByUUID[id]
 	if !exists {
 		return common.ErrContextTypeNotFound
@@ -482,6 +513,9 @@ func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
 
 // GetContextTypeById implements [Model].
 func (m *modelData) GetContextTypeById(id uuid.UUID) mdlctx.ContextType {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	contextType, exists := m.contextTypesByUUID[id]
 	if !exists {
 		return nil
@@ -491,6 +525,9 @@ func (m *modelData) GetContextTypeById(id uuid.UUID) mdlctx.ContextType {
 
 // GetContextTypes implements [Model].
 func (m *modelData) GetContextTypes() ([]mdlctx.ContextType, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	contextTypeArr := slices.Collect(maps.Values(m.contextTypesByUUID))
 	return contextTypeArr, nil
 }
@@ -507,12 +544,12 @@ func (m *modelData) DeleteNodeById(id uuid.UUID) error {
 
 // GetNodeById implements [Model].
 func (m *modelData) GetNodeById(id uuid.UUID) node.Node {
-	return getEventEnabled(id, m.nodesByUUID)
+	return getEventEnabled(m,id, m.nodesByUUID)
 }
 
 // GetNodes implements [Model].
 func (m *modelData) GetNodes() ([]node.Node, error) {
-	return getAllEventEnabled(m.nodesByUUID)
+	return getAllEventEnabled(m,m.nodesByUUID)
 }
 
 // AddNodeType implements [Model].
@@ -527,16 +564,18 @@ func (m *modelData) DeleteNodeTypeById(id uuid.UUID) error {
 
 // GetNodeTypeById implements [Model].
 func (m *modelData) GetNodeTypeById(id uuid.UUID) node.NodeType {
-	return getEventEnabled(id, m.nodeTypesByUUID)
+	return getEventEnabled(m,id, m.nodeTypesByUUID)
 }
 
 // GetNodeTypes implements [Model].
 func (m *modelData) GetNodeTypes() ([]node.NodeType, error) {
-	return getAllEventEnabled(m.nodeTypesByUUID)
+	return getAllEventEnabled(m,m.nodeTypesByUUID)
 }
 
 // AddSystem implements Model.
 func (m *modelData) AddSystem(sys system.System) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	// parse parent ref if set
 	if sys.GetSystemId() == uuid.Nil {
@@ -563,6 +602,9 @@ func (m *modelData) AddSystem(sys system.System) error {
 
 // DeleteSystemByResourceName implements Model.
 func (m *modelData) DeleteSystemById(id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := m.systemsByUUID[id]
 	if !exists {
 		return common.ErrSystemNotFound
@@ -579,12 +621,18 @@ func (m *modelData) DeleteSystemById(id uuid.UUID) error {
 
 // GetSystems implements Model.
 func (m *modelData) GetSystems() ([]system.System, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	systemArr := slices.Collect(maps.Values(m.systemsByUUID))
 	return systemArr, nil
 }
 
 // GetSystemById implements Model.
 func (m *modelData) GetSystemById(id uuid.UUID) system.System {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	sys, exists := m.systemsByUUID[id]
 	if !exists {
 		return nil
@@ -644,7 +692,7 @@ func (m *modelData) DeleteSystemInstanceById(id uuid.UUID) error {
 
 // GetApiById implements Model.
 func (m *modelData) GetApiById(id uuid.UUID) mdlapi.API {
-	return getEventEnabled(id, m.apisByUUID)
+	return getEventEnabled(m,id, m.apisByUUID)
 }
 
 // ApiRefByID implements [Model].
@@ -658,22 +706,22 @@ func (m *modelData) ApiRefByID(apiId uuid.UUID) *mdlapi.ApiRef {
 
 // GetApiInstanceById implements Model.
 func (m *modelData) GetApiInstanceById(id uuid.UUID) mdlapi.ApiInstance {
-	return getEventEnabled(id, m.apiInstancesByUUID)
+	return getEventEnabled(m,id, m.apiInstancesByUUID)
 }
 
 // GetComponentById implements Model.
 func (m *modelData) GetComponentById(id uuid.UUID) component.Component {
-	return getEventEnabled(id, m.componentsByUUID)
+	return getEventEnabled(m,id, m.componentsByUUID)
 }
 
 // GetComponentInstanceById implements Model.
 func (m *modelData) GetComponentInstanceById(id uuid.UUID) component.ComponentInstance {
-	return getEventEnabled(id, m.componentInstancesByUUID)
+	return getEventEnabled(m,id, m.componentInstancesByUUID)
 }
 
 // GetSystemInstanceById implements Model.
 func (m *modelData) GetSystemInstanceById(id uuid.UUID) system.SystemInstance {
-	return getEventEnabled(id, m.systemInstancesByUUID)
+	return getEventEnabled(m,id, m.systemInstancesByUUID)
 }
 
 // SystemInstanceRefByID implements [Model].
@@ -690,37 +738,43 @@ func (m *modelData) SystemInstanceRefByID(instanceId uuid.UUID) *system.SystemIn
 
 // GetApiInstances implements Model.
 func (m *modelData) GetApiInstances() ([]mdlapi.ApiInstance, error) {
-	return getAllEventEnabled(m.apiInstancesByUUID)
+	return getAllEventEnabled(m,m.apiInstancesByUUID)
 }
 
 // GetApis implements Model.
 func (m *modelData) GetApis() ([]mdlapi.API, error) {
-	return getAllEventEnabled(m.apisByUUID)
+	return getAllEventEnabled(m,m.apisByUUID)
 }
 
 // GetComponentInstances implements Model.
 func (m *modelData) GetComponentInstances() ([]component.ComponentInstance, error) {
-	return getAllEventEnabled(m.componentInstancesByUUID)
+	return getAllEventEnabled(m,m.componentInstancesByUUID)
 }
 
 // GetComponents implements Model.
 func (m *modelData) GetComponents() ([]component.Component, error) {
-	return getAllEventEnabled(m.componentsByUUID)
+	return getAllEventEnabled(m,m.componentsByUUID)
 }
 
 // GetSystemInstances implements Model.
 func (m *modelData) GetSystemInstances() ([]system.SystemInstance, error) {
-	return getAllEventEnabled(m.systemInstancesByUUID)
+	return getAllEventEnabled(m,m.systemInstancesByUUID)
 }
 
 // GetFindings implements Model.
-func (m modelData) GetFindings() ([]finding.Finding, error) {
+func (m *modelData) GetFindings() ([]finding.Finding, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	findingArr := slices.Collect(maps.Values(m.findingsByUUID))
 	return findingArr, nil
 }
 
 // AddFinding implements Model.
 func (m *modelData) AddFinding(f finding.Finding, name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if f.GetFindingId() != uuid.Nil {
 		f.Register()
 		m.findingsByUUID[f.GetFindingId()] = f
@@ -733,6 +787,9 @@ func (m *modelData) AddFinding(f finding.Finding, name string) error {
 
 // DeleteFindingById implements [Model].
 func (m *modelData) DeleteFindingById(id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := m.findingsByUUID[id]
 	if !exists {
 		return common.ErrFindingNotFound
@@ -746,6 +803,9 @@ func (m *modelData) DeleteFindingById(id uuid.UUID) error {
 
 // GetFindingById implements Model.
 func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	fobj, exists := m.findingsByUUID[id]
 	if !exists {
 		return nil
@@ -755,6 +815,8 @@ func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
 
 // AddFindingType implements [Model].
 func (m *modelData) AddFindingType(findingType finding.FindingType) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	// parse parent ref if set
 	if findingType.GetFindingTypeId() == uuid.Nil {
@@ -782,6 +844,9 @@ func (m *modelData) AddFindingType(findingType finding.FindingType) error {
 
 // DeleteFindingTypeById implements [Model].
 func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, exists := m.findingTypesByUUID[id]
 	if !exists {
 		return common.ErrFindingTypeNotFound
@@ -798,6 +863,9 @@ func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
 
 // GetFindingTypeById implements [Model].
 func (m *modelData) GetFindingTypeById(id uuid.UUID) finding.FindingType {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	findingType, exists := m.findingTypesByUUID[id]
 	if !exists {
 		return nil
@@ -807,6 +875,9 @@ func (m *modelData) GetFindingTypeById(id uuid.UUID) finding.FindingType {
 
 // GetFindingTypeByName implements [Model].
 func (m *modelData) GetFindingTypeByName(name string) finding.FindingType {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	if name == "" {
 		return nil
 	}
@@ -820,6 +891,9 @@ func (m *modelData) GetFindingTypeByName(name string) finding.FindingType {
 
 // GetFindingTypes implements [Model].
 func (m *modelData) GetFindingTypes() ([]finding.FindingType, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	findingTypeArr := slices.Collect(maps.Values(m.findingTypesByUUID))
 	return findingTypeArr, nil
 }
@@ -836,12 +910,12 @@ func (m *modelData) DeleteArtifactById(id uuid.UUID) error {
 
 // GetArtifacts implements [Model].
 func (m *modelData) GetArtifacts() ([]artifact.Artifact, error) {
-	return getAllEventEnabled(m.artifactsByUUID)
+	return getAllEventEnabled(m,m.artifactsByUUID)
 }
 
 // GetArtifactById implements [Model].
 func (m *modelData) GetArtifactById(id uuid.UUID) artifact.Artifact {
-	return getEventEnabled(id, m.artifactsByUUID)
+	return getEventEnabled(m,id, m.artifactsByUUID)
 }
 
 // AddArtifactInstance implements [Model].
@@ -856,12 +930,12 @@ func (m *modelData) DeleteArtifactInstanceById(id uuid.UUID) error {
 
 // GetArtifactInstances implements [Model].
 func (m *modelData) GetArtifactInstances() ([]artifact.ArtifactInstance, error) {
-	return getAllEventEnabled(m.artifactInstancesByUUID)
+	return getAllEventEnabled(m,m.artifactInstancesByUUID)
 }
 
 // GetArtifactInstanceById implements [Model].
 func (m *modelData) GetArtifactInstanceById(id uuid.UUID) artifact.ArtifactInstance {
-	return getEventEnabled(id, m.artifactInstancesByUUID)
+	return getEventEnabled(m,id, m.artifactInstancesByUUID)
 }
 
 // AddGroup implements [Model].
@@ -896,32 +970,32 @@ func (m *modelData) DeleteOrgUnit(id uuid.UUID) error {
 
 // GetGroupById implements [Model].
 func (m *modelData) GetGroupById(id uuid.UUID) iam.Group {
-	return getEventEnabled(id, m.groupsByUUID)
+	return getEventEnabled(m,id, m.groupsByUUID)
 }
 
 // GetGroups implements [Model].
 func (m *modelData) GetGroups() ([]iam.Group, error) {
-	return getAllEventEnabled(m.groupsByUUID)
+	return getAllEventEnabled(m,m.groupsByUUID)
 }
 
 // GetIdentities implements [Model].
 func (m *modelData) GetIdentities() ([]iam.Identity, error) {
-	return getAllEventEnabled(m.identitiesByUUID)
+	return getAllEventEnabled(m,m.identitiesByUUID)
 }
 
 // GetIdentityById implements [Model].
 func (m *modelData) GetIdentityById(id uuid.UUID) iam.Identity {
-	return getEventEnabled(id, m.identitiesByUUID)
+	return getEventEnabled(m,id, m.identitiesByUUID)
 }
 
 // GetOrgUnitById implements [Model].
 func (m *modelData) GetOrgUnitById(id uuid.UUID) iam.OrgUnit {
-	return getEventEnabled(id, m.orgUnitsByUUID)
+	return getEventEnabled(m,id, m.orgUnitsByUUID)
 }
 
 // GetOrgUnits implements [Model].
 func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
-	return getAllEventEnabled(m.orgUnitsByUUID)
+	return getAllEventEnabled(m,m.orgUnitsByUUID)
 }
 
 // AddProduct implements [Model].
@@ -936,10 +1010,10 @@ func (m *modelData) DeleteProductById(id uuid.UUID) error {
 
 // GetProductById implements [Model].
 func (m *modelData) GetProductById(id uuid.UUID) mdlprod.Product {
-	return getEventEnabled(id, m.productsByUUID)
+	return getEventEnabled(m,id, m.productsByUUID)
 }
 
 // GetProducts implements [Model].
 func (m *modelData) GetProducts() ([]mdlprod.Product, error) {
-	return getAllEventEnabled(m.productsByUUID)
+	return getAllEventEnabled(m,m.productsByUUID)
 }
