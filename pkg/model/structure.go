@@ -319,20 +319,24 @@ func addEventEnabled[T any](
 	store map[uuid.UUID]T,
 	resourceType events.ResourceType,
 ) error {
-	m.mu.Lock()
-	id := getId(obj)
-	if id == uuid.Nil {
-		m.mu.Unlock()
-		return common.ErrUUIDNotSet
+	op, id, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		id := getId(obj)
+		if id == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+		op := events.CreateOperation
+		if _, exists := store[id]; exists {
+			op = events.UpdateOperation
+		}
+		setRegistered(obj)
+		store[id] = obj
+		return op, id, nil
+	}()
+	if err != nil {
+		return err
 	}
-	op := events.CreateOperation
-	if _, exists := store[id]; exists {
-		op = events.UpdateOperation
-	}
-	setRegistered(obj)
-	store[id] = obj
-	m.mu.Unlock()
-
 	// Do not hold m.mu during sink.Receive: filters (e.g. phase0) call back into Model
 	// with Get* which would need RLock and deadlock on the same goroutine.
 	if err := m.sink.Receive(resourceType, op, id, obj); err != nil {
@@ -349,14 +353,18 @@ func deleteEventEnabled[T any](
 	resourceType events.ResourceType,
 	notFoundError error,
 ) error {
-	m.mu.Lock()
-	_, exists := store[id]
-	if !exists {
-		m.mu.Unlock()
-		return notFoundError
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := store[id]; !exists {
+			return notFoundError
+		}
+		delete(store, id)
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
-	delete(store, id)
-	m.mu.Unlock()
 
 	if err := m.sink.Receive(resourceType, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", resourceType, "| ", events.DeleteOperation, " event: ", err)
@@ -387,30 +395,35 @@ func getAllEventEnabled[T any](m *modelData, store map[uuid.UUID]T) ([]T, error)
 
 // AddContext implements Model.
 func (m *modelData) AddContext(c mdlctx.Context) error {
-	m.mu.Lock()
-	// invalidate the cache
-	m.contextsCache = nil
+	op, cid, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		// invalidate the cache
+		m.contextsCache = nil
 
-	// TODO: parse parent ref if set
+		// TODO: parse parent ref if set
 
-	if c.GetContextId() == uuid.Nil {
-		m.mu.Unlock()
-		return common.ErrUUIDNotSet
+		if c.GetContextId() == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+
+		op := events.CreateOperation
+
+		// check if this would overwrite an existing entry -> an update
+		if _, ok := m.contextsByUUID[c.GetContextId()]; ok {
+			op = events.UpdateOperation
+		}
+
+		// Register and persist before notifying the sink so filters see consistent model state.
+		c.Register()
+		m.contextsByUUID[c.GetContextId()] = c
+		return op, c.GetContextId(), nil
+	}()
+	if err != nil {
+		return err
 	}
 
-	op := events.CreateOperation
-
-	// check if this would overwrite an existing entry -> an update
-	if _, ok := m.contextsByUUID[c.GetContextId()]; ok {
-		op = events.UpdateOperation
-	}
-
-	// Register and persist before notifying the sink so filters see consistent model state.
-	c.Register()
-	m.contextsByUUID[c.GetContextId()] = c
-	m.mu.Unlock()
-
-	if err := m.sink.Receive(events.ContextResource, op, c.GetContextId(), c); err != nil {
+	if err := m.sink.Receive(events.ContextResource, op, cid, c); err != nil {
 		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
 	}
 
@@ -419,18 +432,22 @@ func (m *modelData) AddContext(c mdlctx.Context) error {
 
 // DeleteContextById implements Model.
 func (m *modelData) DeleteContextById(id uuid.UUID) error {
-	m.mu.Lock()
-	_, exists := m.contextsByUUID[id]
-	if !exists {
-		m.mu.Unlock()
-		return common.ErrContextNotFound
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := m.contextsByUUID[id]; !exists {
+			return common.ErrContextNotFound
+		}
+
+		// invalidate the cache
+		m.contextsCache = nil
+
+		delete(m.contextsByUUID, id)
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
-
-	// invalidate the cache
-	m.contextsCache = nil
-
-	delete(m.contextsByUUID, id)
-	m.mu.Unlock()
 
 	if err := m.sink.Receive(events.ContextResource, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", events.ContextResource, "| ", events.DeleteOperation, " event: ", err)
@@ -473,25 +490,30 @@ func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
 
 // AddContextType implements [Model].
 func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
-	m.mu.Lock()
-	if contextType.GetContextTypeId() == uuid.Nil {
-		m.mu.Unlock()
-		return common.ErrUUIDNotSet
+	op, typeID, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if contextType.GetContextTypeId() == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+
+		op := events.CreateOperation
+
+		// check if this would overwrite an existing entry -> an update
+		if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
+			op = events.UpdateOperation
+		}
+
+		// Register and persist before notifying the sink so filters see consistent model state.
+		contextType.Register()
+		m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
+		return op, contextType.GetContextTypeId(), nil
+	}()
+	if err != nil {
+		return err
 	}
 
-	op := events.CreateOperation
-
-	// check if this would overwrite an existing entry -> an update
-	if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
-		op = events.UpdateOperation
-	}
-
-	// Register and persist before notifying the sink so filters see consistent model state.
-	contextType.Register()
-	m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
-	m.mu.Unlock()
-
-	if err := m.sink.Receive(events.ContextTypeResource, op, contextType.GetContextTypeId(), contextType); err != nil {
+	if err := m.sink.Receive(events.ContextTypeResource, op, typeID, contextType); err != nil {
 		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
 	}
 
@@ -500,15 +522,19 @@ func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
 
 // DeleteContextTypeById implements [Model].
 func (m *modelData) DeleteContextTypeById(id uuid.UUID) error {
-	m.mu.Lock()
-	_, exists := m.contextTypesByUUID[id]
-	if !exists {
-		m.mu.Unlock()
-		return common.ErrContextTypeNotFound
-	}
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := m.contextTypesByUUID[id]; !exists {
+			return common.ErrContextTypeNotFound
+		}
 
-	delete(m.contextTypesByUUID, id)
-	m.mu.Unlock()
+		delete(m.contextTypesByUUID, id)
+		return nil
+	}()
+	if err != nil {
+		return err
+	}
 
 	if err := m.sink.Receive(events.ContextTypeResource, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", events.DeleteOperation, " event: ", err)
@@ -580,26 +606,31 @@ func (m *modelData) GetNodeTypes() ([]node.NodeType, error) {
 
 // AddSystem implements Model.
 func (m *modelData) AddSystem(sys system.System) error {
-	m.mu.Lock()
-	// parse parent ref if set
-	if sys.GetSystemId() == uuid.Nil {
-		m.mu.Unlock()
-		return common.ErrUUIDNotSet
+	op, sid, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		// parse parent ref if set
+		if sys.GetSystemId() == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+
+		op := events.CreateOperation
+
+		// check if this would overwrite an existing entry -> an update
+		if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
+			op = events.UpdateOperation
+		}
+
+		// mark System as registered to activate sending events when updating fields
+		sys.Register()
+		m.systemsByUUID[sys.GetSystemId()] = sys
+		return op, sys.GetSystemId(), nil
+	}()
+	if err != nil {
+		return err
 	}
 
-	op := events.CreateOperation
-
-	// check if this would overwrite an existing entry -> an update
-	if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
-		op = events.UpdateOperation
-	}
-
-	// mark System as registered to activate sending events when updating fields
-	sys.Register()
-	m.systemsByUUID[sys.GetSystemId()] = sys
-	m.mu.Unlock()
-
-	if err := m.sink.Receive(events.SystemResource, op, sys.GetSystemId(), sys); err != nil {
+	if err := m.sink.Receive(events.SystemResource, op, sid, sys); err != nil {
 		fmt.Println("Error receiving ", events.SystemResource, "| ", op, " event: ", err)
 	}
 
@@ -608,15 +639,19 @@ func (m *modelData) AddSystem(sys system.System) error {
 
 // DeleteSystemByResourceName implements Model.
 func (m *modelData) DeleteSystemById(id uuid.UUID) error {
-	m.mu.Lock()
-	_, exists := m.systemsByUUID[id]
-	if !exists {
-		m.mu.Unlock()
-		return common.ErrSystemNotFound
-	}
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := m.systemsByUUID[id]; !exists {
+			return common.ErrSystemNotFound
+		}
 
-	delete(m.systemsByUUID, id)
-	m.mu.Unlock()
+		delete(m.systemsByUUID, id)
+		return nil
+	}()
+	if err != nil {
+		return err
+	}
 
 	if err := m.sink.Receive(events.SystemResource, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", events.SystemResource, "| ", events.DeleteOperation, " event: ", err)
@@ -781,10 +816,12 @@ func (m *modelData) AddFinding(f finding.Finding, name string) error {
 	if f.GetFindingId() == uuid.Nil {
 		return nil
 	}
-	m.mu.Lock()
-	f.Register()
-	m.findingsByUUID[f.GetFindingId()] = f
-	m.mu.Unlock()
+	func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		f.Register()
+		m.findingsByUUID[f.GetFindingId()] = f
+	}()
 
 	if err := m.sink.Receive(events.FindingResource, events.CreateOperation, f.GetFindingId(), f); err != nil {
 		fmt.Println("Error receiving ", events.FindingResource, "| ", events.CreateOperation, " event: ", err)
@@ -794,14 +831,18 @@ func (m *modelData) AddFinding(f finding.Finding, name string) error {
 
 // DeleteFindingById implements [Model].
 func (m *modelData) DeleteFindingById(id uuid.UUID) error {
-	m.mu.Lock()
-	_, exists := m.findingsByUUID[id]
-	if !exists {
-		m.mu.Unlock()
-		return common.ErrFindingNotFound
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := m.findingsByUUID[id]; !exists {
+			return common.ErrFindingNotFound
+		}
+		delete(m.findingsByUUID, id)
+		return nil
+	}()
+	if err != nil {
+		return err
 	}
-	delete(m.findingsByUUID, id)
-	m.mu.Unlock()
 
 	if err := m.sink.Receive(events.FindingResource, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", events.FindingResource, "| ", events.DeleteOperation, " event: ", err)
@@ -823,26 +864,31 @@ func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
 
 // AddFindingType implements [Model].
 func (m *modelData) AddFindingType(findingType finding.FindingType) error {
-	m.mu.Lock()
-	// parse parent ref if set
-	if findingType.GetFindingTypeId() == uuid.Nil {
-		m.mu.Unlock()
-		return common.ErrUUIDNotSet
+	op, ftID, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		// parse parent ref if set
+		if findingType.GetFindingTypeId() == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+
+		op := events.CreateOperation
+
+		// check if this would overwrite an existing entry -> an update
+		if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
+			op = events.UpdateOperation
+		}
+
+		// mark FindingType as registered to activate sending events when updating fields
+		findingType.Register()
+		m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
+		return op, findingType.GetFindingTypeId(), nil
+	}()
+	if err != nil {
+		return err
 	}
 
-	op := events.CreateOperation
-
-	// check if this would overwrite an existing entry -> an update
-	if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
-		op = events.UpdateOperation
-	}
-
-	// mark FindingType as registered to activate sending events when updating fields
-	findingType.Register()
-	m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
-	m.mu.Unlock()
-
-	if err := m.sink.Receive(events.FindingTypeResource, op, findingType.GetFindingTypeId(), findingType); err != nil {
+	if err := m.sink.Receive(events.FindingTypeResource, op, ftID, findingType); err != nil {
 		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", op, " event: ", err)
 	}
 
@@ -852,15 +898,19 @@ func (m *modelData) AddFindingType(findingType finding.FindingType) error {
 
 // DeleteFindingTypeById implements [Model].
 func (m *modelData) DeleteFindingTypeById(id uuid.UUID) error {
-	m.mu.Lock()
-	_, exists := m.findingTypesByUUID[id]
-	if !exists {
-		m.mu.Unlock()
-		return common.ErrFindingTypeNotFound
-	}
+	err := func() error {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, exists := m.findingTypesByUUID[id]; !exists {
+			return common.ErrFindingTypeNotFound
+		}
 
-	delete(m.findingTypesByUUID, id)
-	m.mu.Unlock()
+		delete(m.findingTypesByUUID, id)
+		return nil
+	}()
+	if err != nil {
+		return err
+	}
 
 	if err := m.sink.Receive(events.FindingTypeResource, events.DeleteOperation, id); err != nil {
 		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", events.DeleteOperation, " event: ", err)
