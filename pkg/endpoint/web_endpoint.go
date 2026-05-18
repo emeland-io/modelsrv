@@ -6,6 +6,7 @@ package endpoint
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -23,20 +24,28 @@ import (
 
 var (
 	webServer      *http.Server
+	webListener    net.Listener
 	metricsServer  *http.Server
 	metricsHandler http.Handler
 	setupLog       zap.SugaredLogger
 	metricsReg     *prometheus.Registry
 )
 
-// StarWebListener starts the web endpoint serving the Swagger-UI and API
+// StartWebListener starts the web endpoint serving the Swagger-UI and API
 //
 // addr is the address and port to bind to, e.g. "localhost:24000"
-func StarWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
-	baseUrl := fmt.Sprintf("http://%s/api", addr)
+func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
+	setupLog = *zap.NewExample().Sugar()
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return fmt.Errorf("listen %s: %w", addr, err)
+	}
+	webListener = ln
+
+	baseUrl := fmt.Sprintf("http://%s/api", ln.Addr().String())
 	server := oapi.NewApiServer(backend, eventMgr, baseUrl)
 	strict := oapi.NewApiHandler(server)
-	setupLog = *zap.NewExample().Sugar()
 
 	metricsReg = prometheus.NewRegistry()
 	metricsReg.MustRegister(collectors.NewGoCollector())
@@ -55,14 +64,18 @@ func StarWebListener(backend model.Model, eventMgr events.EventManager, addr str
 	// get an `http.Handler` that we can use
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
-	setupLog.Info("Starting Web-Endpoint: ", "address: ", addr)
+	setupLog.Info("Starting Web-Endpoint: ", "address: ", ln.Addr().String())
 
 	webServer = &http.Server{
 		Handler: h,
-		Addr:    addr,
 	}
 
-	go runListener(webServer)
+	srv := webServer
+	go func() {
+		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			setupLog.Error(err, ". Ended server with error")
+		}
+	}()
 
 	return nil
 }
@@ -79,13 +92,15 @@ func StopWebListener() {
 	if err := webServer.Shutdown(context.Background()); err != nil {
 		setupLog.Error("Error shutting down web server: ", err)
 	}
+	webServer = nil
+	webListener = nil
 }
 
 // StartMetricsListener starts a dedicated HTTP server for /metrics on the given address.
 // When called, the main port's /metrics is replaced with a redirect to the dedicated endpoint.
 func StartMetricsListener(addr string) error {
 	if metricsReg == nil {
-		return fmt.Errorf("metrics registry not initialized; call StarWebListener first")
+		return fmt.Errorf("metrics registry not initialized; call StartWebListener first")
 	}
 	metricsURL := fmt.Sprintf("http://%s/metrics", addr)
 	metricsHandler = http.RedirectHandler(metricsURL, http.StatusTemporaryRedirect)
@@ -102,14 +117,13 @@ func StartMetricsListener(addr string) error {
 	return nil
 }
 
-func runListener(server *http.Server) {
-
-	err := server.ListenAndServe()
-	if err != nil {
-		setupLog.Error(err, ". Ended server with error")
-	} else {
-		setupLog.Info("Ended server.")
+// WebListenerAddr returns the address the web server is listening on.
+// Useful when started with ":0" to discover the actual port.
+func WebListenerAddr() net.Addr {
+	if webListener == nil {
+		return nil
 	}
+	return webListener.Addr()
 }
 
 // spaHandler implements the http.Handler interface, so we can use it

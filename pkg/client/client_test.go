@@ -56,10 +56,13 @@ var _ = Describe("Client", Ordered, func() {
 		Expect(testModel).NotTo(BeNil())
 
 		By("attaching the model to a listener")
-		Expect(endpoint.StarWebListener(testModel, testEvents, "localhost:24000")).To(Succeed())
+		Expect(endpoint.StartWebListener(testModel, testEvents, "localhost:0")).To(Succeed())
+
+		addr := endpoint.WebListenerAddr()
+		Expect(addr).NotTo(BeNil())
 
 		By("creating a client")
-		testClient, err = client.NewModelSrvClient("http://localhost:24000/api/")
+		testClient, err = client.NewModelSrvClient(fmt.Sprintf("http://%s/api/", addr.String()))
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(testClient).NotTo(BeNil())
 
