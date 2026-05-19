@@ -18,6 +18,7 @@ import (
 
 var serviceAddr string
 var dataDir string
+var metricsAddr string
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
@@ -64,6 +65,13 @@ var serverCmd = &cobra.Command{
 			return
 		}
 
+		if metricsAddr != "" {
+			if err := endpoint.StartMetricsListener(metricsAddr); err != nil {
+				logger.Errorw("error starting metrics listener", "error", err)
+				return
+			}
+		}
+
 		logger.Info("server is running (Ctrl+C to stop)")
 
 		sigCh := make(chan os.Signal, 1)
@@ -80,6 +88,7 @@ func init() {
 
 	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", ":8080", "The address the service listens on")
 	serverCmd.Flags().StringVar(&dataDir, "data-dir", "data", "Directory to watch for YAML model definitions (.yaml/.yml); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", "", "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
 }
 
 func notifyShutdownSignals(ch chan os.Signal) {
