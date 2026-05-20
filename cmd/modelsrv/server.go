@@ -60,7 +60,7 @@ var serverCmd = &cobra.Command{
 
 		filesensor.Start(context.Background(), dataPath, b.GetModel(), logger)
 
-		if err := endpoint.StarWebListener(b.GetModel(), b.GetEventManager(), serviceAddr); err != nil {
+		if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr); err != nil {
 			logger.Errorw("error starting web listener", "error", err)
 			return
 		}

@@ -20,10 +20,15 @@ func TestStartUIListener(t *testing.T) {
 		t.Fatalf("failed to create event manager: %v", err)
 	}
 
-	// This test should verify that StartUIListener returns nil and starts a server
-	// For now, just check that it returns nil (since actual server start is async)
-	err = StarWebListener(backend, eventMgr, "127.0.0.1:24000")
+	err = StartWebListener(backend, eventMgr, "127.0.0.1:0")
 	if err != nil {
-		t.Errorf("expected nil error, got %v", err)
+		t.Fatalf("expected nil error, got %v", err)
 	}
+	defer StopWebListener()
+
+	addr := WebListenerAddr()
+	if addr == nil {
+		t.Fatal("expected non-nil listener address")
+	}
+	t.Logf("listening on %s", addr.String())
 }
