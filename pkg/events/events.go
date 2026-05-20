@@ -21,6 +21,7 @@ package events
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -295,6 +296,7 @@ func (d *dummySink) Receive(resType ResourceType, op Operation, resourceId uuid.
 }
 
 type ListSink struct {
+	mu         sync.Mutex
 	eventsTxts []string
 	events     []Event
 }
@@ -316,6 +318,8 @@ func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.U
 		ResourceId:   resourceId,
 		Objects:      objects,
 	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	l.events = append(l.events, currEvent)
 
 	l.eventsTxts = append(l.eventsTxts, currEvent.String())
@@ -324,15 +328,22 @@ func (l *ListSink) Receive(resType ResourceType, op Operation, resourceId uuid.U
 }
 
 func (l *ListSink) PrintList() {
-	for str := range l.eventsTxts {
+	l.mu.Lock()
+	txts := append([]string(nil), l.eventsTxts...)
+	l.mu.Unlock()
+	for _, str := range txts {
 		fmt.Println(str)
 	}
 }
 
 func (l *ListSink) GetList() []string {
-	return l.eventsTxts
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]string(nil), l.eventsTxts...)
 }
 
 func (l *ListSink) GetEvents() []Event {
-	return l.events
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]Event(nil), l.events...)
 }
