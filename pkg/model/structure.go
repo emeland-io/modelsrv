@@ -236,7 +236,6 @@ type modelData struct {
 
 	contextsByUUID     map[uuid.UUID]mdlctx.Context
 	contextTypesByUUID map[uuid.UUID]mdlctx.ContextType
-	contextsCache      []mdlctx.Context
 
 	systemsByUUID    map[uuid.UUID]system.System
 	apisByUUID       map[uuid.UUID]mdlapi.API
@@ -398,8 +397,6 @@ func (m *modelData) AddContext(c mdlctx.Context) error {
 	op, cid, err := func() (events.Operation, uuid.UUID, error) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		// invalidate the cache
-		m.contextsCache = nil
 
 		// TODO: parse parent ref if set
 
@@ -439,9 +436,6 @@ func (m *modelData) DeleteContextById(id uuid.UUID) error {
 			return common.ErrContextNotFound
 		}
 
-		// invalidate the cache
-		m.contextsCache = nil
-
 		delete(m.contextsByUUID, id)
 		return nil
 	}()
@@ -471,21 +465,7 @@ func (m *modelData) GetContextById(id uuid.UUID) mdlctx.Context {
 func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-
-	/* since this operation would require O(n) and is therfore potentially quite costly, lets cache that
-	   Any write operations to contextsByUUID must invalidate that
-	*/
-	if m.contextsCache != nil {
-		return m.contextsCache, nil
-	}
-
-	contextArr := make([]mdlctx.Context, 0)
-	for c := range maps.Values(m.contextsByUUID) {
-		contextArr = append(contextArr, c)
-	}
-	m.contextsCache = contextArr
-
-	return contextArr, nil
+	return slices.Collect(maps.Values(m.contextsByUUID)), nil
 }
 
 // AddContextType implements [Model].
