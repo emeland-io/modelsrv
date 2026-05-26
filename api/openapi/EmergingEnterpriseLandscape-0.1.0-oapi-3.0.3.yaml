@@ -554,6 +554,181 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/permissionSpecs:
+    get:
+      description: Retrieve all permission specifications in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/permissionSpecs/{permissionSpecId}:
+    get:
+      description: Retrieve details of a specific permission specification by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: permissionSpecId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionSpec'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/roleSpecs:
+    get:
+      description: Retrieve all role specifications in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/roleSpecs/{roleSpecId}:
+    get:
+      description: Retrieve details of a specific role specification by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: roleSpecId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleSpec'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/permissions:
+    get:
+      description: Retrieve all realized permissions in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/permissions/{permissionId}:
+    get:
+      description: Retrieve details of a specific permission by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: permissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permission'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/roles:
+    get:
+      description: Retrieve all realized roles in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/roles/{roleId}:
+    get:
+      description: Retrieve details of a specific role by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/bindings:
+    get:
+      description: Retrieve all bindings in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/bindings/{bindingId}:
+    get:
+      description: Retrieve details of a specific binding by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: bindingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Binding'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/artifacts:
     get:
       description: Retrieve all artifacts in the landscape.
@@ -865,6 +1040,11 @@ components:
             - Identity
             - OrgUnit
             - Group
+            - Binding
+            - RoleSpec
+            - PermissionSpec
+            - Role
+            - Permission
             - Product
             # phase-5 risk types
             - Finding
@@ -1320,6 +1500,142 @@ components:
       required:
         - identityId
         - displayName
+    SubjectRef:
+      type: object
+      description: Subject of a binding — either a group or an identity (mutually exclusive).
+      properties:
+        groupId:
+          type: string
+          format: uuid
+        identityId:
+          type: string
+          format: uuid
+    PermissionSpec:
+      type: object
+      description: Organizational definition of a permission (spec / requirement).
+      properties:
+        permissionSpecId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - permissionSpecId
+        - displayName
+    RoleSpec:
+      type: object
+      description: Organizational definition of a role referencing permission specs.
+      properties:
+        roleSpecId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            format: uuid
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - roleSpecId
+        - displayName
+    Permission:
+      type: object
+      description: Realized permission instance linked to a permission spec within the landscape.
+      properties:
+        permissionId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        spec:
+          type: string
+          description: UUID of the PermissionSpec this permission realizes.
+          format: uuid
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - permissionId
+        - displayName
+        - spec
+    Role:
+      type: object
+      description: Realized role with spec reference, granted permissions, scope resources, and context.
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        spec:
+          type: string
+          description: UUID of the RoleSpec this role realizes.
+          format: uuid
+        permissions:
+          type: array
+          items:
+            type: string
+            format: uuid
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+        context:
+          type: string
+          description: UUID of the Context where this role applies.
+          format: uuid
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - roleId
+        - displayName
+        - spec
+        - context
+    Binding:
+      type: object
+      description: Binds a subject (group or identity) to a role.
+      properties:
+        bindingId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        role:
+          type: string
+          format: uuid
+        subject:
+          $ref: '#/components/schemas/SubjectRef'
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - bindingId
+        - displayName
+        - role
+        - subject
     Artifact:
       type: object
       description: Represents a binary artefact (e.g. software package, archive, binary executable) tracked in the landscape.
