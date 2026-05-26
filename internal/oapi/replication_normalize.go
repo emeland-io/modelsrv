@@ -40,6 +40,33 @@ func normalizeReplicationWireMap(rt events.ResourceType, wire map[string]interfa
 
 	case events.FindingResource:
 		coalesceObjectToUUIDScalar(wire, "Type", "type", "FindingTypeId", "findingTypeId")
+
+	case events.PermissionResource:
+		coalesceRefSourcesToOpenAPIField(wire, []string{"Spec", "spec"}, "spec", "PermissionSpecId", "permissionSpecId")
+
+	case events.RoleResource:
+		coalesceRefSourcesToOpenAPIField(wire, []string{"Spec", "spec"}, "spec", "RoleSpecId", "roleSpecId")
+		// Domain field is "ContextRef" (not "Context"), so coalesceObjectToUUIDScalar would strand the
+		// UUID at wire["ContextRef"] which does not case-insensitively match json:"context". Use
+		// coalesceRefSourcesToOpenAPIField to explicitly write the target key "context".
+		coalesceRefSourcesToOpenAPIField(wire, []string{"ContextRef", "context"}, "context", "ContextId", "contextId")
+		// Domain serializes "Permissions" (capital); also handle the lowercase variant from
+		// OpenAPI-shaped payloads.
+		flattenRefObjectArrayToUUIDScalars(wire, "Permissions",
+			"PermissionId", "permissionId")
+		flattenRefObjectArrayToUUIDScalars(wire, "permissions",
+			"PermissionId", "permissionId")
+
+	case events.RoleSpecResource:
+		// Domain serializes "Permissions" (capital); also handle the lowercase variant.
+		flattenRefObjectArrayToUUIDScalars(wire, "Permissions",
+			"PermissionSpecId", "permissionSpecId")
+		flattenRefObjectArrayToUUIDScalars(wire, "permissions",
+			"PermissionSpecId", "permissionSpecId")
+
+	case events.BindingResource:
+		coalesceObjectToUUIDScalar(wire, "Role", "role", "RoleId", "roleId")
+		normalizeBindingSubjectWire(wire)
 	}
 }
 
@@ -108,8 +135,94 @@ func stripInvalidAnnotationsForOpenAPI(wire map[string]interface{}) {
 	}
 }
 
-// coalesceObjectToUUIDScalar replaces wire[key] when it is a JSON object that only carries an id
-// (e.g. SystemRef) with the bare UUID scalar expected by OpenAPI DTOs.
+// flattenRefObjectArrayToUUIDScalars replaces wire[key] entries that are nested ref maps with bare
+// UUID scalars expected by OpenAPI DTO unmarshaling. Bare string/float64 scalars are left as-is.
+func flattenRefObjectArrayToUUIDScalars(wire map[string]interface{}, key string, idKeys ...string) {
+	raw, ok := wire[key]
+	if !ok || raw == nil {
+		return
+	}
+	arr, ok := raw.([]interface{})
+	if !ok {
+		return
+	}
+	out := make([]interface{}, 0, len(arr))
+	for _, elem := range arr {
+		switch t := elem.(type) {
+		case string:
+			out = append(out, t)
+		case float64:
+			out = append(out, t)
+		case map[string]interface{}:
+			found := false
+			for _, ik := range idKeys {
+				if x, ok := t[ik]; ok && x != nil {
+					out = append(out, x)
+					found = true
+					break
+				}
+			}
+			if !found {
+				// Preserve unexpected shapes to surface unmarshal errors downstream.
+				out = append(out, t)
+			}
+		default:
+			out = append(out, t)
+		}
+	}
+	wire[key] = out
+}
+
+// normalizeBindingSubjectWire flattens nested Group/Identity ref objects inside subject maps.
+func normalizeBindingSubjectWire(wire map[string]interface{}) {
+	for _, subKey := range []string{"subject", "Subject"} {
+		raw, ok := wire[subKey]
+		if !ok || raw == nil {
+			continue
+		}
+		sm, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		coalesceNestedRefToSiblingUUID(sm, []string{"Group", "group"}, "groupId", "groupId", "GroupId", "group_id")
+		coalesceNestedRefToSiblingUUID(sm, []string{"Identity", "identity"}, "identityId", "identityId", "IdentityId", "identity_id")
+	}
+}
+
+func coalesceNestedRefToSiblingUUID(sub map[string]interface{}, nestedKeys []string, openapiKey string, refIDKeys ...string) {
+	var v interface{}
+	var foundKey string
+	for _, k := range nestedKeys {
+		if x, ok := sub[k]; ok && x != nil {
+			v, foundKey = x, k
+			break
+		}
+	}
+	if foundKey == "" {
+		return
+	}
+	refMap, ok := v.(map[string]interface{})
+	if !ok {
+		return
+	}
+	var id interface{}
+	for _, ik := range refIDKeys {
+		if x, ok := refMap[ik]; ok && x != nil {
+			id = x
+			break
+		}
+	}
+	if id == nil {
+		return
+	}
+	sub[openapiKey] = id
+	delete(sub, foundKey)
+}
+
+// coalesceObjectToUUIDScalar replaces wire[found-key] when it is a JSON object that only carries
+// an id (e.g. SystemRef) with the bare UUID scalar expected by OpenAPI DTOs. The replacement is
+// written back to the key where the value was found, so it requires that the found key is already
+// the canonical OpenAPI JSON key (or a case-insensitive match of it).
 func coalesceObjectToUUIDScalar(wire map[string]interface{}, objectKeyPrimary, objectKeyAlt string, idKeys ...string) {
 	var v interface{}
 	var key string
