@@ -135,6 +135,12 @@ type ClientInterface interface {
 	// GetLandscapeArtifactsArtifactId request
 	GetLandscapeArtifactsArtifactId(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeBindings request
+	GetLandscapeBindings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeBindingsBindingId request
+	GetLandscapeBindingsBindingId(ctx context.Context, bindingId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeComponentInstances request
 	GetLandscapeComponentInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -201,11 +207,35 @@ type ClientInterface interface {
 	// GetLandscapeOrgUnitsOrgUnitId request
 	GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, orgUnitId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapePermissionSpecs request
+	GetLandscapePermissionSpecs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapePermissionSpecsPermissionSpecId request
+	GetLandscapePermissionSpecsPermissionSpecId(ctx context.Context, permissionSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapePermissions request
+	GetLandscapePermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapePermissionsPermissionId request
+	GetLandscapePermissionsPermissionId(ctx context.Context, permissionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeProducts request
 	GetLandscapeProducts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLandscapeProductsProductId request
 	GetLandscapeProductsProductId(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeRoleSpecs request
+	GetLandscapeRoleSpecs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeRoleSpecsRoleSpecId request
+	GetLandscapeRoleSpecsRoleSpecId(ctx context.Context, roleSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeRoles request
+	GetLandscapeRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeRolesRoleId request
+	GetLandscapeRolesRoleId(ctx context.Context, roleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLandscapeSystemInstances request
 	GetLandscapeSystemInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -405,6 +435,30 @@ func (c *Client) GetLandscapeArtifacts(ctx context.Context, reqEditors ...Reques
 
 func (c *Client) GetLandscapeArtifactsArtifactId(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeArtifactsArtifactIdRequest(c.Server, artifactId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeBindings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeBindingsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeBindingsBindingId(ctx context.Context, bindingId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeBindingsBindingIdRequest(c.Server, bindingId)
 	if err != nil {
 		return nil, err
 	}
@@ -679,6 +733,54 @@ func (c *Client) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, orgUnitId op
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetLandscapePermissionSpecs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapePermissionSpecsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapePermissionSpecsPermissionSpecId(ctx context.Context, permissionSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapePermissionSpecsPermissionSpecIdRequest(c.Server, permissionSpecId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapePermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapePermissionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapePermissionsPermissionId(ctx context.Context, permissionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapePermissionsPermissionIdRequest(c.Server, permissionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetLandscapeProducts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeProductsRequest(c.Server)
 	if err != nil {
@@ -693,6 +795,54 @@ func (c *Client) GetLandscapeProducts(ctx context.Context, reqEditors ...Request
 
 func (c *Client) GetLandscapeProductsProductId(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeProductsProductIdRequest(c.Server, productId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeRoleSpecs(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeRoleSpecsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeRoleSpecsRoleSpecId(ctx context.Context, roleSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeRoleSpecsRoleSpecIdRequest(c.Server, roleSpecId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeRolesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeRolesRoleId(ctx context.Context, roleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeRolesRoleIdRequest(c.Server, roleId)
 	if err != nil {
 		return nil, err
 	}
@@ -1171,6 +1321,67 @@ func NewGetLandscapeArtifactsArtifactIdRequest(server string, artifactId openapi
 	}
 
 	operationPath := fmt.Sprintf("/landscape/artifacts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeBindingsRequest generates requests for GetLandscapeBindings
+func NewGetLandscapeBindingsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/bindings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeBindingsBindingIdRequest generates requests for GetLandscapeBindingsBindingId
+func NewGetLandscapeBindingsBindingIdRequest(server string, bindingId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "bindingId", runtime.ParamLocationPath, bindingId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/bindings/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1859,6 +2070,128 @@ func NewGetLandscapeOrgUnitsOrgUnitIdRequest(server string, orgUnitId openapi_ty
 	return req, nil
 }
 
+// NewGetLandscapePermissionSpecsRequest generates requests for GetLandscapePermissionSpecs
+func NewGetLandscapePermissionSpecsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/permissionSpecs")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapePermissionSpecsPermissionSpecIdRequest generates requests for GetLandscapePermissionSpecsPermissionSpecId
+func NewGetLandscapePermissionSpecsPermissionSpecIdRequest(server string, permissionSpecId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "permissionSpecId", runtime.ParamLocationPath, permissionSpecId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/permissionSpecs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapePermissionsRequest generates requests for GetLandscapePermissions
+func NewGetLandscapePermissionsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/permissions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapePermissionsPermissionIdRequest generates requests for GetLandscapePermissionsPermissionId
+func NewGetLandscapePermissionsPermissionIdRequest(server string, permissionId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "permissionId", runtime.ParamLocationPath, permissionId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/permissions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeProductsRequest generates requests for GetLandscapeProducts
 func NewGetLandscapeProductsRequest(server string) (*http.Request, error) {
 	var err error
@@ -1903,6 +2236,128 @@ func NewGetLandscapeProductsProductIdRequest(server string, productId openapi_ty
 	}
 
 	operationPath := fmt.Sprintf("/landscape/products/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeRoleSpecsRequest generates requests for GetLandscapeRoleSpecs
+func NewGetLandscapeRoleSpecsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/roleSpecs")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeRoleSpecsRoleSpecIdRequest generates requests for GetLandscapeRoleSpecsRoleSpecId
+func NewGetLandscapeRoleSpecsRoleSpecIdRequest(server string, roleSpecId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "roleSpecId", runtime.ParamLocationPath, roleSpecId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/roleSpecs/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeRolesRequest generates requests for GetLandscapeRoles
+func NewGetLandscapeRolesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/roles")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeRolesRoleIdRequest generates requests for GetLandscapeRolesRoleId
+func NewGetLandscapeRolesRoleIdRequest(server string, roleId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "roleId", runtime.ParamLocationPath, roleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/roles/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2157,6 +2612,12 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeArtifactsArtifactIdWithResponse request
 	GetLandscapeArtifactsArtifactIdWithResponse(ctx context.Context, artifactId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeArtifactsArtifactIdResponse, error)
 
+	// GetLandscapeBindingsWithResponse request
+	GetLandscapeBindingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeBindingsResponse, error)
+
+	// GetLandscapeBindingsBindingIdWithResponse request
+	GetLandscapeBindingsBindingIdWithResponse(ctx context.Context, bindingId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeBindingsBindingIdResponse, error)
+
 	// GetLandscapeComponentInstancesWithResponse request
 	GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error)
 
@@ -2223,11 +2684,35 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeOrgUnitsOrgUnitIdWithResponse request
 	GetLandscapeOrgUnitsOrgUnitIdWithResponse(ctx context.Context, orgUnitId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeOrgUnitsOrgUnitIdResponse, error)
 
+	// GetLandscapePermissionSpecsWithResponse request
+	GetLandscapePermissionSpecsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapePermissionSpecsResponse, error)
+
+	// GetLandscapePermissionSpecsPermissionSpecIdWithResponse request
+	GetLandscapePermissionSpecsPermissionSpecIdWithResponse(ctx context.Context, permissionSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapePermissionSpecsPermissionSpecIdResponse, error)
+
+	// GetLandscapePermissionsWithResponse request
+	GetLandscapePermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapePermissionsResponse, error)
+
+	// GetLandscapePermissionsPermissionIdWithResponse request
+	GetLandscapePermissionsPermissionIdWithResponse(ctx context.Context, permissionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapePermissionsPermissionIdResponse, error)
+
 	// GetLandscapeProductsWithResponse request
 	GetLandscapeProductsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeProductsResponse, error)
 
 	// GetLandscapeProductsProductIdWithResponse request
 	GetLandscapeProductsProductIdWithResponse(ctx context.Context, productId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeProductsProductIdResponse, error)
+
+	// GetLandscapeRoleSpecsWithResponse request
+	GetLandscapeRoleSpecsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeRoleSpecsResponse, error)
+
+	// GetLandscapeRoleSpecsRoleSpecIdWithResponse request
+	GetLandscapeRoleSpecsRoleSpecIdWithResponse(ctx context.Context, roleSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeRoleSpecsRoleSpecIdResponse, error)
+
+	// GetLandscapeRolesWithResponse request
+	GetLandscapeRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeRolesResponse, error)
+
+	// GetLandscapeRolesRoleIdWithResponse request
+	GetLandscapeRolesRoleIdWithResponse(ctx context.Context, roleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeRolesRoleIdResponse, error)
 
 	// GetLandscapeSystemInstancesWithResponse request
 	GetLandscapeSystemInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeSystemInstancesResponse, error)
@@ -2527,6 +3012,51 @@ func (r GetLandscapeArtifactsArtifactIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeArtifactsArtifactIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeBindingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeBindingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeBindingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeBindingsBindingIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Binding
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeBindingsBindingIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeBindingsBindingIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -3028,6 +3558,96 @@ func (r GetLandscapeOrgUnitsOrgUnitIdResponse) StatusCode() int {
 	return 0
 }
 
+type GetLandscapePermissionSpecsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapePermissionSpecsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapePermissionSpecsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapePermissionSpecsPermissionSpecIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PermissionSpec
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapePermissionSpecsPermissionSpecIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapePermissionSpecsPermissionSpecIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapePermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapePermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapePermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapePermissionsPermissionIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Permission
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapePermissionsPermissionIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapePermissionsPermissionIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetLandscapeProductsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3067,6 +3687,96 @@ func (r GetLandscapeProductsProductIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeProductsProductIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeRoleSpecsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeRoleSpecsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeRoleSpecsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeRoleSpecsRoleSpecIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoleSpec
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeRoleSpecsRoleSpecIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeRoleSpecsRoleSpecIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeRolesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeRolesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeRolesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeRolesRoleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Role
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeRolesRoleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeRolesRoleIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -3325,6 +4035,24 @@ func (c *ClientWithResponses) GetLandscapeArtifactsArtifactIdWithResponse(ctx co
 	return ParseGetLandscapeArtifactsArtifactIdResponse(rsp)
 }
 
+// GetLandscapeBindingsWithResponse request returning *GetLandscapeBindingsResponse
+func (c *ClientWithResponses) GetLandscapeBindingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeBindingsResponse, error) {
+	rsp, err := c.GetLandscapeBindings(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeBindingsResponse(rsp)
+}
+
+// GetLandscapeBindingsBindingIdWithResponse request returning *GetLandscapeBindingsBindingIdResponse
+func (c *ClientWithResponses) GetLandscapeBindingsBindingIdWithResponse(ctx context.Context, bindingId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeBindingsBindingIdResponse, error) {
+	rsp, err := c.GetLandscapeBindingsBindingId(ctx, bindingId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeBindingsBindingIdResponse(rsp)
+}
+
 // GetLandscapeComponentInstancesWithResponse request returning *GetLandscapeComponentInstancesResponse
 func (c *ClientWithResponses) GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error) {
 	rsp, err := c.GetLandscapeComponentInstances(ctx, reqEditors...)
@@ -3523,6 +4251,42 @@ func (c *ClientWithResponses) GetLandscapeOrgUnitsOrgUnitIdWithResponse(ctx cont
 	return ParseGetLandscapeOrgUnitsOrgUnitIdResponse(rsp)
 }
 
+// GetLandscapePermissionSpecsWithResponse request returning *GetLandscapePermissionSpecsResponse
+func (c *ClientWithResponses) GetLandscapePermissionSpecsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapePermissionSpecsResponse, error) {
+	rsp, err := c.GetLandscapePermissionSpecs(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapePermissionSpecsResponse(rsp)
+}
+
+// GetLandscapePermissionSpecsPermissionSpecIdWithResponse request returning *GetLandscapePermissionSpecsPermissionSpecIdResponse
+func (c *ClientWithResponses) GetLandscapePermissionSpecsPermissionSpecIdWithResponse(ctx context.Context, permissionSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapePermissionSpecsPermissionSpecIdResponse, error) {
+	rsp, err := c.GetLandscapePermissionSpecsPermissionSpecId(ctx, permissionSpecId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapePermissionSpecsPermissionSpecIdResponse(rsp)
+}
+
+// GetLandscapePermissionsWithResponse request returning *GetLandscapePermissionsResponse
+func (c *ClientWithResponses) GetLandscapePermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapePermissionsResponse, error) {
+	rsp, err := c.GetLandscapePermissions(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapePermissionsResponse(rsp)
+}
+
+// GetLandscapePermissionsPermissionIdWithResponse request returning *GetLandscapePermissionsPermissionIdResponse
+func (c *ClientWithResponses) GetLandscapePermissionsPermissionIdWithResponse(ctx context.Context, permissionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapePermissionsPermissionIdResponse, error) {
+	rsp, err := c.GetLandscapePermissionsPermissionId(ctx, permissionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapePermissionsPermissionIdResponse(rsp)
+}
+
 // GetLandscapeProductsWithResponse request returning *GetLandscapeProductsResponse
 func (c *ClientWithResponses) GetLandscapeProductsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeProductsResponse, error) {
 	rsp, err := c.GetLandscapeProducts(ctx, reqEditors...)
@@ -3539,6 +4303,42 @@ func (c *ClientWithResponses) GetLandscapeProductsProductIdWithResponse(ctx cont
 		return nil, err
 	}
 	return ParseGetLandscapeProductsProductIdResponse(rsp)
+}
+
+// GetLandscapeRoleSpecsWithResponse request returning *GetLandscapeRoleSpecsResponse
+func (c *ClientWithResponses) GetLandscapeRoleSpecsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeRoleSpecsResponse, error) {
+	rsp, err := c.GetLandscapeRoleSpecs(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeRoleSpecsResponse(rsp)
+}
+
+// GetLandscapeRoleSpecsRoleSpecIdWithResponse request returning *GetLandscapeRoleSpecsRoleSpecIdResponse
+func (c *ClientWithResponses) GetLandscapeRoleSpecsRoleSpecIdWithResponse(ctx context.Context, roleSpecId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeRoleSpecsRoleSpecIdResponse, error) {
+	rsp, err := c.GetLandscapeRoleSpecsRoleSpecId(ctx, roleSpecId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeRoleSpecsRoleSpecIdResponse(rsp)
+}
+
+// GetLandscapeRolesWithResponse request returning *GetLandscapeRolesResponse
+func (c *ClientWithResponses) GetLandscapeRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeRolesResponse, error) {
+	rsp, err := c.GetLandscapeRoles(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeRolesResponse(rsp)
+}
+
+// GetLandscapeRolesRoleIdWithResponse request returning *GetLandscapeRolesRoleIdResponse
+func (c *ClientWithResponses) GetLandscapeRolesRoleIdWithResponse(ctx context.Context, roleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeRolesRoleIdResponse, error) {
+	rsp, err := c.GetLandscapeRolesRoleId(ctx, roleId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeRolesRoleIdResponse(rsp)
 }
 
 // GetLandscapeSystemInstancesWithResponse request returning *GetLandscapeSystemInstancesResponse
@@ -3915,6 +4715,65 @@ func ParseGetLandscapeArtifactsArtifactIdResponse(rsp *http.Response) (*GetLands
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeBindingsResponse parses an HTTP response from a GetLandscapeBindingsWithResponse call
+func ParseGetLandscapeBindingsResponse(rsp *http.Response) (*GetLandscapeBindingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeBindingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeBindingsBindingIdResponse parses an HTTP response from a GetLandscapeBindingsBindingIdWithResponse call
+func ParseGetLandscapeBindingsBindingIdResponse(rsp *http.Response) (*GetLandscapeBindingsBindingIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeBindingsBindingIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Binding
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4581,6 +5440,124 @@ func ParseGetLandscapeOrgUnitsOrgUnitIdResponse(rsp *http.Response) (*GetLandsca
 	return response, nil
 }
 
+// ParseGetLandscapePermissionSpecsResponse parses an HTTP response from a GetLandscapePermissionSpecsWithResponse call
+func ParseGetLandscapePermissionSpecsResponse(rsp *http.Response) (*GetLandscapePermissionSpecsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapePermissionSpecsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapePermissionSpecsPermissionSpecIdResponse parses an HTTP response from a GetLandscapePermissionSpecsPermissionSpecIdWithResponse call
+func ParseGetLandscapePermissionSpecsPermissionSpecIdResponse(rsp *http.Response) (*GetLandscapePermissionSpecsPermissionSpecIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapePermissionSpecsPermissionSpecIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PermissionSpec
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapePermissionsResponse parses an HTTP response from a GetLandscapePermissionsWithResponse call
+func ParseGetLandscapePermissionsResponse(rsp *http.Response) (*GetLandscapePermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapePermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapePermissionsPermissionIdResponse parses an HTTP response from a GetLandscapePermissionsPermissionIdWithResponse call
+func ParseGetLandscapePermissionsPermissionIdResponse(rsp *http.Response) (*GetLandscapePermissionsPermissionIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapePermissionsPermissionIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Permission
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetLandscapeProductsResponse parses an HTTP response from a GetLandscapeProductsWithResponse call
 func ParseGetLandscapeProductsResponse(rsp *http.Response) (*GetLandscapeProductsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -4623,6 +5600,124 @@ func ParseGetLandscapeProductsProductIdResponse(rsp *http.Response) (*GetLandsca
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Product
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeRoleSpecsResponse parses an HTTP response from a GetLandscapeRoleSpecsWithResponse call
+func ParseGetLandscapeRoleSpecsResponse(rsp *http.Response) (*GetLandscapeRoleSpecsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeRoleSpecsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeRoleSpecsRoleSpecIdResponse parses an HTTP response from a GetLandscapeRoleSpecsRoleSpecIdWithResponse call
+func ParseGetLandscapeRoleSpecsRoleSpecIdResponse(rsp *http.Response) (*GetLandscapeRoleSpecsRoleSpecIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeRoleSpecsRoleSpecIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoleSpec
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeRolesResponse parses an HTTP response from a GetLandscapeRolesWithResponse call
+func ParseGetLandscapeRolesResponse(rsp *http.Response) (*GetLandscapeRolesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeRolesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeRolesRoleIdResponse parses an HTTP response from a GetLandscapeRolesRoleIdWithResponse call
+func ParseGetLandscapeRolesRoleIdResponse(rsp *http.Response) (*GetLandscapeRolesRoleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeRolesRoleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Role
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

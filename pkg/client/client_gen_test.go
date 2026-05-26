@@ -59,6 +59,11 @@ var testIDs = map[string]uuid.UUID{
 	"OrgUnit":           uuid.New(),
 	"Group":             uuid.New(),
 	"Identity":          uuid.New(),
+	"PermissionSpec":    uuid.New(),
+	"RoleSpec":          uuid.New(),
+	"Permission":        uuid.New(),
+	"Role":              uuid.New(),
+	"Binding":           uuid.New(),
 	"Artifact":          uuid.New(),
 	"ArtifactInstance":  uuid.New(),
 	"Product":           uuid.New(),
@@ -201,6 +206,48 @@ func loadTestModel(t *testing.T, m model.Model) {
 		id := iam.NewIdentity(sink, testIDs["Identity"])
 		id.SetDisplayName("Test Identity")
 		require.NoError(t, m.AddIdentity(id))
+	}
+
+	// --- PermissionSpec ---
+	{
+		ps := iam.NewPermissionSpec(sink, testIDs["PermissionSpec"])
+		ps.SetDisplayName("Test PermissionSpec")
+		require.NoError(t, m.AddPermissionSpec(ps))
+	}
+
+	// --- RoleSpec ---
+	{
+		rs := iam.NewRoleSpec(sink, testIDs["RoleSpec"])
+		rs.SetDisplayName("Test RoleSpec")
+		rs.SetPermissions([]*iam.PermissionSpecRef{&iam.PermissionSpecRef{PermissionSpecId: testIDs["PermissionSpec"]}})
+		require.NoError(t, m.AddRoleSpec(rs))
+	}
+
+	// --- Permission ---
+	{
+		p := iam.NewPermission(sink, testIDs["Permission"])
+		p.SetDisplayName("Test Permission")
+		p.SetPermissionSpecById(testIDs["PermissionSpec"])
+		require.NoError(t, m.AddPermission(p))
+	}
+
+	// --- Role ---
+	{
+		r := iam.NewRole(sink, testIDs["Role"])
+		r.SetDisplayName("Test Role")
+		r.SetRoleSpecById(testIDs["RoleSpec"])
+		r.SetContextRef(&mdlctx.ContextRef{ContextId: testIDs["Context"]})
+		r.SetPermissions([]*iam.PermissionRef{&iam.PermissionRef{PermissionId: testIDs["Permission"]}})
+		require.NoError(t, m.AddRole(r))
+	}
+
+	// --- Binding ---
+	{
+		b := iam.NewBinding(sink, testIDs["Binding"])
+		b.SetDisplayName("Test Binding")
+		b.SetRole(&iam.RoleRef{RoleId: testIDs["Role"]})
+		b.SetSubject(&iam.SubjectRef{Group: &iam.GroupRef{GroupId: testIDs["Group"]}})
+		require.NoError(t, m.AddBinding(b))
 	}
 
 	// --- Artifact ---
@@ -617,6 +664,136 @@ func TestGetByIdIdentity(t *testing.T) {
 	assert.Equal(t, "Test Identity", got.DisplayName)
 }
 
+func TestListPermissionSpec(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetPermissionSpecs()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "PermissionSpec list should not be empty")
+}
+
+func TestGetByIdPermissionSpec(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetPermissionSpecById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrPermissionSpecNotFound)
+
+	// known id → success
+	got, err := c.GetPermissionSpecById(testIDs["PermissionSpec"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["PermissionSpec"], uuid.UUID(got.PermissionSpecId))
+	assert.Equal(t, "Test PermissionSpec", got.DisplayName)
+}
+
+func TestListRoleSpec(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetRoleSpecs()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "RoleSpec list should not be empty")
+}
+
+func TestGetByIdRoleSpec(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetRoleSpecById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrRoleSpecNotFound)
+
+	// known id → success
+	got, err := c.GetRoleSpecById(testIDs["RoleSpec"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["RoleSpec"], uuid.UUID(got.RoleSpecId))
+	assert.Equal(t, "Test RoleSpec", got.DisplayName)
+}
+
+func TestListPermission(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetPermissions()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "Permission list should not be empty")
+}
+
+func TestGetByIdPermission(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetPermissionById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrPermissionNotFound)
+
+	// known id → success
+	got, err := c.GetPermissionById(testIDs["Permission"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Permission"], uuid.UUID(got.PermissionId))
+	assert.Equal(t, "Test Permission", got.DisplayName)
+}
+
+func TestListRole(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetRoles()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "Role list should not be empty")
+}
+
+func TestGetByIdRole(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetRoleById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrRoleNotFound)
+
+	// known id → success
+	got, err := c.GetRoleById(testIDs["Role"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Role"], uuid.UUID(got.RoleId))
+	assert.Equal(t, "Test Role", got.DisplayName)
+}
+
+func TestListBinding(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetBindings()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(*list), 0, "Binding list should not be empty")
+}
+
+func TestGetByIdBinding(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetBindingById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrBindingNotFound)
+
+	// known id → success
+	got, err := c.GetBindingById(testIDs["Binding"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Binding"], uuid.UUID(got.BindingId))
+	assert.Equal(t, "Test Binding", got.DisplayName)
+}
+
 func TestListArtifact(t *testing.T) {
 	c, m := setupTestServer(t)
 	loadTestModel(t, m)
@@ -719,6 +896,11 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"OrgUnit",
 		"Group",
 		"Identity",
+		"PermissionSpec",
+		"RoleSpec",
+		"Permission",
+		"Role",
+		"Binding",
 		"Artifact",
 		"ArtifactInstance",
 		"Product",

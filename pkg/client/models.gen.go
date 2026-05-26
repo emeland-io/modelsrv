@@ -96,6 +96,18 @@ type ArtifactInstance struct {
 	DisplayName string `json:"displayName"`
 }
 
+// Binding Binds a subject (group or identity) to a role.
+type Binding struct {
+	Annotations *[]Annotation      `json:"annotations,omitempty"`
+	BindingId   openapi_types.UUID `json:"bindingId"`
+	Description *string            `json:"description,omitempty"`
+	DisplayName string             `json:"displayName"`
+	Role        openapi_types.UUID `json:"role"`
+
+	// Subject Subject of a binding — either a group or an identity (mutually exclusive).
+	Subject SubjectRef `json:"subject"`
+}
+
 // Component defines model for Component.
 type Component struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the component.
@@ -312,6 +324,25 @@ type OrgUnit struct {
 	OrgUnitId openapi_types.UUID `json:"orgUnitId"`
 }
 
+// Permission Realized permission instance linked to a permission spec within the landscape.
+type Permission struct {
+	Annotations  *[]Annotation      `json:"annotations,omitempty"`
+	Description  *string            `json:"description,omitempty"`
+	DisplayName  string             `json:"displayName"`
+	PermissionId openapi_types.UUID `json:"permissionId"`
+
+	// Spec UUID of the PermissionSpec this permission realizes.
+	Spec openapi_types.UUID `json:"spec"`
+}
+
+// PermissionSpec Organizational definition of a permission (spec / requirement).
+type PermissionSpec struct {
+	Annotations      *[]Annotation      `json:"annotations,omitempty"`
+	Description      *string            `json:"description,omitempty"`
+	DisplayName      string             `json:"displayName"`
+	PermissionSpecId openapi_types.UUID `json:"permissionSpecId"`
+}
+
 // Product A product procured by the enterprise—software artefacts released together from the same legal or natural entity,
 // optionally tied to an organizational vendor and versioned lifecycle windows.
 type Product struct {
@@ -359,6 +390,37 @@ type ResourceRef struct {
 
 	// ResourceType The type of the resource referenced.
 	ResourceType interface{} `json:"resourceType"`
+}
+
+// Role Realized role with spec reference, granted permissions, scope resources, and context.
+type Role struct {
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Context UUID of the Context where this role applies.
+	Context     openapi_types.UUID    `json:"context"`
+	Description *string               `json:"description,omitempty"`
+	DisplayName string                `json:"displayName"`
+	Permissions *[]openapi_types.UUID `json:"permissions,omitempty"`
+	Resources   *[]ResourceRef        `json:"resources,omitempty"`
+	RoleId      openapi_types.UUID    `json:"roleId"`
+
+	// Spec UUID of the RoleSpec this role realizes.
+	Spec openapi_types.UUID `json:"spec"`
+}
+
+// RoleSpec Organizational definition of a role referencing permission specs.
+type RoleSpec struct {
+	Annotations *[]Annotation         `json:"annotations,omitempty"`
+	Description *string               `json:"description,omitempty"`
+	DisplayName string                `json:"displayName"`
+	Permissions *[]openapi_types.UUID `json:"permissions,omitempty"`
+	RoleSpecId  openapi_types.UUID    `json:"roleSpecId"`
+}
+
+// SubjectRef Subject of a binding — either a group or an identity (mutually exclusive).
+type SubjectRef struct {
+	GroupId    *openapi_types.UUID `json:"groupId,omitempty"`
+	IdentityId *openapi_types.UUID `json:"identityId,omitempty"`
 }
 
 // System Represents a system in the EmELand model. A system is a high-level entity that displays a complex behavior. It encapsulates various APIs and software components.
