@@ -106,6 +106,20 @@ func (mr *MockModelMockRecorder) AddArtifactInstance(ai any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddArtifactInstance", reflect.TypeOf((*MockModel)(nil).AddArtifactInstance), ai)
 }
 
+// AddBinding mocks base method.
+func (m *MockModel) AddBinding(arg0 iam.Binding) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddBinding", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddBinding indicates an expected call of AddBinding.
+func (mr *MockModelMockRecorder) AddBinding(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockModel)(nil).AddBinding), arg0)
+}
+
 // AddComponent mocks base method.
 func (m *MockModel) AddComponent(comp component.Component) error {
 	m.ctrl.T.Helper()
@@ -260,6 +274,34 @@ func (mr *MockModelMockRecorder) AddOrgUnit(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrgUnit", reflect.TypeOf((*MockModel)(nil).AddOrgUnit), arg0)
 }
 
+// AddPermission mocks base method.
+func (m *MockModel) AddPermission(arg0 iam.Permission) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPermission", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPermission indicates an expected call of AddPermission.
+func (mr *MockModelMockRecorder) AddPermission(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPermission", reflect.TypeOf((*MockModel)(nil).AddPermission), arg0)
+}
+
+// AddPermissionSpec mocks base method.
+func (m *MockModel) AddPermissionSpec(arg0 iam.PermissionSpec) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPermissionSpec", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPermissionSpec indicates an expected call of AddPermissionSpec.
+func (mr *MockModelMockRecorder) AddPermissionSpec(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPermissionSpec", reflect.TypeOf((*MockModel)(nil).AddPermissionSpec), arg0)
+}
+
 // AddProduct mocks base method.
 func (m *MockModel) AddProduct(arg0 product.Product) error {
 	m.ctrl.T.Helper()
@@ -272,6 +314,34 @@ func (m *MockModel) AddProduct(arg0 product.Product) error {
 func (mr *MockModelMockRecorder) AddProduct(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddProduct", reflect.TypeOf((*MockModel)(nil).AddProduct), arg0)
+}
+
+// AddRole mocks base method.
+func (m *MockModel) AddRole(arg0 iam.Role) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddRole", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddRole indicates an expected call of AddRole.
+func (mr *MockModelMockRecorder) AddRole(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRole", reflect.TypeOf((*MockModel)(nil).AddRole), arg0)
+}
+
+// AddRoleSpec mocks base method.
+func (m *MockModel) AddRoleSpec(arg0 iam.RoleSpec) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddRoleSpec", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddRoleSpec indicates an expected call of AddRoleSpec.
+func (mr *MockModelMockRecorder) AddRoleSpec(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleSpec", reflect.TypeOf((*MockModel)(nil).AddRoleSpec), arg0)
 }
 
 // AddSystem mocks base method.
@@ -384,6 +454,20 @@ func (m *MockModel) DeleteArtifactInstanceById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteArtifactInstanceById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteArtifactInstanceById", reflect.TypeOf((*MockModel)(nil).DeleteArtifactInstanceById), id)
+}
+
+// DeleteBinding mocks base method.
+func (m *MockModel) DeleteBinding(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBinding", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBinding indicates an expected call of DeleteBinding.
+func (mr *MockModelMockRecorder) DeleteBinding(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBinding", reflect.TypeOf((*MockModel)(nil).DeleteBinding), arg0)
 }
 
 // DeleteComponentById mocks base method.
@@ -540,6 +624,34 @@ func (mr *MockModelMockRecorder) DeleteOrgUnit(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgUnit", reflect.TypeOf((*MockModel)(nil).DeleteOrgUnit), arg0)
 }
 
+// DeletePermission mocks base method.
+func (m *MockModel) DeletePermission(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePermission", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePermission indicates an expected call of DeletePermission.
+func (mr *MockModelMockRecorder) DeletePermission(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermission", reflect.TypeOf((*MockModel)(nil).DeletePermission), arg0)
+}
+
+// DeletePermissionSpec mocks base method.
+func (m *MockModel) DeletePermissionSpec(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeletePermissionSpec", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeletePermissionSpec indicates an expected call of DeletePermissionSpec.
+func (mr *MockModelMockRecorder) DeletePermissionSpec(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermissionSpec", reflect.TypeOf((*MockModel)(nil).DeletePermissionSpec), arg0)
+}
+
 // DeleteProductById mocks base method.
 func (m *MockModel) DeleteProductById(arg0 uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -552,6 +664,34 @@ func (m *MockModel) DeleteProductById(arg0 uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteProductById(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProductById", reflect.TypeOf((*MockModel)(nil).DeleteProductById), arg0)
+}
+
+// DeleteRole mocks base method.
+func (m *MockModel) DeleteRole(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRole", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRole indicates an expected call of DeleteRole.
+func (mr *MockModelMockRecorder) DeleteRole(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRole", reflect.TypeOf((*MockModel)(nil).DeleteRole), arg0)
+}
+
+// DeleteRoleSpec mocks base method.
+func (m *MockModel) DeleteRoleSpec(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteRoleSpec", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteRoleSpec indicates an expected call of DeleteRoleSpec.
+func (mr *MockModelMockRecorder) DeleteRoleSpec(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoleSpec", reflect.TypeOf((*MockModel)(nil).DeleteRoleSpec), arg0)
 }
 
 // DeleteSystemById mocks base method.
@@ -696,6 +836,35 @@ func (m *MockModel) GetArtifacts() ([]artifact.Artifact, error) {
 func (mr *MockModelMockRecorder) GetArtifacts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifacts", reflect.TypeOf((*MockModel)(nil).GetArtifacts))
+}
+
+// GetBindingById mocks base method.
+func (m *MockModel) GetBindingById(arg0 uuid.UUID) iam.Binding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindingById", arg0)
+	ret0, _ := ret[0].(iam.Binding)
+	return ret0
+}
+
+// GetBindingById indicates an expected call of GetBindingById.
+func (mr *MockModelMockRecorder) GetBindingById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindingById", reflect.TypeOf((*MockModel)(nil).GetBindingById), arg0)
+}
+
+// GetBindings mocks base method.
+func (m *MockModel) GetBindings() ([]iam.Binding, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBindings")
+	ret0, _ := ret[0].([]iam.Binding)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBindings indicates an expected call of GetBindings.
+func (mr *MockModelMockRecorder) GetBindings() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockModel)(nil).GetBindings))
 }
 
 // GetComponentById mocks base method.
@@ -1031,6 +1200,64 @@ func (mr *MockModelMockRecorder) GetOrgUnits() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgUnits", reflect.TypeOf((*MockModel)(nil).GetOrgUnits))
 }
 
+// GetPermissionById mocks base method.
+func (m *MockModel) GetPermissionById(arg0 uuid.UUID) iam.Permission {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPermissionById", arg0)
+	ret0, _ := ret[0].(iam.Permission)
+	return ret0
+}
+
+// GetPermissionById indicates an expected call of GetPermissionById.
+func (mr *MockModelMockRecorder) GetPermissionById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionById", reflect.TypeOf((*MockModel)(nil).GetPermissionById), arg0)
+}
+
+// GetPermissionSpecById mocks base method.
+func (m *MockModel) GetPermissionSpecById(arg0 uuid.UUID) iam.PermissionSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPermissionSpecById", arg0)
+	ret0, _ := ret[0].(iam.PermissionSpec)
+	return ret0
+}
+
+// GetPermissionSpecById indicates an expected call of GetPermissionSpecById.
+func (mr *MockModelMockRecorder) GetPermissionSpecById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionSpecById", reflect.TypeOf((*MockModel)(nil).GetPermissionSpecById), arg0)
+}
+
+// GetPermissionSpecs mocks base method.
+func (m *MockModel) GetPermissionSpecs() ([]iam.PermissionSpec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPermissionSpecs")
+	ret0, _ := ret[0].([]iam.PermissionSpec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPermissionSpecs indicates an expected call of GetPermissionSpecs.
+func (mr *MockModelMockRecorder) GetPermissionSpecs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissionSpecs", reflect.TypeOf((*MockModel)(nil).GetPermissionSpecs))
+}
+
+// GetPermissions mocks base method.
+func (m *MockModel) GetPermissions() ([]iam.Permission, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPermissions")
+	ret0, _ := ret[0].([]iam.Permission)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPermissions indicates an expected call of GetPermissions.
+func (mr *MockModelMockRecorder) GetPermissions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissions", reflect.TypeOf((*MockModel)(nil).GetPermissions))
+}
+
 // GetProductById mocks base method.
 func (m *MockModel) GetProductById(arg0 uuid.UUID) product.Product {
 	m.ctrl.T.Helper()
@@ -1058,6 +1285,64 @@ func (m *MockModel) GetProducts() ([]product.Product, error) {
 func (mr *MockModelMockRecorder) GetProducts() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducts", reflect.TypeOf((*MockModel)(nil).GetProducts))
+}
+
+// GetRoleById mocks base method.
+func (m *MockModel) GetRoleById(arg0 uuid.UUID) iam.Role {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoleById", arg0)
+	ret0, _ := ret[0].(iam.Role)
+	return ret0
+}
+
+// GetRoleById indicates an expected call of GetRoleById.
+func (mr *MockModelMockRecorder) GetRoleById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleById", reflect.TypeOf((*MockModel)(nil).GetRoleById), arg0)
+}
+
+// GetRoleSpecById mocks base method.
+func (m *MockModel) GetRoleSpecById(arg0 uuid.UUID) iam.RoleSpec {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoleSpecById", arg0)
+	ret0, _ := ret[0].(iam.RoleSpec)
+	return ret0
+}
+
+// GetRoleSpecById indicates an expected call of GetRoleSpecById.
+func (mr *MockModelMockRecorder) GetRoleSpecById(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleSpecById", reflect.TypeOf((*MockModel)(nil).GetRoleSpecById), arg0)
+}
+
+// GetRoleSpecs mocks base method.
+func (m *MockModel) GetRoleSpecs() ([]iam.RoleSpec, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoleSpecs")
+	ret0, _ := ret[0].([]iam.RoleSpec)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRoleSpecs indicates an expected call of GetRoleSpecs.
+func (mr *MockModelMockRecorder) GetRoleSpecs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleSpecs", reflect.TypeOf((*MockModel)(nil).GetRoleSpecs))
+}
+
+// GetRoles mocks base method.
+func (m *MockModel) GetRoles() ([]iam.Role, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoles")
+	ret0, _ := ret[0].([]iam.Role)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRoles indicates an expected call of GetRoles.
+func (mr *MockModelMockRecorder) GetRoles() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*MockModel)(nil).GetRoles))
 }
 
 // GetSink mocks base method.

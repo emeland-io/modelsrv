@@ -28,6 +28,11 @@ func ResourceTypes(m Model) []ResourceTypeInfo {
 		{"OrgUnit", countFunc(m.GetOrgUnits)},
 		{"Group", countFunc(m.GetGroups)},
 		{"Identity", countFunc(m.GetIdentities)},
+		{"PermissionSpec", countFunc(m.GetPermissionSpecs)},
+		{"RoleSpec", countFunc(m.GetRoleSpecs)},
+		{"Permission", countFunc(m.GetPermissions)},
+		{"Role", countFunc(m.GetRoles)},
+		{"Binding", countFunc(m.GetBindings)},
 		{"Product", countFunc(m.GetProducts)},
 	}
 }

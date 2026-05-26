@@ -77,6 +77,11 @@ const (
 	OrgUnitResource
 	GroupResource
 	IdentityResource
+	PermissionSpecResource
+	RoleSpecResource
+	PermissionResource
+	RoleResource
+	BindingResource
 	ProductResource
 
 	//Phase 5
@@ -110,10 +115,15 @@ var resourceTypeValues = map[ResourceType]string{
 	ComponentInstanceResource: "ComponentInstance",
 
 	// Phase 2
-	OrgUnitResource:  "OrgUnit",
-	GroupResource:    "Group",
-	IdentityResource: "Identity",
-	ProductResource:  "Product",
+	OrgUnitResource:        "OrgUnit",
+	GroupResource:          "Group",
+	IdentityResource:       "Identity",
+	PermissionSpecResource: "PermissionSpec",
+	RoleSpecResource:       "RoleSpec",
+	PermissionResource:     "Permission",
+	RoleResource:           "Role",
+	BindingResource:        "Binding",
+	ProductResource:        "Product",
 
 	//Phase 5
 	FindingResource:     "Finding",
@@ -245,6 +255,16 @@ func ParseWireKind(s string) ResourceType {
 		return GroupResource
 	case "Identity":
 		return IdentityResource
+	case "PermissionSpec":
+		return PermissionSpecResource
+	case "RoleSpec":
+		return RoleSpecResource
+	case "Permission":
+		return PermissionResource
+	case "Role":
+		return RoleResource
+	case "Binding":
+		return BindingResource
 	case "Product":
 		return ProductResource
 	case "Finding":
