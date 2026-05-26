@@ -297,6 +297,16 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyArtifactInstance(doc.Spec, m)
 	case events.ProductResource:
 		return applyProduct(doc.Spec, m)
+	case events.PermissionSpecResource:
+		return applyPermissionSpec(doc.Spec, m)
+	case events.RoleSpecResource:
+		return applyRoleSpec(doc.Spec, m)
+	case events.PermissionResource:
+		return applyPermission(doc.Spec, m)
+	case events.RoleResource:
+		return applyRole(doc.Spec, m)
+	case events.BindingResource:
+		return applyBinding(doc.Spec, m)
 	case events.UnknownResourceType:
 		return fmt.Errorf("kind is required")
 	default:
