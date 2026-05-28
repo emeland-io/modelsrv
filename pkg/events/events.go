@@ -36,6 +36,8 @@ type Subscriber interface {
 
 // EventManager manages event sequence IDs and event sinks.
 type EventManager interface {
+	EventQuerier
+
 	// GetCurrentEventSequenceId returns the current event sequence ID as a string.
 	GetCurrentSequenceId(ctx context.Context) (uint64, error)
 	IncrementSequenceId(ctx context.Context) error
