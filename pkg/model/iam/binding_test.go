@@ -16,7 +16,7 @@ func TestBindingBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	bindingId := uuid.New()
-	binding := iam.NewBinding(testModel.GetSink(), bindingId)
+	binding := iam.NewBinding(bindingId)
 
 	binding.SetDisplayName("Test Binding")
 	assert.Equal(t, "Test Binding", binding.GetDisplayName())
@@ -34,7 +34,7 @@ func TestBindingBasic(t *testing.T) {
 	binding.SetDisplayName("the real test binding")
 	binding.SetDescription("a test binding, but with more bla bla")
 
-	binding2 := iam.NewBinding(testModel.GetSink(), bindingId)
+	binding2 := iam.NewBinding(bindingId)
 	binding2.SetDisplayName("The other Test Binding")
 	binding2.SetDescription("a different test binding, but same Id")
 

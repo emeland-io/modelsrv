@@ -16,7 +16,7 @@ func TestRoleSpecBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	roleSpecId := uuid.New()
-	roleSpec := iam.NewRoleSpec(testModel.GetSink(), roleSpecId)
+	roleSpec := iam.NewRoleSpec(roleSpecId)
 
 	roleSpec.SetDisplayName("Test RoleSpec")
 	assert.Equal(t, "Test RoleSpec", roleSpec.GetDisplayName())
@@ -34,7 +34,7 @@ func TestRoleSpecBasic(t *testing.T) {
 	roleSpec.SetDisplayName("the real test role spec")
 	roleSpec.SetDescription("a test role spec, but with more bla bla")
 
-	roleSpec2 := iam.NewRoleSpec(testModel.GetSink(), roleSpecId)
+	roleSpec2 := iam.NewRoleSpec(roleSpecId)
 	roleSpec2.SetDisplayName("The other Test RoleSpec")
 	roleSpec2.SetDescription("a different test role spec, but same Id")
 

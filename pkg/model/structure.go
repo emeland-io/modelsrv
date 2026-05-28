@@ -938,27 +938,27 @@ func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
 
 // AddPermissionSpec implements [Model].
 func (m *modelData) AddPermissionSpec(ps iam.PermissionSpec) error {
-	return addEventEnabled(m, ps, iam.PermissionSpec.GetPermissionSpecId, func(x iam.PermissionSpec) { x.Register() }, m.permissionSpecsByUUID, events.PermissionSpecResource)
+	return addEventEnabled(m, ps, iam.PermissionSpec.GetPermissionSpecId, func(x iam.PermissionSpec, s events.EventSink) { x.Register(s) }, m.permissionSpecsByUUID, events.PermissionSpecResource)
 }
 
 // AddRoleSpec implements [Model].
 func (m *modelData) AddRoleSpec(rs iam.RoleSpec) error {
-	return addEventEnabled(m, rs, iam.RoleSpec.GetRoleSpecId, func(x iam.RoleSpec) { x.Register() }, m.roleSpecsByUUID, events.RoleSpecResource)
+	return addEventEnabled(m, rs, iam.RoleSpec.GetRoleSpecId, func(x iam.RoleSpec, s events.EventSink) { x.Register(s) }, m.roleSpecsByUUID, events.RoleSpecResource)
 }
 
 // AddPermission implements [Model].
 func (m *modelData) AddPermission(p iam.Permission) error {
-	return addEventEnabled(m, p, iam.Permission.GetPermissionId, func(x iam.Permission) { x.Register() }, m.permissionsByUUID, events.PermissionResource)
+	return addEventEnabled(m, p, iam.Permission.GetPermissionId, func(x iam.Permission, s events.EventSink) { x.Register(s) }, m.permissionsByUUID, events.PermissionResource)
 }
 
 // AddRole implements [Model].
 func (m *modelData) AddRole(r iam.Role) error {
-	return addEventEnabled(m, r, iam.Role.GetRoleId, func(x iam.Role) { x.Register() }, m.rolesByUUID, events.RoleResource)
+	return addEventEnabled(m, r, iam.Role.GetRoleId, func(x iam.Role, s events.EventSink) { x.Register(s) }, m.rolesByUUID, events.RoleResource)
 }
 
 // AddBinding implements [Model].
 func (m *modelData) AddBinding(b iam.Binding) error {
-	return addEventEnabled(m, b, iam.Binding.GetBindingId, func(x iam.Binding) { x.Register() }, m.bindingsByUUID, events.BindingResource)
+	return addEventEnabled(m, b, iam.Binding.GetBindingId, func(x iam.Binding, s events.EventSink) { x.Register(s) }, m.bindingsByUUID, events.BindingResource)
 }
 
 // DeletePermissionSpec implements [Model].

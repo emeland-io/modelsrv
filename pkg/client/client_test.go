@@ -88,21 +88,19 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a Context by ID", func() {
-			// first try with an invalid ID
 			context, err := testClient.GetContextById(uuid.New())
 			Expect(err).Should(Equal(common.ErrContextNotFound))
 			Expect(context).To(BeNil())
 
-			// now try with a valid ID
 			context, err = testClient.GetContextById(contextId)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(context).NotTo(BeNil())
 
-			Expect(context.ContextId).To(Equal(contextId))
-			Expect(context.DisplayName).To(Equal("Test Context"))
+			Expect(context.GetContextId()).To(Equal(contextId))
+			Expect(context.GetDisplayName()).To(Equal("Test Context"))
 		})
 	})
 
@@ -112,21 +110,19 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a System by ID", func() {
-			// first try with an invalid ID
 			system, err := testClient.GetSystemById(uuid.New())
 			Expect(err).Should(Equal(common.ErrSystemNotFound))
 			Expect(system).To(BeNil())
 
-			// now try with a valid ID
 			system, err = testClient.GetSystemById(systemId)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(system).NotTo(BeNil())
 
-			Expect(*system.SystemId).To(Equal(systemId))
-			Expect(system.DisplayName).To(Equal("Test System"))
+			Expect(system.GetSystemId()).To(Equal(systemId))
+			Expect(system.GetDisplayName()).To(Equal("Test System"))
 		})
 	})
 
@@ -136,10 +132,9 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a SystemInstance by ID", func() {
-			// first try with an invalid ID
 			systemInstance, err := testClient.GetSystemInstanceById(uuid.New())
 			Expect(err).Should(Equal(common.ErrSystemInstanceNotFound))
 			Expect(systemInstance).To(BeNil())
@@ -148,8 +143,8 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(systemInstance).NotTo(BeNil())
 
-			Expect(systemInstance.SystemInstanceId).To(Equal(systemInstanceId))
-			Expect(systemInstance.DisplayName).To(Equal("Test SystemInstances"))
+			Expect(systemInstance.GetInstanceId()).To(Equal(systemInstanceId))
+			Expect(systemInstance.GetDisplayName()).To(Equal("Test SystemInstances"))
 		})
 	})
 
@@ -159,10 +154,9 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a API by ID", func() {
-			// first try with an invalid ID
 			api, err := testClient.GetAPIById(uuid.New())
 			Expect(err).Should(Equal(common.ErrApiNotFound))
 			Expect(api).To(BeNil())
@@ -171,8 +165,8 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(api).NotTo(BeNil())
 
-			Expect(*api.ApiId).To(Equal(apiId))
-			Expect(api.DisplayName).To(Equal("Test API"))
+			Expect(api.GetApiId()).To(Equal(apiId))
+			Expect(api.GetDisplayName()).To(Equal("Test API"))
 		})
 	})
 
@@ -182,10 +176,9 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a ApiInstance by ID", func() {
-			// first try with an invalid ID
 			apiInstance, err := testClient.GetApiInstanceById(uuid.New())
 			Expect(err).Should(Equal(common.ErrApiInstanceNotFound))
 			Expect(apiInstance).To(BeNil())
@@ -194,8 +187,8 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(apiInstance).NotTo(BeNil())
 
-			Expect(apiInstance.ApiInstanceId).To(Equal(apiInstanceId))
-			Expect(apiInstance.DisplayName).To(Equal("Test ApiInstance"))
+			Expect(apiInstance.GetInstanceId()).To(Equal(apiInstanceId))
+			Expect(apiInstance.GetDisplayName()).To(Equal("Test ApiInstance"))
 		})
 	})
 
@@ -205,10 +198,9 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a Component by ID", func() {
-			// first try with an invalid ID
 			component, err := testClient.GetComponentById(uuid.New())
 			Expect(err).Should(Equal(common.ErrComponentNotFound))
 			Expect(component).To(BeNil())
@@ -217,8 +209,8 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(component).NotTo(BeNil())
 
-			Expect(*component.ComponentId).To(Equal(componentId))
-			Expect(component.DisplayName).To(Equal("Test Component"))
+			Expect(component.GetComponentId()).To(Equal(componentId))
+			Expect(component.GetDisplayName()).To(Equal("Test Component"))
 		})
 	})
 
@@ -228,10 +220,9 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(instanceList).NotTo(BeNil())
 
-			Expect(len(*instanceList)).To(BeNumerically(">", 0))
+			Expect(len(instanceList)).To(BeNumerically(">", 0))
 		})
 		It("return a Component Instance by ID", func() {
-			// first try with an invalid ID
 			componentInstance, err := testClient.GetComponentInstanceById(uuid.New())
 			Expect(err).Should(Equal(common.ErrComponentInstanceNotFound))
 			Expect(componentInstance).To(BeNil())
@@ -240,15 +231,13 @@ var _ = Describe("Client", Ordered, func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(componentInstance).NotTo(BeNil())
 
-			Expect(componentInstance.ComponentInstanceId).To(Equal(componentInstanceId))
-			Expect(componentInstance.DisplayName).To(Equal("Test ComponentInstance"))
+			Expect(componentInstance.GetInstanceId()).To(Equal(componentInstanceId))
+			Expect(componentInstance.GetDisplayName()).To(Equal("Test ComponentInstance"))
 		})
 	})
 })
 
 func loadModel(target model.Model) error {
-	// create simple System with single Component and API
-
 	c := mdlctx.NewContext(contextId)
 	c.SetDisplayName("Test Context")
 
@@ -303,7 +292,6 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	// TODO: set context in which this instance exists
 	systemInstance := system.NewSystemInstance(systemInstanceId)
 	systemInstance.SetDisplayName("Test SystemInstances")
 	systemInstance.SetSystemRef(&system.SystemRef{

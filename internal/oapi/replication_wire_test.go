@@ -468,7 +468,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		cid := uuid.New()
 		rid := uuid.New()
 
-		r := iam.NewRole(m.GetSink(), rid)
+		r := iam.NewRole(rid)
 		r.SetDisplayName("rt-role")
 		r.SetRoleSpecById(rsid)
 		r.SetPermissions([]*iam.PermissionRef{{PermissionId: pid}})
@@ -499,7 +499,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		rsid := uuid.New()
 		psid := uuid.New()
 
-		rs := iam.NewRoleSpec(m.GetSink(), rsid)
+		rs := iam.NewRoleSpec(rsid)
 		rs.SetDisplayName("rt-rolespec")
 		rs.SetPermissions([]*iam.PermissionSpecRef{{PermissionSpecId: psid}})
 
@@ -526,7 +526,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		rid := uuid.New()
 		gid := uuid.New()
 
-		b := iam.NewBinding(m.GetSink(), bindID)
+		b := iam.NewBinding(bindID)
 		b.SetDisplayName("rt-binding")
 		b.SetRole(&iam.RoleRef{RoleId: rid})
 		b.SetSubject(&iam.SubjectRef{Group: &iam.GroupRef{GroupId: gid}})

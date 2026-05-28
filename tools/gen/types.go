@@ -109,4 +109,51 @@ type TypeSpec struct {
 	TestDeps []string
 	// WireKind is the Event.kind string for this resource type (e.g. "System", "ApiInstance").
 	WireKind string
+
+	// --- OAPI wire / server generation (populated by enrichWireMeta) ---
+
+	// SkipConvert marks types whose FromDto/ToDto stay hand-written in internal/oapi/convert_special.go.
+	SkipConvert bool
+	// ConvertDomainIDMethod is the getter used after FromDto in replication decode (e.g. "GetSystemId()").
+	ConvertDomainIDMethod string
+	// WireDomainIDGetter is ConvertDomainIDMethod without parentheses (e.g. "GetSystemId").
+	WireDomainIDGetter string
+	// BackendListMethod is model.Model list method (e.g. "GetApis").
+	BackendListMethod string
+	// BackendGetByIdMethod is model.Model get-by-id method (e.g. "GetApiById").
+	BackendGetByIdMethod string
+	// RestListPath is the landscape collection path (e.g. "/landscape/apis").
+	RestListPath string
+	// ServerRequestIDField is the path parameter field on get-by-id request objects (e.g. "ApiId").
+	ServerRequestIDField string
+	// ServerResourceLabel is used in 404 messages (e.g. "api").
+	ServerResourceLabel string
+	// Server404UseErrorString wraps 404 bodies in ErrorString when true.
+	Server404UseErrorString bool
+	// WireIDField is the OpenAPI JSON id field name (e.g. "ApiId").
+	WireIDField string
+	// WireIDOptional is true when the wire id is a pointer on the DTO.
+	WireIDOptional bool
+	// GenServerHandlers emits GetLandscape* list/get handlers in server_handlers_gen.go.
+	GenServerHandlers bool
+	// EventsResource is the events.ResourceType const name (e.g. "SystemResource").
+	EventsResource string
+	// OapiWireTypeName is the oapi DTO struct name (defaults to Name; API stays "API").
+	OapiWireTypeName string
+	// FromDtoFuncName is the generated/hand-written FromDto name (e.g. "APIFromDto").
+	FromDtoFuncName string
+	// ToDtoFuncName is the generated/hand-written ToDto name (e.g. "APIToDto").
+	ToDtoFuncName string
+	// ConvertNilLabel is the noun in nil FromDto errors (e.g. "context type").
+	ConvertNilLabel string
+	// ConvertMissingIDMsg is the error when a required wire id pointer is nil.
+	ConvertMissingIDMsg string
+
+	// --- Client domain type fields (populated by enrichDomainMeta) ---
+
+	DomainPkgImport  string
+	DomainPkgAlias   string
+	DomainTypeName   string
+	DomainIDGetter   string
+	DomainNameGetter string
 }

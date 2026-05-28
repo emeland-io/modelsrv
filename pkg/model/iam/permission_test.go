@@ -16,7 +16,7 @@ func TestPermissionBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	permissionId := uuid.New()
-	permission := iam.NewPermission(testModel.GetSink(), permissionId)
+	permission := iam.NewPermission(permissionId)
 
 	permission.SetDisplayName("Test Permission")
 	assert.Equal(t, "Test Permission", permission.GetDisplayName())
@@ -34,7 +34,7 @@ func TestPermissionBasic(t *testing.T) {
 	permission.SetDisplayName("the real test permission")
 	permission.SetDescription("a test permission, but with more bla bla")
 
-	permission2 := iam.NewPermission(testModel.GetSink(), permissionId)
+	permission2 := iam.NewPermission(permissionId)
 	permission2.SetDisplayName("The other Test Permission")
 	permission2.SetDescription("a different test permission, but same Id")
 

@@ -10,6 +10,15 @@ import (
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/iam"
+	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 // Ensure imports are used.
@@ -18,11 +27,19 @@ var (
 	_ = fmt.Errorf
 	_ = http.StatusOK
 	_ = uuid.Nil
-	_ *oapi.InstanceList
 	_ = common.ErrContextNotFound
+	_ artifact.Artifact
+	_ mdlapi.API
+	_ component.Component
+	_ mdlctx.ContextType
+	_ finding.Finding
+	_ iam.OrgUnit
+	_ node.Node
+	_ mdlprod.Product
+	_ system.System
 )
 {{range .}}{{if .GenClientMethods}}
-func (c *ModelSrvClient) {{.ClientListMethod}}() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) {{.ClientListMethod}}() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.{{.ClientListOapiMethod}}WithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -30,10 +47,10 @@ func (c *ModelSrvClient) {{.ClientListMethod}}() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) {{.ClientGetByIdMethod}}(id uuid.UUID) (*oapi.{{.OapiTypeName}}, error) {
+func (c *ModelSrvClient) {{.ClientGetByIdMethod}}(id uuid.UUID) ({{.DomainPkgAlias}}.{{.DomainTypeName}}, error) {
 	resp, err := c.oapi_client.{{.ClientGetByIdOapiMethod}}WithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -44,6 +61,6 @@ func (c *ModelSrvClient) {{.ClientGetByIdMethod}}(id uuid.UUID) (*oapi.{{.OapiTy
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.{{.OapiTypeName}})(resp.JSON200), nil
+	return oapi.{{.Name}}FromDto(nil, resp.JSON200)
 }
 {{end}}{{end}}
