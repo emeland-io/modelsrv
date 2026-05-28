@@ -24,8 +24,10 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
+	"github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/model/annotations"
 	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 )
 
 //nolint:unused
@@ -88,4 +90,50 @@ func cloneResourceRefs(resourceRef []*common.ResourceRef) []ResourceRef {
 		})
 	}
 	return respArr
+}
+
+func iamPermissionSpecRefsToOpenAPIUUIDs(refs []*iam.PermissionSpecRef) *[]types.UUID {
+	if len(refs) == 0 {
+		return nil
+	}
+	out := make([]types.UUID, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, types.UUID(ref.EffectivePermissionSpecID()))
+	}
+	return &out
+}
+
+func iamPermissionRefsToOpenAPIUUIDs(refs []*iam.PermissionRef) *[]types.UUID {
+	if len(refs) == 0 {
+		return nil
+	}
+	out := make([]types.UUID, 0, len(refs))
+	for _, ref := range refs {
+		out = append(out, types.UUID(ref.EffectivePermissionID()))
+	}
+	return &out
+}
+
+func iamResourceRefsOptional(refs []*common.ResourceRef) *[]ResourceRef {
+	if len(refs) == 0 {
+		return nil
+	}
+	dup := cloneResourceRefs(refs)
+	return &dup
+}
+
+func iamSubjectToAPISubjectRef(sub *iam.SubjectRef) SubjectRef {
+	if sub == nil {
+		return SubjectRef{}
+	}
+	switch sub.EffectiveKind() {
+	case iam.SubjectKindGroup:
+		id := types.UUID(sub.EffectiveGroupID())
+		return SubjectRef{GroupId: &id}
+	case iam.SubjectKindIdentity:
+		id := types.UUID(sub.EffectiveIdentityID())
+		return SubjectRef{IdentityId: &id}
+	default:
+		return SubjectRef{}
+	}
 }

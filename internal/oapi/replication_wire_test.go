@@ -11,6 +11,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -395,6 +396,158 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(ntOut).NotTo(BeNil())
 		Expect(ntOut.GetNodeTypeId()).To(Equal(ntid))
+	})
+
+	It("normalizes IAM Role nested spec, permissions, and context refs for OpenAPI decode", func() {
+		m := replicationTestModel()
+		rsid := uuid.New()
+		pid := uuid.New()
+		cid := uuid.New()
+		rid := uuid.New()
+		res := map[string]interface{}{
+			"roleId":      rid.String(),
+			"displayName": "r1",
+			"spec":        map[string]interface{}{"roleSpecId": rsid.String()},
+			"permissions": []interface{}{
+				map[string]interface{}{"permissionId": pid.String()},
+			},
+			"resources": []interface{}{},
+			"context":   map[string]interface{}{"contextId": cid.String()},
+		}
+		ev := oapi.Event{
+			Kind:      "Role",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		r, ok := out.Objects[0].(iam.Role)
+		Expect(ok).To(BeTrue())
+		Expect(r.GetRoleSpecId()).To(Equal(rsid))
+		Expect(r.GetPermissions()).To(HaveLen(1))
+		Expect(r.GetPermissions()[0].EffectivePermissionID()).To(Equal(pid))
+		Expect(r.GetContextRef()).NotTo(BeNil())
+		Expect(r.GetContextRef().EffectiveParentContextID()).To(Equal(cid))
+	})
+
+	It("normalizes IAM Binding role object and nested subject group ref", func() {
+		m := replicationTestModel()
+		bindID := uuid.New()
+		rid := uuid.New()
+		gid := uuid.New()
+		res := map[string]interface{}{
+			"bindingId":   bindID.String(),
+			"displayName": "b1",
+			"role":        map[string]interface{}{"roleId": rid.String()},
+			"subject": map[string]interface{}{
+				"Group": map[string]interface{}{"groupId": gid.String()},
+			},
+		}
+		ev := oapi.Event{
+			Kind:      "Binding",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		b, ok := out.Objects[0].(iam.Binding)
+		Expect(ok).To(BeTrue())
+		Expect(b.GetRole().EffectiveRoleID()).To(Equal(rid))
+		Expect(b.GetSubject()).NotTo(BeNil())
+		Expect(b.GetSubject().EffectiveKind()).To(Equal(iam.SubjectKindGroup))
+		Expect(b.GetSubject().EffectiveGroupID()).To(Equal(gid))
+	})
+
+	// Full push→normalize→decode roundtrip tests: these use PushWireEventFromDomain so they catch
+	// normalization bugs caused by the domain's unexported JSON keys (no struct tags on generated
+	// types, so encoding/json uses capitalized field names).
+
+	It("round-trips an IAM Role via PushWireEventFromDomain", func() {
+		m := replicationTestModel()
+		rsid := uuid.New()
+		pid := uuid.New()
+		cid := uuid.New()
+		rid := uuid.New()
+
+		r := iam.NewRole(m.GetSink(), rid)
+		r.SetDisplayName("rt-role")
+		r.SetRoleSpecById(rsid)
+		r.SetPermissions([]*iam.PermissionRef{{PermissionId: pid}})
+		r.SetContextRef(&mdlctx.ContextRef{ContextId: cid})
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.RoleResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   rid,
+			Objects:      []any{r},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		rOut, ok := back.Objects[0].(iam.Role)
+		Expect(ok).To(BeTrue())
+		Expect(rOut.GetRoleId()).To(Equal(rid))
+		Expect(rOut.GetRoleSpecId()).To(Equal(rsid))
+		Expect(rOut.GetPermissions()).To(HaveLen(1))
+		Expect(rOut.GetPermissions()[0].EffectivePermissionID()).To(Equal(pid))
+		Expect(rOut.GetContextRef()).NotTo(BeNil())
+		Expect(rOut.GetContextRef().EffectiveParentContextID()).To(Equal(cid))
+	})
+
+	It("round-trips an IAM RoleSpec via PushWireEventFromDomain", func() {
+		m := replicationTestModel()
+		rsid := uuid.New()
+		psid := uuid.New()
+
+		rs := iam.NewRoleSpec(m.GetSink(), rsid)
+		rs.SetDisplayName("rt-rolespec")
+		rs.SetPermissions([]*iam.PermissionSpecRef{{PermissionSpecId: psid}})
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.RoleSpecResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   rsid,
+			Objects:      []any{rs},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		rsOut, ok := back.Objects[0].(iam.RoleSpec)
+		Expect(ok).To(BeTrue())
+		Expect(rsOut.GetRoleSpecId()).To(Equal(rsid))
+		Expect(rsOut.GetPermissions()).To(HaveLen(1))
+		Expect(rsOut.GetPermissions()[0].EffectivePermissionSpecID()).To(Equal(psid))
+	})
+
+	It("round-trips an IAM Binding (group subject) via PushWireEventFromDomain", func() {
+		m := replicationTestModel()
+		bindID := uuid.New()
+		rid := uuid.New()
+		gid := uuid.New()
+
+		b := iam.NewBinding(m.GetSink(), bindID)
+		b.SetDisplayName("rt-binding")
+		b.SetRole(&iam.RoleRef{RoleId: rid})
+		b.SetSubject(&iam.SubjectRef{Group: &iam.GroupRef{GroupId: gid}})
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.BindingResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   bindID,
+			Objects:      []any{b},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		bOut, ok := back.Objects[0].(iam.Binding)
+		Expect(ok).To(BeTrue())
+		Expect(bOut.GetBindingId()).To(Equal(bindID))
+		Expect(bOut.GetRole().EffectiveRoleID()).To(Equal(rid))
+		Expect(bOut.GetSubject().EffectiveKind()).To(Equal(iam.SubjectKindGroup))
+		Expect(bOut.GetSubject().EffectiveGroupID()).To(Equal(gid))
 	})
 })
 

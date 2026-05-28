@@ -533,6 +533,147 @@ func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, reques
 	}), nil
 }
 
+// GetLandscapePermissionSpecs implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapePermissionSpecs(ctx context.Context, request GetLandscapePermissionSpecsRequestObject) (GetLandscapePermissionSpecsResponseObject, error) {
+	list, err := a.Backend.GetPermissionSpecs()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapePermissionSpecs200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/permissionSpecs", list)), nil
+}
+
+// GetLandscapePermissionSpecsPermissionSpecId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapePermissionSpecsPermissionSpecId(ctx context.Context, request GetLandscapePermissionSpecsPermissionSpecIdRequestObject) (GetLandscapePermissionSpecsPermissionSpecIdResponseObject, error) {
+	ps := a.Backend.GetPermissionSpecById(request.PermissionSpecId)
+	if ps == nil {
+		msg := fmt.Sprintf("permission specification %s not found", request.PermissionSpecId.String())
+		return GetLandscapePermissionSpecsPermissionSpecId404JSONResponse(ErrorString(msg)), nil
+	}
+	desc := ps.GetDescription()
+	return GetLandscapePermissionSpecsPermissionSpecId200JSONResponse(PermissionSpec{
+		PermissionSpecId: request.PermissionSpecId,
+		DisplayName:      ps.GetDisplayName(),
+		Description:      &desc,
+		Annotations:      cloneAnnotations(ps.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapeRoleSpecs implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeRoleSpecs(ctx context.Context, request GetLandscapeRoleSpecsRequestObject) (GetLandscapeRoleSpecsResponseObject, error) {
+	list, err := a.Backend.GetRoleSpecs()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeRoleSpecs200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/roleSpecs", list)), nil
+}
+
+// GetLandscapeRoleSpecsRoleSpecId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeRoleSpecsRoleSpecId(ctx context.Context, request GetLandscapeRoleSpecsRoleSpecIdRequestObject) (GetLandscapeRoleSpecsRoleSpecIdResponseObject, error) {
+	rs := a.Backend.GetRoleSpecById(request.RoleSpecId)
+	if rs == nil {
+		msg := fmt.Sprintf("role specification %s not found", request.RoleSpecId.String())
+		return GetLandscapeRoleSpecsRoleSpecId404JSONResponse(ErrorString(msg)), nil
+	}
+	desc := rs.GetDescription()
+	return GetLandscapeRoleSpecsRoleSpecId200JSONResponse(RoleSpec{
+		RoleSpecId:  request.RoleSpecId,
+		DisplayName: rs.GetDisplayName(),
+		Description: &desc,
+		Permissions: iamPermissionSpecRefsToOpenAPIUUIDs(rs.GetPermissions()),
+		Annotations: cloneAnnotations(rs.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapePermissions implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapePermissions(ctx context.Context, request GetLandscapePermissionsRequestObject) (GetLandscapePermissionsResponseObject, error) {
+	list, err := a.Backend.GetPermissions()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapePermissions200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/permissions", list)), nil
+}
+
+// GetLandscapePermissionsPermissionId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapePermissionsPermissionId(ctx context.Context, request GetLandscapePermissionsPermissionIdRequestObject) (GetLandscapePermissionsPermissionIdResponseObject, error) {
+	p := a.Backend.GetPermissionById(request.PermissionId)
+	if p == nil {
+		msg := fmt.Sprintf("permission %s not found", request.PermissionId.String())
+		return GetLandscapePermissionsPermissionId404JSONResponse(ErrorString(msg)), nil
+	}
+	desc := p.GetDescription()
+	return GetLandscapePermissionsPermissionId200JSONResponse(Permission{
+		PermissionId: request.PermissionId,
+		DisplayName:  p.GetDisplayName(),
+		Description:  &desc,
+		Spec:         types.UUID(p.GetPermissionSpecId()),
+		Annotations:  cloneAnnotations(p.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapeRoles implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeRoles(ctx context.Context, request GetLandscapeRolesRequestObject) (GetLandscapeRolesResponseObject, error) {
+	list, err := a.Backend.GetRoles()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeRoles200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/roles", list)), nil
+}
+
+// GetLandscapeRolesRoleId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeRolesRoleId(ctx context.Context, request GetLandscapeRolesRoleIdRequestObject) (GetLandscapeRolesRoleIdResponseObject, error) {
+	r := a.Backend.GetRoleById(request.RoleId)
+	if r == nil {
+		msg := fmt.Sprintf("role %s not found", request.RoleId.String())
+		return GetLandscapeRolesRoleId404JSONResponse(ErrorString(msg)), nil
+	}
+	desc := r.GetDescription()
+	var ctxID types.UUID
+	if cr := r.GetContextRef(); cr != nil {
+		ctxID = types.UUID(cr.EffectiveParentContextID())
+	}
+	return GetLandscapeRolesRoleId200JSONResponse(Role{
+		RoleId:      request.RoleId,
+		DisplayName: r.GetDisplayName(),
+		Description: &desc,
+		Spec:        types.UUID(r.GetRoleSpecId()),
+		Permissions: iamPermissionRefsToOpenAPIUUIDs(r.GetPermissions()),
+		Resources:   iamResourceRefsOptional(r.GetResources()),
+		Context:     ctxID,
+		Annotations: cloneAnnotations(r.GetAnnotations()),
+	}), nil
+}
+
+// GetLandscapeBindings implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeBindings(ctx context.Context, request GetLandscapeBindingsRequestObject) (GetLandscapeBindingsResponseObject, error) {
+	list, err := a.Backend.GetBindings()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeBindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/bindings", list)), nil
+}
+
+// GetLandscapeBindingsBindingId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeBindingsBindingId(ctx context.Context, request GetLandscapeBindingsBindingIdRequestObject) (GetLandscapeBindingsBindingIdResponseObject, error) {
+	b := a.Backend.GetBindingById(request.BindingId)
+	if b == nil {
+		msg := fmt.Sprintf("binding %s not found", request.BindingId.String())
+		return GetLandscapeBindingsBindingId404JSONResponse(ErrorString(msg)), nil
+	}
+	desc := b.GetDescription()
+	var rid types.UUID
+	if rr := b.GetRole(); rr != nil {
+		rid = types.UUID(rr.EffectiveRoleID())
+	}
+	return GetLandscapeBindingsBindingId200JSONResponse(Binding{
+		BindingId:   request.BindingId,
+		DisplayName: b.GetDisplayName(),
+		Description: &desc,
+		Role:        rid,
+		Subject:     iamSubjectToAPISubjectRef(b.GetSubject()),
+		Annotations: cloneAnnotations(b.GetAnnotations()),
+	}), nil
+}
+
 // GetLandscapeProducts implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeProducts(ctx context.Context, request GetLandscapeProductsRequestObject) (GetLandscapeProductsResponseObject, error) {
 	prods, err := a.Backend.GetProducts()

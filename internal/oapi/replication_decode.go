@@ -169,6 +169,61 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 		}
 		return i.GetIdentityId(), i, nil
 
+	case events.PermissionSpecResource:
+		var o PermissionSpec
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		ps, err := permissionSpecFromWire(m, o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return ps.GetPermissionSpecId(), ps, nil
+
+	case events.RoleSpecResource:
+		var o RoleSpec
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		rs, err := roleSpecFromWire(m, o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return rs.GetRoleSpecId(), rs, nil
+
+	case events.PermissionResource:
+		var o Permission
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		p, err := permissionFromWire(m, o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return p.GetPermissionId(), p, nil
+
+	case events.RoleResource:
+		var o Role
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		r, err := roleFromWire(m, o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return r.GetRoleId(), r, nil
+
+	case events.BindingResource:
+		var o Binding
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		b, err := bindingFromWire(m, o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return b.GetBindingId(), b, nil
+
 	case events.ProductResource:
 		var op Product
 		if err := json.Unmarshal(raw, &op); err != nil {
@@ -307,6 +362,115 @@ func identityFromWire(m model.Model, oi Identity) (iam.Identity, error) {
 	}
 	mergeOapiAnnotations(i.GetAnnotations(), oi.Annotations)
 	return i, nil
+}
+
+func permissionSpecFromWire(m model.Model, op PermissionSpec) (iam.PermissionSpec, error) {
+	id := uuid.UUID(op.PermissionSpecId)
+	ps := iam.NewPermissionSpec(m.GetSink(), id)
+	ps.SetDisplayName(op.DisplayName)
+	if op.Description != nil {
+		ps.SetDescription(*op.Description)
+	}
+	mergeOapiAnnotations(ps.GetAnnotations(), op.Annotations)
+	return ps, nil
+}
+
+func roleSpecFromWire(m model.Model, ors RoleSpec) (iam.RoleSpec, error) {
+	id := uuid.UUID(ors.RoleSpecId)
+	rs := iam.NewRoleSpec(m.GetSink(), id)
+	rs.SetDisplayName(ors.DisplayName)
+	if ors.Description != nil {
+		rs.SetDescription(*ors.Description)
+	}
+	if ors.Permissions != nil {
+		refs := make([]*iam.PermissionSpecRef, 0, len(*ors.Permissions))
+		for _, pid := range *ors.Permissions {
+			u := uuid.UUID(pid)
+			refs = append(refs, &iam.PermissionSpecRef{
+				PermissionSpecId: u,
+				PermissionSpec:   m.GetPermissionSpecById(u),
+			})
+		}
+		rs.SetPermissions(refs)
+	}
+	mergeOapiAnnotations(rs.GetAnnotations(), ors.Annotations)
+	return rs, nil
+}
+
+func permissionFromWire(m model.Model, op Permission) (iam.Permission, error) {
+	id := uuid.UUID(op.PermissionId)
+	p := iam.NewPermission(m.GetSink(), id)
+	p.SetDisplayName(op.DisplayName)
+	if op.Description != nil {
+		p.SetDescription(*op.Description)
+	}
+	p.SetPermissionSpecById(uuid.UUID(op.Spec))
+	mergeOapiAnnotations(p.GetAnnotations(), op.Annotations)
+	return p, nil
+}
+
+func roleFromWire(m model.Model, orole Role) (iam.Role, error) {
+	id := uuid.UUID(orole.RoleId)
+	r := iam.NewRole(m.GetSink(), id)
+	r.SetDisplayName(orole.DisplayName)
+	if orole.Description != nil {
+		r.SetDescription(*orole.Description)
+	}
+	r.SetRoleSpecById(uuid.UUID(orole.Spec))
+	if orole.Permissions != nil {
+		refs := make([]*iam.PermissionRef, 0, len(*orole.Permissions))
+		for _, pid := range *orole.Permissions {
+			u := uuid.UUID(pid)
+			refs = append(refs, &iam.PermissionRef{
+				PermissionId: u,
+				Permission:   m.GetPermissionById(u),
+			})
+		}
+		r.SetPermissions(refs)
+	}
+	if orole.Resources != nil {
+		res := make([]*common.ResourceRef, 0, len(*orole.Resources))
+		for i := range *orole.Resources {
+			rr := (*orole.Resources)[i]
+			res = append(res, &common.ResourceRef{
+				ResourceId:   uuid.UUID(rr.ResourceId),
+				ResourceType: resourceTypeFromWireField(rr.ResourceType),
+			})
+		}
+		r.SetResources(res)
+	}
+	r.SetContextRef(&mdlctx.ContextRef{
+		ContextId: uuid.UUID(orole.Context),
+		Context:   m.GetContextById(uuid.UUID(orole.Context)),
+	})
+	mergeOapiAnnotations(r.GetAnnotations(), orole.Annotations)
+	return r, nil
+}
+
+func bindingFromWire(m model.Model, ob Binding) (iam.Binding, error) {
+	id := uuid.UUID(ob.BindingId)
+	b := iam.NewBinding(m.GetSink(), id)
+	b.SetDisplayName(ob.DisplayName)
+	if ob.Description != nil {
+		b.SetDescription(*ob.Description)
+	}
+	rid := uuid.UUID(ob.Role)
+	b.SetRole(&iam.RoleRef{RoleId: rid, Role: m.GetRoleById(rid)})
+	sub := &iam.SubjectRef{}
+	if ob.Subject.GroupId != nil {
+		gid := uuid.UUID(*ob.Subject.GroupId)
+		sub.Group = &iam.GroupRef{GroupId: gid, Group: m.GetGroupById(gid)}
+	}
+	if ob.Subject.IdentityId != nil {
+		iid := uuid.UUID(*ob.Subject.IdentityId)
+		sub.Identity = &iam.IdentityRef{IdentityId: iid, Identity: m.GetIdentityById(iid)}
+	}
+	if sub.EffectiveKind() == iam.SubjectNone {
+		return nil, fmt.Errorf("binding %s: subject must set exactly one of groupId or identityId", id)
+	}
+	b.SetSubject(sub)
+	mergeOapiAnnotations(b.GetAnnotations(), ob.Annotations)
+	return b, nil
 }
 
 func productFromWire(m model.Model, op Product) (mdlprod.Product, error) {

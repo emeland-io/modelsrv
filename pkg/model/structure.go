@@ -223,6 +223,11 @@ type Model interface {
 	iam.OrgUnitModel
 	iam.GroupModel
 	iam.IdentityModel
+	iam.PermissionSpecModel
+	iam.RoleSpecModel
+	iam.PermissionModel
+	iam.RoleModel
+	iam.BindingModel
 	mdlprod.ProductModel
 }
 
@@ -254,6 +259,12 @@ type modelData struct {
 	orgUnitsByUUID   map[uuid.UUID]iam.OrgUnit
 	groupsByUUID     map[uuid.UUID]iam.Group
 	identitiesByUUID map[uuid.UUID]iam.Identity
+
+	permissionSpecsByUUID map[uuid.UUID]iam.PermissionSpec
+	roleSpecsByUUID       map[uuid.UUID]iam.RoleSpec
+	permissionsByUUID     map[uuid.UUID]iam.Permission
+	rolesByUUID           map[uuid.UUID]iam.Role
+	bindingsByUUID        map[uuid.UUID]iam.Binding
 
 	productsByUUID map[uuid.UUID]mdlprod.Product
 }
@@ -293,6 +304,12 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		orgUnitsByUUID:   make(map[uuid.UUID]iam.OrgUnit),
 		groupsByUUID:     make(map[uuid.UUID]iam.Group),
 		identitiesByUUID: make(map[uuid.UUID]iam.Identity),
+
+		permissionSpecsByUUID: make(map[uuid.UUID]iam.PermissionSpec),
+		roleSpecsByUUID:       make(map[uuid.UUID]iam.RoleSpec),
+		permissionsByUUID:     make(map[uuid.UUID]iam.Permission),
+		rolesByUUID:           make(map[uuid.UUID]iam.Role),
+		bindingsByUUID:        make(map[uuid.UUID]iam.Binding),
 
 		productsByUUID: make(map[uuid.UUID]mdlprod.Product),
 	}
@@ -1034,6 +1051,106 @@ func (m *modelData) GetOrgUnitById(id uuid.UUID) iam.OrgUnit {
 // GetOrgUnits implements [Model].
 func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
 	return getAllEventEnabled(m, m.orgUnitsByUUID)
+}
+
+// AddPermissionSpec implements [Model].
+func (m *modelData) AddPermissionSpec(ps iam.PermissionSpec) error {
+	return addEventEnabled(m, ps, iam.PermissionSpec.GetPermissionSpecId, func(x iam.PermissionSpec) { x.Register() }, m.permissionSpecsByUUID, events.PermissionSpecResource)
+}
+
+// AddRoleSpec implements [Model].
+func (m *modelData) AddRoleSpec(rs iam.RoleSpec) error {
+	return addEventEnabled(m, rs, iam.RoleSpec.GetRoleSpecId, func(x iam.RoleSpec) { x.Register() }, m.roleSpecsByUUID, events.RoleSpecResource)
+}
+
+// AddPermission implements [Model].
+func (m *modelData) AddPermission(p iam.Permission) error {
+	return addEventEnabled(m, p, iam.Permission.GetPermissionId, func(x iam.Permission) { x.Register() }, m.permissionsByUUID, events.PermissionResource)
+}
+
+// AddRole implements [Model].
+func (m *modelData) AddRole(r iam.Role) error {
+	return addEventEnabled(m, r, iam.Role.GetRoleId, func(x iam.Role) { x.Register() }, m.rolesByUUID, events.RoleResource)
+}
+
+// AddBinding implements [Model].
+func (m *modelData) AddBinding(b iam.Binding) error {
+	return addEventEnabled(m, b, iam.Binding.GetBindingId, func(x iam.Binding) { x.Register() }, m.bindingsByUUID, events.BindingResource)
+}
+
+// DeletePermissionSpec implements [Model].
+func (m *modelData) DeletePermissionSpec(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.permissionSpecsByUUID, events.PermissionSpecResource, common.ErrPermissionSpecNotFound)
+}
+
+// DeleteRoleSpec implements [Model].
+func (m *modelData) DeleteRoleSpec(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.roleSpecsByUUID, events.RoleSpecResource, common.ErrRoleSpecNotFound)
+}
+
+// DeletePermission implements [Model].
+func (m *modelData) DeletePermission(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.permissionsByUUID, events.PermissionResource, common.ErrPermissionNotFound)
+}
+
+// DeleteRole implements [Model].
+func (m *modelData) DeleteRole(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.rolesByUUID, events.RoleResource, common.ErrRoleNotFound)
+}
+
+// DeleteBinding implements [Model].
+func (m *modelData) DeleteBinding(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.bindingsByUUID, events.BindingResource, common.ErrBindingNotFound)
+}
+
+// GetPermissionSpecs implements [Model].
+func (m *modelData) GetPermissionSpecs() ([]iam.PermissionSpec, error) {
+	return getAllEventEnabled(m, m.permissionSpecsByUUID)
+}
+
+// GetPermissionSpecById implements [Model].
+func (m *modelData) GetPermissionSpecById(id uuid.UUID) iam.PermissionSpec {
+	return getEventEnabled(m, id, m.permissionSpecsByUUID)
+}
+
+// GetRoleSpecs implements [Model].
+func (m *modelData) GetRoleSpecs() ([]iam.RoleSpec, error) {
+	return getAllEventEnabled(m, m.roleSpecsByUUID)
+}
+
+// GetRoleSpecById implements [Model].
+func (m *modelData) GetRoleSpecById(id uuid.UUID) iam.RoleSpec {
+	return getEventEnabled(m, id, m.roleSpecsByUUID)
+}
+
+// GetPermissions implements [Model].
+func (m *modelData) GetPermissions() ([]iam.Permission, error) {
+	return getAllEventEnabled(m, m.permissionsByUUID)
+}
+
+// GetPermissionById implements [Model].
+func (m *modelData) GetPermissionById(id uuid.UUID) iam.Permission {
+	return getEventEnabled(m, id, m.permissionsByUUID)
+}
+
+// GetRoles implements [Model].
+func (m *modelData) GetRoles() ([]iam.Role, error) {
+	return getAllEventEnabled(m, m.rolesByUUID)
+}
+
+// GetRoleById implements [Model].
+func (m *modelData) GetRoleById(id uuid.UUID) iam.Role {
+	return getEventEnabled(m, id, m.rolesByUUID)
+}
+
+// GetBindings implements [Model].
+func (m *modelData) GetBindings() ([]iam.Binding, error) {
+	return getAllEventEnabled(m, m.bindingsByUUID)
+}
+
+// GetBindingById implements [Model].
+func (m *modelData) GetBindingById(id uuid.UUID) iam.Binding {
+	return getEventEnabled(m, id, m.bindingsByUUID)
 }
 
 // AddProduct implements [Model].

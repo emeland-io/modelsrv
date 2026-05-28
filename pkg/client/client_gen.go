@@ -222,6 +222,131 @@ func (c *ModelSrvClient) GetIdentityById(id uuid.UUID) (*oapi.Identity, error) {
 	return (*oapi.Identity)(resp.JSON200), nil
 }
 
+func (c *ModelSrvClient) GetPermissionSpecs() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapePermissionSpecsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetPermissionSpecById(id uuid.UUID) (*oapi.PermissionSpec, error) {
+	resp, err := c.oapi_client.GetLandscapePermissionSpecsPermissionSpecIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrPermissionSpecNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.PermissionSpec)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetRoleSpecs() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeRoleSpecsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetRoleSpecById(id uuid.UUID) (*oapi.RoleSpec, error) {
+	resp, err := c.oapi_client.GetLandscapeRoleSpecsRoleSpecIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrRoleSpecNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.RoleSpec)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetPermissions() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapePermissionsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetPermissionById(id uuid.UUID) (*oapi.Permission, error) {
+	resp, err := c.oapi_client.GetLandscapePermissionsPermissionIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrPermissionNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Permission)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetRoles() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeRolesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetRoleById(id uuid.UUID) (*oapi.Role, error) {
+	resp, err := c.oapi_client.GetLandscapeRolesRoleIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrRoleNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Role)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetBindings() (*oapi.InstanceList, error) {
+	resp, err := c.oapi_client.GetLandscapeBindingsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.InstanceList)(resp.JSON200), nil
+}
+
+func (c *ModelSrvClient) GetBindingById(id uuid.UUID) (*oapi.Binding, error) {
+	resp, err := c.oapi_client.GetLandscapeBindingsBindingIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrBindingNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return (*oapi.Binding)(resp.JSON200), nil
+}
+
 func (c *ModelSrvClient) GetArtifacts() (*oapi.InstanceList, error) {
 	resp, err := c.oapi_client.GetLandscapeArtifactsWithResponse(context.TODO())
 	if err != nil {
