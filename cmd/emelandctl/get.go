@@ -22,7 +22,26 @@ import (
 
 	"github.com/spf13/cobra"
 	"go.emeland.io/modelsrv/pkg/client"
+	"go.emeland.io/modelsrv/pkg/model/common"
 )
+
+func renderInstanceList(cmd *cobra.Command, format string, items []common.InstanceListItem) error {
+	if format == "json" {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(items)
+	}
+	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+	if _, err := fmt.Fprintln(w, "ID\tNAME\tREFERENCE"); err != nil {
+		return err
+	}
+	for _, item := range items {
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", item.Id, item.Name, item.Reference); err != nil {
+			return err
+		}
+	}
+	return w.Flush()
+}
 
 func newGetCmd() *cobra.Command {
 	var outputFormat string
@@ -48,31 +67,7 @@ func newGetCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("fetching findings: %w", err)
 			}
-			if outputFormat == "json" {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(findings)
-			}
-			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			if _, err := fmt.Fprintln(w, "ID\tNAME\tREFERENCE"); err != nil {
-				return err
-			}
-			for _, f := range *findings {
-				id, name, ref := "", "", ""
-				if f.InstanceId != nil {
-					id = f.InstanceId.String()
-				}
-				if f.DisplayName != nil {
-					name = *f.DisplayName
-				}
-				if f.Reference != nil {
-					ref = *f.Reference
-				}
-				if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", id, name, ref); err != nil {
-					return err
-				}
-			}
-			return w.Flush()
+			return renderInstanceList(cmd, outputFormat, findings)
 		},
 	}
 

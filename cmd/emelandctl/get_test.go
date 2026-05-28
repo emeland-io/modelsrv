@@ -53,6 +53,7 @@ func TestGetFindingsTable(t *testing.T) {
 	assert.Contains(t, out, "ID")
 	assert.Contains(t, out, "NAME")
 	assert.Contains(t, out, "REFERENCE")
+	assert.Contains(t, out, "/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 	assert.Contains(t, out, "Missing TLS")
 	assert.Contains(t, out, "Open Port")
 	assert.Contains(t, out, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
@@ -68,10 +69,13 @@ func TestGetFindingsJSON(t *testing.T) {
 	out, err := executeCmdOut("get", "findings", "--server", srv.URL, "-o", "json")
 	require.NoError(t, err)
 
-	var items []map[string]interface{}
+	var items []struct {
+		Id   string `json:"Id"`
+		Name string `json:"Name"`
+	}
 	require.NoError(t, json.Unmarshal([]byte(out), &items))
 	assert.Len(t, items, 1)
-	assert.Equal(t, "Missing TLS", items[0]["displayName"])
+	assert.Equal(t, "Missing TLS", items[0].Name)
 }
 
 func TestGetFindingsEmpty(t *testing.T) {
