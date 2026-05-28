@@ -24,8 +24,6 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
-	"go.emeland.io/modelsrv/pkg/model/annotations"
-	"go.emeland.io/modelsrv/pkg/model/common"
 )
 
 //nolint:unused
@@ -43,14 +41,6 @@ func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 	}
 
 	return strings.NewReader(body.String()), int64(body.Len())
-}
-
-func cloneAnnotations(annos annotations.Annotations) *[]Annotation {
-	retval := make([]Annotation, 0)
-	for key := range annos.GetKeys() {
-		retval = append(retval, Annotation{Key: key, Value: annos.GetValue(key)})
-	}
-	return &retval
 }
 
 // Generic helper to build instance list responses
@@ -72,20 +62,4 @@ func buildInstanceList[T hasIdAndName](baseURL, path string, items []T) []Instan
 		})
 	}
 	return result
-}
-
-/*
-cloneResourceRefs creates a deep copy of the given ResourceRef slice.
-
-	Warning: note the change in the type of the items from reference to value.
-*/
-func cloneResourceRefs(resourceRef []*common.ResourceRef) []ResourceRef {
-	respArr := make([]ResourceRef, 0, len(resourceRef))
-	for _, resRef := range resourceRef {
-		respArr = append(respArr, ResourceRef{
-			ResourceType: resRef.ResourceType,
-			ResourceId:   resRef.ResourceId,
-		})
-	}
-	return respArr
 }

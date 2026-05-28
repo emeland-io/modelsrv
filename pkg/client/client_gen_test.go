@@ -234,7 +234,7 @@ func TestListContextType(t *testing.T) {
 	list, err := c.GetContextTypes()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "ContextType list should not be empty")
+	assert.Greater(t, len(list), 0, "ContextType list should not be empty")
 }
 
 func TestGetByIdContextType(t *testing.T) {
@@ -249,8 +249,8 @@ func TestGetByIdContextType(t *testing.T) {
 	got, err := c.GetContextTypeById(testIDs["ContextType"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["ContextType"], uuid.UUID(got.ContextTypeId))
-	assert.Equal(t, "Test ContextType", got.DisplayName)
+	assert.Equal(t, testIDs["ContextType"], got.GetContextTypeId())
+	assert.Equal(t, "Test ContextType", got.GetDisplayName())
 }
 
 func TestListContext(t *testing.T) {
@@ -260,7 +260,7 @@ func TestListContext(t *testing.T) {
 	list, err := c.GetContexts()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Context list should not be empty")
+	assert.Greater(t, len(list), 0, "Context list should not be empty")
 }
 
 func TestGetByIdContext(t *testing.T) {
@@ -275,8 +275,8 @@ func TestGetByIdContext(t *testing.T) {
 	got, err := c.GetContextById(testIDs["Context"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Context"], uuid.UUID(got.ContextId))
-	assert.Equal(t, "Test Context", got.DisplayName)
+	assert.Equal(t, testIDs["Context"], got.GetContextId())
+	assert.Equal(t, "Test Context", got.GetDisplayName())
 }
 
 func TestListSystem(t *testing.T) {
@@ -286,7 +286,7 @@ func TestListSystem(t *testing.T) {
 	list, err := c.GetSystems()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "System list should not be empty")
+	assert.Greater(t, len(list), 0, "System list should not be empty")
 }
 
 func TestGetByIdSystem(t *testing.T) {
@@ -301,8 +301,8 @@ func TestGetByIdSystem(t *testing.T) {
 	got, err := c.GetSystemById(testIDs["System"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["System"], uuid.UUID(*got.SystemId))
-	assert.Equal(t, "Test System", got.DisplayName)
+	assert.Equal(t, testIDs["System"], got.GetSystemId())
+	assert.Equal(t, "Test System", got.GetDisplayName())
 }
 
 func TestListNodeType(t *testing.T) {
@@ -312,7 +312,7 @@ func TestListNodeType(t *testing.T) {
 	list, err := c.GetNodeTypes()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "NodeType list should not be empty")
+	assert.Greater(t, len(list), 0, "NodeType list should not be empty")
 }
 
 func TestGetByIdNodeType(t *testing.T) {
@@ -327,8 +327,8 @@ func TestGetByIdNodeType(t *testing.T) {
 	got, err := c.GetNodeTypeById(testIDs["NodeType"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["NodeType"], uuid.UUID(got.NodeTypeId))
-	assert.Equal(t, "Test NodeType", got.DisplayName)
+	assert.Equal(t, testIDs["NodeType"], got.GetNodeTypeId())
+	assert.Equal(t, "Test NodeType", got.GetDisplayName())
 }
 
 func TestListFindingType(t *testing.T) {
@@ -338,7 +338,7 @@ func TestListFindingType(t *testing.T) {
 	list, err := c.GetFindingTypes()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "FindingType list should not be empty")
+	assert.Greater(t, len(list), 0, "FindingType list should not be empty")
 }
 
 func TestGetByIdFindingType(t *testing.T) {
@@ -353,8 +353,8 @@ func TestGetByIdFindingType(t *testing.T) {
 	got, err := c.GetFindingTypeById(testIDs["FindingType"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["FindingType"], uuid.UUID(*got.FindingTypeId))
-	assert.Equal(t, "Test FindingType", *got.DisplayName)
+	assert.Equal(t, testIDs["FindingType"], got.GetFindingTypeId())
+	assert.Equal(t, "Test FindingType", got.GetDisplayName())
 }
 
 func TestListNode(t *testing.T) {
@@ -364,7 +364,7 @@ func TestListNode(t *testing.T) {
 	list, err := c.GetNodes()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Node list should not be empty")
+	assert.Greater(t, len(list), 0, "Node list should not be empty")
 }
 
 func TestGetByIdNode(t *testing.T) {
@@ -379,8 +379,8 @@ func TestGetByIdNode(t *testing.T) {
 	got, err := c.GetNodeById(testIDs["Node"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Node"], uuid.UUID(got.NodeId))
-	assert.Equal(t, "Test Node", got.DisplayName)
+	assert.Equal(t, testIDs["Node"], got.GetNodeId())
+	assert.Equal(t, "Test Node", got.GetDisplayName())
 }
 
 func TestListApiInstance(t *testing.T) {
@@ -390,7 +390,7 @@ func TestListApiInstance(t *testing.T) {
 	list, err := c.GetApiInstances()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "ApiInstance list should not be empty")
+	assert.Greater(t, len(list), 0, "ApiInstance list should not be empty")
 }
 
 func TestGetByIdApiInstance(t *testing.T) {
@@ -405,8 +405,8 @@ func TestGetByIdApiInstance(t *testing.T) {
 	got, err := c.GetApiInstanceById(testIDs["ApiInstance"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["ApiInstance"], uuid.UUID(got.ApiInstanceId))
-	assert.Equal(t, "Test ApiInstance", got.DisplayName)
+	assert.Equal(t, testIDs["ApiInstance"], got.GetInstanceId())
+	assert.Equal(t, "Test ApiInstance", got.GetDisplayName())
 }
 
 func TestListAPI(t *testing.T) {
@@ -416,7 +416,7 @@ func TestListAPI(t *testing.T) {
 	list, err := c.GetAPIs()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "API list should not be empty")
+	assert.Greater(t, len(list), 0, "API list should not be empty")
 }
 
 func TestGetByIdAPI(t *testing.T) {
@@ -431,8 +431,8 @@ func TestGetByIdAPI(t *testing.T) {
 	got, err := c.GetAPIById(testIDs["API"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["API"], uuid.UUID(*got.ApiId))
-	assert.Equal(t, "Test API", got.DisplayName)
+	assert.Equal(t, testIDs["API"], got.GetApiId())
+	assert.Equal(t, "Test API", got.GetDisplayName())
 }
 
 func TestListComponent(t *testing.T) {
@@ -442,7 +442,7 @@ func TestListComponent(t *testing.T) {
 	list, err := c.GetComponents()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Component list should not be empty")
+	assert.Greater(t, len(list), 0, "Component list should not be empty")
 }
 
 func TestGetByIdComponent(t *testing.T) {
@@ -457,8 +457,8 @@ func TestGetByIdComponent(t *testing.T) {
 	got, err := c.GetComponentById(testIDs["Component"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Component"], uuid.UUID(*got.ComponentId))
-	assert.Equal(t, "Test Component", got.DisplayName)
+	assert.Equal(t, testIDs["Component"], got.GetComponentId())
+	assert.Equal(t, "Test Component", got.GetDisplayName())
 }
 
 func TestListSystemInstance(t *testing.T) {
@@ -468,7 +468,7 @@ func TestListSystemInstance(t *testing.T) {
 	list, err := c.GetSystemInstances()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "SystemInstance list should not be empty")
+	assert.Greater(t, len(list), 0, "SystemInstance list should not be empty")
 }
 
 func TestGetByIdSystemInstance(t *testing.T) {
@@ -483,8 +483,8 @@ func TestGetByIdSystemInstance(t *testing.T) {
 	got, err := c.GetSystemInstanceById(testIDs["SystemInstance"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["SystemInstance"], uuid.UUID(got.SystemInstanceId))
-	assert.Equal(t, "Test SystemInstance", got.DisplayName)
+	assert.Equal(t, testIDs["SystemInstance"], got.GetInstanceId())
+	assert.Equal(t, "Test SystemInstance", got.GetDisplayName())
 }
 
 func TestListComponentInstance(t *testing.T) {
@@ -494,7 +494,7 @@ func TestListComponentInstance(t *testing.T) {
 	list, err := c.GetComponentInstances()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "ComponentInstance list should not be empty")
+	assert.Greater(t, len(list), 0, "ComponentInstance list should not be empty")
 }
 
 func TestGetByIdComponentInstance(t *testing.T) {
@@ -509,8 +509,8 @@ func TestGetByIdComponentInstance(t *testing.T) {
 	got, err := c.GetComponentInstanceById(testIDs["ComponentInstance"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["ComponentInstance"], uuid.UUID(got.ComponentInstanceId))
-	assert.Equal(t, "Test ComponentInstance", got.DisplayName)
+	assert.Equal(t, testIDs["ComponentInstance"], got.GetInstanceId())
+	assert.Equal(t, "Test ComponentInstance", got.GetDisplayName())
 }
 
 func TestListFinding(t *testing.T) {
@@ -520,7 +520,7 @@ func TestListFinding(t *testing.T) {
 	list, err := c.GetFindings()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Finding list should not be empty")
+	assert.Greater(t, len(list), 0, "Finding list should not be empty")
 }
 
 func TestGetByIdFinding(t *testing.T) {
@@ -535,8 +535,8 @@ func TestGetByIdFinding(t *testing.T) {
 	got, err := c.GetFindingById(testIDs["Finding"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Finding"], uuid.UUID(got.FindingId))
-	assert.Equal(t, "Test Finding", got.Summary)
+	assert.Equal(t, testIDs["Finding"], got.GetFindingId())
+	assert.Equal(t, "Test Finding", got.GetSummary())
 }
 
 func TestListOrgUnit(t *testing.T) {
@@ -546,7 +546,7 @@ func TestListOrgUnit(t *testing.T) {
 	list, err := c.GetOrgUnits()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "OrgUnit list should not be empty")
+	assert.Greater(t, len(list), 0, "OrgUnit list should not be empty")
 }
 
 func TestGetByIdOrgUnit(t *testing.T) {
@@ -561,8 +561,8 @@ func TestGetByIdOrgUnit(t *testing.T) {
 	got, err := c.GetOrgUnitById(testIDs["OrgUnit"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["OrgUnit"], uuid.UUID(got.OrgUnitId))
-	assert.Equal(t, "Test OrgUnit", got.DisplayName)
+	assert.Equal(t, testIDs["OrgUnit"], got.GetOrgUnitId())
+	assert.Equal(t, "Test OrgUnit", got.GetDisplayName())
 }
 
 func TestListGroup(t *testing.T) {
@@ -572,7 +572,7 @@ func TestListGroup(t *testing.T) {
 	list, err := c.GetGroups()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Group list should not be empty")
+	assert.Greater(t, len(list), 0, "Group list should not be empty")
 }
 
 func TestGetByIdGroup(t *testing.T) {
@@ -587,8 +587,8 @@ func TestGetByIdGroup(t *testing.T) {
 	got, err := c.GetGroupById(testIDs["Group"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Group"], uuid.UUID(got.GroupId))
-	assert.Equal(t, "Test Group", got.DisplayName)
+	assert.Equal(t, testIDs["Group"], got.GetGroupId())
+	assert.Equal(t, "Test Group", got.GetDisplayName())
 }
 
 func TestListIdentity(t *testing.T) {
@@ -598,7 +598,7 @@ func TestListIdentity(t *testing.T) {
 	list, err := c.GetIdentities()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Identity list should not be empty")
+	assert.Greater(t, len(list), 0, "Identity list should not be empty")
 }
 
 func TestGetByIdIdentity(t *testing.T) {
@@ -613,8 +613,8 @@ func TestGetByIdIdentity(t *testing.T) {
 	got, err := c.GetIdentityById(testIDs["Identity"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Identity"], uuid.UUID(got.IdentityId))
-	assert.Equal(t, "Test Identity", got.DisplayName)
+	assert.Equal(t, testIDs["Identity"], got.GetIdentityId())
+	assert.Equal(t, "Test Identity", got.GetDisplayName())
 }
 
 func TestListArtifact(t *testing.T) {
@@ -624,7 +624,7 @@ func TestListArtifact(t *testing.T) {
 	list, err := c.GetArtifacts()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Artifact list should not be empty")
+	assert.Greater(t, len(list), 0, "Artifact list should not be empty")
 }
 
 func TestGetByIdArtifact(t *testing.T) {
@@ -639,8 +639,8 @@ func TestGetByIdArtifact(t *testing.T) {
 	got, err := c.GetArtifactById(testIDs["Artifact"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Artifact"], uuid.UUID(got.ArtifactId))
-	assert.Equal(t, "Test Artifact", got.DisplayName)
+	assert.Equal(t, testIDs["Artifact"], got.GetArtifactId())
+	assert.Equal(t, "Test Artifact", got.GetDisplayName())
 }
 
 func TestListArtifactInstance(t *testing.T) {
@@ -650,7 +650,7 @@ func TestListArtifactInstance(t *testing.T) {
 	list, err := c.GetArtifactInstances()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "ArtifactInstance list should not be empty")
+	assert.Greater(t, len(list), 0, "ArtifactInstance list should not be empty")
 }
 
 func TestGetByIdArtifactInstance(t *testing.T) {
@@ -665,8 +665,8 @@ func TestGetByIdArtifactInstance(t *testing.T) {
 	got, err := c.GetArtifactInstanceById(testIDs["ArtifactInstance"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["ArtifactInstance"], uuid.UUID(got.ArtifactInstanceId))
-	assert.Equal(t, "Test ArtifactInstance", got.DisplayName)
+	assert.Equal(t, testIDs["ArtifactInstance"], got.GetArtifactInstanceId())
+	assert.Equal(t, "Test ArtifactInstance", got.GetDisplayName())
 }
 
 func TestListProduct(t *testing.T) {
@@ -676,7 +676,7 @@ func TestListProduct(t *testing.T) {
 	list, err := c.GetProducts()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "Product list should not be empty")
+	assert.Greater(t, len(list), 0, "Product list should not be empty")
 }
 
 func TestGetByIdProduct(t *testing.T) {
@@ -691,8 +691,8 @@ func TestGetByIdProduct(t *testing.T) {
 	got, err := c.GetProductById(testIDs["Product"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Product"], uuid.UUID(got.ProductId))
-	assert.Equal(t, "Test Product", got.DisplayName)
+	assert.Equal(t, testIDs["Product"], got.GetProductId())
+	assert.Equal(t, "Test Product", got.GetDisplayName())
 }
 
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType

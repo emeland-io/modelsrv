@@ -9,7 +9,16 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/internal/oapi"
+	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/artifact"
 	"go.emeland.io/modelsrv/pkg/model/common"
+	"go.emeland.io/modelsrv/pkg/model/component"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/iam"
+	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 // Ensure imports are used.
@@ -18,11 +27,19 @@ var (
 	_ = fmt.Errorf
 	_ = http.StatusOK
 	_ = uuid.Nil
-	_ *oapi.InstanceList
 	_ = common.ErrContextNotFound
+	_ artifact.Artifact
+	_ mdlapi.API
+	_ component.Component
+	_ mdlctx.ContextType
+	_ finding.Finding
+	_ iam.OrgUnit
+	_ node.Node
+	_ mdlprod.Product
+	_ system.System
 )
 
-func (c *ModelSrvClient) GetContextTypes() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetContextTypes() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeContextTypesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -30,10 +47,10 @@ func (c *ModelSrvClient) GetContextTypes() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetContextTypeById(id uuid.UUID) (*oapi.ContextType, error) {
+func (c *ModelSrvClient) GetContextTypeById(id uuid.UUID) (mdlctx.ContextType, error) {
 	resp, err := c.oapi_client.GetLandscapeContextTypesContextTypeIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -44,10 +61,60 @@ func (c *ModelSrvClient) GetContextTypeById(id uuid.UUID) (*oapi.ContextType, er
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.ContextType)(resp.JSON200), nil
+	return oapi.ContextTypeFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetNodeTypes() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetContexts() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeContextsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetContextById(id uuid.UUID) (mdlctx.Context, error) {
+	resp, err := c.oapi_client.GetLandscapeContextsContextIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrContextNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ContextFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetSystems() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeSystemsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetSystemById(id uuid.UUID) (system.System, error) {
+	resp, err := c.oapi_client.GetLandscapeSystemsSystemIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrSystemNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.SystemFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetNodeTypes() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeNodeTypesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -55,10 +122,10 @@ func (c *ModelSrvClient) GetNodeTypes() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetNodeTypeById(id uuid.UUID) (*oapi.NodeType, error) {
+func (c *ModelSrvClient) GetNodeTypeById(id uuid.UUID) (node.NodeType, error) {
 	resp, err := c.oapi_client.GetLandscapeNodeTypesNodeTypeIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -69,10 +136,10 @@ func (c *ModelSrvClient) GetNodeTypeById(id uuid.UUID) (*oapi.NodeType, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.NodeType)(resp.JSON200), nil
+	return oapi.NodeTypeFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetFindingTypes() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetFindingTypes() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeFindingTypesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -80,10 +147,10 @@ func (c *ModelSrvClient) GetFindingTypes() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetFindingTypeById(id uuid.UUID) (*oapi.FindingType, error) {
+func (c *ModelSrvClient) GetFindingTypeById(id uuid.UUID) (finding.FindingType, error) {
 	resp, err := c.oapi_client.GetLandscapeFindingTypesFindingTypeIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -94,10 +161,10 @@ func (c *ModelSrvClient) GetFindingTypeById(id uuid.UUID) (*oapi.FindingType, er
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.FindingType)(resp.JSON200), nil
+	return oapi.FindingTypeFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetNodes() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetNodes() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeNodesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -105,10 +172,10 @@ func (c *ModelSrvClient) GetNodes() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetNodeById(id uuid.UUID) (*oapi.Node, error) {
+func (c *ModelSrvClient) GetNodeById(id uuid.UUID) (node.Node, error) {
 	resp, err := c.oapi_client.GetLandscapeNodesNodeIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -119,10 +186,135 @@ func (c *ModelSrvClient) GetNodeById(id uuid.UUID) (*oapi.Node, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Node)(resp.JSON200), nil
+	return oapi.NodeFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetFindings() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetApiInstances() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeApiInstancesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetApiInstanceById(id uuid.UUID) (mdlapi.ApiInstance, error) {
+	resp, err := c.oapi_client.GetLandscapeApiInstancesApiInstanceIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrApiInstanceNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ApiInstanceFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetAPIs() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeApisWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetAPIById(id uuid.UUID) (mdlapi.API, error) {
+	resp, err := c.oapi_client.GetLandscapeApisApiIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrApiNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.APIFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetComponents() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeComponentsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetComponentById(id uuid.UUID) (component.Component, error) {
+	resp, err := c.oapi_client.GetLandscapeComponentsComponentIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrComponentNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ComponentFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetSystemInstances() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeSystemInstancesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetSystemInstanceById(id uuid.UUID) (system.SystemInstance, error) {
+	resp, err := c.oapi_client.GetLandscapeSystemInstancesSystemInstanceIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrSystemInstanceNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.SystemInstanceFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetComponentInstances() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeComponentInstancesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetComponentInstanceById(id uuid.UUID) (component.ComponentInstance, error) {
+	resp, err := c.oapi_client.GetLandscapeComponentInstancesComponentInstanceIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrComponentInstanceNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ComponentInstanceFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetFindings() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeFindingsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -130,10 +322,10 @@ func (c *ModelSrvClient) GetFindings() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetFindingById(id uuid.UUID) (*oapi.Finding, error) {
+func (c *ModelSrvClient) GetFindingById(id uuid.UUID) (finding.Finding, error) {
 	resp, err := c.oapi_client.GetLandscapeFindingsFindingIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -144,10 +336,10 @@ func (c *ModelSrvClient) GetFindingById(id uuid.UUID) (*oapi.Finding, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Finding)(resp.JSON200), nil
+	return oapi.FindingFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetOrgUnits() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetOrgUnits() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeOrgUnitsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -155,10 +347,10 @@ func (c *ModelSrvClient) GetOrgUnits() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetOrgUnitById(id uuid.UUID) (*oapi.OrgUnit, error) {
+func (c *ModelSrvClient) GetOrgUnitById(id uuid.UUID) (iam.OrgUnit, error) {
 	resp, err := c.oapi_client.GetLandscapeOrgUnitsOrgUnitIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -169,10 +361,10 @@ func (c *ModelSrvClient) GetOrgUnitById(id uuid.UUID) (*oapi.OrgUnit, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.OrgUnit)(resp.JSON200), nil
+	return oapi.OrgUnitFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetGroups() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetGroups() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeGroupsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -180,10 +372,10 @@ func (c *ModelSrvClient) GetGroups() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetGroupById(id uuid.UUID) (*oapi.Group, error) {
+func (c *ModelSrvClient) GetGroupById(id uuid.UUID) (iam.Group, error) {
 	resp, err := c.oapi_client.GetLandscapeGroupsGroupIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -194,10 +386,10 @@ func (c *ModelSrvClient) GetGroupById(id uuid.UUID) (*oapi.Group, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Group)(resp.JSON200), nil
+	return oapi.GroupFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetIdentities() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetIdentities() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeIdentitiesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -205,10 +397,10 @@ func (c *ModelSrvClient) GetIdentities() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetIdentityById(id uuid.UUID) (*oapi.Identity, error) {
+func (c *ModelSrvClient) GetIdentityById(id uuid.UUID) (iam.Identity, error) {
 	resp, err := c.oapi_client.GetLandscapeIdentitiesIdentityIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -219,10 +411,10 @@ func (c *ModelSrvClient) GetIdentityById(id uuid.UUID) (*oapi.Identity, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Identity)(resp.JSON200), nil
+	return oapi.IdentityFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetArtifacts() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetArtifacts() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeArtifactsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -230,10 +422,10 @@ func (c *ModelSrvClient) GetArtifacts() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetArtifactById(id uuid.UUID) (*oapi.Artifact, error) {
+func (c *ModelSrvClient) GetArtifactById(id uuid.UUID) (artifact.Artifact, error) {
 	resp, err := c.oapi_client.GetLandscapeArtifactsArtifactIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -244,10 +436,10 @@ func (c *ModelSrvClient) GetArtifactById(id uuid.UUID) (*oapi.Artifact, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Artifact)(resp.JSON200), nil
+	return oapi.ArtifactFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetArtifactInstances() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetArtifactInstances() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeArtifactInstancesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -255,10 +447,10 @@ func (c *ModelSrvClient) GetArtifactInstances() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetArtifactInstanceById(id uuid.UUID) (*oapi.ArtifactInstance, error) {
+func (c *ModelSrvClient) GetArtifactInstanceById(id uuid.UUID) (artifact.ArtifactInstance, error) {
 	resp, err := c.oapi_client.GetLandscapeArtifactInstancesArtifactInstanceIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -269,10 +461,10 @@ func (c *ModelSrvClient) GetArtifactInstanceById(id uuid.UUID) (*oapi.ArtifactIn
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.ArtifactInstance)(resp.JSON200), nil
+	return oapi.ArtifactInstanceFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetProducts() (*oapi.InstanceList, error) {
+func (c *ModelSrvClient) GetProducts() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeProductsWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -280,10 +472,10 @@ func (c *ModelSrvClient) GetProducts() (*oapi.InstanceList, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.InstanceList)(resp.JSON200), nil
+	return oapi.InstanceListFromDto(resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetProductById(id uuid.UUID) (*oapi.Product, error) {
+func (c *ModelSrvClient) GetProductById(id uuid.UUID) (mdlprod.Product, error) {
 	resp, err := c.oapi_client.GetLandscapeProductsProductIdWithResponse(context.TODO(), id)
 	if err != nil {
 		return nil, err
@@ -294,5 +486,5 @@ func (c *ModelSrvClient) GetProductById(id uuid.UUID) (*oapi.Product, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return (*oapi.Product)(resp.JSON200), nil
+	return oapi.ProductFromDto(nil, resp.JSON200)
 }
