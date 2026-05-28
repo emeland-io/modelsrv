@@ -151,8 +151,8 @@ type ComponentInstanceModel interface {
 
 // FindingModel provides CRUD operations for [finding.Finding] resources.
 type FindingModel interface {
-	// AddFinding registers a Finding in the model with the given display name.
-	AddFinding(f finding.Finding, name string) error
+	// AddFinding registers a Finding in the model.
+	AddFinding(f finding.Finding) error
 	// DeleteFindingById removes the Finding with the given id.
 	DeleteFindingById(id uuid.UUID) error
 	// GetFindings returns all registered Findings.
@@ -314,7 +314,7 @@ func addEventEnabled[T any](
 	m *modelData,
 	obj T,
 	getId func(T) uuid.UUID,
-	setRegistered func(T),
+	setRegistered func(T, events.EventSink),
 	store map[uuid.UUID]T,
 	resourceType events.ResourceType,
 ) error {
@@ -329,7 +329,7 @@ func addEventEnabled[T any](
 		if _, exists := store[id]; exists {
 			op = events.UpdateOperation
 		}
-		setRegistered(obj)
+		setRegistered(obj, m.sink)
 		store[id] = obj
 		return op, id, nil
 	}()
@@ -394,37 +394,9 @@ func getAllEventEnabled[T any](m *modelData, store map[uuid.UUID]T) ([]T, error)
 
 // AddContext implements Model.
 func (m *modelData) AddContext(c mdlctx.Context) error {
-	op, cid, err := func() (events.Operation, uuid.UUID, error) {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-
-		// TODO: parse parent ref if set
-
-		if c.GetContextId() == uuid.Nil {
-			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
-		}
-
-		op := events.CreateOperation
-
-		// check if this would overwrite an existing entry -> an update
-		if _, ok := m.contextsByUUID[c.GetContextId()]; ok {
-			op = events.UpdateOperation
-		}
-
-		// Register and persist before notifying the sink so filters see consistent model state.
-		c.Register()
-		m.contextsByUUID[c.GetContextId()] = c
-		return op, c.GetContextId(), nil
-	}()
-	if err != nil {
-		return err
-	}
-
-	if err := m.sink.Receive(events.ContextResource, op, cid, c); err != nil {
-		fmt.Println("Error receiving ", events.ContextResource, "| ", op, " event: ", err)
-	}
-
-	return nil
+	return addEventEnabled(m, c, mdlctx.Context.GetContextId,
+		func(x mdlctx.Context, s events.EventSink) { x.Register(s) },
+		m.contextsByUUID, events.ContextResource)
 }
 
 // DeleteContextById implements Model.
@@ -470,34 +442,9 @@ func (m *modelData) GetContexts() ([]mdlctx.Context, error) {
 
 // AddContextType implements [Model].
 func (m *modelData) AddContextType(contextType mdlctx.ContextType) error {
-	op, typeID, err := func() (events.Operation, uuid.UUID, error) {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		if contextType.GetContextTypeId() == uuid.Nil {
-			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
-		}
-
-		op := events.CreateOperation
-
-		// check if this would overwrite an existing entry -> an update
-		if _, ok := m.contextTypesByUUID[contextType.GetContextTypeId()]; ok {
-			op = events.UpdateOperation
-		}
-
-		// Register and persist before notifying the sink so filters see consistent model state.
-		contextType.Register()
-		m.contextTypesByUUID[contextType.GetContextTypeId()] = contextType
-		return op, contextType.GetContextTypeId(), nil
-	}()
-	if err != nil {
-		return err
-	}
-
-	if err := m.sink.Receive(events.ContextTypeResource, op, typeID, contextType); err != nil {
-		fmt.Println("Error receiving ", events.ContextTypeResource, "| ", op, " event: ", err)
-	}
-
-	return nil
+	return addEventEnabled(m, contextType, mdlctx.ContextType.GetContextTypeId,
+		func(x mdlctx.ContextType, s events.EventSink) { x.Register(s) },
+		m.contextTypesByUUID, events.ContextTypeResource)
 }
 
 // DeleteContextTypeById implements [Model].
@@ -546,7 +493,7 @@ func (m *modelData) GetContextTypes() ([]mdlctx.ContextType, error) {
 
 // AddNode implements [Model].
 func (m *modelData) AddNode(n node.Node) error {
-	return addEventEnabled(m, n, node.Node.GetNodeId, func(x node.Node) { x.Register() }, m.nodesByUUID, events.NodeResource)
+	return addEventEnabled(m, n, node.Node.GetNodeId, func(x node.Node, s events.EventSink) { x.Register(s) }, m.nodesByUUID, events.NodeResource)
 }
 
 // DeleteNodeById implements [Model].
@@ -566,7 +513,7 @@ func (m *modelData) GetNodes() ([]node.Node, error) {
 
 // AddNodeType implements [Model].
 func (m *modelData) AddNodeType(nodeType node.NodeType) error {
-	return addEventEnabled(m, nodeType, node.NodeType.GetNodeTypeId, func(nt node.NodeType) { nt.Register() }, m.nodeTypesByUUID, events.NodeTypeResource)
+	return addEventEnabled(m, nodeType, node.NodeType.GetNodeTypeId, func(nt node.NodeType, s events.EventSink) { nt.Register(s) }, m.nodeTypesByUUID, events.NodeTypeResource)
 }
 
 // DeleteNodeTypeById implements [Model].
@@ -586,35 +533,9 @@ func (m *modelData) GetNodeTypes() ([]node.NodeType, error) {
 
 // AddSystem implements Model.
 func (m *modelData) AddSystem(sys system.System) error {
-	op, sid, err := func() (events.Operation, uuid.UUID, error) {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		// parse parent ref if set
-		if sys.GetSystemId() == uuid.Nil {
-			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
-		}
-
-		op := events.CreateOperation
-
-		// check if this would overwrite an existing entry -> an update
-		if _, ok := m.systemsByUUID[sys.GetSystemId()]; ok {
-			op = events.UpdateOperation
-		}
-
-		// mark System as registered to activate sending events when updating fields
-		sys.Register()
-		m.systemsByUUID[sys.GetSystemId()] = sys
-		return op, sys.GetSystemId(), nil
-	}()
-	if err != nil {
-		return err
-	}
-
-	if err := m.sink.Receive(events.SystemResource, op, sid, sys); err != nil {
-		fmt.Println("Error receiving ", events.SystemResource, "| ", op, " event: ", err)
-	}
-
-	return nil
+	return addEventEnabled(m, sys, system.System.GetSystemId,
+		func(x system.System, s events.EventSink) { x.Register(s) },
+		m.systemsByUUID, events.SystemResource)
 }
 
 // DeleteSystemByResourceName implements Model.
@@ -663,27 +584,27 @@ func (m *modelData) GetSystemById(id uuid.UUID) system.System {
 
 // AddApi implements Model.
 func (m *modelData) AddApi(a mdlapi.API) error {
-	return addEventEnabled(m, a, mdlapi.API.GetApiId, func(x mdlapi.API) { x.Register() }, m.apisByUUID, events.APIResource)
+	return addEventEnabled(m, a, mdlapi.API.GetApiId, func(x mdlapi.API, s events.EventSink) { x.Register(s) }, m.apisByUUID, events.APIResource)
 }
 
 // AddApiInstance implements Model.
 func (m *modelData) AddApiInstance(instance mdlapi.ApiInstance) error {
-	return addEventEnabled(m, instance, mdlapi.ApiInstance.GetInstanceId, func(i mdlapi.ApiInstance) { i.Register() }, m.apiInstancesByUUID, events.APIInstanceResource)
+	return addEventEnabled(m, instance, mdlapi.ApiInstance.GetInstanceId, func(i mdlapi.ApiInstance, s events.EventSink) { i.Register(s) }, m.apiInstancesByUUID, events.APIInstanceResource)
 }
 
 // AddComponent implements Model.
 func (m *modelData) AddComponent(comp component.Component) error {
-	return addEventEnabled(m, comp, component.Component.GetComponentId, func(c component.Component) { c.Register() }, m.componentsByUUID, events.ComponentResource)
+	return addEventEnabled(m, comp, component.Component.GetComponentId, func(c component.Component, s events.EventSink) { c.Register(s) }, m.componentsByUUID, events.ComponentResource)
 }
 
 // AddComponentInstance implements Model.
 func (m *modelData) AddComponentInstance(instance component.ComponentInstance) error {
-	return addEventEnabled(m, instance, component.ComponentInstance.GetInstanceId, func(i component.ComponentInstance) { i.Register() }, m.componentInstancesByUUID, events.ComponentInstanceResource)
+	return addEventEnabled(m, instance, component.ComponentInstance.GetInstanceId, func(i component.ComponentInstance, s events.EventSink) { i.Register(s) }, m.componentInstancesByUUID, events.ComponentInstanceResource)
 }
 
 // AddSystemInstance implements Model.
 func (m *modelData) AddSystemInstance(instance system.SystemInstance) error {
-	return addEventEnabled(m, instance, system.SystemInstance.GetInstanceId, func(i system.SystemInstance) { i.Register() }, m.systemInstancesByUUID, events.SystemInstanceResource)
+	return addEventEnabled(m, instance, system.SystemInstance.GetInstanceId, func(i system.SystemInstance, s events.EventSink) { i.Register(s) }, m.systemInstancesByUUID, events.SystemInstanceResource)
 }
 
 // DeleteApiByResourceName implements Model.
@@ -792,21 +713,10 @@ func (m *modelData) GetFindings() ([]finding.Finding, error) {
 }
 
 // AddFinding implements Model.
-func (m *modelData) AddFinding(f finding.Finding, name string) error {
-	if f.GetFindingId() == uuid.Nil {
-		return nil
-	}
-	func() {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		f.Register()
-		m.findingsByUUID[f.GetFindingId()] = f
-	}()
-
-	if err := m.sink.Receive(events.FindingResource, events.CreateOperation, f.GetFindingId(), f); err != nil {
-		fmt.Println("Error receiving ", events.FindingResource, "| ", events.CreateOperation, " event: ", err)
-	}
-	return nil
+func (m *modelData) AddFinding(f finding.Finding) error {
+	return addEventEnabled(m, f, finding.Finding.GetFindingId,
+		func(x finding.Finding, s events.EventSink) { x.Register(s) },
+		m.findingsByUUID, events.FindingResource)
 }
 
 // DeleteFindingById implements [Model].
@@ -844,36 +754,9 @@ func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
 
 // AddFindingType implements [Model].
 func (m *modelData) AddFindingType(findingType finding.FindingType) error {
-	op, ftID, err := func() (events.Operation, uuid.UUID, error) {
-		m.mu.Lock()
-		defer m.mu.Unlock()
-		// parse parent ref if set
-		if findingType.GetFindingTypeId() == uuid.Nil {
-			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
-		}
-
-		op := events.CreateOperation
-
-		// check if this would overwrite an existing entry -> an update
-		if _, ok := m.findingTypesByUUID[findingType.GetFindingTypeId()]; ok {
-			op = events.UpdateOperation
-		}
-
-		// mark FindingType as registered to activate sending events when updating fields
-		findingType.Register()
-		m.findingTypesByUUID[findingType.GetFindingTypeId()] = findingType
-		return op, findingType.GetFindingTypeId(), nil
-	}()
-	if err != nil {
-		return err
-	}
-
-	if err := m.sink.Receive(events.FindingTypeResource, op, ftID, findingType); err != nil {
-		fmt.Println("Error receiving ", events.FindingTypeResource, "| ", op, " event: ", err)
-	}
-
-	return nil
-
+	return addEventEnabled(m, findingType, finding.FindingType.GetFindingTypeId,
+		func(x finding.FindingType, s events.EventSink) { x.Register(s) },
+		m.findingTypesByUUID, events.FindingTypeResource)
 }
 
 // DeleteFindingTypeById implements [Model].
@@ -938,7 +821,7 @@ func (m *modelData) GetFindingTypes() ([]finding.FindingType, error) {
 
 // AddArtifact implements [Model].
 func (m *modelData) AddArtifact(a artifact.Artifact) error {
-	return addEventEnabled(m, a, artifact.Artifact.GetArtifactId, func(x artifact.Artifact) { x.Register() }, m.artifactsByUUID, events.ArtifactResource)
+	return addEventEnabled(m, a, artifact.Artifact.GetArtifactId, func(x artifact.Artifact, s events.EventSink) { x.Register(s) }, m.artifactsByUUID, events.ArtifactResource)
 }
 
 // DeleteArtifactById implements [Model].
@@ -958,7 +841,7 @@ func (m *modelData) GetArtifactById(id uuid.UUID) artifact.Artifact {
 
 // AddArtifactInstance implements [Model].
 func (m *modelData) AddArtifactInstance(ai artifact.ArtifactInstance) error {
-	return addEventEnabled(m, ai, artifact.ArtifactInstance.GetArtifactInstanceId, func(x artifact.ArtifactInstance) { x.Register() }, m.artifactInstancesByUUID, events.ArtifactInstanceResource)
+	return addEventEnabled(m, ai, artifact.ArtifactInstance.GetArtifactInstanceId, func(x artifact.ArtifactInstance, s events.EventSink) { x.Register(s) }, m.artifactInstancesByUUID, events.ArtifactInstanceResource)
 }
 
 // DeleteArtifactInstanceById implements [Model].
@@ -978,17 +861,17 @@ func (m *modelData) GetArtifactInstanceById(id uuid.UUID) artifact.ArtifactInsta
 
 // AddGroup implements [Model].
 func (m *modelData) AddGroup(g iam.Group) error {
-	return addEventEnabled(m, g, iam.Group.GetGroupId, func(x iam.Group) { x.Register() }, m.groupsByUUID, events.GroupResource)
+	return addEventEnabled(m, g, iam.Group.GetGroupId, func(x iam.Group, s events.EventSink) { x.Register(s) }, m.groupsByUUID, events.GroupResource)
 }
 
 // AddIdentity implements [Model].
 func (m *modelData) AddIdentity(i iam.Identity) error {
-	return addEventEnabled(m, i, iam.Identity.GetIdentityId, func(x iam.Identity) { x.Register() }, m.identitiesByUUID, events.IdentityResource)
+	return addEventEnabled(m, i, iam.Identity.GetIdentityId, func(x iam.Identity, s events.EventSink) { x.Register(s) }, m.identitiesByUUID, events.IdentityResource)
 }
 
 // AddOrgUnit implements [Model].
 func (m *modelData) AddOrgUnit(o iam.OrgUnit) error {
-	return addEventEnabled(m, o, iam.OrgUnit.GetOrgUnitId, func(x iam.OrgUnit) { x.Register() }, m.orgUnitsByUUID, events.OrgUnitResource)
+	return addEventEnabled(m, o, iam.OrgUnit.GetOrgUnitId, func(x iam.OrgUnit, s events.EventSink) { x.Register(s) }, m.orgUnitsByUUID, events.OrgUnitResource)
 }
 
 // DeleteGroup implements [Model].
@@ -1038,7 +921,7 @@ func (m *modelData) GetOrgUnits() ([]iam.OrgUnit, error) {
 
 // AddProduct implements [Model].
 func (m *modelData) AddProduct(p mdlprod.Product) error {
-	return addEventEnabled(m, p, mdlprod.Product.GetProductId, func(x mdlprod.Product) { x.Register() }, m.productsByUUID, events.ProductResource)
+	return addEventEnabled(m, p, mdlprod.Product.GetProductId, func(x mdlprod.Product, s events.EventSink) { x.Register(s) }, m.productsByUUID, events.ProductResource)
 }
 
 // DeleteProductById implements [Model].

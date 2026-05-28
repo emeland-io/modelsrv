@@ -91,7 +91,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 		Describe("ContextTypeMissing", func() {
 			It("creates a ContextTypeMissing finding when the context has no type set", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				applyFilter(m, contextEvent(ctx))
 
@@ -100,7 +100,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 
 			It("registers a FindingType in the model when inferring a finding", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				applyFilter(m, contextEvent(ctx))
 
@@ -113,11 +113,11 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("reuses an existing FindingType matched by display name", func() {
 				m := newModel()
 				customID := uuid.New()
-				existing := finding.NewFindingType(m.GetSink(), customID)
+				existing := finding.NewFindingType(customID)
 				existing.SetDisplayName(string(finding.ContextTypeMissing))
 				Expect(m.AddFindingType(existing)).To(Succeed())
 
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				applyFilter(m, contextEvent(ctx))
 
 				finds := findingsOfKind(m, finding.ContextTypeMissing)
@@ -128,7 +128,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 
 			It("creates a ContextTypeMissing finding when the referenced ContextType does not exist in the model", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				ctx.SetContextTypeById(uuid.New()) // type UUID not in model
 
 				applyFilter(m, contextEvent(ctx))
@@ -139,10 +139,10 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("does not create a ContextTypeMissing finding when the ContextType exists", func() {
 				m := newModel()
 
-				ct := mdlctx.NewContextType(events.NewDummySink(), uuid.New())
+				ct := mdlctx.NewContextType(uuid.New())
 				Expect(m.AddContextType(ct)).To(Succeed())
 
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				ctx.SetContextTypeByRef(ct)
 
 				applyFilter(m, contextEvent(ctx))
@@ -153,9 +153,9 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("removes an existing ContextTypeMissing finding when the type is subsequently resolved", func() {
 				m := newModel()
 
-				ct := mdlctx.NewContextType(events.NewDummySink(), uuid.New())
+				ct := mdlctx.NewContextType(uuid.New())
 
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				// First event: type not yet in model → finding created
 				ctx.SetContextTypeById(ct.GetContextTypeId())
 				applyFilter(m, contextEvent(ctx))
@@ -176,7 +176,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 
 			It("is idempotent: applying the filter twice produces exactly one finding", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				applyFilter(m, contextEvent(ctx))
 				applyFilter(m, contextEvent(ctx))
@@ -188,7 +188,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 		Describe("ContextParentNotFound", func() {
 			It("creates a ContextParentNotFound finding when the referenced parent does not exist", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				ctx.SetParentById(uuid.New()) // parent UUID not in model
 
 				applyFilter(m, contextEvent(ctx))
@@ -198,7 +198,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 
 			It("does not create a ContextParentNotFound finding when no parent is set", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				applyFilter(m, contextEvent(ctx))
 
@@ -208,10 +208,10 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("does not create a ContextParentNotFound finding when the parent exists", func() {
 				m := newModel()
 
-				parent := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				parent := mdlctx.NewContext(uuid.New())
 				Expect(m.AddContext(parent)).To(Succeed())
 
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				ctx.SetParentByRef(parent)
 
 				applyFilter(m, contextEvent(ctx))
@@ -222,8 +222,8 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("removes an existing ContextParentNotFound finding when the parent is subsequently added", func() {
 				m := newModel()
 
-				parent := mdlctx.NewContext(events.NewDummySink(), uuid.New())
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				parent := mdlctx.NewContext(uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				// First event: parent not yet in model → finding created
 				ctx.SetParentById(parent.GetContextId())
@@ -245,7 +245,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 
 			It("removes an existing ContextParentNotFound finding when the parent is cleared", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 
 				// Finding present with a missing parent
 				ctx.SetParentById(uuid.New())
@@ -268,7 +268,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 		Describe("both ContextTypeMissing and ContextParentNotFound", func() {
 			It("can coexist simultaneously on the same context without UUID collision", func() {
 				m := newModel()
-				ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+				ctx := mdlctx.NewContext(uuid.New())
 				ctx.SetContextTypeById(uuid.New()) // type not in model
 				ctx.SetParentById(uuid.New())      // parent not in model
 
@@ -288,7 +288,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 		Describe("NodeTypeMissing", func() {
 			It("creates a NodeTypeMissing finding when the node has no type assigned", func() {
 				m := newModel()
-				n := node.NewNode(events.NewDummySink(), uuid.New())
+				n := node.NewNode(uuid.New())
 
 				applyFilter(m, nodeEvent(n))
 
@@ -298,8 +298,8 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("does not create a NodeTypeMissing finding when the node has a type", func() {
 				m := newModel()
 
-				nt := node.NewNodeType(events.NewDummySink(), uuid.New())
-				n := node.NewNode(events.NewDummySink(), uuid.New())
+				nt := node.NewNodeType(uuid.New())
+				n := node.NewNode(uuid.New())
 				n.SetNodeTypeByRef(nt)
 
 				applyFilter(m, nodeEvent(n))
@@ -310,8 +310,8 @@ var _ = Describe("phase0 FilterFunc", func() {
 			It("removes an existing NodeTypeMissing finding when a type is later assigned", func() {
 				m := newModel()
 
-				nt := node.NewNodeType(events.NewDummySink(), uuid.New())
-				n := node.NewNode(events.NewDummySink(), uuid.New())
+				nt := node.NewNodeType(uuid.New())
+				n := node.NewNode(uuid.New())
 
 				// First event: no type → finding created
 				applyFilter(m, nodeEvent(n))
@@ -336,12 +336,12 @@ var _ = Describe("phase0 FilterFunc", func() {
 			m, _ := newModelWithPhase0Chain()
 			typeID := uuid.New()
 
-			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx := mdlctx.NewContext(uuid.New())
 			ctx.SetContextTypeById(typeID)
 			Expect(m.AddContext(ctx)).To(Succeed())
 			Expect(findingsOfKind(m, finding.ContextTypeMissing)).To(HaveLen(1))
 
-			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct := mdlctx.NewContextType(typeID)
 			ct.SetDisplayName("env-type")
 			Expect(m.AddContextType(ct)).To(Succeed())
 
@@ -352,11 +352,11 @@ var _ = Describe("phase0 FilterFunc", func() {
 			m, sink := newModelWithPhase0Chain()
 			typeID := uuid.New()
 
-			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx := mdlctx.NewContext(uuid.New())
 			ctx.SetContextTypeById(typeID)
 			Expect(m.AddContext(ctx)).To(Succeed())
 
-			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct := mdlctx.NewContextType(typeID)
 			ct.SetDisplayName("env-type")
 			Expect(m.AddContextType(ct)).To(Succeed())
 
@@ -374,12 +374,12 @@ var _ = Describe("phase0 FilterFunc", func() {
 			m, _ := newModelWithPhase0Chain()
 			parentID := uuid.New()
 
-			child := mdlctx.NewContext(m.GetSink(), uuid.New())
+			child := mdlctx.NewContext(uuid.New())
 			child.SetParentById(parentID)
 			Expect(m.AddContext(child)).To(Succeed())
 			Expect(findingsOfKind(m, finding.ContextParentNotFound)).To(HaveLen(1))
 
-			parent := mdlctx.NewContext(m.GetSink(), parentID)
+			parent := mdlctx.NewContext(parentID)
 			parent.SetDisplayName("parent")
 			Expect(m.AddContext(parent)).To(Succeed())
 
@@ -390,13 +390,13 @@ var _ = Describe("phase0 FilterFunc", func() {
 			m, _ := newModelWithPhase0Chain()
 			typeID := uuid.New()
 
-			n := node.NewNode(m.GetSink(), uuid.New())
+			n := node.NewNode(uuid.New())
 			n.SetDisplayName("n")
 			n.SetNodeTypeById(typeID)
 			Expect(m.AddNode(n)).To(Succeed())
 			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(HaveLen(1))
 
-			nt := node.NewNodeType(m.GetSink(), typeID)
+			nt := node.NewNodeType(typeID)
 			nt.SetDisplayName("nt")
 			Expect(m.AddNodeType(nt)).To(Succeed())
 
@@ -407,7 +407,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 	Describe("pass-through behaviour", func() {
 		It("always returns the original event unchanged", func() {
 			m := newModel()
-			ctx := mdlctx.NewContext(events.NewDummySink(), uuid.New())
+			ctx := mdlctx.NewContext(uuid.New())
 			ev := contextEvent(ctx)
 
 			result := applyFilter(m, ev)

@@ -92,14 +92,14 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- ContextType ---
 	{
-		ct := mdlctx.NewContextType(sink, testIDs["ContextType"])
+		ct := mdlctx.NewContextType(testIDs["ContextType"])
 		ct.SetDisplayName("Test ContextType")
 		require.NoError(t, m.AddContextType(ct))
 	}
 
 	// --- Context ---
 	{
-		c := mdlctx.NewContext(sink, testIDs["Context"])
+		c := mdlctx.NewContext(testIDs["Context"])
 		c.SetDisplayName("Test Context")
 		c.SetContextTypeById(testIDs["ContextType"])
 		require.NoError(t, m.AddContext(c))
@@ -107,28 +107,28 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- System ---
 	{
-		sys := system.NewSystem(sink, testIDs["System"])
+		sys := system.NewSystem(testIDs["System"])
 		sys.SetDisplayName("Test System")
 		require.NoError(t, m.AddSystem(sys))
 	}
 
 	// --- NodeType ---
 	{
-		nt := node.NewNodeType(sink, testIDs["NodeType"])
+		nt := node.NewNodeType(testIDs["NodeType"])
 		nt.SetDisplayName("Test NodeType")
 		require.NoError(t, m.AddNodeType(nt))
 	}
 
 	// --- FindingType ---
 	{
-		ft := finding.NewFindingType(sink, testIDs["FindingType"])
+		ft := finding.NewFindingType(testIDs["FindingType"])
 		ft.SetDisplayName("Test FindingType")
 		require.NoError(t, m.AddFindingType(ft))
 	}
 
 	// --- Node ---
 	{
-		n := node.NewNode(sink, testIDs["Node"])
+		n := node.NewNode(testIDs["Node"])
 		n.SetDisplayName("Test Node")
 		n.SetTypeRef(&node.NodeTypeRef{NodeTypeId: testIDs["NodeType"]})
 		require.NoError(t, m.AddNode(n))
@@ -136,7 +136,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- ApiInstance ---
 	{
-		ai := mdlapi.NewApiInstance(sink, testIDs["ApiInstance"])
+		ai := mdlapi.NewApiInstance(testIDs["ApiInstance"])
 		ai.SetDisplayName("Test ApiInstance")
 		ai.SetApiRef(&mdlapi.ApiRef{ApiID: testIDs["API"]})
 		require.NoError(t, m.AddApiInstance(ai))
@@ -144,7 +144,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- API ---
 	{
-		a := mdlapi.NewAPI(sink, testIDs["API"])
+		a := mdlapi.NewAPI(testIDs["API"])
 		a.SetDisplayName("Test API")
 		a.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
 		require.NoError(t, m.AddApi(a))
@@ -152,7 +152,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- Component ---
 	{
-		comp := component.NewComponent(sink, testIDs["Component"])
+		comp := component.NewComponent(testIDs["Component"])
 		comp.SetDisplayName("Test Component")
 		comp.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
 		require.NoError(t, m.AddComponent(comp))
@@ -160,7 +160,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- SystemInstance ---
 	{
-		si := system.NewSystemInstance(sink, testIDs["SystemInstance"])
+		si := system.NewSystemInstance(testIDs["SystemInstance"])
 		si.SetDisplayName("Test SystemInstance")
 		si.SetSystemRef(&system.SystemRef{SystemId: testIDs["System"]})
 		require.NoError(t, m.AddSystemInstance(si))
@@ -168,7 +168,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- ComponentInstance ---
 	{
-		ci := component.NewComponentInstance(sink, testIDs["ComponentInstance"])
+		ci := component.NewComponentInstance(testIDs["ComponentInstance"])
 		ci.SetDisplayName("Test ComponentInstance")
 		ci.SetComponentRef(&component.ComponentRef{ComponentId: testIDs["Component"]})
 		require.NoError(t, m.AddComponentInstance(ci))
@@ -176,50 +176,50 @@ func loadTestModel(t *testing.T, m model.Model) {
 
 	// --- Finding ---
 	{
-		f := finding.NewFinding(sink, testIDs["Finding"])
+		f := finding.NewFinding(testIDs["Finding"])
 		f.SetSummary("Test Finding")
 		f.SetFindingTypeById(testIDs["FindingType"])
-		require.NoError(t, m.AddFinding(f, "Test Finding"))
+		require.NoError(t, m.AddFinding(f))
 	}
 
 	// --- OrgUnit ---
 	{
-		ou := iam.NewOrgUnit(sink, testIDs["OrgUnit"])
+		ou := iam.NewOrgUnit(testIDs["OrgUnit"])
 		ou.SetDisplayName("Test OrgUnit")
 		require.NoError(t, m.AddOrgUnit(ou))
 	}
 
 	// --- Group ---
 	{
-		g := iam.NewGroup(sink, testIDs["Group"])
+		g := iam.NewGroup(testIDs["Group"])
 		g.SetDisplayName("Test Group")
 		require.NoError(t, m.AddGroup(g))
 	}
 
 	// --- Identity ---
 	{
-		id := iam.NewIdentity(sink, testIDs["Identity"])
+		id := iam.NewIdentity(testIDs["Identity"])
 		id.SetDisplayName("Test Identity")
 		require.NoError(t, m.AddIdentity(id))
 	}
 
 	// --- Artifact ---
 	{
-		a := artifact.NewArtifact(sink, testIDs["Artifact"])
+		a := artifact.NewArtifact(testIDs["Artifact"])
 		a.SetDisplayName("Test Artifact")
 		require.NoError(t, m.AddArtifact(a))
 	}
 
 	// --- ArtifactInstance ---
 	{
-		ai := artifact.NewArtifactInstance(sink, testIDs["ArtifactInstance"])
+		ai := artifact.NewArtifactInstance(testIDs["ArtifactInstance"])
 		ai.SetDisplayName("Test ArtifactInstance")
 		require.NoError(t, m.AddArtifactInstance(ai))
 	}
 
 	// --- Product ---
 	{
-		p := mdlproduct.NewProduct(sink, testIDs["Product"])
+		p := mdlproduct.NewProduct(testIDs["Product"])
 		p.SetDisplayName("Test Product")
 		p.SetVendor(&iam.OrgUnitRef{OrgUnitId: testIDs["OrgUnit"]})
 		require.NoError(t, m.AddProduct(p))

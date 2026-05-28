@@ -30,7 +30,7 @@ type NodeType interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type nodetypeData struct {
@@ -43,10 +43,9 @@ type nodetypeData struct {
 	Annotations annotations.Annotations
 }
 
-// NewNodeType constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewNodeType(sink events.EventSink, id uuid.UUID) NodeType {
+// NewNodeType constructs an unregistered resource; call [NodeType.Register] after adding to the model.
+func NewNodeType(id uuid.UUID) NodeType {
 	retval := &nodetypeData{
-		sink:         sink,
 		isRegistered: false,
 		NodeTypeId:   id,
 	}
@@ -114,7 +113,8 @@ func (o *nodetypeData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [NodeType].
-func (o *nodetypeData) Register() {
+func (o *nodetypeData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

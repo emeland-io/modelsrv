@@ -16,7 +16,7 @@ func TestFindingTypeBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	findingTypeId := uuid.New()
-	findingType := finding.NewFindingType(testModel.GetSink(), findingTypeId)
+	findingType := finding.NewFindingType(findingTypeId)
 
 	// this must not create an event, as the finding type has not been registered with the system
 	findingType.SetDisplayName("Test Finding Type")
@@ -50,7 +50,7 @@ func TestFindingTypeBasic(t *testing.T) {
 	findingType.SetDescription("a test finding type, but with more bla bla")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	findingType2 := finding.NewFindingType(testModel.GetSink(), findingTypeId)
+	findingType2 := finding.NewFindingType(findingTypeId)
 	findingType2.SetDisplayName("The other Test Finding Type")
 	findingType2.SetDescription("a different test finding type, but same Id")
 

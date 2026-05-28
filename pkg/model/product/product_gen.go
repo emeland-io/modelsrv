@@ -37,7 +37,7 @@ type Product interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type productData struct {
@@ -52,10 +52,9 @@ type productData struct {
 	Annotations annotations.Annotations
 }
 
-// NewProduct constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewProduct(sink events.EventSink, id uuid.UUID) Product {
+// NewProduct constructs an unregistered resource; call [Product.Register] after adding to the model.
+func NewProduct(id uuid.UUID) Product {
 	retval := &productData{
-		sink:         sink,
 		isRegistered: false,
 		ProductId:    id,
 	}
@@ -165,7 +164,8 @@ func (o *productData) SetVendorByRef(orgUnit iam.OrgUnit) {
 }
 
 // Register implements [Product].
-func (o *productData) Register() {
+func (o *productData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

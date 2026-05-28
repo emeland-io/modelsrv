@@ -20,7 +20,7 @@ var _ = Describe("NodeType functionalities", func() {
 	BeforeEach(func() {
 		nodeTypeId = uuid.New()
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		nodeType = nodemdl.NewNodeType(sinkMock, nodeTypeId)
+		nodeType = nodemdl.NewNodeType(nodeTypeId)
 	})
 
 	When("NodeType is created", func() {
@@ -58,7 +58,7 @@ var _ = Describe("NodeType functionalities", func() {
 	When("NodeType is updated", func() {
 		Context("NodeType is registered", func() {
 			BeforeEach(func() {
-				nodeType.Register()
+				nodeType.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {

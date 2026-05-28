@@ -30,7 +30,7 @@ type OrgUnit interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type orgunitData struct {
@@ -44,10 +44,9 @@ type orgunitData struct {
 	Annotations annotations.Annotations
 }
 
-// NewOrgUnit constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewOrgUnit(sink events.EventSink, id uuid.UUID) OrgUnit {
+// NewOrgUnit constructs an unregistered resource; call [OrgUnit.Register] after adding to the model.
+func NewOrgUnit(id uuid.UUID) OrgUnit {
 	retval := &orgunitData{
-		sink:         sink,
 		isRegistered: false,
 		OrgUnitId:    id,
 	}
@@ -161,7 +160,8 @@ func (o *orgunitData) SetParentById(parentId uuid.UUID) {
 }
 
 // Register implements [OrgUnit].
-func (o *orgunitData) Register() {
+func (o *orgunitData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

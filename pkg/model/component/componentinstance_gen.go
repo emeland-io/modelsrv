@@ -34,7 +34,7 @@ type ComponentInstance interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type componentinstanceData struct {
@@ -48,10 +48,9 @@ type componentinstanceData struct {
 	Annotations    annotations.Annotations
 }
 
-// NewComponentInstance constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewComponentInstance(sink events.EventSink, id uuid.UUID) ComponentInstance {
+// NewComponentInstance constructs an unregistered resource; call [ComponentInstance.Register] after adding to the model.
+func NewComponentInstance(id uuid.UUID) ComponentInstance {
 	retval := &componentinstanceData{
-		sink:         sink,
 		isRegistered: false,
 		InstanceId:   id,
 	}
@@ -133,7 +132,8 @@ func (o *componentinstanceData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [ComponentInstance].
-func (o *componentinstanceData) Register() {
+func (o *componentinstanceData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

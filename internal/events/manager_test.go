@@ -30,7 +30,7 @@ func newPushCountingServer() (*httptest.Server, *int32) {
 }
 
 func emitSystemCreate(sink events.EventSink, id uuid.UUID) error {
-	sys := system.NewSystem(sink, id)
+	sys := system.NewSystem(id)
 	sys.SetDisplayName("bdd-system")
 	return sink.Receive(events.SystemResource, events.CreateOperation, id, sys)
 }

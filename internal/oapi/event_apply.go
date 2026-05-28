@@ -85,7 +85,7 @@ func systemFromWire(m model.Model, os System) (system.System, error) {
 		return nil, fmt.Errorf("system event missing systemId")
 	}
 	id := uuid.UUID(*os.SystemId)
-	sys := system.NewSystem(m.GetSink(), id)
+	sys := system.NewSystem(id)
 	sys.SetDisplayName(os.DisplayName)
 	if os.Description != nil {
 		sys.SetDescription(*os.Description)
@@ -103,7 +103,7 @@ func systemFromWire(m model.Model, os System) (system.System, error) {
 
 func systemInstanceFromWire(m model.Model, os SystemInstance) (system.SystemInstance, error) {
 	id := uuid.UUID(os.SystemInstanceId)
-	si := system.NewSystemInstance(m.GetSink(), id)
+	si := system.NewSystemInstance(id)
 	si.SetDisplayName(os.DisplayName)
 	si.SetSystemRef(refSystem(m, uuid.UUID(os.System)))
 	if os.Context != nil {
@@ -118,7 +118,7 @@ func apiFromWire(m model.Model, oa API) (mdlapi.API, error) {
 		return nil, fmt.Errorf("API event missing apiId")
 	}
 	id := uuid.UUID(*oa.ApiId)
-	dom := mdlapi.NewAPI(m.GetSink(), id)
+	dom := mdlapi.NewAPI(id)
 	dom.SetDisplayName(oa.DisplayName)
 	if oa.Description != nil {
 		dom.SetDescription(*oa.Description)
@@ -136,7 +136,7 @@ func apiFromWire(m model.Model, oa API) (mdlapi.API, error) {
 
 func apiInstanceFromWire(m model.Model, oa ApiInstance) (mdlapi.ApiInstance, error) {
 	id := uuid.UUID(oa.ApiInstanceId)
-	ai := mdlapi.NewApiInstance(m.GetSink(), id)
+	ai := mdlapi.NewApiInstance(id)
 	ai.SetDisplayName(oa.DisplayName)
 	if oa.Api != nil {
 		if ref := refAPI(m, uuid.UUID(*oa.Api)); ref != nil {
@@ -161,7 +161,7 @@ func componentFromWire(m model.Model, oc Component) (component.Component, error)
 		return nil, fmt.Errorf("component event missing componentId")
 	}
 	id := uuid.UUID(*oc.ComponentId)
-	c := component.NewComponent(m.GetSink(), id)
+	c := component.NewComponent(id)
 	c.SetDisplayName(oc.DisplayName)
 	if oc.Description != nil {
 		c.SetDescription(*oc.Description)
@@ -182,7 +182,7 @@ func componentFromWire(m model.Model, oc Component) (component.Component, error)
 
 func componentInstanceFromWire(m model.Model, oc ComponentInstance) (component.ComponentInstance, error) {
 	id := uuid.UUID(oc.ComponentInstanceId)
-	ci := component.NewComponentInstance(m.GetSink(), id)
+	ci := component.NewComponentInstance(id)
 	ci.SetDisplayName(oc.DisplayName)
 	if ref := refComponent(m, uuid.UUID(oc.Component)); ref != nil {
 		ci.SetComponentRef(ref)

@@ -33,11 +33,11 @@ func TestCollector(t *testing.T) {
 	assert.Equal(t, 0.0, val)
 
 	// Add resources and verify counts update.
-	sys := system.NewSystem(m.GetSink(), uuid.New())
+	sys := system.NewSystem(uuid.New())
 	sys.SetDisplayName("s1")
 	require.NoError(t, m.AddSystem(sys))
 
-	nt := node.NewNodeType(m.GetSink(), uuid.New())
+	nt := node.NewNodeType(uuid.New())
 	nt.SetDisplayName("nt1")
 	require.NoError(t, m.AddNodeType(nt))
 

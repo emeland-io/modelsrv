@@ -33,7 +33,7 @@ type Identity interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type identityData struct {
@@ -47,10 +47,9 @@ type identityData struct {
 	Annotations annotations.Annotations
 }
 
-// NewIdentity constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewIdentity(sink events.EventSink, id uuid.UUID) Identity {
+// NewIdentity constructs an unregistered resource; call [Identity.Register] after adding to the model.
+func NewIdentity(id uuid.UUID) Identity {
 	retval := &identityData{
-		sink:         sink,
 		isRegistered: false,
 		IdentityId:   id,
 	}
@@ -146,7 +145,8 @@ func (o *identityData) SetOrgUnitByRef(orgUnit OrgUnit) {
 }
 
 // Register implements [Identity].
-func (o *identityData) Register() {
+func (o *identityData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

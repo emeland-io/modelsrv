@@ -21,7 +21,7 @@ var _ = Describe("Node functionalities", func() {
 	BeforeEach(func() {
 		nodeId = uuid.New()
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		node = nodemdl.NewNode(sinkMock, nodeId)
+		node = nodemdl.NewNode(nodeId)
 	})
 
 	When("Node is created", func() {
@@ -56,7 +56,7 @@ var _ = Describe("Node functionalities", func() {
 
 			When("Node type gets updated", func() {
 				It("updates the node type by ref", func() {
-					nodeType := nodemdl.NewNodeType(sinkMock, uuid.New())
+					nodeType := nodemdl.NewNodeType(uuid.New())
 					node.SetNodeTypeByRef(nodeType)
 
 					retrievedType, err := node.GetNodeType()
@@ -71,7 +71,7 @@ var _ = Describe("Node functionalities", func() {
 	When("Node is updated", func() {
 		Context("Node is registered", func() {
 			BeforeEach(func() {
-				node.Register()
+				node.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {
@@ -111,7 +111,7 @@ var _ = Describe("Node operations with model", func() {
 
 	It("supports full CRUD lifecycle with correct event sequence", func() {
 		nodeId := uuid.New()
-		n1 := nodemdl.NewNode(testModel.GetSink(), nodeId)
+		n1 := nodemdl.NewNode(nodeId)
 
 		n1.SetDisplayName("Test Node")
 		n1.SetDescription("a test node")
@@ -124,7 +124,7 @@ var _ = Describe("Node operations with model", func() {
 		n1.SetDisplayName("the real test node")
 		n1.SetDescription("a test node, but with more bla bla")
 
-		node2 := nodemdl.NewNode(testModel.GetSink(), nodeId)
+		node2 := nodemdl.NewNode(nodeId)
 		node2.SetDisplayName("The other Test Node")
 		node2.SetDescription("a different test node, but same Id")
 		err = testModel.AddNode(node2)
