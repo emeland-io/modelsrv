@@ -55,7 +55,7 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 		defer srvA.Close()
 
 		sid := uuid.New()
-		sys := system.NewSystem(mA.GetSink(), sid)
+		sys := system.NewSystem(sid)
 		sys.SetDisplayName("Upstream System")
 		Expect(mA.AddSystem(sys)).To(Succeed())
 
@@ -78,7 +78,7 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 		postEventsRegister(srvA.URL+"/api", srvB.URL+"/api")
 
 		sid := uuid.New()
-		sys := system.NewSystem(mA.GetSink(), sid)
+		sys := system.NewSystem(sid)
 		sys.SetDisplayName("Live System")
 		Expect(mA.AddSystem(sys)).To(Succeed())
 
@@ -103,7 +103,7 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 		postEventsRegister(srvB.URL+"/api", srvC.URL+"/api")
 
 		sid := uuid.New()
-		sys := system.NewSystem(mA.GetSink(), sid)
+		sys := system.NewSystem(sid)
 		sys.SetDisplayName("Chained System")
 		Expect(mA.AddSystem(sys)).To(Succeed())
 

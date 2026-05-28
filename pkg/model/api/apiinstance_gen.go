@@ -37,7 +37,7 @@ type ApiInstance interface {
 	SetApiRefByRef(api API)
 	SetSystemInstanceByRef(instance system.SystemInstance)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type apiinstanceData struct {
@@ -51,10 +51,9 @@ type apiinstanceData struct {
 	Annotations    annotations.Annotations
 }
 
-// NewApiInstance constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewApiInstance(sink events.EventSink, id uuid.UUID) ApiInstance {
+// NewApiInstance constructs an unregistered resource; call [ApiInstance.Register] after adding to the model.
+func NewApiInstance(id uuid.UUID) ApiInstance {
 	retval := &apiinstanceData{
-		sink:         sink,
 		isRegistered: false,
 		InstanceId:   id,
 	}
@@ -154,7 +153,8 @@ func (o *apiinstanceData) SetSystemInstanceByRef(instance system.SystemInstance)
 }
 
 // Register implements [ApiInstance].
-func (o *apiinstanceData) Register() {
+func (o *apiinstanceData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

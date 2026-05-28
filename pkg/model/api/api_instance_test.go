@@ -20,7 +20,7 @@ func TestApiInstanceOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	instance := mdlapi.NewApiInstance(testModel.GetSink(), instanceId)
+	instance := mdlapi.NewApiInstance(instanceId)
 
 	// this must not create an event, as the instance has not been registered with the system
 	instance.SetDisplayName("Test API Instance")
@@ -43,7 +43,7 @@ func TestApiInstanceOperations(t *testing.T) {
 	instance.SetDisplayName("the real test API instance")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	instance2 := mdlapi.NewApiInstance(testModel.GetSink(), instanceId)
+	instance2 := mdlapi.NewApiInstance(instanceId)
 	instance2.SetDisplayName("The other Test API Instance")
 
 	//only when the object is added, it should trigger an event.
@@ -74,7 +74,7 @@ func TestApiInstanceAnnotations(t *testing.T) {
 	assert.NoError(t, err)
 
 	instanceId := uuid.New()
-	instance := mdlapi.NewApiInstance(testModel.GetSink(), instanceId)
+	instance := mdlapi.NewApiInstance(instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: create
@@ -122,11 +122,11 @@ func TestApiInstanceSetApiRef(t *testing.T) {
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	api := mdlapi.NewAPI(testModel.GetSink(), apiId)
+	api := mdlapi.NewAPI(apiId)
 	api.SetDisplayName("Test API")
 
 	instanceId := uuid.New()
-	instance := mdlapi.NewApiInstance(testModel.GetSink(), instanceId)
+	instance := mdlapi.NewApiInstance(instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: Add API
@@ -159,11 +159,11 @@ func TestApiInstanceSetSystemInstance(t *testing.T) {
 	assert.NoError(t, err)
 
 	systemInstanceId := uuid.New()
-	systemInstance := system.NewSystemInstance(testModel.GetSink(), systemInstanceId)
+	systemInstance := system.NewSystemInstance(systemInstanceId)
 	systemInstance.SetDisplayName("Test System Instance")
 
 	instanceId := uuid.New()
-	instance := mdlapi.NewApiInstance(testModel.GetSink(), instanceId)
+	instance := mdlapi.NewApiInstance(instanceId)
 	instance.SetDisplayName("Test API Instance")
 
 	// Event 1: Add system instance

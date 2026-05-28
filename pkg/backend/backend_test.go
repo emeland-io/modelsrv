@@ -50,7 +50,7 @@ var _ = Describe("Backend", func() {
 				return []events.Event{ev}
 			})
 
-			sys := model.MakeTestSystem(b.GetModel().GetSink(), uuid.New(), "test-sys", common.Version{})
+			sys := model.MakeTestSystem(uuid.New(), "test-sys", common.Version{})
 			Expect(b.GetModel().AddSystem(sys)).To(Succeed())
 
 			Expect(intercepted).NotTo(BeEmpty())
@@ -67,7 +67,7 @@ var _ = Describe("Backend", func() {
 				return []events.Event{ev}
 			})
 
-			sys := model.MakeTestSystem(b.GetModel().GetSink(), uuid.New(), "check-model", common.Version{})
+			sys := model.MakeTestSystem(uuid.New(), "check-model", common.Version{})
 			Expect(b.GetModel().AddSystem(sys)).To(Succeed())
 
 			Expect(receivedModel).To(BeIdenticalTo(b.GetModel()))
@@ -88,7 +88,7 @@ var _ = Describe("Backend", func() {
 				return []events.Event{ev, extra}
 			})
 
-			sys := model.MakeTestSystem(b.GetModel().GetSink(), uuid.New(), "expand-sys", common.Version{})
+			sys := model.MakeTestSystem(uuid.New(), "expand-sys", common.Version{})
 			Expect(b.GetModel().AddSystem(sys)).To(Succeed())
 
 			Expect(count).To(BeNumerically(">", 0))
@@ -111,11 +111,11 @@ var _ = Describe("Backend", func() {
 
 			m := b.GetModel()
 			typeID := uuid.New()
-			ctx := mdlctx.NewContext(m.GetSink(), uuid.New())
+			ctx := mdlctx.NewContext(uuid.New())
 			ctx.SetContextTypeById(typeID)
 			Expect(m.AddContext(ctx)).To(Succeed())
 
-			ct := mdlctx.NewContextType(m.GetSink(), typeID)
+			ct := mdlctx.NewContextType(typeID)
 			ct.SetDisplayName("t")
 			Expect(m.AddContextType(ct)).To(Succeed())
 

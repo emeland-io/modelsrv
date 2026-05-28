@@ -249,7 +249,7 @@ var _ = Describe("Client", Ordered, func() {
 func loadModel(target model.Model) error {
 	// create simple System with single Component and API
 
-	c := mdlctx.NewContext(target.GetSink(), contextId)
+	c := mdlctx.NewContext(contextId)
 	c.SetDisplayName("Test Context")
 
 	err := target.AddContext(c)
@@ -257,7 +257,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	sys := system.NewSystem(target.GetSink(), systemId)
+	sys := system.NewSystem(systemId)
 	sys.SetDisplayName("Test System")
 	sys.SetVersion(common.Version{})
 	err = target.AddSystem(sys)
@@ -265,7 +265,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	comp := component.NewComponent(target.GetSink(), componentId)
+	comp := component.NewComponent(componentId)
 	comp.SetDisplayName("Test Component")
 	comp.SetSystem(&system.SystemRef{
 		System: sys,
@@ -275,7 +275,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	componentInstance := component.NewComponentInstance(target.GetSink(), componentInstanceId)
+	componentInstance := component.NewComponentInstance(componentInstanceId)
 	componentInstance.SetDisplayName("Test ComponentInstance")
 	componentInstance.SetComponentRef(&component.ComponentRef{
 		Component: comp,
@@ -285,7 +285,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	a := mdlapi.NewAPI(target.GetSink(), apiId)
+	a := mdlapi.NewAPI(apiId)
 	a.SetDisplayName("Test API")
 	a.SetSystem(&system.SystemRef{
 		System: sys,
@@ -295,7 +295,7 @@ func loadModel(target model.Model) error {
 		return err
 	}
 
-	apiInstance := mdlapi.NewApiInstance(target.GetSink(), apiInstanceId)
+	apiInstance := mdlapi.NewApiInstance(apiInstanceId)
 	apiInstance.SetDisplayName("Test ApiInstance")
 	apiInstance.SetApiRefByRef(a)
 	err = target.AddApiInstance(apiInstance)
@@ -304,7 +304,7 @@ func loadModel(target model.Model) error {
 	}
 
 	// TODO: set context in which this instance exists
-	systemInstance := system.NewSystemInstance(target.GetSink(), systemInstanceId)
+	systemInstance := system.NewSystemInstance(systemInstanceId)
 	systemInstance.SetDisplayName("Test SystemInstances")
 	systemInstance.SetSystemRef(&system.SystemRef{
 		System: sys,

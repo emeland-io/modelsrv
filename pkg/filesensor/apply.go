@@ -220,7 +220,7 @@ func applyProduct(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	p := mdlprod.NewProduct(m.GetSink(), id)
+	p := mdlprod.NewProduct(id)
 	p.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		p.SetDescription(desc)
@@ -324,7 +324,7 @@ func applyContext(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	ctx := mdlctx.NewContext(m.GetSink(), id)
+	ctx := mdlctx.NewContext(id)
 	ctx.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ctx.SetDescription(desc)
@@ -359,7 +359,7 @@ func applySystem(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	sys := system.NewSystem(m.GetSink(), id)
+	sys := system.NewSystem(id)
 	sys.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		sys.SetDescription(desc)
@@ -427,7 +427,7 @@ func applyAPI(spec map[string]any, m model.Model) error {
 		return err
 	}
 
-	api := mdlapi.NewAPI(m.GetSink(), id)
+	api := mdlapi.NewAPI(id)
 	api.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		api.SetDescription(desc)

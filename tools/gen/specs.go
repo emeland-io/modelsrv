@@ -30,7 +30,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrContextTypeNotFound",
 		WireKind:                "ContextType",
-		TestSetup: `ct := mdlctx.NewContextType(sink, testIDs["ContextType"])
+		TestSetup: `ct := mdlctx.NewContextType(testIDs["ContextType"])
 			ct.SetDisplayName("Test ContextType")
 			require.NoError(t, m.AddContextType(ct))`,
 	},
@@ -63,7 +63,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrContextNotFound",
 		TestDeps:            []string{"ContextType"},
 		WireKind:            "Context",
-		TestSetup: `c := mdlctx.NewContext(sink, testIDs["Context"])
+		TestSetup: `c := mdlctx.NewContext(testIDs["Context"])
 			c.SetDisplayName("Test Context")
 			c.SetContextTypeById(testIDs["ContextType"])
 			require.NoError(t, m.AddContext(c))`,
@@ -134,7 +134,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:  "got.DisplayName",
 		NotFoundSentinel:    "common.ErrSystemNotFound",
 		WireKind:            "System",
-		TestSetup: `sys := system.NewSystem(sink, testIDs["System"])
+		TestSetup: `sys := system.NewSystem(testIDs["System"])
 			sys.SetDisplayName("Test System")
 			require.NoError(t, m.AddSystem(sys))`,
 		CustomMethods: []string{
@@ -183,7 +183,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrNodeTypeNotFound",
 		WireKind:                "NodeType",
-		TestSetup: `nt := node.NewNodeType(sink, testIDs["NodeType"])
+		TestSetup: `nt := node.NewNodeType(testIDs["NodeType"])
 			nt.SetDisplayName("Test NodeType")
 			require.NoError(t, m.AddNodeType(nt))`,
 	},
@@ -215,7 +215,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "*got.DisplayName",
 		NotFoundSentinel:        "common.ErrFindingTypeNotFound",
 		WireKind:                "FindingType",
-		TestSetup: `ft := finding.NewFindingType(sink, testIDs["FindingType"])
+		TestSetup: `ft := finding.NewFindingType(testIDs["FindingType"])
 			ft.SetDisplayName("Test FindingType")
 			require.NoError(t, m.AddFindingType(ft))`,
 	},
@@ -249,7 +249,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:        "common.ErrNodeNotFound",
 		TestDeps:                []string{"NodeType"},
 		WireKind:                "Node",
-		TestSetup: `n := node.NewNode(sink, testIDs["Node"])
+		TestSetup: `n := node.NewNode(testIDs["Node"])
 			n.SetDisplayName("Test Node")
 			n.SetTypeRef(&node.NodeTypeRef{NodeTypeId: testIDs["NodeType"]})
 			require.NoError(t, m.AddNode(n))`,
@@ -303,7 +303,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrApiInstanceNotFound",
 		TestDeps:            []string{"API"},
 		WireKind:            "ApiInstance",
-		TestSetup: `ai := mdlapi.NewApiInstance(sink, testIDs["ApiInstance"])
+		TestSetup: `ai := mdlapi.NewApiInstance(testIDs["ApiInstance"])
 			ai.SetDisplayName("Test ApiInstance")
 			ai.SetApiRef(&mdlapi.ApiRef{ApiID: testIDs["API"]})
 			require.NoError(t, m.AddApiInstance(ai))`,
@@ -369,7 +369,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrApiNotFound",
 		TestDeps:            []string{"System"},
 		WireKind:            "API",
-		TestSetup: `a := mdlapi.NewAPI(sink, testIDs["API"])
+		TestSetup: `a := mdlapi.NewAPI(testIDs["API"])
 			a.SetDisplayName("Test API")
 			a.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
 			require.NoError(t, m.AddApi(a))`,
@@ -425,7 +425,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrComponentNotFound",
 		TestDeps:            []string{"System"},
 		WireKind:            "Component",
-		TestSetup: `comp := component.NewComponent(sink, testIDs["Component"])
+		TestSetup: `comp := component.NewComponent(testIDs["Component"])
 			comp.SetDisplayName("Test Component")
 			comp.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
 			require.NoError(t, m.AddComponent(comp))`,
@@ -458,7 +458,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrSystemInstanceNotFound",
 		TestDeps:            []string{"System"},
 		WireKind:            "SystemInstance",
-		TestSetup: `si := system.NewSystemInstance(sink, testIDs["SystemInstance"])
+		TestSetup: `si := system.NewSystemInstance(testIDs["SystemInstance"])
 			si.SetDisplayName("Test SystemInstance")
 			si.SetSystemRef(&system.SystemRef{SystemId: testIDs["System"]})
 			require.NoError(t, m.AddSystemInstance(si))`,
@@ -491,20 +491,19 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:    "common.ErrComponentInstanceNotFound",
 		TestDeps:            []string{"Component"},
 		WireKind:            "ComponentInstance",
-		TestSetup: `ci := component.NewComponentInstance(sink, testIDs["ComponentInstance"])
+		TestSetup: `ci := component.NewComponentInstance(testIDs["ComponentInstance"])
 			ci.SetDisplayName("Test ComponentInstance")
 			ci.SetComponentRef(&component.ComponentRef{ComponentId: testIDs["Component"]})
 			require.NoError(t, m.AddComponentInstance(ci))`,
 	},
 	{
-		Name:                "Finding",
-		Dir:                 "finding",
-		EventType:           "Finding",
-		IDField:             "FindingId",
-		NameField:           "Summary",
-		HasHandler:          true,
-		NotFoundErr:         "ErrFindingNotFound",
-		HandlerAddExtraArgs: ", v.GetSummary()",
+		Name:        "Finding",
+		Dir:         "finding",
+		EventType:   "Finding",
+		IDField:     "FindingId",
+		NameField:   "Summary",
+		HasHandler:  true,
+		NotFoundErr: "ErrFindingNotFound",
 		ExtraImports: []string{
 			"go.emeland.io/modelsrv/pkg/model/common",
 			"go.emeland.io/modelsrv/pkg/model/annotations",
@@ -529,10 +528,10 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:        "common.ErrFindingNotFound",
 		TestDeps:                []string{"FindingType"},
 		WireKind:                "Finding",
-		TestSetup: `f := finding.NewFinding(sink, testIDs["Finding"])
+		TestSetup: `f := finding.NewFinding(testIDs["Finding"])
 			f.SetSummary("Test Finding")
 			f.SetFindingTypeById(testIDs["FindingType"])
-			require.NoError(t, m.AddFinding(f, "Test Finding"))`,
+			require.NoError(t, m.AddFinding(f))`,
 		CustomMethods: []string{
 			"GetFindingType() (FindingType, error)",
 			"GetFindingTypeId() uuid.UUID",
@@ -584,7 +583,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrOrgUnitNotFound",
 		WireKind:                "OrgUnit",
-		TestSetup: `ou := iam.NewOrgUnit(sink, testIDs["OrgUnit"])
+		TestSetup: `ou := iam.NewOrgUnit(testIDs["OrgUnit"])
 			ou.SetDisplayName("Test OrgUnit")
 			require.NoError(t, m.AddOrgUnit(ou))`,
 		ParentLink: &ParentLinkSpec{
@@ -631,7 +630,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrGroupNotFound",
 		WireKind:                "Group",
-		TestSetup: `g := iam.NewGroup(sink, testIDs["Group"])
+		TestSetup: `g := iam.NewGroup(testIDs["Group"])
 			g.SetDisplayName("Test Group")
 			require.NoError(t, m.AddGroup(g))`,
 		RefByRefs: []RefByRefSpec{
@@ -680,7 +679,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrIdentityNotFound",
 		WireKind:                "Identity",
-		TestSetup: `id := iam.NewIdentity(sink, testIDs["Identity"])
+		TestSetup: `id := iam.NewIdentity(testIDs["Identity"])
 			id.SetDisplayName("Test Identity")
 			require.NoError(t, m.AddIdentity(id))`,
 		RefByRefs: []RefByRefSpec{
@@ -984,7 +983,7 @@ var allTypes = []TypeSpec{
 		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrArtifactNotFound",
 		WireKind:                "Artifact",
-		TestSetup: `a := artifact.NewArtifact(sink, testIDs["Artifact"])
+		TestSetup: `a := artifact.NewArtifact(testIDs["Artifact"])
 			a.SetDisplayName("Test Artifact")
 			require.NoError(t, m.AddArtifact(a))`,
 	},
@@ -1018,7 +1017,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:        "common.ErrArtifactInstanceNotFound",
 		WireKind:                "ArtifactInstance",
 		TestDeps:                []string{"Artifact"},
-		TestSetup: `ai := artifact.NewArtifactInstance(sink, testIDs["ArtifactInstance"])
+		TestSetup: `ai := artifact.NewArtifactInstance(testIDs["ArtifactInstance"])
 			ai.SetDisplayName("Test ArtifactInstance")
 			require.NoError(t, m.AddArtifactInstance(ai))`,
 		RefByRefs: []RefByRefSpec{
@@ -1069,7 +1068,7 @@ var allTypes = []TypeSpec{
 		NotFoundSentinel:        "common.ErrProductNotFound",
 		TestDeps:                []string{"OrgUnit"},
 		WireKind:                "Product",
-		TestSetup: `p := mdlproduct.NewProduct(sink, testIDs["Product"])
+		TestSetup: `p := mdlproduct.NewProduct(testIDs["Product"])
 			p.SetDisplayName("Test Product")
 			p.SetVendor(&iam.OrgUnitRef{OrgUnitId: testIDs["OrgUnit"]})
 			require.NoError(t, m.AddProduct(p))`,

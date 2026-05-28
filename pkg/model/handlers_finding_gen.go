@@ -19,7 +19,7 @@ func init() {
 			if !ok {
 				return fmt.Errorf("replication object for Finding is %T, want Finding", obj)
 			}
-			return m.AddFinding(v, v.GetSummary())
+			return m.AddFinding(v)
 		},
 		delete: func(m Model, id uuid.UUID) error {
 			return m.DeleteFindingById(id)

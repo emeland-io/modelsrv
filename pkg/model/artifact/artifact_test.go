@@ -17,7 +17,7 @@ func TestArtifactBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	id := uuid.New()
-	a := artifact.NewArtifact(m.GetSink(), id)
+	a := artifact.NewArtifact(id)
 
 	a.SetDisplayName("myapp-1.0.tar.gz")
 	assert.Equal(t, "myapp-1.0.tar.gz", a.GetDisplayName())
@@ -39,7 +39,7 @@ func TestArtifactBasic(t *testing.T) {
 	assert.Len(t, all, 1)
 
 	// Update via re-add
-	a2 := artifact.NewArtifact(m.GetSink(), id)
+	a2 := artifact.NewArtifact(id)
 	a2.SetDisplayName("myapp-1.1.tar.gz")
 	err = m.AddArtifact(a2)
 	assert.NoError(t, err)
@@ -68,12 +68,12 @@ func TestArtifactInstanceBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	artId := uuid.New()
-	art := artifact.NewArtifact(m.GetSink(), artId)
+	art := artifact.NewArtifact(artId)
 	art.SetDisplayName("base artifact")
 	assert.NoError(t, m.AddArtifact(art))
 
 	id := uuid.New()
-	ai := artifact.NewArtifactInstance(m.GetSink(), id)
+	ai := artifact.NewArtifactInstance(id)
 	ai.SetDisplayName("mirror-copy")
 	ai.SetDescription("CDN mirror")
 	ai.SetArtifactRef(&artifact.ArtifactRef{ArtifactId: artId, Artifact: art})

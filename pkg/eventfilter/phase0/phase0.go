@@ -40,7 +40,7 @@ func ensureFindingType(m model.Model, kind finding.FindingKind) uuid.UUID {
 	}
 
 	id := finding.TypeIDForKind(kind)
-	ft := finding.NewFindingType(m.GetSink(), id)
+	ft := finding.NewFindingType(id)
 	ft.SetDisplayName(name)
 	if err := m.AddFindingType(ft); err != nil {
 		log.Printf("phase0: AddFindingType kind=%s id=%s: %v", kind, id, err)
@@ -52,12 +52,12 @@ func upsertFinding(m model.Model, kind finding.FindingKind, summary string, reso
 	subjectID := resources[0].ResourceId // idempotent: same subject+kind reuses id
 	id := findingID(subjectID, kind)
 
-	f := finding.NewFinding(m.GetSink(), id)
+	f := finding.NewFinding(id)
 	f.SetFindingTypeById(ensureFindingType(m, kind))
 	f.SetSummary(summary)
 	f.SetResources(resources)
 
-	if err := m.AddFinding(f, summary); err != nil {
+	if err := m.AddFinding(f); err != nil {
 		log.Printf("phase0: AddFinding id=%s kind=%s: %v", id, kind, err)
 	}
 }

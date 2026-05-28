@@ -125,7 +125,7 @@ func applyContextType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ct := mdlctx.NewContextType(m.GetSink(), id)
+	ct := mdlctx.NewContextType(id)
 	ct.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ct.SetDescription(desc)
@@ -145,7 +145,7 @@ func applyNodeType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	nt := node.NewNodeType(m.GetSink(), id)
+	nt := node.NewNodeType(id)
 	nt.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		nt.SetDescription(desc)
@@ -165,7 +165,7 @@ func applyNode(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	n := node.NewNode(m.GetSink(), id)
+	n := node.NewNode(id)
 	n.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		n.SetDescription(desc)
@@ -194,7 +194,7 @@ func applySystemInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	si := system.NewSystemInstance(m.GetSink(), id)
+	si := system.NewSystemInstance(id)
 	si.SetDisplayName(name)
 	si.SetSystemRef(&system.SystemRef{SystemId: sid})
 	if cid, has, err := optionalFirstUUIDRef(spec, "context", "contextId"); err != nil {
@@ -221,7 +221,7 @@ func applyAPIInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ai := mdlapi.NewApiInstance(m.GetSink(), id)
+	ai := mdlapi.NewApiInstance(id)
 	ai.SetDisplayName(name)
 	ai.SetApiRef(&mdlapi.ApiRef{ApiID: apiID})
 	if sid, has, err := optionalFirstUUIDRef(spec, "systemInstance", "systemInstanceId"); err != nil {
@@ -248,7 +248,7 @@ func applyComponent(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	c := component.NewComponent(m.GetSink(), id)
+	c := component.NewComponent(id)
 	c.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		c.SetDescription(desc)
@@ -288,7 +288,7 @@ func applyComponentInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ci := component.NewComponentInstance(m.GetSink(), id)
+	ci := component.NewComponentInstance(id)
 	ci.SetDisplayName(name)
 	ci.SetComponentRef(&component.ComponentRef{ComponentId: compID})
 	if sid, has, err := optionalFirstUUIDRef(spec, "systemInstance", "systemInstanceId"); err != nil {
@@ -311,7 +311,7 @@ func applyFinding(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	f := finding.NewFinding(m.GetSink(), id)
+	f := finding.NewFinding(id)
 	f.SetSummary(title)
 	if desc, ok := stringField(spec, "description"); ok {
 		f.SetDescription(desc)
@@ -326,7 +326,7 @@ func applyFinding(spec map[string]any, m model.Model) error {
 	if err := applyAnnotations(f.GetAnnotations(), spec); err != nil {
 		return err
 	}
-	return m.AddFinding(f, title)
+	return m.AddFinding(f)
 }
 
 func applyFindingType(spec map[string]any, m model.Model) error {
@@ -338,7 +338,7 @@ func applyFindingType(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ft := finding.NewFindingType(m.GetSink(), id)
+	ft := finding.NewFindingType(id)
 	ft.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ft.SetDescription(desc)
@@ -358,7 +358,7 @@ func applyArtifact(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	a := artifact.NewArtifact(m.GetSink(), id)
+	a := artifact.NewArtifact(id)
 	a.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		a.SetDescription(desc)
@@ -381,7 +381,7 @@ func applyArtifactInstance(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ai := artifact.NewArtifactInstance(m.GetSink(), id)
+	ai := artifact.NewArtifactInstance(id)
 	ai.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ai.SetDescription(desc)

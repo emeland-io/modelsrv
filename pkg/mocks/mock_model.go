@@ -177,17 +177,17 @@ func (mr *MockModelMockRecorder) AddContextType(contextType any) *gomock.Call {
 }
 
 // AddFinding mocks base method.
-func (m *MockModel) AddFinding(f finding.Finding, name string) error {
+func (m *MockModel) AddFinding(f finding.Finding) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddFinding", f, name)
+	ret := m.ctrl.Call(m, "AddFinding", f)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddFinding indicates an expected call of AddFinding.
-func (mr *MockModelMockRecorder) AddFinding(f, name any) *gomock.Call {
+func (mr *MockModelMockRecorder) AddFinding(f any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFinding", reflect.TypeOf((*MockModel)(nil).AddFinding), f, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFinding", reflect.TypeOf((*MockModel)(nil).AddFinding), f)
 }
 
 // AddFindingType mocks base method.

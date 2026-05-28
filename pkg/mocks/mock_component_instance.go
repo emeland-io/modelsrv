@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	events "go.emeland.io/modelsrv/pkg/events"
 	annotations "go.emeland.io/modelsrv/pkg/model/annotations"
 	component "go.emeland.io/modelsrv/pkg/model/component"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -142,15 +143,15 @@ func (mr *MockComponentInstanceMockRecorder) GetSystemInstance() *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockComponentInstance) Register() {
+func (m *MockComponentInstance) Register(sink events.EventSink) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Register")
+	m.ctrl.Call(m, "Register", sink)
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockComponentInstanceMockRecorder) Register() *gomock.Call {
+func (mr *MockComponentInstanceMockRecorder) Register(sink any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockComponentInstance)(nil).Register))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockComponentInstance)(nil).Register), sink)
 }
 
 // SetAnnotations mocks base method.

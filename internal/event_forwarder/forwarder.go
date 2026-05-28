@@ -47,7 +47,6 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 			objJsons = append(objJsons, string(jsonStr))
 		default:
 			return fmt.Errorf("unknown type %v", obj)
-			// objJsons = append(objJsons, "json_string_placeholder")
 		}
 	}
 	event := event{

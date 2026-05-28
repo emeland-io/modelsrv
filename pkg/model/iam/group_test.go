@@ -16,7 +16,7 @@ func TestGroupBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	groupId := uuid.New()
-	group := iam.NewGroup(testModel.GetSink(), groupId)
+	group := iam.NewGroup(groupId)
 
 	// this must not create an event, as the group has not been registered with the system
 	group.SetDisplayName("Test Group")
@@ -47,7 +47,7 @@ func TestGroupBasic(t *testing.T) {
 	group.SetDescription("a test group, but with more bla bla")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	group2 := iam.NewGroup(testModel.GetSink(), groupId)
+	group2 := iam.NewGroup(groupId)
 	group2.SetDisplayName("The other Test Group")
 	group2.SetDescription("a different test group, but same Id")
 
