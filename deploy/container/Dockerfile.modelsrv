@@ -30,4 +30,7 @@ WORKDIR /
 COPY --from=builder /workspace/modelsrv .
 USER 65532:65532
 
-ENTRYPOINT ["/modelsrv"]
+ENV SERVICE_ADDR=:8080
+ENV DATA_DIR=/data
+
+ENTRYPOINT ["/modelsrv", "server"]
