@@ -61,6 +61,9 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
 	r.PathPrefix("/swagger").Handler(spa)
 
+	// Manual endpoint: event history query
+	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
+
 	// get an `http.Handler` that we can use
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 

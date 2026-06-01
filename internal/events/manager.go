@@ -16,8 +16,9 @@ type eventManager struct {
 	subscribers    []events.Subscriber
 	sinkFactory    func() (events.EventSink, error)
 
-	masterList *events.ListSink
-	modelSink  events.EventSink
+	masterList   *events.ListSink
+	storedEvents []events.StoredEvent
+	modelSink    events.EventSink
 }
 
 func NewEventManager() (events.EventManager, error) {
@@ -109,4 +110,42 @@ func (e *eventManager) RemoveSubscriber(url string) error {
 		}
 	}
 	return fmt.Errorf("subscriber %s not found", url)
+}
+
+func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]events.StoredEvent, error) {
+	// NOTE: storedEvents only grows via append under write lock. Capturing the slice header
+	// under RLock freezes the length we iterate over; concurrent appends are safe.
+	e.mu.RLock()
+	all := e.storedEvents // TODO: add a cap/eviction strategy for production use
+	e.mu.RUnlock()
+
+	limit := q.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+
+	var results []events.StoredEvent
+	for _, ev := range all {
+		if ev.SequenceId <= q.SinceSeq {
+			continue
+		}
+		if q.Operation != nil && ev.Operation != q.Operation.WireOperation() {
+			continue
+		}
+		if q.ResourceType != nil && ev.ResourceType != q.ResourceType.WireKind() {
+			continue
+		}
+		if q.ResourceId != nil && ev.ResourceId != *q.ResourceId {
+			continue
+		}
+		entry := ev
+		if !q.IncludePayload {
+			entry.Objects = nil
+		}
+		results = append(results, entry)
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results, nil
 }
