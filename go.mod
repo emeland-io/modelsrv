@@ -1,6 +1,6 @@
 module go.emeland.io/modelsrv
 
-go 1.26.1
+go 1.25.10
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
