@@ -31,7 +31,7 @@ func TestModelConcurrentNodeTypeMutation(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for range rounds {
-				nt := node.NewNodeType(sink, id)
+				nt := node.NewNodeType(id)
 				nt.SetDisplayName("from-add")
 				if err := m.AddNodeType(nt); err != nil {
 					errCh <- err
@@ -42,7 +42,7 @@ func TestModelConcurrentNodeTypeMutation(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for range rounds {
-				nt := node.NewNodeType(sink, id)
+				nt := node.NewNodeType(id)
 				nt.SetDisplayName("from-apply")
 				if err := m.Apply(events.Event{
 					ResourceType: events.NodeTypeResource,
@@ -90,7 +90,7 @@ func TestModelConcurrentReadWrite(t *testing.T) {
 			defer wg.Done()
 			for range rounds {
 				id := uuid.New()
-				nt := node.NewNodeType(sink, id)
+				nt := node.NewNodeType(id)
 				nt.SetDisplayName("nt")
 				if err := m.AddNodeType(nt); err != nil {
 					errCh <- err

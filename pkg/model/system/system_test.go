@@ -23,7 +23,7 @@ var _ = Describe("System functionalities", func() {
 		sysId = uuid.New()
 
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		sys = system.NewSystem(sinkMock, sysId)
+		sys = system.NewSystem(sysId)
 	})
 
 	When("System is created", func() {
@@ -83,7 +83,7 @@ var _ = Describe("System functionalities", func() {
 
 			When("Parent gets updated", func() {
 				It("updates the parent by ref", func() {
-					parentSystem := system.NewSystem(sinkMock, uuid.New())
+					parentSystem := system.NewSystem(uuid.New())
 					sys.SetParentByRef(parentSystem)
 
 					retrievedParent, err := sys.GetParent()
@@ -100,7 +100,7 @@ var _ = Describe("System functionalities", func() {
 		Context("System is registered", func() {
 
 			BeforeEach(func() {
-				sys.Register()
+				sys.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {

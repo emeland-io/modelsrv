@@ -16,7 +16,7 @@ func TestOrgUnitBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	orgUnitId := uuid.New()
-	orgUnit := iam.NewOrgUnit(testModel.GetSink(), orgUnitId)
+	orgUnit := iam.NewOrgUnit(orgUnitId)
 
 	// this must not create an event, as the org unit has not been registered with the system
 	orgUnit.SetDisplayName("Test Org Unit")
@@ -47,7 +47,7 @@ func TestOrgUnitBasic(t *testing.T) {
 	orgUnit.SetDescription("a test org unit, but with more bla bla")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	orgUnit2 := iam.NewOrgUnit(testModel.GetSink(), orgUnitId)
+	orgUnit2 := iam.NewOrgUnit(orgUnitId)
 	orgUnit2.SetDisplayName("The other Test Org Unit")
 	orgUnit2.SetDescription("a different test org unit, but same Id")
 

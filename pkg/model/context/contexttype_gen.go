@@ -30,7 +30,7 @@ type ContextType interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type contexttypeData struct {
@@ -43,10 +43,9 @@ type contexttypeData struct {
 	Annotations   annotations.Annotations
 }
 
-// NewContextType constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewContextType(sink events.EventSink, id uuid.UUID) ContextType {
+// NewContextType constructs an unregistered resource; call [ContextType.Register] after adding to the model.
+func NewContextType(id uuid.UUID) ContextType {
 	retval := &contexttypeData{
-		sink:          sink,
 		isRegistered:  false,
 		ContextTypeId: id,
 	}
@@ -114,7 +113,8 @@ func (o *contexttypeData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [ContextType].
-func (o *contexttypeData) Register() {
+func (o *contexttypeData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

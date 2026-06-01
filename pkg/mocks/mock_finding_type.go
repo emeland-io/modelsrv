@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	events "go.emeland.io/modelsrv/pkg/events"
 	annotations "go.emeland.io/modelsrv/pkg/model/annotations"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -126,15 +127,15 @@ func (mr *MockFindingTypeMockRecorder) GetResourceName() *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockFindingType) Register() {
+func (m *MockFindingType) Register(sink events.EventSink) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Register")
+	m.ctrl.Call(m, "Register", sink)
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockFindingTypeMockRecorder) Register() *gomock.Call {
+func (mr *MockFindingTypeMockRecorder) Register(sink any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFindingType)(nil).Register))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockFindingType)(nil).Register), sink)
 }
 
 // SetAnnotations mocks base method.

@@ -24,7 +24,7 @@ var _ = Describe("Event Forwarder", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		contextId = uuid.New()
-		testCtx = mdlctx.NewContext(forwarder, contextId)
+		testCtx = mdlctx.NewContext(contextId)
 		testCtx.SetDisplayName("Test Context")
 		testCtx.SetDescription("a test context")
 		testCtx.GetAnnotations().Add("a key", "a value")

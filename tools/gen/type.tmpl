@@ -28,7 +28,7 @@ type {{.Name}} interface {
 {{end}}{{end}}
 {{range .CustomMethods}}	{{.}}
 {{end}}
-	Register()
+	Register(sink events.EventSink)
 }
 
 type {{.Name | lower}}Data struct {
@@ -40,10 +40,9 @@ type {{.Name | lower}}Data struct {
 {{end}}
 }
 
-// New{{.Name}} constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func New{{.Name}}(sink events.EventSink, id uuid.UUID) {{.Name}} {
+// New{{.Name}} constructs an unregistered resource; call [{{.Name}}.Register] after adding to the model.
+func New{{.Name}}(id uuid.UUID) {{.Name}} {
 	retval := &{{.Name | lower}}Data{
-		sink:         sink,
 		isRegistered: false,
 		{{.IDField}}:   id,
 	}
@@ -197,7 +196,8 @@ func (o *{{$.Name | lower}}Data) {{.MethodName}}({{.ParamName}} {{refParamType .
 {{end}}
 
 // Register implements [{{.Name}}].
-func (o *{{.Name | lower}}Data) Register() {
+func (o *{{.Name | lower}}Data) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

@@ -64,12 +64,12 @@ func TestAPI(t *testing.T) {
 	apiId := uuid.New()
 	version := common.Version{Version: "1.0.0"}
 	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
+	_, err := model.NewModel(sink)
 	assert.NoError(t, err)
 	systemId, _ := uuid.NewUUID()
-	sys := model.MakeTestSystem(sink, systemId, "a test system", common.Version{})
+	sys := model.MakeTestSystem(systemId, "a test system", common.Version{})
 
-	api := mdlapi.NewAPI(testModel.GetSink(), apiId)
+	api := mdlapi.NewAPI(apiId)
 	api.SetDisplayName("test-api")
 	api.SetDescription("Test API Description")
 	api.SetVersion(version)
@@ -89,15 +89,15 @@ func TestAPI(t *testing.T) {
 func TestComponent(t *testing.T) {
 	componentId := uuid.New()
 	version := common.Version{Version: "1.0.0"}
-	testModel, err := model.NewModel(events.NewListSink())
+	_, err := model.NewModel(events.NewListSink())
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	a := mdlapi.NewAPI(testModel.GetSink(), apiId)
+	a := mdlapi.NewAPI(apiId)
 	a.SetDisplayName("test-api")
 	apiRef := mdlapi.ApiRef{API: a}
 
-	comp := component.NewComponent(testModel.GetSink(), componentId)
+	comp := component.NewComponent(componentId)
 	comp.SetDisplayName("test-component")
 	comp.SetDescription("Test Component Description")
 	comp.SetVersion(version)
@@ -118,15 +118,15 @@ func TestComponent(t *testing.T) {
 
 func TestSystemInstance(t *testing.T) {
 	sink := events.NewListSink()
-	testModel, err := model.NewModel(sink)
+	_, err := model.NewModel(sink)
 	assert.NoError(t, err)
 	instanceId := uuid.New()
 	systemId, _ := uuid.NewUUID()
-	sys := model.MakeTestSystem(sink, systemId, "test-system", common.Version{})
+	sys := model.MakeTestSystem(systemId, "test-system", common.Version{})
 
 	sysRef := &system.SystemRef{System: sys}
 
-	instance := system.NewSystemInstance(testModel.GetSink(), instanceId)
+	instance := system.NewSystemInstance(instanceId)
 	instance.SetDisplayName("test-instance")
 	instance.SetSystemRef(sysRef)
 	instance.GetAnnotations().Add("key", "value")
@@ -148,7 +148,7 @@ func TestDeleteSystemById(t *testing.T) {
 	assert.Equal(t, common.ErrSystemNotFound, err)
 
 	// Add a system and verify it exists
-	sys := model.MakeTestSystem(sink, systemId, "test-system", common.Version{})
+	sys := model.MakeTestSystem(systemId, "test-system", common.Version{})
 
 	err = testModel.AddSystem(sys)
 	assert.NoError(t, err)
@@ -172,7 +172,7 @@ func TestGetSystemBySystemId(t *testing.T) {
 	assert.NoError(t, err)
 
 	sysId := uuid.New()
-	sys := model.MakeTestSystem(sink, sysId, "test-system", common.Version{})
+	sys := model.MakeTestSystem(sysId, "test-system", common.Version{})
 
 	// Test getting non-existent system
 	assert.Nil(t, testModel.GetSystemById(sysId))
@@ -192,7 +192,7 @@ func TestAPIOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	a := mdlapi.NewAPI(testModel.GetSink(), apiId)
+	a := mdlapi.NewAPI(apiId)
 	a.SetDisplayName("test-api")
 	a.SetType(mdlapi.OpenAPI)
 
@@ -221,7 +221,7 @@ func TestComponentOperations(t *testing.T) {
 	assert.NoError(t, err)
 
 	componentId := uuid.New()
-	comp := component.NewComponent(testModel.GetSink(), componentId)
+	comp := component.NewComponent(componentId)
 	comp.SetDisplayName("test-component")
 
 	// Test getting non-existent component
@@ -247,9 +247,9 @@ func TestSystemInstanceOperations(t *testing.T) {
 
 	instanceId := uuid.New()
 	systemId := uuid.New()
-	sysRef := &system.SystemRef{System: model.MakeTestSystem(sink, systemId, "test-system", common.Version{})}
+	sysRef := &system.SystemRef{System: model.MakeTestSystem(systemId, "test-system", common.Version{})}
 
-	instance := system.NewSystemInstance(testModel.GetSink(), instanceId)
+	instance := system.NewSystemInstance(instanceId)
 	instance.SetDisplayName("test-instance")
 	instance.SetSystemRef(sysRef)
 
@@ -279,7 +279,7 @@ func TestComponentInstanceOperations(t *testing.T) {
 		Component:   nil,
 		ComponentId: uuid.New(),
 	}
-	instance := component.NewComponentInstance(testModel.GetSink(), instanceId)
+	instance := component.NewComponentInstance(instanceId)
 	instance.SetDisplayName("test-instance")
 	instance.SetComponentRef(componentRef)
 
@@ -300,11 +300,11 @@ func TestComponentInstanceOperations(t *testing.T) {
 }
 
 func TestApiRef(t *testing.T) {
-	testModel, err := model.NewModel(events.NewListSink())
+	_, err := model.NewModel(events.NewListSink())
 	assert.NoError(t, err)
 
 	apiId := uuid.New()
-	a := mdlapi.NewAPI(testModel.GetSink(), apiId)
+	a := mdlapi.NewAPI(apiId)
 	a.SetDisplayName("test-api")
 	ev := &common.EntityVersion{Name: "test-api", Version: "1.0.0"}
 

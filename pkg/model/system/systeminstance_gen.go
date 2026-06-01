@@ -34,7 +34,7 @@ type SystemInstance interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type systeminstanceData struct {
@@ -48,10 +48,9 @@ type systeminstanceData struct {
 	Annotations annotations.Annotations
 }
 
-// NewSystemInstance constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewSystemInstance(sink events.EventSink, id uuid.UUID) SystemInstance {
+// NewSystemInstance constructs an unregistered resource; call [SystemInstance.Register] after adding to the model.
+func NewSystemInstance(id uuid.UUID) SystemInstance {
 	retval := &systeminstanceData{
-		sink:         sink,
 		isRegistered: false,
 		InstanceId:   id,
 	}
@@ -133,7 +132,8 @@ func (o *systeminstanceData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [SystemInstance].
-func (o *systeminstanceData) Register() {
+func (o *systeminstanceData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

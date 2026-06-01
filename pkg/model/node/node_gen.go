@@ -36,7 +36,7 @@ type Node interface {
 	SetNodeTypeByRef(nodeType NodeType)
 	SetNodeTypeById(nodeTypeId uuid.UUID)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type nodeData struct {
@@ -50,10 +50,9 @@ type nodeData struct {
 	Annotations annotations.Annotations
 }
 
-// NewNode constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewNode(sink events.EventSink, id uuid.UUID) Node {
+// NewNode constructs an unregistered resource; call [Node.Register] after adding to the model.
+func NewNode(id uuid.UUID) Node {
 	retval := &nodeData{
-		sink:         sink,
 		isRegistered: false,
 		NodeId:       id,
 	}
@@ -167,7 +166,8 @@ func (o *nodeData) SetNodeTypeById(nodeTypeId uuid.UUID) {
 }
 
 // Register implements [Node].
-func (o *nodeData) Register() {
+func (o *nodeData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

@@ -30,7 +30,7 @@ var _ = Describe("Product functionalities", func() {
 	BeforeEach(func() {
 		productID = uuid.New()
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		product = mdlproduct.NewProduct(sinkMock, productID)
+		product = mdlproduct.NewProduct(productID)
 	})
 
 	When("Product is created", func() {
@@ -67,7 +67,7 @@ var _ = Describe("Product functionalities", func() {
 
 			When("Vendor gets updated", func() {
 				It("updates the vendor ref", func() {
-					vendor := iam.NewOrgUnit(sinkMock, uuid.New())
+					vendor := iam.NewOrgUnit(uuid.New())
 					product.SetVendor(&iam.OrgUnitRef{
 						OrgUnit:   vendor,
 						OrgUnitId: vendor.GetOrgUnitId(),
@@ -96,7 +96,7 @@ var _ = Describe("Product functionalities", func() {
 	When("Product is updated", func() {
 		Context("Product is registered", func() {
 			BeforeEach(func() {
-				product.Register()
+				product.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {
@@ -125,7 +125,7 @@ var _ = Describe("Product operations with model", func() {
 
 	It("supports full CRUD lifecycle with correct event sequence", func() {
 		productID := uuid.New()
-		p1 := mdlproduct.NewProduct(testModel.GetSink(), productID)
+		p1 := mdlproduct.NewProduct(productID)
 
 		p1.SetDisplayName("Test Product")
 		p1.SetDescription("a test product")
@@ -142,7 +142,7 @@ var _ = Describe("Product operations with model", func() {
 		p1.SetDisplayName("the real test product")
 		p1.SetDescription("a test product, but with more bla bla")
 
-		p2 := mdlproduct.NewProduct(testModel.GetSink(), productID)
+		p2 := mdlproduct.NewProduct(productID)
 		p2.SetDisplayName("The other Test Product")
 		p2.SetDescription("a different test product, but same Id")
 		err = testModel.AddProduct(p2)

@@ -231,7 +231,7 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 
 func contextFromWire(m model.Model, oc Context) (mdlctx.Context, error) {
 	id := uuid.UUID(oc.ContextId)
-	c := mdlctx.NewContext(m.GetSink(), id)
+	c := mdlctx.NewContext(id)
 	c.SetDisplayName(oc.DisplayName)
 	if oc.Description != nil {
 		c.SetDescription(*oc.Description)
@@ -246,7 +246,7 @@ func contextFromWire(m model.Model, oc Context) (mdlctx.Context, error) {
 
 func contextTypeFromWire(m model.Model, oct ContextType) (mdlctx.ContextType, error) {
 	id := uuid.UUID(oct.ContextTypeId)
-	ct := mdlctx.NewContextType(m.GetSink(), id)
+	ct := mdlctx.NewContextType(id)
 	ct.SetDisplayName(oct.DisplayName)
 	if oct.Description != nil {
 		ct.SetDescription(*oct.Description)
@@ -257,7 +257,7 @@ func contextTypeFromWire(m model.Model, oct ContextType) (mdlctx.ContextType, er
 
 func nodeFromWire(m model.Model, on Node) (node.Node, error) {
 	id := uuid.UUID(on.NodeId)
-	n := node.NewNode(m.GetSink(), id)
+	n := node.NewNode(id)
 	n.SetDisplayName(on.DisplayName)
 	ntid := uuid.UUID(on.NodeType)
 	n.SetTypeRef(&node.NodeTypeRef{
@@ -270,7 +270,7 @@ func nodeFromWire(m model.Model, on Node) (node.Node, error) {
 
 func nodeTypeFromWire(m model.Model, ont NodeType) (node.NodeType, error) {
 	id := uuid.UUID(ont.NodeTypeId)
-	nt := node.NewNodeType(m.GetSink(), id)
+	nt := node.NewNodeType(id)
 	nt.SetDisplayName(ont.DisplayName)
 	mergeOapiAnnotations(nt.GetAnnotations(), ont.Annotations)
 	return nt, nil
@@ -278,7 +278,7 @@ func nodeTypeFromWire(m model.Model, ont NodeType) (node.NodeType, error) {
 
 func orgUnitFromWire(m model.Model, oo OrgUnit) (iam.OrgUnit, error) {
 	id := uuid.UUID(oo.OrgUnitId)
-	o := iam.NewOrgUnit(m.GetSink(), id)
+	o := iam.NewOrgUnit(id)
 	o.SetDisplayName(oo.DisplayName)
 	if oo.Description != nil {
 		o.SetDescription(*oo.Description)
@@ -289,7 +289,7 @@ func orgUnitFromWire(m model.Model, oo OrgUnit) (iam.OrgUnit, error) {
 
 func groupFromWire(m model.Model, og Group) (iam.Group, error) {
 	id := uuid.UUID(og.GroupId)
-	g := iam.NewGroup(m.GetSink(), id)
+	g := iam.NewGroup(id)
 	g.SetDisplayName(og.DisplayName)
 	if og.Description != nil {
 		g.SetDescription(*og.Description)
@@ -300,7 +300,7 @@ func groupFromWire(m model.Model, og Group) (iam.Group, error) {
 
 func identityFromWire(m model.Model, oi Identity) (iam.Identity, error) {
 	id := uuid.UUID(oi.IdentityId)
-	i := iam.NewIdentity(m.GetSink(), id)
+	i := iam.NewIdentity(id)
 	i.SetDisplayName(oi.DisplayName)
 	if oi.Description != nil {
 		i.SetDescription(*oi.Description)
@@ -311,7 +311,7 @@ func identityFromWire(m model.Model, oi Identity) (iam.Identity, error) {
 
 func productFromWire(m model.Model, op Product) (mdlprod.Product, error) {
 	id := uuid.UUID(op.ProductId)
-	p := mdlprod.NewProduct(m.GetSink(), id)
+	p := mdlprod.NewProduct(id)
 	p.SetDisplayName(op.DisplayName)
 	if op.Description != nil {
 		p.SetDescription(*op.Description)
@@ -345,7 +345,7 @@ func productionVersionFromWire(in ProductionVersion) mdlprod.ProductionVersion {
 
 func findingFromWire(m model.Model, of Finding) (finding.Finding, error) {
 	id := uuid.UUID(of.FindingId)
-	f := finding.NewFinding(m.GetSink(), id)
+	f := finding.NewFinding(id)
 	f.SetSummary(of.Summary)
 	if of.Description != nil {
 		f.SetDescription(*of.Description)
@@ -392,7 +392,7 @@ func findingTypeFromWire(m model.Model, oft FindingType) (finding.FindingType, e
 		return nil, fmt.Errorf("finding type event missing findingTypeId")
 	}
 	id := uuid.UUID(*oft.FindingTypeId)
-	ft := finding.NewFindingType(m.GetSink(), id)
+	ft := finding.NewFindingType(id)
 	if oft.DisplayName != nil {
 		ft.SetDisplayName(*oft.DisplayName)
 	} else {
@@ -409,7 +409,7 @@ func findingTypeFromWire(m model.Model, oft FindingType) (finding.FindingType, e
 
 func artifactFromWire(m model.Model, oa Artifact) (artifact.Artifact, error) {
 	id := uuid.UUID(oa.ArtifactId)
-	a := artifact.NewArtifact(m.GetSink(), id)
+	a := artifact.NewArtifact(id)
 	a.SetDisplayName(oa.DisplayName)
 	if oa.Description != nil {
 		a.SetDescription(*oa.Description)
@@ -423,7 +423,7 @@ func artifactFromWire(m model.Model, oa Artifact) (artifact.Artifact, error) {
 
 func artifactInstanceFromWire(m model.Model, oai ArtifactInstance) (artifact.ArtifactInstance, error) {
 	id := uuid.UUID(oai.ArtifactInstanceId)
-	ai := artifact.NewArtifactInstance(m.GetSink(), id)
+	ai := artifact.NewArtifactInstance(id)
 	ai.SetDisplayName(oai.DisplayName)
 	if oai.Description != nil {
 		ai.SetDescription(*oai.Description)

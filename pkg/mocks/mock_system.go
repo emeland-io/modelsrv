@@ -13,6 +13,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	events "go.emeland.io/modelsrv/pkg/events"
 	annotations "go.emeland.io/modelsrv/pkg/model/annotations"
 	common "go.emeland.io/modelsrv/pkg/model/common"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -171,15 +172,15 @@ func (mr *MockSystemMockRecorder) GetVersion() *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockSystem) Register() {
+func (m *MockSystem) Register(sink events.EventSink) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Register")
+	m.ctrl.Call(m, "Register", sink)
 }
 
 // Register indicates an expected call of Register.
-func (mr *MockSystemMockRecorder) Register() *gomock.Call {
+func (mr *MockSystemMockRecorder) Register(sink any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockSystem)(nil).Register))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockSystem)(nil).Register), sink)
 }
 
 // SetAbstract mocks base method.

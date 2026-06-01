@@ -41,7 +41,7 @@ type System interface {
 	SetParent(*SystemRef)
 	SetParentByRef(parent System)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type systemData struct {
@@ -57,10 +57,9 @@ type systemData struct {
 	Annotations annotations.Annotations
 }
 
-// NewSystem constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewSystem(sink events.EventSink, id uuid.UUID) System {
+// NewSystem constructs an unregistered resource; call [System.Register] after adding to the model.
+func NewSystem(id uuid.UUID) System {
 	retval := &systemData{
-		sink:         sink,
 		isRegistered: false,
 		SystemId:     id,
 	}
@@ -185,7 +184,8 @@ func (o *systemData) SetParentByRef(parent System) {
 }
 
 // Register implements [System].
-func (o *systemData) Register() {
+func (o *systemData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

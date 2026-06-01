@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/mocks"
-	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -15,20 +14,16 @@ import (
 
 var _ = Describe("API functionalities", func() {
 	var (
-		apiId     uuid.UUID
-		sinkMock  *mocks.MockEventSink
-		testModel model.Model
-		api       mdlapi.API
+		apiId    uuid.UUID
+		sinkMock *mocks.MockEventSink
+		api      mdlapi.API
 	)
 
 	BeforeEach(func() {
 		apiId = uuid.New()
 
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		m, err := model.NewModel(sinkMock)
-		Expect(err).NotTo(HaveOccurred())
-		testModel = m
-		api = mdlapi.NewAPI(testModel.GetSink(), apiId)
+		api = mdlapi.NewAPI(apiId)
 	})
 
 	When("API is created", func() {
@@ -85,7 +80,7 @@ var _ = Describe("API functionalities", func() {
 
 			When("System gets updated", func() {
 				It("updates the system by ref", func() {
-					sys := system.NewSystem(sinkMock, uuid.New())
+					sys := system.NewSystem(uuid.New())
 					api.SetSystemByRef(sys)
 
 					Expect(api.GetSystem()).NotTo(BeNil())
@@ -100,7 +95,7 @@ var _ = Describe("API functionalities", func() {
 		Context("API is registered", func() {
 
 			BeforeEach(func() {
-				api.Register()
+				api.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {
