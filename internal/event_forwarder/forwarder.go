@@ -5,10 +5,9 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/internal/util"
-	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/events"
-	"go.emeland.io/modelsrv/pkg/model/annotations"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
@@ -40,14 +39,13 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 		case string:
 			objJsons = append(objJsons, o)
 		case mdlctx.Context:
-			jsonStr, err := json.Marshal(convertContextToDTO(obj.(mdlctx.Context)))
+			jsonStr, err := json.Marshal(oapi.ContextToDto(o))
 			if err != nil {
 				return fmt.Errorf("failed to marshal context: %w", err)
 			}
 			objJsons = append(objJsons, string(jsonStr))
 		default:
 			return fmt.Errorf("unknown type %v", obj)
-			// objJsons = append(objJsons, "json_string_placeholder")
 		}
 	}
 	event := event{
@@ -57,26 +55,4 @@ func (e *eventForwarder) Receive(resType events.ResourceType, op events.Operatio
 		objectJson:   objJsons,
 	}
 	return e.queue.Enqueue(event)
-}
-
-func convertContextToDTO(context mdlctx.Context) client.Context {
-	description := context.GetDescription()
-
-	retval := client.Context{
-		ContextId:   context.GetContextId(),
-		DisplayName: context.GetDisplayName(),
-		Description: &description,
-		Annotations: convertAnnotationsToDTO(context.GetAnnotations()),
-	}
-
-	return retval
-}
-
-func convertAnnotationsToDTO(modelAnnons annotations.Annotations) *[]client.Annotation {
-
-	retval := make([]client.Annotation, 0)
-	for key := range modelAnnons.GetKeys() {
-		retval = append(retval, client.Annotation{Key: key, Value: modelAnnons.GetValue(key)})
-	}
-	return &retval
 }

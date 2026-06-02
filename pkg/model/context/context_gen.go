@@ -41,7 +41,7 @@ type Context interface {
 	SetParentByRef(parent Context)
 	SetParentById(parentId uuid.UUID)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type contextData struct {
@@ -56,10 +56,9 @@ type contextData struct {
 	Annotations annotations.Annotations
 }
 
-// NewContext constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewContext(sink events.EventSink, id uuid.UUID) Context {
+// NewContext constructs an unregistered resource; call [Context.Register] after adding to the model.
+func NewContext(id uuid.UUID) Context {
 	retval := &contextData{
-		sink:         sink,
 		isRegistered: false,
 		ContextId:    id,
 	}
@@ -219,7 +218,8 @@ func (o *contextData) SetContextTypeById(contextTypeId uuid.UUID) {
 }
 
 // Register implements [Context].
-func (o *contextData) Register() {
+func (o *contextData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

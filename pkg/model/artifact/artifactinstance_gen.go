@@ -33,7 +33,7 @@ type ArtifactInstance interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type artifactinstanceData struct {
@@ -47,10 +47,9 @@ type artifactinstanceData struct {
 	Annotations        annotations.Annotations
 }
 
-// NewArtifactInstance constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewArtifactInstance(sink events.EventSink, id uuid.UUID) ArtifactInstance {
+// NewArtifactInstance constructs an unregistered resource; call [ArtifactInstance.Register] after adding to the model.
+func NewArtifactInstance(id uuid.UUID) ArtifactInstance {
 	retval := &artifactinstanceData{
-		sink:               sink,
 		isRegistered:       false,
 		ArtifactInstanceId: id,
 	}
@@ -146,7 +145,8 @@ func (o *artifactinstanceData) SetArtifactByRef(a Artifact) {
 }
 
 // Register implements [ArtifactInstance].
-func (o *artifactinstanceData) Register() {
+func (o *artifactinstanceData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

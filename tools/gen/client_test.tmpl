@@ -89,7 +89,7 @@ func TestList{{.Name}}(t *testing.T) {
 	list, err := c.{{.ClientListMethod}}()
 	require.NoError(t, err)
 	require.NotNil(t, list)
-	assert.Greater(t, len(*list), 0, "{{.Name}} list should not be empty")
+	assert.Greater(t, len(list), 0, "{{.Name}} list should not be empty")
 }
 
 func TestGetById{{.Name}}(t *testing.T) {
@@ -104,8 +104,8 @@ func TestGetById{{.Name}}(t *testing.T) {
 	got, err := c.{{.ClientGetByIdMethod}}(testIDs["{{.Name}}"])
 	require.NoError(t, err)
 	require.NotNil(t, got)
-	assert.Equal(t, testIDs["{{.Name}}"], {{.TestIDAssertExpr}})
-	assert.Equal(t, "{{.TestDisplayName}}", {{.TestNameAssertExpr}})
+	assert.Equal(t, testIDs["{{.Name}}"], {{.DomainIDGetter}})
+	assert.Equal(t, "{{.TestDisplayName}}", {{.DomainNameGetter}})
 }
 {{end}}{{end}}
 

@@ -40,7 +40,7 @@ type Finding interface {
 	SetFindingTypeByRef(findingType FindingType)
 	SetFindingTypeById(findingTypeId uuid.UUID)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type findingData struct {
@@ -55,10 +55,9 @@ type findingData struct {
 	Annotations annotations.Annotations
 }
 
-// NewFinding constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewFinding(sink events.EventSink, id uuid.UUID) Finding {
+// NewFinding constructs an unregistered resource; call [Finding.Register] after adding to the model.
+func NewFinding(id uuid.UUID) Finding {
 	retval := &findingData{
-		sink:         sink,
 		isRegistered: false,
 		FindingId:    id,
 	}
@@ -186,7 +185,8 @@ func (o *findingData) SetFindingTypeById(findingTypeId uuid.UUID) {
 }
 
 // Register implements [Finding].
-func (o *findingData) Register() {
+func (o *findingData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

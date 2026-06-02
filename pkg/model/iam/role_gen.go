@@ -47,7 +47,7 @@ type Role interface {
 	SetRoleSpecByRef(roleSpec RoleSpec)
 	SetRoleSpecById(roleSpecId uuid.UUID)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type roleData struct {
@@ -64,10 +64,9 @@ type roleData struct {
 	Annotations annotations.Annotations
 }
 
-// NewRole constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewRole(sink events.EventSink, id uuid.UUID) Role {
+// NewRole constructs an unregistered resource; call [Role.Register] after adding to the model.
+func NewRole(id uuid.UUID) Role {
 	retval := &roleData{
-		sink:         sink,
 		isRegistered: false,
 		RoleId:       id,
 	}
@@ -237,7 +236,8 @@ func (o *roleData) SetContextByRef(ctx context.Context) {
 }
 
 // Register implements [Role].
-func (o *roleData) Register() {
+func (o *roleData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

@@ -43,7 +43,7 @@ type API interface {
 
 	SetSystemByRef(sys system.System)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type apiData struct {
@@ -59,10 +59,9 @@ type apiData struct {
 	Annotations annotations.Annotations
 }
 
-// NewAPI constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewAPI(sink events.EventSink, id uuid.UUID) API {
+// NewAPI constructs an unregistered resource; call [API.Register] after adding to the model.
+func NewAPI(id uuid.UUID) API {
 	retval := &apiData{
-		sink:         sink,
 		isRegistered: false,
 		ApiId:        id,
 	}
@@ -186,7 +185,8 @@ func (o *apiData) SetSystemByRef(sys system.System) {
 }
 
 // Register implements [API].
-func (o *apiData) Register() {
+func (o *apiData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

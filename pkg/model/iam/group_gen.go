@@ -36,7 +36,7 @@ type Group interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type groupData struct {
@@ -51,10 +51,9 @@ type groupData struct {
 	Annotations annotations.Annotations
 }
 
-// NewGroup constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewGroup(sink events.EventSink, id uuid.UUID) Group {
+// NewGroup constructs an unregistered resource; call [Group.Register] after adding to the model.
+func NewGroup(id uuid.UUID) Group {
 	retval := &groupData{
-		sink:         sink,
 		isRegistered: false,
 		GroupId:      id,
 	}
@@ -164,7 +163,8 @@ func (o *groupData) SetOrgUnitByRef(orgUnit OrgUnit) {
 }
 
 // Register implements [Group].
-func (o *groupData) Register() {
+func (o *groupData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

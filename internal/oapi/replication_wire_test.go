@@ -84,9 +84,8 @@ var _ = Describe("replication wire: PushWireEventFromDomain (encode)", func() {
 	})
 
 	It("embeds the JSON-marshaled system fields in Resource for create", func() {
-		m := replicationTestModel()
 		sysID := uuid.New()
-		sys := system.NewSystem(m.GetSink(), sysID)
+		sys := system.NewSystem(sysID)
 		sys.SetDisplayName("push-name")
 		ev := &events.Event{
 			ResourceType: events.SystemResource,
@@ -150,7 +149,7 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 	It("coalesces a nested parent ref map then decodes the system", func() {
 		m := replicationTestModel()
 		parentID := uuid.New()
-		parent := system.NewSystem(m.GetSink(), parentID)
+		parent := system.NewSystem(parentID)
 		parent.SetDisplayName("parent-sys")
 		Expect(m.AddSystem(parent)).To(Succeed())
 
@@ -204,7 +203,7 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 	It("coalesces Node nested nodeType ref", func() {
 		m := replicationTestModel()
 		ntid := uuid.New()
-		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt := node.NewNodeType(ntid)
 		nt.SetDisplayName("nt")
 		Expect(m.AddNodeType(nt)).To(Succeed())
 
@@ -258,7 +257,7 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		m := replicationTestModel()
 		ntid := uuid.New()
 		nid := uuid.New()
-		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt := node.NewNodeType(ntid)
 		nt.SetDisplayName("nt")
 		Expect(m.AddNodeType(nt)).To(Succeed())
 		res := map[string]interface{}{
@@ -308,7 +307,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 	It("preserves system id and display name", func() {
 		m := replicationTestModel()
 		sysID := uuid.New()
-		sys := system.NewSystem(m.GetSink(), sysID)
+		sys := system.NewSystem(sysID)
 		sys.SetDisplayName("round-trip")
 
 		dom := &events.Event{
@@ -337,14 +336,14 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		ctid := uuid.New()
 		parentID := uuid.New()
 		cid := uuid.New()
-		ct := mdlctx.NewContextType(m.GetSink(), ctid)
+		ct := mdlctx.NewContextType(ctid)
 		ct.SetDisplayName("ct")
 		Expect(m.AddContextType(ct)).To(Succeed())
-		parent := mdlctx.NewContext(m.GetSink(), parentID)
+		parent := mdlctx.NewContext(parentID)
 		parent.SetDisplayName("parent-ctx")
 		Expect(m.AddContext(parent)).To(Succeed())
 
-		c := mdlctx.NewContext(m.GetSink(), cid)
+		c := mdlctx.NewContext(cid)
 		c.SetDisplayName("child-ctx")
 		c.SetContextTypeById(ctid)
 		c.SetParentById(parentID)
@@ -371,10 +370,10 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		m := replicationTestModel()
 		ntid := uuid.New()
 		nid := uuid.New()
-		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt := node.NewNodeType(ntid)
 		nt.SetDisplayName("nt")
 		Expect(m.AddNodeType(nt)).To(Succeed())
-		n := node.NewNode(m.GetSink(), nid)
+		n := node.NewNode(nid)
 		n.SetDisplayName("round-trip-node")
 		n.SetNodeTypeByRef(nt)
 
@@ -469,7 +468,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		cid := uuid.New()
 		rid := uuid.New()
 
-		r := iam.NewRole(m.GetSink(), rid)
+		r := iam.NewRole(rid)
 		r.SetDisplayName("rt-role")
 		r.SetRoleSpecById(rsid)
 		r.SetPermissions([]*iam.PermissionRef{{PermissionId: pid}})
@@ -500,7 +499,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		rsid := uuid.New()
 		psid := uuid.New()
 
-		rs := iam.NewRoleSpec(m.GetSink(), rsid)
+		rs := iam.NewRoleSpec(rsid)
 		rs.SetDisplayName("rt-rolespec")
 		rs.SetPermissions([]*iam.PermissionSpecRef{{PermissionSpecId: psid}})
 
@@ -527,7 +526,7 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		rid := uuid.New()
 		gid := uuid.New()
 
-		b := iam.NewBinding(m.GetSink(), bindID)
+		b := iam.NewBinding(bindID)
 		b.SetDisplayName("rt-binding")
 		b.SetRole(&iam.RoleRef{RoleId: rid})
 		b.SetSubject(&iam.SubjectRef{Group: &iam.GroupRef{GroupId: gid}})
@@ -556,19 +555,19 @@ var _ = Describe("replication wire: phase0 after push/decode", func() {
 		m := replicationTestModel()
 		ctid := uuid.New()
 		ntid := uuid.New()
-		ct := mdlctx.NewContextType(m.GetSink(), ctid)
+		ct := mdlctx.NewContextType(ctid)
 		ct.SetDisplayName("ct")
 		Expect(m.AddContextType(ct)).To(Succeed())
-		nt := node.NewNodeType(m.GetSink(), ntid)
+		nt := node.NewNodeType(ntid)
 		nt.SetDisplayName("nt")
 		Expect(m.AddNodeType(nt)).To(Succeed())
 		parentID := uuid.New()
-		parent := mdlctx.NewContext(m.GetSink(), parentID)
+		parent := mdlctx.NewContext(parentID)
 		parent.SetDisplayName("p")
 		Expect(m.AddContext(parent)).To(Succeed())
 
 		cid := uuid.New()
-		c := mdlctx.NewContext(m.GetSink(), cid)
+		c := mdlctx.NewContext(cid)
 		c.SetContextTypeById(ctid)
 		c.SetParentById(parentID)
 		wireCtx, err := oapi.PushWireEventFromDomain(&events.Event{
@@ -582,7 +581,7 @@ var _ = Describe("replication wire: phase0 after push/decode", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		nid := uuid.New()
-		n := node.NewNode(m.GetSink(), nid)
+		n := node.NewNode(nid)
 		n.SetNodeTypeByRef(nt)
 		wireNode, err := oapi.PushWireEventFromDomain(&events.Event{
 			ResourceType: events.NodeResource,

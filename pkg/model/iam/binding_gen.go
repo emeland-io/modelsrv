@@ -36,7 +36,7 @@ type Binding interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type bindingData struct {
@@ -51,10 +51,9 @@ type bindingData struct {
 	Annotations annotations.Annotations
 }
 
-// NewBinding constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewBinding(sink events.EventSink, id uuid.UUID) Binding {
+// NewBinding constructs an unregistered resource; call [Binding.Register] after adding to the model.
+func NewBinding(id uuid.UUID) Binding {
 	retval := &bindingData{
-		sink:         sink,
 		isRegistered: false,
 		BindingId:    id,
 	}
@@ -164,7 +163,8 @@ func (o *bindingData) SetRoleByRef(role Role) {
 }
 
 // Register implements [Binding].
-func (o *bindingData) Register() {
+func (o *bindingData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

@@ -24,8 +24,7 @@ import (
 	"text/template"
 
 	"github.com/google/uuid"
-	"github.com/oapi-codegen/runtime/types"
-	"go.emeland.io/modelsrv/pkg/model/annotations"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 )
@@ -45,14 +44,6 @@ func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
 	}
 
 	return strings.NewReader(body.String()), int64(body.Len())
-}
-
-func cloneAnnotations(annos annotations.Annotations) *[]Annotation {
-	retval := make([]Annotation, 0)
-	for key := range annos.GetKeys() {
-		retval = append(retval, Annotation{Key: key, Value: annos.GetValue(key)})
-	}
-	return &retval
 }
 
 // Generic helper to build instance list responses
@@ -76,11 +67,6 @@ func buildInstanceList[T hasIdAndName](baseURL, path string, items []T) []Instan
 	return result
 }
 
-/*
-cloneResourceRefs creates a deep copy of the given ResourceRef slice.
-
-	Warning: note the change in the type of the items from reference to value.
-*/
 func cloneResourceRefs(resourceRef []*common.ResourceRef) []ResourceRef {
 	respArr := make([]ResourceRef, 0, len(resourceRef))
 	for _, resRef := range resourceRef {
@@ -92,24 +78,24 @@ func cloneResourceRefs(resourceRef []*common.ResourceRef) []ResourceRef {
 	return respArr
 }
 
-func iamPermissionSpecRefsToOpenAPIUUIDs(refs []*iam.PermissionSpecRef) *[]types.UUID {
+func iamPermissionSpecRefsToOpenAPIUUIDs(refs []*iam.PermissionSpecRef) *[]openapi_types.UUID {
 	if len(refs) == 0 {
 		return nil
 	}
-	out := make([]types.UUID, 0, len(refs))
+	out := make([]openapi_types.UUID, 0, len(refs))
 	for _, ref := range refs {
-		out = append(out, types.UUID(ref.EffectivePermissionSpecID()))
+		out = append(out, openapi_types.UUID(ref.EffectivePermissionSpecID()))
 	}
 	return &out
 }
 
-func iamPermissionRefsToOpenAPIUUIDs(refs []*iam.PermissionRef) *[]types.UUID {
+func iamPermissionRefsToOpenAPIUUIDs(refs []*iam.PermissionRef) *[]openapi_types.UUID {
 	if len(refs) == 0 {
 		return nil
 	}
-	out := make([]types.UUID, 0, len(refs))
+	out := make([]openapi_types.UUID, 0, len(refs))
 	for _, ref := range refs {
-		out = append(out, types.UUID(ref.EffectivePermissionID()))
+		out = append(out, openapi_types.UUID(ref.EffectivePermissionID()))
 	}
 	return &out
 }
@@ -128,10 +114,10 @@ func iamSubjectToAPISubjectRef(sub *iam.SubjectRef) SubjectRef {
 	}
 	switch sub.EffectiveKind() {
 	case iam.SubjectKindGroup:
-		id := types.UUID(sub.EffectiveGroupID())
+		id := openapi_types.UUID(sub.EffectiveGroupID())
 		return SubjectRef{GroupId: &id}
 	case iam.SubjectKindIdentity:
-		id := types.UUID(sub.EffectiveIdentityID())
+		id := openapi_types.UUID(sub.EffectiveIdentityID())
 		return SubjectRef{IdentityId: &id}
 	default:
 		return SubjectRef{}

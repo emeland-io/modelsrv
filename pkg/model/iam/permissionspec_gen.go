@@ -30,7 +30,7 @@ type PermissionSpec interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type permissionspecData struct {
@@ -43,10 +43,9 @@ type permissionspecData struct {
 	Annotations      annotations.Annotations
 }
 
-// NewPermissionSpec constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewPermissionSpec(sink events.EventSink, id uuid.UUID) PermissionSpec {
+// NewPermissionSpec constructs an unregistered resource; call [PermissionSpec.Register] after adding to the model.
+func NewPermissionSpec(id uuid.UUID) PermissionSpec {
 	retval := &permissionspecData{
-		sink:             sink,
 		isRegistered:     false,
 		PermissionSpecId: id,
 	}
@@ -114,7 +113,8 @@ func (o *permissionspecData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [PermissionSpec].
-func (o *permissionspecData) Register() {
+func (o *permissionspecData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

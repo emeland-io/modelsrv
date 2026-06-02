@@ -96,13 +96,13 @@ var _ = BeforeSuite(func() {
 	backend, err = model.NewModel(sink)
 	Expect(err).NotTo(HaveOccurred())
 
-	contextType := mdlctx.NewContextType(backend.GetSink(), contextTypeId)
+	contextType := mdlctx.NewContextType(contextTypeId)
 	contextType.SetDisplayName("Test Context Type")
 	contextType.SetDescription("A test context type for testing purposes")
 	err = backend.AddContextType(contextType)
 	Expect(err).NotTo(HaveOccurred())
 
-	testContext := mdlctx.NewContext(backend.GetSink(), contextId)
+	testContext := mdlctx.NewContext(contextId)
 	testContext.SetParentById(parentContextId)
 	testContext.SetDisplayName("the real test context")
 	// TODO: not implemented yet
@@ -110,21 +110,21 @@ var _ = BeforeSuite(func() {
 	err = backend.AddContext(testContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	parentContext := mdlctx.NewContext(backend.GetSink(), parentContextId)
+	parentContext := mdlctx.NewContext(parentContextId)
 	err = backend.AddContext(parentContext)
 	Expect(err).NotTo(HaveOccurred())
 
-	testNode := node.NewNode(backend.GetSink(), nodeId)
+	testNode := node.NewNode(nodeId)
 	err = backend.AddNode(testNode)
 	Expect(err).NotTo(HaveOccurred())
 
-	nodeType := node.NewNodeType(backend.GetSink(), nodeTypeId)
+	nodeType := node.NewNodeType(nodeTypeId)
 	nodeType.SetDisplayName("Test Node Type")
 	nodeType.SetDescription("A test node type for testing purposes")
 	err = backend.AddNodeType(nodeType)
 	Expect(err).NotTo(HaveOccurred())
 
-	api := mdlapi.NewAPI(backend.GetSink(), apiId)
+	api := mdlapi.NewAPI(apiId)
 	api.SetDisplayName("First API")
 	api.SetVersion(common.Version{
 		Version:        "1.0.0",
@@ -135,13 +135,13 @@ var _ = BeforeSuite(func() {
 	err = backend.AddApi(api)
 	Expect(err).NotTo(HaveOccurred())
 
-	apiInstance := mdlapi.NewApiInstance(backend.GetSink(), apiInstanceId)
+	apiInstance := mdlapi.NewApiInstance(apiInstanceId)
 	apiInstance.SetDisplayName("First API Instance")
 	apiInstance.SetApiRef(backend.ApiRefByID(apiId))
 	err = backend.AddApiInstance(apiInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	comp := component.NewComponent(backend.GetSink(), componentId)
+	comp := component.NewComponent(componentId)
 	comp.SetDisplayName("First Component")
 	comp.SetVersion(common.Version{
 		Version:        "1.0.0",
@@ -152,7 +152,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddComponent(comp)
 	Expect(err).NotTo(HaveOccurred())
 
-	componentInstance := component.NewComponentInstance(backend.GetSink(), componentInstanceId)
+	componentInstance := component.NewComponentInstance(componentInstanceId)
 	componentInstance.SetDisplayName("First Component Instance")
 	componentInstance.SetComponentRef(&component.ComponentRef{
 		ComponentId: componentId,
@@ -161,7 +161,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	firstSystem := model.MakeTestSystem(
-		backend.GetSink(),
 		systemId,
 		"First System",
 		common.Version{
@@ -175,7 +174,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddSystem(firstSystem)
 	Expect(err).NotTo(HaveOccurred())
 
-	systemInstance := system.NewSystemInstance(backend.GetSink(), systemInstanceId)
+	systemInstance := system.NewSystemInstance(systemInstanceId)
 	systemInstance.SetDisplayName("First System Instance")
 	systemInstance.SetSystemRef(&system.SystemRef{
 		SystemId: systemId,
@@ -186,7 +185,7 @@ var _ = BeforeSuite(func() {
 	err = backend.AddSystemInstance(systemInstance)
 	Expect(err).NotTo(HaveOccurred())
 
-	fd := finding.NewFinding(backend.GetSink(), findingId)
+	fd := finding.NewFinding(findingId)
 	fd.SetSummary("First Finding")
 	fd.SetDescription("This is the first test finding.")
 	fd.SetResources([]*common.ResourceRef{
@@ -199,10 +198,10 @@ var _ = BeforeSuite(func() {
 			ResourceId:   componentId,
 		},
 	})
-	err = backend.AddFinding(fd, fd.GetSummary())
+	err = backend.AddFinding(fd)
 	Expect(err).NotTo(HaveOccurred())
 
-	findingType := finding.NewFindingType(backend.GetSink(), findingTypeId)
+	findingType := finding.NewFindingType(findingTypeId)
 	findingType.SetDisplayName("Test Finding Type")
 	findingType.SetDescription("A test finding type for testing purposes")
 	err = backend.AddFindingType(findingType)

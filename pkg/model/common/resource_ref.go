@@ -9,3 +9,10 @@ type ResourceRef struct {
 	ResourceId   uuid.UUID
 	ResourceType events.ResourceType
 }
+
+// InstanceListItem is a lightweight id/name/reference triple returned by client list methods.
+type InstanceListItem struct {
+	Id        uuid.UUID
+	Name      string
+	Reference string
+}

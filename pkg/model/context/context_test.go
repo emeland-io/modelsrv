@@ -21,7 +21,7 @@ var _ = Describe("Context functionalities", func() {
 		contextId = uuid.New()
 
 		sinkMock = mocks.NewMockEventSink(gomock.NewController(GinkgoT()))
-		testCtx = mdlctx.NewContext(sinkMock, contextId)
+		testCtx = mdlctx.NewContext(contextId)
 	})
 
 	When("Context is created", func() {
@@ -61,7 +61,7 @@ var _ = Describe("Context functionalities", func() {
 
 			When("Parent gets updated", func() {
 				It("updates the parent by ref", func() {
-					parentContext := mdlctx.NewContext(sinkMock, uuid.New())
+					parentContext := mdlctx.NewContext(uuid.New())
 					testCtx.SetParentByRef(parentContext)
 
 					retrievedParent, err := testCtx.GetParent()
@@ -73,7 +73,7 @@ var _ = Describe("Context functionalities", func() {
 
 			When("ContextType gets updated", func() {
 				It("updates the context type by ref", func() {
-					contextType := mdlctx.NewContextType(sinkMock, uuid.New())
+					contextType := mdlctx.NewContextType(uuid.New())
 					testCtx.SetContextTypeByRef(contextType)
 
 					Expect(testCtx.GetContextTypeId()).To(Equal(contextType.GetContextTypeId()))
@@ -113,7 +113,7 @@ var _ = Describe("Context functionalities", func() {
 		Context("Context is registered", func() {
 
 			BeforeEach(func() {
-				testCtx.Register()
+				testCtx.Register(sinkMock)
 			})
 
 			When("DisplayName gets updated", func() {

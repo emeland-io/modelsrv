@@ -47,7 +47,7 @@ func applyPermissionSpec(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	ps := iam.NewPermissionSpec(m.GetSink(), id)
+	ps := iam.NewPermissionSpec(id)
 	ps.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		ps.SetDescription(desc)
@@ -67,7 +67,7 @@ func applyRoleSpec(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	rs := iam.NewRoleSpec(m.GetSink(), id)
+	rs := iam.NewRoleSpec(id)
 	rs.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		rs.SetDescription(desc)
@@ -105,7 +105,7 @@ func applyPermission(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return fmt.Errorf(`spec must reference a permission specification: %w`, err)
 	}
-	p := iam.NewPermission(m.GetSink(), id)
+	p := iam.NewPermission(id)
 	p.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		p.SetDescription(desc)
@@ -134,7 +134,7 @@ func applyRole(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return fmt.Errorf(`role requires "context": %w`, err)
 	}
-	r := iam.NewRole(m.GetSink(), id)
+	r := iam.NewRole(id)
 	r.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		r.SetDescription(desc)
@@ -236,7 +236,7 @@ func applyBinding(spec map[string]any, m model.Model) error {
 	if subject.Identity != nil {
 		subject.Identity.Identity = m.GetIdentityById(subject.Identity.IdentityId)
 	}
-	b := iam.NewBinding(m.GetSink(), id)
+	b := iam.NewBinding(id)
 	b.SetDisplayName(name)
 	if desc, ok := stringField(spec, "description"); ok {
 		b.SetDescription(desc)

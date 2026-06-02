@@ -16,7 +16,7 @@ func TestIdentityBasic(t *testing.T) {
 	assert.NoError(t, err)
 
 	identityId := uuid.New()
-	identity := iam.NewIdentity(testModel.GetSink(), identityId)
+	identity := iam.NewIdentity(identityId)
 
 	// this must not create an event, as the identity has not been registered with the system
 	identity.SetDisplayName("Test Identity")
@@ -47,7 +47,7 @@ func TestIdentityBasic(t *testing.T) {
 	identity.SetDescription("a test identity, but with more bla bla")
 
 	// create a new go object and re-submit under the same UUID, but with other values
-	identity2 := iam.NewIdentity(testModel.GetSink(), identityId)
+	identity2 := iam.NewIdentity(identityId)
 	identity2.SetDisplayName("The other Test Identity")
 	identity2.SetDescription("a different test identity, but same Id")
 
