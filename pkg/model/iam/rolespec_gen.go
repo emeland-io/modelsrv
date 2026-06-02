@@ -33,7 +33,7 @@ type RoleSpec interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type rolespecData struct {
@@ -47,10 +47,9 @@ type rolespecData struct {
 	Annotations annotations.Annotations
 }
 
-// NewRoleSpec constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewRoleSpec(sink events.EventSink, id uuid.UUID) RoleSpec {
+// NewRoleSpec constructs an unregistered resource; call [RoleSpec.Register] after adding to the model.
+func NewRoleSpec(id uuid.UUID) RoleSpec {
 	retval := &rolespecData{
-		sink:         sink,
 		isRegistered: false,
 		RoleSpecId:   id,
 	}
@@ -132,7 +131,8 @@ func (o *rolespecData) SetAnnotations(val annotations.Annotations) {
 }
 
 // Register implements [RoleSpec].
-func (o *rolespecData) Register() {
+func (o *rolespecData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

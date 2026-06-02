@@ -157,6 +157,21 @@ func (mr *MockEventManagerMockRecorder) IncrementSequenceId(ctx any) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementSequenceId", reflect.TypeOf((*MockEventManager)(nil).IncrementSequenceId), ctx)
 }
 
+// QueryEvents mocks base method.
+func (m *MockEventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]events.StoredEvent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueryEvents", ctx, q)
+	ret0, _ := ret[0].([]events.StoredEvent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// QueryEvents indicates an expected call of QueryEvents.
+func (mr *MockEventManagerMockRecorder) QueryEvents(ctx, q any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryEvents", reflect.TypeOf((*MockEventManager)(nil).QueryEvents), ctx, q)
+}
+
 // RemoveSubscriber mocks base method.
 func (m *MockEventManager) RemoveSubscriber(url string) error {
 	m.ctrl.T.Helper()

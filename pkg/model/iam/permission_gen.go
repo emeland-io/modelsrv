@@ -36,7 +36,7 @@ type Permission interface {
 	SetPermissionSpecByRef(permissionSpec PermissionSpec)
 	SetPermissionSpecById(permissionSpecId uuid.UUID)
 
-	Register()
+	Register(sink events.EventSink)
 }
 
 type permissionData struct {
@@ -50,10 +50,9 @@ type permissionData struct {
 	Annotations  annotations.Annotations
 }
 
-// NewPermission constructs a resource that forwards model changes through sink via [events.EventSink.Receive].
-func NewPermission(sink events.EventSink, id uuid.UUID) Permission {
+// NewPermission constructs an unregistered resource; call [Permission.Register] after adding to the model.
+func NewPermission(id uuid.UUID) Permission {
 	retval := &permissionData{
-		sink:         sink,
 		isRegistered: false,
 		PermissionId: id,
 	}
@@ -167,7 +166,8 @@ func (o *permissionData) SetPermissionSpecById(permissionSpecId uuid.UUID) {
 }
 
 // Register implements [Permission].
-func (o *permissionData) Register() {
+func (o *permissionData) Register(sink events.EventSink) {
+	o.sink = sink
 	o.isRegistered = true
 }
 

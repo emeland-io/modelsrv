@@ -284,6 +284,9 @@ type Node struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the node.
 	Annotations *[]Annotation `json:"annotations,omitempty"`
 
+	// Description A human-readable description of the node.
+	Description *string `json:"description,omitempty"`
+
 	// DisplayName The human-readable name of the node.
 	DisplayName string `json:"displayName"`
 
