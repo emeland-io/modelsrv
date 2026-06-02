@@ -1241,6 +1241,9 @@ components:
         displayName:
           type: string
           description: The human-readable name of the node.
+        description:
+          type: string
+          description: A human-readable description of the node.
         nodeType:
           type: string
           description: The UUID of the node type that this node is an instance of.

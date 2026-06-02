@@ -25,8 +25,8 @@ build: test ## Build the project binary.
 	go build -ldflags "-s -w" -o bin/emelandctl ./cmd/emelandctl
 
 .PHONY: generate
-generate: 
-	go generate ./...
+generate: $(MOCKGEN)
+	GOTOOLCHAIN=$(GOVERSION) go generate ./...
 
 .PHONY: gen
 gen: ## Regenerate OpenAPI server, client, and pkg/client models (same packages as go:generate directives).
@@ -75,14 +75,15 @@ $(MOCKGEN): $(LOCALBIN)
 # $1 - target path with name of binary
 # $2 - package url which can be installed
 # $3 - specific version of package
+# Cached binary name includes GOVERSION so upgrading Go forces a rebuild (mockgen must match module go version).
 define go-install-tool
-@[ -f "$(1)-$(3)" ] || { \
+@[ -f "$(1)-$(3)-$(GOVERSION)" ] || { \
 set -e; \
 package=$(2)@$(3) ;\
-echo "Downloading $${package}" ;\
-rm -f $(1) || true ;\
+echo "Downloading $${package} (with $(GOVERSION))" ;\
+rm -f $(1) $(1)-$(3)-* || true ;\
 GOTOOLCHAIN=$(GOVERSION) GOBIN=$(LOCALBIN) go install $${package} ;\
-mv $(1) $(1)-$(3) ;\
+mv $(1) $(1)-$(3)-$(GOVERSION) ;\
 } ;\
-ln -sf $(1)-$(3) $(1)
+ln -sf $(1)-$(3)-$(GOVERSION) $(1)
 endef
