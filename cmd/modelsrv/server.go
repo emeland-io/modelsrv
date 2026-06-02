@@ -86,9 +86,16 @@ var serverCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
-	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", ":8080", "The address the service listens on")
-	serverCmd.Flags().StringVar(&dataDir, "data-dir", "data", "Directory to watch for YAML model definitions (.yaml/.yml); relative paths are resolved from the process working directory")
-	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", "", "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
+	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", envOrDefault("SERVICE_ADDR", ":8080"), "The address the service listens on")
+	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for YAML model definitions (.yaml/.yml); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", envOrDefault("METRICS_ADDR", ""), "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
+}
+
+func envOrDefault(key, fallback string) string {
+	if v, ok := os.LookupEnv(key); ok {
+		return v
+	}
+	return fallback
 }
 
 func notifyShutdownSignals(ch chan os.Signal) {
