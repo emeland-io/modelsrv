@@ -6,3 +6,5 @@ bin/
 .gomodcache/
 .gocache/
 .gopath/
+.cursor/
+.idea/
