@@ -23,11 +23,10 @@ COPY internal/ internal/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o emelandctl ./cmd/emelandctl/
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+# Use alpine as base to allow interactive shell usage (kubectl attach)
+FROM alpine:3.21
 WORKDIR /
-COPY --from=builder /workspace/emelandctl .
-USER 65532:65532
+COPY --from=builder /workspace/emelandctl /usr/local/bin/emelandctl
+USER nobody
 
-ENTRYPOINT ["/emelandctl"]
+ENTRYPOINT ["/usr/local/bin/emelandctl"]
