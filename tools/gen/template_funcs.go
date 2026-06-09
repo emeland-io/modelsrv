@@ -6,15 +6,6 @@ import (
 	"text/template"
 )
 
-func specByName(name string) TypeSpec {
-	for _, s := range allTypes {
-		if s.Name == name {
-			return s
-		}
-	}
-	return TypeSpec{}
-}
-
 func handlerMethodName(spec TypeSpec) string {
 	if spec.HandlerMethodSuffix != "" {
 		return spec.HandlerMethodSuffix

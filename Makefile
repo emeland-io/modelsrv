@@ -5,7 +5,7 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 # the go version must match the one set in the go.mod file.
-GOVERSION ?= go1.25.10
+GOVERSION ?= go1.26.1
 
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 GOLANGCI_LINT_VERSION ?= v2.11.3
