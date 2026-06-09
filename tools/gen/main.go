@@ -24,6 +24,9 @@ var clientTemplate string
 //go:embed client_test.tmpl
 var clientTestTemplate string
 
+//go:embed model_store_test.tmpl
+var modelStoreTestTemplate string
+
 //go:embed replication_decode.tmpl
 var replicationDecodeTemplate string
 
@@ -52,32 +55,13 @@ type convertGenSpec struct {
 }
 
 func main() {
-	funcMap := template.FuncMap{
-		"lower": strings.ToLower,
-		"refParamType": func(r RefByRefSpec) string {
-			if r.ParamGoType != "" {
-				return r.ParamGoType
-			}
-			return r.ResourceTypeName
-		},
-		"handlerQualifier": func(s TypeSpec) string {
-			if s.HandlerPkgAlias != "" {
-				return s.HandlerPkgAlias
-			}
-			return s.Dir
-		},
-		"handlerMethod": func(s TypeSpec) string {
-			if s.HandlerMethodSuffix != "" {
-				return s.HandlerMethodSuffix
-			}
-			return s.Name
-		},
-	}
+	funcMap := buildTemplateFuncMap()
 
 	tmpl := template.Must(template.New("type").Funcs(funcMap).Parse(typeTemplate))
 	handlerTmpl := template.Must(template.New("handler").Funcs(funcMap).Parse(handlerTemplate))
 	clientTmpl := template.Must(template.New("client").Funcs(funcMap).Parse(clientTemplate))
 	clientTestTmpl := template.Must(template.New("client_test").Funcs(funcMap).Parse(clientTestTemplate))
+	modelStoreTestTmpl := template.Must(template.New("model_store_test").Funcs(funcMap).Parse(modelStoreTestTemplate))
 
 	_, genFile, _, ok := runtime.Caller(0)
 	if !ok {
@@ -173,6 +157,26 @@ func main() {
 			os.Exit(1)
 		}
 		filename := filepath.Join(clientDir, "client_gen_test.go")
+		if err := os.WriteFile(filename, formatted, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", filename, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Generated %s\n", filename)
+	}
+
+	// --- Generate model store integration tests ---
+	{
+		var buf bytes.Buffer
+		if err := modelStoreTestTmpl.Execute(&buf, allTypes); err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing model_store_test template: %v\n", err)
+			os.Exit(1)
+		}
+		formatted, err := format.Source(buf.Bytes())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error formatting model_store_test code: %v\n%s\n", err, buf.String())
+			os.Exit(1)
+		}
+		filename := filepath.Join(baseDir, "model_store_gen_test.go")
 		if err := os.WriteFile(filename, formatted, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", filename, err)
 			os.Exit(1)
