@@ -17,34 +17,13 @@ limitations under the License.
 package oapi
 
 import (
-	"context"
 	"fmt"
-	"io"
-	"strings"
-	"text/template"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 )
-
-//nolint:unused
-func acceptsHTML(ctx context.Context) bool {
-	return strings.EqualFold(ctx.Value(ctxKeyNegotiatedContentType).(string),
-		string(CONTENT_TYPE_HTML))
-}
-
-//nolint:unused
-func renderHTML(resp any, template *template.Template) (io.Reader, int64) {
-	body := new(strings.Builder)
-
-	if err := template.Execute(body, resp); err != nil {
-		return nil, 0
-	}
-
-	return strings.NewReader(body.String()), int64(body.Len())
-}
 
 // Generic helper to build instance list responses
 type hasIdAndName interface {

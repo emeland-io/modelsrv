@@ -30,8 +30,8 @@ func newServer() (model.Model, events.EventManager, *httptest.Server) {
 	Expect(err).NotTo(HaveOccurred())
 
 	r := mux.NewRouter()
-	srv := oapi.NewApiServer(m, em, "http://test")
-	strict := oapi.NewApiHandler(srv)
+	srv := oapi.NewApiServer(m, em, "http://test", nil)
+	strict := oapi.NewApiHandler(srv, oapi.ApiHandlerOptions{})
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
 	ts := httptest.NewServer(h)

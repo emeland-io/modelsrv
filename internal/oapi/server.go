@@ -27,20 +27,17 @@ import (
 
 	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	"github.com/oapi-codegen/runtime/types"
+	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
-type ContextLabel string
 type HeaderLabel string
-type RequestHeaderKey string
 
 const (
-	HEADER_KEY_AUTH_USER              = "X-Snackmgr-Authenticated-User"
-	HEADER_ACCEPT                     = "Accept"
-	OWNER_KEY            ContextLabel = "owner"
-	CONTENT_TYPE_JSON                 = HeaderLabel("application/json")
-	CONTENT_TYPE_HTML                 = HeaderLabel("text/html")
+	HEADER_ACCEPT     = "Accept"
+	CONTENT_TYPE_JSON = HeaderLabel("application/json")
+	CONTENT_TYPE_HTML = HeaderLabel("text/html")
 )
 
 // ctxKey is the type for context.WithValue keys in this package (SA1029).
@@ -54,6 +51,7 @@ type ApiServer struct {
 	Backend model.Model
 	Events  events.EventManager
 	BaseURL string
+	Authz   *authz.Evaluator
 }
 
 var _ StrictServerInterface = (*ApiServer)(nil)
@@ -74,32 +72,19 @@ var blueprintTemplateStr string
 var blueprintTemplate = template.Must(template.New("service").Parse(blueprintTemplateStr))
 */
 
-/*
-ProcessAuthHeader is a middleware to transfer the authentication header "X-Shmits-Authenticated-User" into the context for
-the call to the Strict Server Interface.
-
-	Since the requirement for the existence of a valid user depends on the actual method an path being accessed, validation
-	is handled in the individual methods of the Strict Service Interface implementation.
-*/
-func ProcessAuthHeader(f StrictHandlerFunc, _ string) StrictHandlerFunc {
-
+// ProcessAuthHeaders reads trusted identity headers from the BFF and stores a Principal in context.
+func ProcessAuthHeaders(f StrictHandlerFunc, _ string) StrictHandlerFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (response any, err error) {
-		var newCtx context.Context
+		subject := strings.TrimSpace(r.Header.Get(authz.HeaderAuthSubject))
+		groups := authz.ParseGroups(r.Header.Get(authz.HeaderAuthGroups))
+		auditor := strings.EqualFold(strings.TrimSpace(r.Header.Get(authz.HeaderAuthAuditor)), "true")
 
-		// check if header is set at all.
-		_, ok := r.Header[HEADER_KEY_AUTH_USER]
-		if ok {
-			// this has more compliant processing for edge cases like multiple values and
-			// case insensitive matches
-			owner := r.Header.Get(HEADER_KEY_AUTH_USER)
-
-			newCtx = context.WithValue(ctx, OWNER_KEY, owner)
-
-		} else {
-			newCtx = ctx
+		p := authz.Principal{
+			Subject:       subject,
+			Groups:        groups,
+			AuditorHeader: auditor,
 		}
-
-		return f(newCtx, w, r, request)
+		return f(authz.WithPrincipal(ctx, p), w, r, request)
 	}
 }
 
@@ -149,18 +134,26 @@ func negotiateContent(acceptedStr string, supported []string) string {
 	return supported[0]
 }
 
-func NewApiServer(backend model.Model, eventMgr events.EventManager, baseUrl string) *ApiServer {
+func NewApiServer(backend model.Model, eventMgr events.EventManager, baseUrl string, authzEval *authz.Evaluator) *ApiServer {
 	return &ApiServer{
 		Backend: backend,
 		Events:  eventMgr,
 		BaseURL: baseUrl,
+		Authz:   authzEval,
 	}
 }
 
-func NewApiHandler(server *ApiServer) ServerInterface {
-	handler := NewStrictHandler(server,
-		[]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeader, ProcessContentTypeRequest})
+// ApiHandlerOptions configures strict-handler middleware for the API.
+type ApiHandlerOptions struct {
+	TrustAuthHeaders bool
+}
 
+func NewApiHandler(server *ApiServer, opts ApiHandlerOptions) ServerInterface {
+	middlewares := []strictnethttp.StrictHTTPMiddlewareFunc{ProcessContentTypeRequest}
+	if opts.TrustAuthHeaders {
+		middlewares = append([]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeaders}, middlewares...)
+	}
+	handler := NewStrictHandler(server, middlewares)
 	return handler
 }
 
