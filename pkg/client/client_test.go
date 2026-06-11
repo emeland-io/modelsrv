@@ -56,7 +56,7 @@ var _ = Describe("Client", Ordered, func() {
 		Expect(testModel).NotTo(BeNil())
 
 		By("attaching the model to a listener")
-		Expect(endpoint.StartWebListener(testModel, testEvents, "localhost:0")).To(Succeed())
+		Expect(endpoint.StartWebListener(testModel, testEvents, "localhost:0", endpoint.WebListenerOptions{})).To(Succeed())
 
 		addr := endpoint.WebListenerAddr()
 		Expect(addr).NotTo(BeNil())

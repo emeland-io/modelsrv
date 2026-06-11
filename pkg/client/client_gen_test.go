@@ -79,8 +79,8 @@ func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
 	require.NoError(t, err)
 
 	r := mux.NewRouter()
-	srv := oapi.NewApiServer(m, em, "http://test")
-	strict := oapi.NewApiHandler(srv)
+	srv := oapi.NewApiServer(m, em, "http://test", nil)
+	strict := oapi.NewApiHandler(srv, oapi.ApiHandlerOptions{})
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 	ts := httptest.NewServer(h)
 	t.Cleanup(ts.Close)

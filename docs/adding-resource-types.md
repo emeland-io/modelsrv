@@ -15,3 +15,7 @@ This document should help you when adding an additional resource type.
 1. add the Id-to-resource maps to the modelData structure and add required initialization code to the `NewModel`function in `pkg/model/structure.go`
 1. implement the missing methods for the compound `Model` interface in `pkg/model`
 1. Add error codes for missing resources to `pkg/model/common/errors.go`
+
+## Ownership visibility
+
+When `--trust-auth-headers` is enabled, list and get-by-id handlers generated from `tools/gen/server_handler.tmpl` automatically enforce ownership visibility for new resource types. Owners are set via annotations (`emeland.io/owner-identities`, `emeland.io/owner-groups`). See [adr/ownership-visibility.md](adr/ownership-visibility.md).
