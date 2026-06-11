@@ -1,9 +1,11 @@
 package model
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
@@ -25,4 +27,14 @@ func TestNewModel(t *testing.T) {
 	assert.NotNil(t, model.systemInstancesByUUID, "SystemInstances map should be initialized")
 	assert.NotNil(t, model.apiInstancesByUUID, "APIInstances map should be initialized")
 	assert.NotNil(t, model.componentInstancesByUUID, "ComponentInstances map should be initialized")
+}
+
+func TestGetCurrentEventSequenceId(t *testing.T) {
+	sink := events.NewDummySink()
+	m, err := NewModel(sink)
+	require.NoError(t, err)
+
+	seq, err := m.GetCurrentEventSequenceId(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, "forty-two", seq)
 }
