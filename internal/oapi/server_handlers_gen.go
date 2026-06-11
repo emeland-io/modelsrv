@@ -5,6 +5,9 @@ package oapi
 import (
 	"context"
 	"fmt"
+
+	"go.emeland.io/modelsrv/pkg/authz"
+	"go.emeland.io/modelsrv/pkg/events"
 )
 
 // GetLandscapeContextTypes implements [StrictServerInterface].
@@ -13,6 +16,10 @@ func (a *ApiServer) GetLandscapeContextTypes(ctx context.Context, request GetLan
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ContextTypeResource, items)
+	}
 	return GetLandscapeContextTypes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/contextTypes", items)), nil
 }
 
@@ -20,6 +27,10 @@ func (a *ApiServer) GetLandscapeContextTypes(ctx context.Context, request GetLan
 func (a *ApiServer) GetLandscapeContextTypesContextTypeId(ctx context.Context, request GetLandscapeContextTypesContextTypeIdRequestObject) (GetLandscapeContextTypesContextTypeIdResponseObject, error) {
 	item := a.Backend.GetContextTypeById(request.ContextTypeId)
 	if item == nil {
+		msg := fmt.Sprintf("context type %s not found", request.ContextTypeId.String())
+		return GetLandscapeContextTypesContextTypeId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ContextTypeResource, item) {
 		msg := fmt.Sprintf("context type %s not found", request.ContextTypeId.String())
 		return GetLandscapeContextTypesContextTypeId404JSONResponse(msg), nil
 	}
@@ -32,6 +43,10 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ContextResource, items)
+	}
 	return GetLandscapeContexts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/contexts", items)), nil
 }
 
@@ -39,6 +54,10 @@ func (a *ApiServer) GetLandscapeContexts(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeContextsContextId(ctx context.Context, request GetLandscapeContextsContextIdRequestObject) (GetLandscapeContextsContextIdResponseObject, error) {
 	item := a.Backend.GetContextById(request.ContextId)
 	if item == nil {
+		msg := fmt.Sprintf("context %s not found", request.ContextId.String())
+		return GetLandscapeContextsContextId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ContextResource, item) {
 		msg := fmt.Sprintf("context %s not found", request.ContextId.String())
 		return GetLandscapeContextsContextId404JSONResponse(msg), nil
 	}
@@ -51,6 +70,10 @@ func (a *ApiServer) GetLandscapeSystems(ctx context.Context, request GetLandscap
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.SystemResource, items)
+	}
 	return GetLandscapeSystems200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/systems", items)), nil
 }
 
@@ -58,6 +81,10 @@ func (a *ApiServer) GetLandscapeSystems(ctx context.Context, request GetLandscap
 func (a *ApiServer) GetLandscapeSystemsSystemId(ctx context.Context, request GetLandscapeSystemsSystemIdRequestObject) (GetLandscapeSystemsSystemIdResponseObject, error) {
 	item := a.Backend.GetSystemById(request.SystemId)
 	if item == nil {
+		msg := fmt.Sprintf("system %s not found", request.SystemId.String())
+		return GetLandscapeSystemsSystemId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.SystemResource, item) {
 		msg := fmt.Sprintf("system %s not found", request.SystemId.String())
 		return GetLandscapeSystemsSystemId404JSONResponse(msg), nil
 	}
@@ -70,6 +97,10 @@ func (a *ApiServer) GetLandscapeNodeTypes(ctx context.Context, request GetLandsc
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.NodeTypeResource, items)
+	}
 	return GetLandscapeNodeTypes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/nodeTypes", items)), nil
 }
 
@@ -77,6 +108,10 @@ func (a *ApiServer) GetLandscapeNodeTypes(ctx context.Context, request GetLandsc
 func (a *ApiServer) GetLandscapeNodeTypesNodeTypeId(ctx context.Context, request GetLandscapeNodeTypesNodeTypeIdRequestObject) (GetLandscapeNodeTypesNodeTypeIdResponseObject, error) {
 	item := a.Backend.GetNodeTypeById(request.NodeTypeId)
 	if item == nil {
+		msg := fmt.Sprintf("node type %s not found", request.NodeTypeId.String())
+		return GetLandscapeNodeTypesNodeTypeId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.NodeTypeResource, item) {
 		msg := fmt.Sprintf("node type %s not found", request.NodeTypeId.String())
 		return GetLandscapeNodeTypesNodeTypeId404JSONResponse(msg), nil
 	}
@@ -89,6 +124,10 @@ func (a *ApiServer) GetLandscapeFindingTypes(ctx context.Context, request GetLan
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.FindingTypeResource, items)
+	}
 	return GetLandscapeFindingTypes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findingTypes", items)), nil
 }
 
@@ -96,6 +135,10 @@ func (a *ApiServer) GetLandscapeFindingTypes(ctx context.Context, request GetLan
 func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, request GetLandscapeFindingTypesFindingTypeIdRequestObject) (GetLandscapeFindingTypesFindingTypeIdResponseObject, error) {
 	item := a.Backend.GetFindingTypeById(request.FindingTypeId)
 	if item == nil {
+		msg := fmt.Sprintf("finding type %s not found", request.FindingTypeId.String())
+		return GetLandscapeFindingTypesFindingTypeId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.FindingTypeResource, item) {
 		msg := fmt.Sprintf("finding type %s not found", request.FindingTypeId.String())
 		return GetLandscapeFindingTypesFindingTypeId404JSONResponse(msg), nil
 	}
@@ -108,6 +151,10 @@ func (a *ApiServer) GetLandscapeNodes(ctx context.Context, request GetLandscapeN
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.NodeResource, items)
+	}
 	return GetLandscapeNodes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/nodes", items)), nil
 }
 
@@ -115,6 +162,10 @@ func (a *ApiServer) GetLandscapeNodes(ctx context.Context, request GetLandscapeN
 func (a *ApiServer) GetLandscapeNodesNodeId(ctx context.Context, request GetLandscapeNodesNodeIdRequestObject) (GetLandscapeNodesNodeIdResponseObject, error) {
 	item := a.Backend.GetNodeById(request.NodeId)
 	if item == nil {
+		msg := fmt.Sprintf("node %s not found", request.NodeId.String())
+		return GetLandscapeNodesNodeId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.NodeResource, item) {
 		msg := fmt.Sprintf("node %s not found", request.NodeId.String())
 		return GetLandscapeNodesNodeId404JSONResponse(msg), nil
 	}
@@ -127,6 +178,10 @@ func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLan
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.APIInstanceResource, items)
+	}
 	return GetLandscapeApiInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/api-instances", items)), nil
 }
 
@@ -134,6 +189,10 @@ func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLan
 func (a *ApiServer) GetLandscapeApiInstancesApiInstanceId(ctx context.Context, request GetLandscapeApiInstancesApiInstanceIdRequestObject) (GetLandscapeApiInstancesApiInstanceIdResponseObject, error) {
 	item := a.Backend.GetApiInstanceById(request.ApiInstanceId)
 	if item == nil {
+		msg := fmt.Sprintf("api instance %s not found", request.ApiInstanceId.String())
+		return GetLandscapeApiInstancesApiInstanceId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.APIInstanceResource, item) {
 		msg := fmt.Sprintf("api instance %s not found", request.ApiInstanceId.String())
 		return GetLandscapeApiInstancesApiInstanceId404JSONResponse(msg), nil
 	}
@@ -146,6 +205,10 @@ func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeAp
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.APIResource, items)
+	}
 	return GetLandscapeApis200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/apis", items)), nil
 }
 
@@ -153,6 +216,10 @@ func (a *ApiServer) GetLandscapeApis(ctx context.Context, request GetLandscapeAp
 func (a *ApiServer) GetLandscapeApisApiId(ctx context.Context, request GetLandscapeApisApiIdRequestObject) (GetLandscapeApisApiIdResponseObject, error) {
 	item := a.Backend.GetApiById(request.ApiId)
 	if item == nil {
+		msg := fmt.Sprintf("api %s not found", request.ApiId.String())
+		return GetLandscapeApisApiId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.APIResource, item) {
 		msg := fmt.Sprintf("api %s not found", request.ApiId.String())
 		return GetLandscapeApisApiId404JSONResponse(msg), nil
 	}
@@ -165,6 +232,10 @@ func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLands
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ComponentResource, items)
+	}
 	return GetLandscapeComponents200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/components", items)), nil
 }
 
@@ -172,6 +243,10 @@ func (a *ApiServer) GetLandscapeComponents(ctx context.Context, request GetLands
 func (a *ApiServer) GetLandscapeComponentsComponentId(ctx context.Context, request GetLandscapeComponentsComponentIdRequestObject) (GetLandscapeComponentsComponentIdResponseObject, error) {
 	item := a.Backend.GetComponentById(request.ComponentId)
 	if item == nil {
+		msg := fmt.Sprintf("component %s not found", request.ComponentId.String())
+		return GetLandscapeComponentsComponentId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ComponentResource, item) {
 		msg := fmt.Sprintf("component %s not found", request.ComponentId.String())
 		return GetLandscapeComponentsComponentId404JSONResponse(msg), nil
 	}
@@ -184,6 +259,10 @@ func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request Get
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.SystemInstanceResource, items)
+	}
 	return GetLandscapeSystemInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/system-instances", items)), nil
 }
 
@@ -191,6 +270,10 @@ func (a *ApiServer) GetLandscapeSystemInstances(ctx context.Context, request Get
 func (a *ApiServer) GetLandscapeSystemInstancesSystemInstanceId(ctx context.Context, request GetLandscapeSystemInstancesSystemInstanceIdRequestObject) (GetLandscapeSystemInstancesSystemInstanceIdResponseObject, error) {
 	item := a.Backend.GetSystemInstanceById(request.SystemInstanceId)
 	if item == nil {
+		msg := fmt.Sprintf("system instance %s not found", request.SystemInstanceId.String())
+		return GetLandscapeSystemInstancesSystemInstanceId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.SystemInstanceResource, item) {
 		msg := fmt.Sprintf("system instance %s not found", request.SystemInstanceId.String())
 		return GetLandscapeSystemInstancesSystemInstanceId404JSONResponse(msg), nil
 	}
@@ -203,6 +286,10 @@ func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request 
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ComponentInstanceResource, items)
+	}
 	return GetLandscapeComponentInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/component-instances", items)), nil
 }
 
@@ -210,6 +297,10 @@ func (a *ApiServer) GetLandscapeComponentInstances(ctx context.Context, request 
 func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx context.Context, request GetLandscapeComponentInstancesComponentInstanceIdRequestObject) (GetLandscapeComponentInstancesComponentInstanceIdResponseObject, error) {
 	item := a.Backend.GetComponentInstanceById(request.ComponentInstanceId)
 	if item == nil {
+		msg := fmt.Sprintf("componentInstance %s not found", request.ComponentInstanceId.String())
+		return GetLandscapeComponentInstancesComponentInstanceId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ComponentInstanceResource, item) {
 		msg := fmt.Sprintf("componentInstance %s not found", request.ComponentInstanceId.String())
 		return GetLandscapeComponentInstancesComponentInstanceId404JSONResponse(msg), nil
 	}
@@ -222,6 +313,10 @@ func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.FindingResource, items)
+	}
 	return GetLandscapeFindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findings", items)), nil
 }
 
@@ -229,6 +324,10 @@ func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request GetLandscapeFindingsFindingIdRequestObject) (GetLandscapeFindingsFindingIdResponseObject, error) {
 	item := a.Backend.GetFindingById(request.FindingId)
 	if item == nil {
+		msg := fmt.Sprintf("finding %s not found", request.FindingId.String())
+		return GetLandscapeFindingsFindingId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.FindingResource, item) {
 		msg := fmt.Sprintf("finding %s not found", request.FindingId.String())
 		return GetLandscapeFindingsFindingId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -241,6 +340,10 @@ func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.OrgUnitResource, items)
+	}
 	return GetLandscapeOrgUnits200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orgUnits", items)), nil
 }
 
@@ -248,6 +351,10 @@ func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeOrgUnitsOrgUnitId(ctx context.Context, request GetLandscapeOrgUnitsOrgUnitIdRequestObject) (GetLandscapeOrgUnitsOrgUnitIdResponseObject, error) {
 	item := a.Backend.GetOrgUnitById(request.OrgUnitId)
 	if item == nil {
+		msg := fmt.Sprintf("organizational unit %s not found", request.OrgUnitId.String())
+		return GetLandscapeOrgUnitsOrgUnitId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.OrgUnitResource, item) {
 		msg := fmt.Sprintf("organizational unit %s not found", request.OrgUnitId.String())
 		return GetLandscapeOrgUnitsOrgUnitId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -260,6 +367,10 @@ func (a *ApiServer) GetLandscapeGroups(ctx context.Context, request GetLandscape
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.GroupResource, items)
+	}
 	return GetLandscapeGroups200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/groups", items)), nil
 }
 
@@ -267,6 +378,10 @@ func (a *ApiServer) GetLandscapeGroups(ctx context.Context, request GetLandscape
 func (a *ApiServer) GetLandscapeGroupsGroupId(ctx context.Context, request GetLandscapeGroupsGroupIdRequestObject) (GetLandscapeGroupsGroupIdResponseObject, error) {
 	item := a.Backend.GetGroupById(request.GroupId)
 	if item == nil {
+		msg := fmt.Sprintf("group %s not found", request.GroupId.String())
+		return GetLandscapeGroupsGroupId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.GroupResource, item) {
 		msg := fmt.Sprintf("group %s not found", request.GroupId.String())
 		return GetLandscapeGroupsGroupId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -279,6 +394,10 @@ func (a *ApiServer) GetLandscapeIdentities(ctx context.Context, request GetLands
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.IdentityResource, items)
+	}
 	return GetLandscapeIdentities200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/identities", items)), nil
 }
 
@@ -286,6 +405,10 @@ func (a *ApiServer) GetLandscapeIdentities(ctx context.Context, request GetLands
 func (a *ApiServer) GetLandscapeIdentitiesIdentityId(ctx context.Context, request GetLandscapeIdentitiesIdentityIdRequestObject) (GetLandscapeIdentitiesIdentityIdResponseObject, error) {
 	item := a.Backend.GetIdentityById(request.IdentityId)
 	if item == nil {
+		msg := fmt.Sprintf("identity %s not found", request.IdentityId.String())
+		return GetLandscapeIdentitiesIdentityId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.IdentityResource, item) {
 		msg := fmt.Sprintf("identity %s not found", request.IdentityId.String())
 		return GetLandscapeIdentitiesIdentityId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -298,6 +421,10 @@ func (a *ApiServer) GetLandscapePermissionSpecs(ctx context.Context, request Get
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.PermissionSpecResource, items)
+	}
 	return GetLandscapePermissionSpecs200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/permissionSpecs", items)), nil
 }
 
@@ -305,6 +432,10 @@ func (a *ApiServer) GetLandscapePermissionSpecs(ctx context.Context, request Get
 func (a *ApiServer) GetLandscapePermissionSpecsPermissionSpecId(ctx context.Context, request GetLandscapePermissionSpecsPermissionSpecIdRequestObject) (GetLandscapePermissionSpecsPermissionSpecIdResponseObject, error) {
 	item := a.Backend.GetPermissionSpecById(request.PermissionSpecId)
 	if item == nil {
+		msg := fmt.Sprintf("permission specification %s not found", request.PermissionSpecId.String())
+		return GetLandscapePermissionSpecsPermissionSpecId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.PermissionSpecResource, item) {
 		msg := fmt.Sprintf("permission specification %s not found", request.PermissionSpecId.String())
 		return GetLandscapePermissionSpecsPermissionSpecId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -317,6 +448,10 @@ func (a *ApiServer) GetLandscapeRoleSpecs(ctx context.Context, request GetLandsc
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.RoleSpecResource, items)
+	}
 	return GetLandscapeRoleSpecs200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/roleSpecs", items)), nil
 }
 
@@ -324,6 +459,10 @@ func (a *ApiServer) GetLandscapeRoleSpecs(ctx context.Context, request GetLandsc
 func (a *ApiServer) GetLandscapeRoleSpecsRoleSpecId(ctx context.Context, request GetLandscapeRoleSpecsRoleSpecIdRequestObject) (GetLandscapeRoleSpecsRoleSpecIdResponseObject, error) {
 	item := a.Backend.GetRoleSpecById(request.RoleSpecId)
 	if item == nil {
+		msg := fmt.Sprintf("role specification %s not found", request.RoleSpecId.String())
+		return GetLandscapeRoleSpecsRoleSpecId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.RoleSpecResource, item) {
 		msg := fmt.Sprintf("role specification %s not found", request.RoleSpecId.String())
 		return GetLandscapeRoleSpecsRoleSpecId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -336,6 +475,10 @@ func (a *ApiServer) GetLandscapePermissions(ctx context.Context, request GetLand
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.PermissionResource, items)
+	}
 	return GetLandscapePermissions200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/permissions", items)), nil
 }
 
@@ -343,6 +486,10 @@ func (a *ApiServer) GetLandscapePermissions(ctx context.Context, request GetLand
 func (a *ApiServer) GetLandscapePermissionsPermissionId(ctx context.Context, request GetLandscapePermissionsPermissionIdRequestObject) (GetLandscapePermissionsPermissionIdResponseObject, error) {
 	item := a.Backend.GetPermissionById(request.PermissionId)
 	if item == nil {
+		msg := fmt.Sprintf("permission %s not found", request.PermissionId.String())
+		return GetLandscapePermissionsPermissionId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.PermissionResource, item) {
 		msg := fmt.Sprintf("permission %s not found", request.PermissionId.String())
 		return GetLandscapePermissionsPermissionId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -355,6 +502,10 @@ func (a *ApiServer) GetLandscapeRoles(ctx context.Context, request GetLandscapeR
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.RoleResource, items)
+	}
 	return GetLandscapeRoles200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/roles", items)), nil
 }
 
@@ -362,6 +513,10 @@ func (a *ApiServer) GetLandscapeRoles(ctx context.Context, request GetLandscapeR
 func (a *ApiServer) GetLandscapeRolesRoleId(ctx context.Context, request GetLandscapeRolesRoleIdRequestObject) (GetLandscapeRolesRoleIdResponseObject, error) {
 	item := a.Backend.GetRoleById(request.RoleId)
 	if item == nil {
+		msg := fmt.Sprintf("role %s not found", request.RoleId.String())
+		return GetLandscapeRolesRoleId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.RoleResource, item) {
 		msg := fmt.Sprintf("role %s not found", request.RoleId.String())
 		return GetLandscapeRolesRoleId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -374,6 +529,10 @@ func (a *ApiServer) GetLandscapeBindings(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.BindingResource, items)
+	}
 	return GetLandscapeBindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/bindings", items)), nil
 }
 
@@ -381,6 +540,10 @@ func (a *ApiServer) GetLandscapeBindings(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeBindingsBindingId(ctx context.Context, request GetLandscapeBindingsBindingIdRequestObject) (GetLandscapeBindingsBindingIdResponseObject, error) {
 	item := a.Backend.GetBindingById(request.BindingId)
 	if item == nil {
+		msg := fmt.Sprintf("binding %s not found", request.BindingId.String())
+		return GetLandscapeBindingsBindingId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.BindingResource, item) {
 		msg := fmt.Sprintf("binding %s not found", request.BindingId.String())
 		return GetLandscapeBindingsBindingId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -393,6 +556,10 @@ func (a *ApiServer) GetLandscapeArtifacts(ctx context.Context, request GetLandsc
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ArtifactResource, items)
+	}
 	return GetLandscapeArtifacts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifacts", items)), nil
 }
 
@@ -400,6 +567,10 @@ func (a *ApiServer) GetLandscapeArtifacts(ctx context.Context, request GetLandsc
 func (a *ApiServer) GetLandscapeArtifactsArtifactId(ctx context.Context, request GetLandscapeArtifactsArtifactIdRequestObject) (GetLandscapeArtifactsArtifactIdResponseObject, error) {
 	item := a.Backend.GetArtifactById(request.ArtifactId)
 	if item == nil {
+		msg := fmt.Sprintf("artifact %s not found", request.ArtifactId.String())
+		return GetLandscapeArtifactsArtifactId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ArtifactResource, item) {
 		msg := fmt.Sprintf("artifact %s not found", request.ArtifactId.String())
 		return GetLandscapeArtifactsArtifactId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -412,6 +583,10 @@ func (a *ApiServer) GetLandscapeArtifactInstances(ctx context.Context, request G
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ArtifactInstanceResource, items)
+	}
 	return GetLandscapeArtifactInstances200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/artifactInstances", items)), nil
 }
 
@@ -419,6 +594,10 @@ func (a *ApiServer) GetLandscapeArtifactInstances(ctx context.Context, request G
 func (a *ApiServer) GetLandscapeArtifactInstancesArtifactInstanceId(ctx context.Context, request GetLandscapeArtifactInstancesArtifactInstanceIdRequestObject) (GetLandscapeArtifactInstancesArtifactInstanceIdResponseObject, error) {
 	item := a.Backend.GetArtifactInstanceById(request.ArtifactInstanceId)
 	if item == nil {
+		msg := fmt.Sprintf("artifact instance %s not found", request.ArtifactInstanceId.String())
+		return GetLandscapeArtifactInstancesArtifactInstanceId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ArtifactInstanceResource, item) {
 		msg := fmt.Sprintf("artifact instance %s not found", request.ArtifactInstanceId.String())
 		return GetLandscapeArtifactInstancesArtifactInstanceId404JSONResponse(ErrorString(msg)), nil
 	}
@@ -431,6 +610,10 @@ func (a *ApiServer) GetLandscapeProducts(ctx context.Context, request GetLandsca
 	if err != nil {
 		return nil, err
 	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ProductResource, items)
+	}
 	return GetLandscapeProducts200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/products", items)), nil
 }
 
@@ -438,6 +621,10 @@ func (a *ApiServer) GetLandscapeProducts(ctx context.Context, request GetLandsca
 func (a *ApiServer) GetLandscapeProductsProductId(ctx context.Context, request GetLandscapeProductsProductIdRequestObject) (GetLandscapeProductsProductIdResponseObject, error) {
 	item := a.Backend.GetProductById(request.ProductId)
 	if item == nil {
+		msg := fmt.Sprintf("product %s not found", request.ProductId.String())
+		return GetLandscapeProductsProductId404JSONResponse(ErrorString(msg)), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ProductResource, item) {
 		msg := fmt.Sprintf("product %s not found", request.ProductId.String())
 		return GetLandscapeProductsProductId404JSONResponse(ErrorString(msg)), nil
 	}
