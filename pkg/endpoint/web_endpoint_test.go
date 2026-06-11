@@ -20,7 +20,7 @@ func TestStartUIListener(t *testing.T) {
 		t.Fatalf("failed to create event manager: %v", err)
 	}
 
-	err = StartWebListener(backend, eventMgr, "127.0.0.1:0")
+	err = StartWebListener(backend, eventMgr, "127.0.0.1:0", WebListenerOptions{})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
