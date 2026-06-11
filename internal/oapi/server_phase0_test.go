@@ -34,8 +34,8 @@ var _ = Describe("calling the modelsrv API functions for phase 0", func() {
 
 	BeforeEach(func() {
 		By("setting up http listener")
-		server := oapi.NewApiServer(backend, eventMgr, "http://localhost")
-		strict := oapi.NewApiHandler(server)
+		server := oapi.NewApiServer(backend, eventMgr, "http://localhost", nil)
+		strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{})
 
 		r := mux.NewRouter()
 

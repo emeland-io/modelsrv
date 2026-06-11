@@ -16,11 +16,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/metrics"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.uber.org/zap"
 )
+
+// WebListenerOptions configures the web API listener.
+type WebListenerOptions struct {
+	TrustAuthHeaders bool
+	AuthzConfig      authz.Config
+}
 
 var (
 	webServer      *http.Server
@@ -34,7 +41,7 @@ var (
 // StartWebListener starts the web endpoint serving the Swagger-UI and API
 //
 // addr is the address and port to bind to, e.g. "localhost:24000"
-func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string) error {
+func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string, opts WebListenerOptions) error {
 	setupLog = *zap.NewExample().Sugar()
 
 	ln, err := net.Listen("tcp", addr)
@@ -44,8 +51,12 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	webListener = ln
 
 	baseUrl := fmt.Sprintf("http://%s/api", ln.Addr().String())
-	server := oapi.NewApiServer(backend, eventMgr, baseUrl)
-	strict := oapi.NewApiHandler(server)
+	var authzEval *authz.Evaluator
+	if opts.TrustAuthHeaders {
+		authzEval = authz.NewEvaluator(opts.AuthzConfig)
+	}
+	server := oapi.NewApiServer(backend, eventMgr, baseUrl, authzEval)
+	strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{TrustAuthHeaders: opts.TrustAuthHeaders})
 
 	metricsReg = prometheus.NewRegistry()
 	metricsReg.MustRegister(collectors.NewGoCollector())
