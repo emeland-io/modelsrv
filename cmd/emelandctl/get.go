@@ -18,10 +18,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"text/tabwriter"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/model/common"
 )
 
@@ -43,36 +45,78 @@ func renderInstanceList(cmd *cobra.Command, format string, items []common.Instan
 	return w.Flush()
 }
 
-func newGetCmd() *cobra.Command {
-	var outputFormat string
+func fetchResourceList(baseURL, path string) ([]common.InstanceListItem, error) {
+	resp, err := http.Get(baseURL + path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var raw []struct {
+		InstanceId  *string `json:"instanceId"`
+		DisplayName *string `json:"displayName"`
+		Reference   *string `json:"reference"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decoding response: %w", err)
+	}
+	items := make([]common.InstanceListItem, 0, len(raw))
+	for _, r := range raw {
+		var item common.InstanceListItem
+		if r.InstanceId != nil {
+			item.Id, _ = uuid.Parse(*r.InstanceId)
+		}
+		if r.DisplayName != nil {
+			item.Name = *r.DisplayName
+		}
+		if r.Reference != nil {
+			item.Reference = *r.Reference
+		}
+		items = append(items, item)
+	}
+	return items, nil
+}
 
+func newGetCmd() *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "Query resources from an EmELand server",
 	}
 
-	findingsCmd := &cobra.Command{
-		Use:   "findings",
-		Short: "List findings from the EmELand server",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			url, err := serverURL()
-			if err != nil {
-				return err
-			}
-			c, err := client.NewModelSrvClient(url)
-			if err != nil {
-				return fmt.Errorf("creating client: %w", err)
-			}
-			findings, err := c.GetFindings()
-			if err != nil {
-				return fmt.Errorf("fetching findings: %w", err)
-			}
-			return renderInstanceList(cmd, outputFormat, findings)
-		},
+	for _, def := range resourceTypes {
+		if def.listPath == "" {
+			continue
+		}
+		def := def // capture loop variable
+		plural := def.use + "s"
+		if def.use == "identity" {
+			plural = "identities"
+		}
+		cmd := &cobra.Command{
+			Use:   plural,
+			Short: fmt.Sprintf("List %s from the EmELand server", plural),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				outputFormat, _ := cmd.Flags().GetString("output")
+				url, err := serverURL()
+				if err != nil {
+					return err
+				}
+				items, err := fetchResourceList(url, def.listPath)
+				if err != nil {
+					return fmt.Errorf("fetching %s: %w", plural, err)
+				}
+				return renderInstanceList(cmd, outputFormat, items)
+			},
+		}
+		cmd.Flags().StringP("output", "o", "table", "Output format: table or json")
+		getCmd.AddCommand(cmd)
 	}
-
-	findingsCmd.Flags().StringVarP(&outputFormat, "output", "o", "table", "Output format: table or json")
-	getCmd.AddCommand(findingsCmd)
 
 	return getCmd
 }
