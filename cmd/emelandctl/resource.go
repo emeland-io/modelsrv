@@ -111,6 +111,7 @@ func registerResourceCmd(createCmd *cobra.Command, def resourceDef, outputDir, o
 		}
 	}
 
+	registerFlagCompletions(cmd, def)
 	createCmd.AddCommand(cmd)
 }
 
