@@ -52,6 +52,7 @@ type resourceDef struct {
 	idField   string // spec key for the generated UUID (e.g. "systemId")
 	nameField string // spec key for the display name (default "displayName")
 	flags     []flagDef
+	listPath  string // API path for listing resources (e.g. "/landscape/findings")
 }
 
 // registerResourceCmd creates and registers a cobra subcommand from a resourceDef.
