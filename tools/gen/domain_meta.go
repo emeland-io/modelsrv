@@ -11,15 +11,17 @@ var dirDomainMeta = map[string]struct {
 	Import string
 	Alias  string
 }{
-	"context":   {Import: "go.emeland.io/modelsrv/pkg/model/context", Alias: "mdlctx"},
-	"system":    {Import: "go.emeland.io/modelsrv/pkg/model/system", Alias: "system"},
-	"api":       {Import: "go.emeland.io/modelsrv/pkg/model/api", Alias: "mdlapi"},
-	"component": {Import: "go.emeland.io/modelsrv/pkg/model/component", Alias: "component"},
-	"node":      {Import: "go.emeland.io/modelsrv/pkg/model/node", Alias: "node"},
-	"finding":   {Import: "go.emeland.io/modelsrv/pkg/model/finding", Alias: "finding"},
-	"iam":       {Import: "go.emeland.io/modelsrv/pkg/model/iam", Alias: "iam"},
-	"artifact":  {Import: "go.emeland.io/modelsrv/pkg/model/artifact", Alias: "artifact"},
-	"product":   {Import: "go.emeland.io/modelsrv/pkg/model/product", Alias: "mdlprod"},
+	"context":    {Import: "go.emeland.io/modelsrv/pkg/model/context", Alias: "mdlctx"},
+	"system":     {Import: "go.emeland.io/modelsrv/pkg/model/system", Alias: "system"},
+	"api":        {Import: "go.emeland.io/modelsrv/pkg/model/api", Alias: "mdlapi"},
+	"component":  {Import: "go.emeland.io/modelsrv/pkg/model/component", Alias: "component"},
+	"node":       {Import: "go.emeland.io/modelsrv/pkg/model/node", Alias: "node"},
+	"finding":    {Import: "go.emeland.io/modelsrv/pkg/model/finding", Alias: "finding"},
+	"iam":        {Import: "go.emeland.io/modelsrv/pkg/model/iam", Alias: "iam"},
+	"artifact":   {Import: "go.emeland.io/modelsrv/pkg/model/artifact", Alias: "artifact"},
+	"product":    {Import: "go.emeland.io/modelsrv/pkg/model/product", Alias: "mdlprod"},
+	"filterrule": {Import: "go.emeland.io/modelsrv/pkg/model/filterrule", Alias: "mdlfilterrule"},
+	"mergerule":  {Import: "go.emeland.io/modelsrv/pkg/model/mergerule", Alias: "mdlmergerule"},
 }
 
 func enrichDomainMeta(spec *TypeSpec) {

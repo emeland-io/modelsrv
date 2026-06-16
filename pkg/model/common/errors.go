@@ -26,6 +26,8 @@ var (
 	ErrArtifactNotFound          = fmt.Errorf("artifact not found")
 	ErrArtifactInstanceNotFound  = fmt.Errorf("artifact instance not found")
 	ErrProductNotFound           = fmt.Errorf("product not found")
+	ErrFilterRuleNotFound        = fmt.Errorf("filter rule not found")
+	ErrMergeRuleNotFound         = fmt.Errorf("merge rule not found")
 
 	ErrUUIDNotSet = fmt.Errorf("resource identifier UUID not set")
 )

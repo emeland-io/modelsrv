@@ -17,10 +17,12 @@ func (a *ApiServer) {{.ClientListOapiMethod}}(ctx context.Context, request {{.Cl
 	if err != nil {
 		return nil, err
 	}
+{{- if not .SkipAuthz}}
 	if a.Authz != nil {
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.{{.EventsResource}}, items)
 	}
+{{- end}}
 	return {{.ClientListOapiMethod}}200JSONResponse(buildInstanceList(a.BaseURL, "{{.RestListPath}}", items)), nil
 }
 
@@ -32,11 +34,13 @@ func (a *ApiServer) {{.ClientGetByIdOapiMethod}}(ctx context.Context, request {{
 		return {{.ClientGetByIdOapiMethod}}404JSONResponse(ErrorString(msg)), nil{{else}}
 		return {{.ClientGetByIdOapiMethod}}404JSONResponse(msg), nil{{end}}
 	}
+{{- if not .SkipAuthz}}
 	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.{{.EventsResource}}, item) {
 		msg := fmt.Sprintf("{{.ServerResourceLabel}} %s not found", request.{{.ServerRequestIDField}}.String()){{if .Server404UseErrorString}}
 		return {{.ClientGetByIdOapiMethod}}404JSONResponse(ErrorString(msg)), nil{{else}}
 		return {{.ClientGetByIdOapiMethod}}404JSONResponse(msg), nil{{end}}
 	}
+{{- end}}
 	return {{.ClientGetByIdOapiMethod}}200JSONResponse({{.ToDtoFuncName}}(item)), nil
 }
 {{end}}{{end}}

@@ -14,8 +14,10 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -32,8 +34,10 @@ var (
 	_ mdlapi.API
 	_ component.Component
 	_ mdlctx.ContextType
+	_ mdlfilterrule.FilterRule
 	_ finding.Finding
 	_ iam.OrgUnit
+	_ mdlmergerule.MergeRule
 	_ node.Node
 	_ mdlprod.Product
 	_ system.System
@@ -612,4 +616,54 @@ func (c *ModelSrvClient) GetProductById(id uuid.UUID) (mdlprod.Product, error) {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.ProductFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetFilterRules() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeFilterRulesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetFilterRuleById(id uuid.UUID) (mdlfilterrule.FilterRule, error) {
+	resp, err := c.oapi_client.GetLandscapeFilterRulesRuleIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrFilterRuleNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.FilterRuleFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMergeRules() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeMergeRulesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMergeRuleById(id uuid.UUID) (mdlmergerule.MergeRule, error) {
+	resp, err := c.oapi_client.GetLandscapeMergeRulesRuleIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrMergeRuleNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.MergeRuleFromDto(nil, resp.JSON200)
 }

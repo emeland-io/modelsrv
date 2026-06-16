@@ -15,8 +15,10 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -29,8 +31,10 @@ var (
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
+	_ = mdlfilterrule.NewFilterRule
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
+	_ = mdlmergerule.NewMergeRule
 	_ = node.NewNode
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
@@ -60,6 +64,8 @@ var testIDs = map[string]uuid.UUID{
 	"Artifact":          uuid.New(),
 	"ArtifactInstance":  uuid.New(),
 	"Product":           uuid.New(),
+	"FilterRule":        uuid.New(),
+	"MergeRule":         uuid.New(),
 }
 
 func newStoreModel(t *testing.T) (model.Model, events.EventSink) {
@@ -225,6 +231,18 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		p.SetDisplayName("Test Product")
 		p.SetVendor(&iam.OrgUnitRef{OrgUnitId: testIDs["OrgUnit"]})
 		require.NoError(t, m.AddProduct(p))
+	}
+	// --- FilterRule ---
+	{
+		fr := mdlfilterrule.NewFilterRule(testIDs["FilterRule"])
+		fr.SetDisplayName("Test FilterRule")
+		require.NoError(t, m.AddFilterRule(fr))
+	}
+	// --- MergeRule ---
+	{
+		mr := mdlmergerule.NewMergeRule(testIDs["MergeRule"])
+		mr.SetDisplayName("Test MergeRule")
+		require.NoError(t, m.AddMergeRule(mr))
 	}
 }
 
@@ -1346,4 +1364,100 @@ func TestStoreProductApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetProductById(resourceID))
+}
+
+func TestStoreFilterRuleCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["FilterRule"]
+	got := m.GetFilterRuleById(id)
+	require.NotNil(t, got, "expected FilterRule to be stored")
+	assert.Equal(t, id, got.GetRuleId())
+
+	list, err := m.GetFilterRules()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteFilterRuleById(testIDs["FilterRule"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetFilterRuleById(id))
+
+	err = m.DeleteFilterRuleById(testIDs["FilterRule"])
+	assert.ErrorIs(t, err, common.ErrFilterRuleNotFound)
+}
+
+func TestStoreFilterRuleApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	fr := mdlfilterrule.NewFilterRule(resourceID)
+	fr.SetDisplayName("Test FilterRule")
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.FilterRuleResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{fr},
+	}))
+
+	got := m.GetFilterRuleById(resourceID)
+	require.NotNil(t, got, "expected replicated FilterRule")
+	assert.Equal(t, resourceID, got.GetRuleId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.FilterRuleResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetFilterRuleById(resourceID))
+}
+
+func TestStoreMergeRuleCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["MergeRule"]
+	got := m.GetMergeRuleById(id)
+	require.NotNil(t, got, "expected MergeRule to be stored")
+	assert.Equal(t, id, got.GetRuleId())
+
+	list, err := m.GetMergeRules()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteMergeRuleById(testIDs["MergeRule"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMergeRuleById(id))
+
+	err = m.DeleteMergeRuleById(testIDs["MergeRule"])
+	assert.ErrorIs(t, err, common.ErrMergeRuleNotFound)
+}
+
+func TestStoreMergeRuleApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	mr := mdlmergerule.NewMergeRule(resourceID)
+	mr.SetDisplayName("Test MergeRule")
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.MergeRuleResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{mr},
+	}))
+
+	got := m.GetMergeRuleById(resourceID)
+	require.NotNil(t, got, "expected replicated MergeRule")
+	assert.Equal(t, resourceID, got.GetRuleId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.MergeRuleResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMergeRuleById(resourceID))
 }

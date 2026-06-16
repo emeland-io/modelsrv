@@ -34,6 +34,8 @@ func ResourceTypes(m Model) []ResourceTypeInfo {
 		{"Role", countFunc(m.GetRoles)},
 		{"Binding", countFunc(m.GetBindings)},
 		{"Product", countFunc(m.GetProducts)},
+		{"FilterRule", countFunc(m.GetFilterRules)},
+		{"MergeRule", countFunc(m.GetMergeRules)},
 	}
 }
 

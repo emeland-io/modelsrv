@@ -14,8 +14,10 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -32,8 +34,10 @@ var (
 	_ mdlapi.API
 	_ component.Component
 	_ mdlctx.ContextType
+	_ mdlfilterrule.FilterRule
 	_ finding.Finding
 	_ iam.OrgUnit
+	_ mdlmergerule.MergeRule
 	_ node.Node
 	_ mdlprod.Product
 	_ system.System
