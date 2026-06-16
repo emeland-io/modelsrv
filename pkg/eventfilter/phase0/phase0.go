@@ -72,8 +72,21 @@ func deleteFinding(m model.Model, subjectID uuid.UUID, kind finding.FindingKind)
 	}
 }
 
+// New returns the phase-0 filter with its discoverable identity.
+func New() eventfilter.Filter {
+	return eventfilter.Filter{
+		DisplayName: "Phase 0 referential integrity",
+		Description: "Checks Context, ContextType, Node, and NodeType referential integrity and records findings.",
+		Fn:          filterFunc(),
+	}
+}
+
 // NewFilterFunc returns the phase-0 filter; the trigger event is always passed through.
 func NewFilterFunc() eventfilter.FilterFunc {
+	return New().Fn
+}
+
+func filterFunc() eventfilter.FilterFunc {
 	return func(m model.Model, ev events.Event) []events.Event {
 		switch ev.Operation {
 		case events.CreateOperation, events.UpdateOperation:

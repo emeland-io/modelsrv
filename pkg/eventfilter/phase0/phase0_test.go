@@ -86,6 +86,19 @@ func findingsOfKind(m model.Model, kind finding.FindingKind) []finding.Finding {
 	return out
 }
 
+var _ = Describe("phase0 filter identity", func() {
+	It("New returns the expected display name and description", func() {
+		f := phase0.New()
+		Expect(f.DisplayName).To(Equal("Phase 0 referential integrity"))
+		Expect(f.Description).To(ContainSubstring("referential integrity"))
+		Expect(f.Fn).NotTo(BeNil())
+	})
+
+	It("NewFilterFunc returns the same function as New", func() {
+		Expect(phase0.NewFilterFunc()).NotTo(BeNil())
+	})
+})
+
 var _ = Describe("phase0 FilterFunc", func() {
 	Describe("Context checks", func() {
 		Describe("ContextTypeMissing", func() {
