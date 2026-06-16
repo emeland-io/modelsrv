@@ -165,6 +165,12 @@ type ClientInterface interface {
 	// GetLandscapeContextsContextId request
 	GetLandscapeContextsContextId(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeFilterRules request
+	GetLandscapeFilterRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeFilterRulesRuleId request
+	GetLandscapeFilterRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeFindingTypes request
 	GetLandscapeFindingTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -188,6 +194,12 @@ type ClientInterface interface {
 
 	// GetLandscapeIdentitiesIdentityId request
 	GetLandscapeIdentitiesIdentityId(ctx context.Context, identityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMergeRules request
+	GetLandscapeMergeRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMergeRulesRuleId request
+	GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetLandscapeNodeTypes request
 	GetLandscapeNodeTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -565,6 +577,30 @@ func (c *Client) GetLandscapeContextsContextId(ctx context.Context, contextId op
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetLandscapeFilterRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeFilterRulesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeFilterRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeFilterRulesRuleIdRequest(c.Server, ruleId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetLandscapeFindingTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeFindingTypesRequest(c.Server)
 	if err != nil {
@@ -651,6 +687,30 @@ func (c *Client) GetLandscapeIdentities(ctx context.Context, reqEditors ...Reque
 
 func (c *Client) GetLandscapeIdentitiesIdentityId(ctx context.Context, identityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeIdentitiesIdentityIdRequest(c.Server, identityId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMergeRules(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMergeRulesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMergeRulesRuleIdRequest(c.Server, ruleId)
 	if err != nil {
 		return nil, err
 	}
@@ -1643,6 +1703,67 @@ func NewGetLandscapeContextsContextIdRequest(server string, contextId openapi_ty
 	return req, nil
 }
 
+// NewGetLandscapeFilterRulesRequest generates requests for GetLandscapeFilterRules
+func NewGetLandscapeFilterRulesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/filter-rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeFilterRulesRuleIdRequest generates requests for GetLandscapeFilterRulesRuleId
+func NewGetLandscapeFilterRulesRuleIdRequest(server string, ruleId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "ruleId", runtime.ParamLocationPath, ruleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/filter-rules/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeFindingTypesRequest generates requests for GetLandscapeFindingTypes
 func NewGetLandscapeFindingTypesRequest(server string) (*http.Request, error) {
 	var err error
@@ -1870,6 +1991,67 @@ func NewGetLandscapeIdentitiesIdentityIdRequest(server string, identityId openap
 	}
 
 	operationPath := fmt.Sprintf("/landscape/identities/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMergeRulesRequest generates requests for GetLandscapeMergeRules
+func NewGetLandscapeMergeRulesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/merge-rules")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMergeRulesRuleIdRequest generates requests for GetLandscapeMergeRulesRuleId
+func NewGetLandscapeMergeRulesRuleIdRequest(server string, ruleId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "ruleId", runtime.ParamLocationPath, ruleId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/merge-rules/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2642,6 +2824,12 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeContextsContextIdWithResponse request
 	GetLandscapeContextsContextIdWithResponse(ctx context.Context, contextId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeContextsContextIdResponse, error)
 
+	// GetLandscapeFilterRulesWithResponse request
+	GetLandscapeFilterRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeFilterRulesResponse, error)
+
+	// GetLandscapeFilterRulesRuleIdWithResponse request
+	GetLandscapeFilterRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeFilterRulesRuleIdResponse, error)
+
 	// GetLandscapeFindingTypesWithResponse request
 	GetLandscapeFindingTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeFindingTypesResponse, error)
 
@@ -2665,6 +2853,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetLandscapeIdentitiesIdentityIdWithResponse request
 	GetLandscapeIdentitiesIdentityIdWithResponse(ctx context.Context, identityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeIdentitiesIdentityIdResponse, error)
+
+	// GetLandscapeMergeRulesWithResponse request
+	GetLandscapeMergeRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesResponse, error)
+
+	// GetLandscapeMergeRulesRuleIdWithResponse request
+	GetLandscapeMergeRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesRuleIdResponse, error)
 
 	// GetLandscapeNodeTypesWithResponse request
 	GetLandscapeNodeTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeNodeTypesResponse, error)
@@ -3243,6 +3437,51 @@ func (r GetLandscapeContextsContextIdResponse) StatusCode() int {
 	return 0
 }
 
+type GetLandscapeFilterRulesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeFilterRulesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeFilterRulesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeFilterRulesRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *FilterRule
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeFilterRulesRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeFilterRulesRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetLandscapeFindingTypesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3417,6 +3656,51 @@ func (r GetLandscapeIdentitiesIdentityIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeIdentitiesIdentityIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMergeRulesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMergeRulesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMergeRulesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMergeRulesRuleIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MergeRule
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMergeRulesRuleIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMergeRulesRuleIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4125,6 +4409,24 @@ func (c *ClientWithResponses) GetLandscapeContextsContextIdWithResponse(ctx cont
 	return ParseGetLandscapeContextsContextIdResponse(rsp)
 }
 
+// GetLandscapeFilterRulesWithResponse request returning *GetLandscapeFilterRulesResponse
+func (c *ClientWithResponses) GetLandscapeFilterRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeFilterRulesResponse, error) {
+	rsp, err := c.GetLandscapeFilterRules(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeFilterRulesResponse(rsp)
+}
+
+// GetLandscapeFilterRulesRuleIdWithResponse request returning *GetLandscapeFilterRulesRuleIdResponse
+func (c *ClientWithResponses) GetLandscapeFilterRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeFilterRulesRuleIdResponse, error) {
+	rsp, err := c.GetLandscapeFilterRulesRuleId(ctx, ruleId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeFilterRulesRuleIdResponse(rsp)
+}
+
 // GetLandscapeFindingTypesWithResponse request returning *GetLandscapeFindingTypesResponse
 func (c *ClientWithResponses) GetLandscapeFindingTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeFindingTypesResponse, error) {
 	rsp, err := c.GetLandscapeFindingTypes(ctx, reqEditors...)
@@ -4195,6 +4497,24 @@ func (c *ClientWithResponses) GetLandscapeIdentitiesIdentityIdWithResponse(ctx c
 		return nil, err
 	}
 	return ParseGetLandscapeIdentitiesIdentityIdResponse(rsp)
+}
+
+// GetLandscapeMergeRulesWithResponse request returning *GetLandscapeMergeRulesResponse
+func (c *ClientWithResponses) GetLandscapeMergeRulesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesResponse, error) {
+	rsp, err := c.GetLandscapeMergeRules(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMergeRulesResponse(rsp)
+}
+
+// GetLandscapeMergeRulesRuleIdWithResponse request returning *GetLandscapeMergeRulesRuleIdResponse
+func (c *ClientWithResponses) GetLandscapeMergeRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesRuleIdResponse, error) {
+	rsp, err := c.GetLandscapeMergeRulesRuleId(ctx, ruleId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMergeRulesRuleIdResponse(rsp)
 }
 
 // GetLandscapeNodeTypesWithResponse request returning *GetLandscapeNodeTypesResponse
@@ -5027,6 +5347,65 @@ func ParseGetLandscapeContextsContextIdResponse(rsp *http.Response) (*GetLandsca
 	return response, nil
 }
 
+// ParseGetLandscapeFilterRulesResponse parses an HTTP response from a GetLandscapeFilterRulesWithResponse call
+func ParseGetLandscapeFilterRulesResponse(rsp *http.Response) (*GetLandscapeFilterRulesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeFilterRulesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeFilterRulesRuleIdResponse parses an HTTP response from a GetLandscapeFilterRulesRuleIdWithResponse call
+func ParseGetLandscapeFilterRulesRuleIdResponse(rsp *http.Response) (*GetLandscapeFilterRulesRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeFilterRulesRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FilterRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetLandscapeFindingTypesResponse parses an HTTP response from a GetLandscapeFindingTypesWithResponse call
 func ParseGetLandscapeFindingTypesResponse(rsp *http.Response) (*GetLandscapeFindingTypesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5246,6 +5625,65 @@ func ParseGetLandscapeIdentitiesIdentityIdResponse(rsp *http.Response) (*GetLand
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Identity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMergeRulesResponse parses an HTTP response from a GetLandscapeMergeRulesWithResponse call
+func ParseGetLandscapeMergeRulesResponse(rsp *http.Response) (*GetLandscapeMergeRulesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMergeRulesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMergeRulesRuleIdResponse parses an HTTP response from a GetLandscapeMergeRulesRuleIdWithResponse call
+func ParseGetLandscapeMergeRulesRuleIdResponse(rsp *http.Response) (*GetLandscapeMergeRulesRuleIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMergeRulesRuleIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MergeRule
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -27,7 +27,7 @@ func TestCollector(t *testing.T) {
 
 	// Empty model: all counts should be 0.
 	count := testutil.CollectAndCount(c)
-	assert.Equal(t, 23, count, "expected one metric per resource type")
+	assert.Equal(t, len(model.ResourceTypes(m)), count, "expected one metric per resource type")
 
 	val := getGaugeValue(t, reg, "emeland_resource_count", "System")
 	assert.Equal(t, 0.0, val)

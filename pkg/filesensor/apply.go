@@ -307,6 +307,10 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyRole(doc.Spec, m)
 	case events.BindingResource:
 		return applyBinding(doc.Spec, m)
+	case events.FilterRuleResource:
+		return applyFilterRule(doc.Spec, m)
+	case events.MergeRuleResource:
+		return applyMergeRule(doc.Spec, m)
 	case events.UnknownResourceType:
 		return fmt.Errorf("kind is required")
 	default:
