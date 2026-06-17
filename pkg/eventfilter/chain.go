@@ -57,31 +57,38 @@ func (c *chainData) Register(fn FilterFunc) FilterID {
 
 // Unregister implements [Chain].
 func (c *chainData) Unregister(id FilterID) {
+	if !c.removeFilter(id) {
+		return // unknown ID — no model work
+	}
+	c.removeFilterRuleFromModel(id)
+}
+func (c *chainData) removeFilter(id FilterID) bool {
 	c.mu.Lock()
-	removed := false
+	defer c.mu.Unlock()
 	for i, e := range c.filters {
 		if e.id == id {
 			c.filters = append(c.filters[:i], c.filters[i+1:]...)
-			removed = true
-			break
+			return true
 		}
 	}
-	c.mu.Unlock()
-	if removed {
-		c.removeFilterRuleFromModel(id)
-	}
+	return false
 }
 
 // SetModel implements [Chain].
 func (c *chainData) SetModel(m model.Model) {
-	c.mu.Lock()
-	c.model = m
-	snapshot := append([]entry(nil), c.filters...)
-	c.mu.Unlock()
-
+	snapshot := c.swapModel(m)
 	for _, e := range snapshot {
 		c.syncFilterRuleToModel(e.id, e.displayName, e.description)
 	}
+}
+
+// swapModel swaps the model reference and returns a snapshot of the current filter slice.
+func (c *chainData) swapModel(m model.Model) []entry {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.model = m
+
+	return append([]entry(nil), c.filters...)
 }
 
 // Apply implements [Chain].
