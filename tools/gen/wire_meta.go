@@ -20,6 +20,13 @@ var skipConvertByName = map[string]bool{
 	"Permission":        true,
 	"Role":              true,
 	"Binding":           true,
+	"FilterRule":        true,
+	"MergeRule":         true,
+}
+
+var skipAuthzByName = map[string]bool{
+	"FilterRule": true,
+	"MergeRule":  true,
 }
 
 var wireKindToEventsResource = map[string]string{
@@ -46,6 +53,8 @@ var wireKindToEventsResource = map[string]string{
 	"Permission":        "PermissionResource",
 	"Role":              "RoleResource",
 	"Binding":           "BindingResource",
+	"FilterRule":        "FilterRuleResource",
+	"MergeRule":         "MergeRuleResource",
 }
 
 var restListPathByName = map[string]string{
@@ -72,6 +81,8 @@ var restListPathByName = map[string]string{
 	"Permission":        "/landscape/permissions",
 	"Role":              "/landscape/roles",
 	"Binding":           "/landscape/bindings",
+	"FilterRule":        "/landscape/filter-rules",
+	"MergeRule":         "/landscape/merge-rules",
 }
 
 var serverRequestIDByName = map[string]string{
@@ -105,6 +116,8 @@ var serverResourceLabelByName = map[string]string{
 	"Permission":        "permission",
 	"Role":              "role",
 	"Binding":           "binding",
+	"FilterRule":        "filter rule",
+	"MergeRule":         "merge rule",
 }
 
 var server404UseErrorString = map[string]bool{
@@ -156,6 +169,7 @@ var convertMissingIDByName = map[string]string{
 
 func enrichWireMeta(spec *TypeSpec) {
 	spec.SkipConvert = skipConvertByName[spec.Name]
+	spec.SkipAuthz = skipAuthzByName[spec.Name]
 
 	if spec.OapiTypeName != "" {
 		spec.OapiWireTypeName = spec.OapiTypeName

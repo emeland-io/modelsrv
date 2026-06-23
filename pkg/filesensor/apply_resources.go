@@ -12,7 +12,9 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -38,6 +40,10 @@ func parseResourceTypeForRef(s string) (events.ResourceType, error) {
 		return events.FindingResource, nil
 	case "FindingType":
 		return events.FindingTypeResource, nil
+	case "FilterRule":
+		return events.FilterRuleResource, nil
+	case "MergeRule":
+		return events.MergeRuleResource, nil
 	default:
 		return 0, fmt.Errorf("unknown resource type %q", s)
 	}
@@ -396,4 +402,38 @@ func applyArtifactInstance(spec map[string]any, m model.Model) error {
 		return err
 	}
 	return m.AddArtifactInstance(ai)
+}
+
+func applyFilterRule(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "ruleId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	fr := mdlfilterrule.NewFilterRule(id)
+	fr.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		fr.SetDescription(desc)
+	}
+	return m.AddFilterRule(fr)
+}
+
+func applyMergeRule(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "ruleId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	mr := mdlmergerule.NewMergeRule(id)
+	mr.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		mr.SetDescription(desc)
+	}
+	return m.AddMergeRule(mr)
 }

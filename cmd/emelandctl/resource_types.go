@@ -192,4 +192,18 @@ var resourceTypes = []resourceDef{
 			{name: "desc", specKey: "description", usage: "Description of the binding"},
 		},
 	},
+	{
+		use: "filter-rule", short: "Create a FilterRule resource",
+		kind: "FilterRule", idField: "ruleId", listPath: "/landscape/filter-rules",
+		flags: []flagDef{
+			{name: "desc", specKey: "description", usage: "Description of the filter rule"},
+		},
+	},
+	{
+		use: "merge-rule", short: "Create a MergeRule resource",
+		kind: "MergeRule", idField: "ruleId", listPath: "/landscape/merge-rules",
+		flags: []flagDef{
+			{name: "desc", specKey: "description", usage: "Description of the merge rule"},
+		},
+	},
 }

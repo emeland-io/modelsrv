@@ -39,7 +39,9 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -79,6 +81,8 @@ var findingTypeId uuid.UUID = uuid.New()
 // Phase 7 test data
 
 // Phase 8 test data
+var filterRuleId uuid.UUID = uuid.New()
+var mergeRuleId uuid.UUID = uuid.New()
 
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -205,6 +209,18 @@ var _ = BeforeSuite(func() {
 	findingType.SetDisplayName("Test Finding Type")
 	findingType.SetDescription("A test finding type for testing purposes")
 	err = backend.AddFindingType(findingType)
+	Expect(err).NotTo(HaveOccurred())
+
+	filterRule := mdlfilterrule.NewFilterRule(filterRuleId)
+	filterRule.SetDisplayName("Test Filter Rule")
+	filterRule.SetDescription("A test filter rule")
+	err = backend.AddFilterRule(filterRule)
+	Expect(err).NotTo(HaveOccurred())
+
+	mergeRule := mdlmergerule.NewMergeRule(mergeRuleId)
+	mergeRule.SetDisplayName("Test Merge Rule")
+	mergeRule.SetDescription("A test merge rule")
+	err = backend.AddMergeRule(mergeRule)
 	Expect(err).NotTo(HaveOccurred())
 
 	eventMgr, err = eventmgr.NewEventManager()
@@ -670,6 +686,88 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(*findingType.FindingTypeId).To(Equal(findingTypeId))
 
+	})
+
+	It("should call GET on /landscape/filter-rules", func() {
+		url := "http://localhost/landscape/filter-rules"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var ruleArr oapi.InstanceList
+		err = json.Unmarshal(body, &ruleArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(ruleArr)).To(Equal(1))
+
+		Expect(*(ruleArr[0].InstanceId)).To(Equal(filterRuleId))
+		Expect(*(ruleArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/filter-rules/%s", filterRuleId.String())))
+	})
+
+	It("should call GET on /landscape/filter-rules/{ruleId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/filter-rules/%s", filterRuleId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var rule oapi.FilterRule
+		err = json.Unmarshal(body, &rule)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rule.RuleId).To(Equal(filterRuleId))
+	})
+
+	It("should call GET on /landscape/merge-rules", func() {
+		url := "http://localhost/landscape/merge-rules"
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var ruleArr oapi.InstanceList
+		err = json.Unmarshal(body, &ruleArr)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(ruleArr)).To(Equal(1))
+
+		Expect(*(ruleArr[0].InstanceId)).To(Equal(mergeRuleId))
+		Expect(*(ruleArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/merge-rules/%s", mergeRuleId.String())))
+	})
+
+	It("should call GET on /landscape/merge-rules/{ruleId}", func() {
+		url := fmt.Sprintf("http://localhost/landscape/merge-rules/%s", mergeRuleId.String())
+		req := httptest.NewRequest("GET", url, nil)
+		w := httptest.NewRecorder()
+
+		handler.ServeHTTP(w, req)
+
+		resp := w.Result()
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(body)).NotTo(Equal(0))
+
+		var rule oapi.MergeRule
+		err = json.Unmarshal(body, &rule)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rule.RuleId).To(Equal(mergeRuleId))
 	})
 
 })

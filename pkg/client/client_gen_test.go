@@ -21,8 +21,10 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -35,8 +37,10 @@ var (
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
+	_ = mdlfilterrule.NewFilterRule
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
+	_ = mdlmergerule.NewMergeRule
 	_ = node.NewNode
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
@@ -67,6 +71,8 @@ var testIDs = map[string]uuid.UUID{
 	"Artifact":          uuid.New(),
 	"ArtifactInstance":  uuid.New(),
 	"Product":           uuid.New(),
+	"FilterRule":        uuid.New(),
+	"MergeRule":         uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -270,6 +276,20 @@ func loadTestModel(t *testing.T, m model.Model) {
 		p.SetDisplayName("Test Product")
 		p.SetVendor(&iam.OrgUnitRef{OrgUnitId: testIDs["OrgUnit"]})
 		require.NoError(t, m.AddProduct(p))
+	}
+
+	// --- FilterRule ---
+	{
+		fr := mdlfilterrule.NewFilterRule(testIDs["FilterRule"])
+		fr.SetDisplayName("Test FilterRule")
+		require.NoError(t, m.AddFilterRule(fr))
+	}
+
+	// --- MergeRule ---
+	{
+		mr := mdlmergerule.NewMergeRule(testIDs["MergeRule"])
+		mr.SetDisplayName("Test MergeRule")
+		require.NoError(t, m.AddMergeRule(mr))
 	}
 
 }
@@ -872,6 +892,58 @@ func TestGetByIdProduct(t *testing.T) {
 	assert.Equal(t, "Test Product", got.GetDisplayName())
 }
 
+func TestListFilterRule(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetFilterRules()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "FilterRule list should not be empty")
+}
+
+func TestGetByIdFilterRule(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetFilterRuleById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrFilterRuleNotFound)
+
+	// known id → success
+	got, err := c.GetFilterRuleById(testIDs["FilterRule"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["FilterRule"], got.GetRuleId())
+	assert.Equal(t, "Test FilterRule", got.GetDisplayName())
+}
+
+func TestListMergeRule(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetMergeRules()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "MergeRule list should not be empty")
+}
+
+func TestGetByIdMergeRule(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetMergeRuleById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrMergeRuleNotFound)
+
+	// known id → success
+	got, err := c.GetMergeRuleById(testIDs["MergeRule"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["MergeRule"], got.GetRuleId())
+	assert.Equal(t, "Test MergeRule", got.GetDisplayName())
+}
+
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType
 // enum contains an entry for every resource type that has a wire kind.
 func TestResourceRefEnumCompleteness(t *testing.T) {
@@ -904,6 +976,8 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"Artifact",
 		"ArtifactInstance",
 		"Product",
+		"FilterRule",
+		"MergeRule",
 	}
 
 	for _, kind := range wireKinds {

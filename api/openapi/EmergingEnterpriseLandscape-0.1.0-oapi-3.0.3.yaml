@@ -379,6 +379,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/filter-rules:
+    get:
+      description: Retrieve all filter rules registered in this modelsrv instance.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/filter-rules/{ruleId}:
+    get:
+      description: Retrieve a filter rule by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilterRule'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/merge-rules:
+    get:
+      description: Retrieve all merge rules registered in this modelsrv instance.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/merge-rules/{ruleId}:
+    get:
+      description: Retrieve a merge rule by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeRule'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/nodeTypes:
     get:
       description: Retrieve all node types in the landscape.
@@ -984,6 +1054,40 @@ components:
           description: A set of key-value pairs for storing additional metadata about the finding class.
           items:
             $ref: '#/components/schemas/Annotation'
+    FilterRule:
+      type: object
+      description: Documents a filter registered in a modelsrv instance. Filter rules describe how change events may be passed through, suppressed, or expanded by the event filter chain.
+      properties:
+        ruleId:
+          type: string
+          description: An UUID that uniquely identifies the filter rule.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the filter rule.
+        description:
+          type: string
+          description: A brief description of what the filter rule does.
+      required:
+        - ruleId
+        - displayName
+    MergeRule:
+      type: object
+      description: Documents a merge rule registered in a modelsrv instance. Merge rules describe how change events may be merged into existing resources.
+      properties:
+        ruleId:
+          type: string
+          description: An UUID that uniquely identifies the merge rule.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the merge rule.
+        description:
+          type: string
+          description: A brief description of what the merge rule does.
+      required:
+        - ruleId
+        - displayName
     Context:
       type: object
       description: Represents a context in the EmELand model. A context is a high-level categorization or domain that groups systems and other entities based on shared characteristics or purposes.
@@ -1052,6 +1156,9 @@ components:
             # phase-8 artifact types
             - Artifact
             - ArtifactInstance
+            # event pipeline visibility
+            - FilterRule
+            - MergeRule
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.

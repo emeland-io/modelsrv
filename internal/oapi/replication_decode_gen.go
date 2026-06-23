@@ -251,6 +251,26 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 			return uuid.Nil, nil, err
 		}
 		return v.GetProductId(), v, nil
+	case events.FilterRuleResource:
+		var o FilterRule
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := FilterRuleFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetRuleId(), v, nil
+	case events.MergeRuleResource:
+		var o MergeRule
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := MergeRuleFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetRuleId(), v, nil
 	default:
 		return uuid.Nil, nil, fmt.Errorf("unsupported resource type for upsert: %s", rt)
 	}

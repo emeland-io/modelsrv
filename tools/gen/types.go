@@ -114,6 +114,8 @@ type TypeSpec struct {
 
 	// SkipConvert marks types whose FromDto/ToDto stay hand-written in internal/oapi/convert_special.go.
 	SkipConvert bool
+	// SkipAuthz marks types whose GET handlers do not apply visibility filtering (e.g. infrastructure metadata).
+	SkipAuthz bool
 	// ConvertDomainIDMethod is the getter used after FromDto in replication decode (e.g. "GetSystemId()").
 	ConvertDomainIDMethod string
 	// WireDomainIDGetter is ConvertDomainIDMethod without parentheses (e.g. "GetSystemId").

@@ -39,6 +39,9 @@ var _ = Describe("Chain", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockModel = mocks.NewMockModel(ctrl)
+		mockModel.EXPECT().GetFilterRuleById(gomock.Any()).Return(nil).AnyTimes()
+		mockModel.EXPECT().AddFilterRule(gomock.Any()).Return(nil).AnyTimes()
+		mockModel.EXPECT().DeleteFilterRuleById(gomock.Any()).Return(nil).AnyTimes()
 		chain = eventfilter.NewChain(mockModel)
 	})
 
@@ -115,6 +118,60 @@ var _ = Describe("Chain", func() {
 			})
 			result := chain.Apply(makeEvent(events.ContextResource))
 			Expect(result).To(BeEmpty())
+		})
+	})
+
+	Describe("RegisterFilter", func() {
+		It("creates a FilterRule in the model when a model is set", func() {
+			sink := events.NewListSink()
+			m, err := model.NewModel(sink)
+			Expect(err).NotTo(HaveOccurred())
+
+			c := eventfilter.NewChain(m)
+			id := c.RegisterFilter(eventfilter.Filter{
+				DisplayName: "Test filter",
+				Description: "Filters test events",
+				Fn:          passThroughFn,
+			})
+
+			rule := m.GetFilterRuleById(uuid.UUID(id))
+			Expect(rule).NotTo(BeNil())
+			Expect(rule.GetDisplayName()).To(Equal("Test filter"))
+			Expect(rule.GetDescription()).To(Equal("Filters test events"))
+		})
+
+		It("back-fills FilterRules when SetModel is called after registration", func() {
+			sink := events.NewListSink()
+			m, err := model.NewModel(sink)
+			Expect(err).NotTo(HaveOccurred())
+
+			c := eventfilter.NewChain(nil)
+			id := c.RegisterFilter(eventfilter.Filter{
+				DisplayName: "Deferred filter",
+				Description: "Registered before model existed",
+				Fn:          passThroughFn,
+			})
+			c.SetModel(m)
+
+			rule := m.GetFilterRuleById(uuid.UUID(id))
+			Expect(rule).NotTo(BeNil())
+			Expect(rule.GetDisplayName()).To(Equal("Deferred filter"))
+		})
+
+		It("removes the FilterRule from the model on Unregister", func() {
+			sink := events.NewListSink()
+			m, err := model.NewModel(sink)
+			Expect(err).NotTo(HaveOccurred())
+
+			c := eventfilter.NewChain(m)
+			id := c.RegisterFilter(eventfilter.Filter{
+				DisplayName: "Temporary filter",
+				Fn:          passThroughFn,
+			})
+			Expect(m.GetFilterRuleById(uuid.UUID(id))).NotTo(BeNil())
+
+			c.Unregister(id)
+			Expect(m.GetFilterRuleById(uuid.UUID(id))).To(BeNil())
 		})
 	})
 
@@ -201,6 +258,9 @@ var _ = Describe("FilteringSink", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockModel = mocks.NewMockModel(ctrl)
+		mockModel.EXPECT().GetFilterRuleById(gomock.Any()).Return(nil).AnyTimes()
+		mockModel.EXPECT().AddFilterRule(gomock.Any()).Return(nil).AnyTimes()
+		mockModel.EXPECT().DeleteFilterRuleById(gomock.Any()).Return(nil).AnyTimes()
 		downstream = events.NewListSink()
 		chain = eventfilter.NewChain(mockModel)
 		sink = eventfilter.NewFilteringSink(chain, downstream)

@@ -94,6 +94,10 @@ const (
 	ArtifactResource
 	ArtifactInstanceResource
 
+	// Event pipeline visibility
+	FilterRuleResource
+	MergeRuleResource
+
 	// Value objects
 	AnnotationsResource
 )
@@ -134,6 +138,10 @@ var resourceTypeValues = map[ResourceType]string{
 	// Phase 8
 	ArtifactResource:         "Artifact",
 	ArtifactInstanceResource: "ArtifactInstance",
+
+	// Event pipeline visibility
+	FilterRuleResource: "FilterRule",
+	MergeRuleResource:  "MergeRule",
 
 	// Value objects
 	AnnotationsResource: "Annotations",
@@ -277,6 +285,10 @@ func ParseWireKind(s string) ResourceType {
 		return ArtifactResource
 	case "ArtifactInstance":
 		return ArtifactInstanceResource
+	case "FilterRule":
+		return FilterRuleResource
+	case "MergeRule":
+		return MergeRuleResource
 	default:
 		return UnknownResourceType
 	}

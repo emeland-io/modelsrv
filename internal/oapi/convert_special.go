@@ -12,8 +12,10 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -814,5 +816,61 @@ func BindingToDto(v iam.Binding) Binding {
 		out.Role = openapi_types.UUID(rr.EffectiveRoleID())
 	}
 	out.Subject = iamSubjectToAPISubjectRef(v.GetSubject())
+	return out
+}
+
+// FilterRuleFromDto builds a FilterRule from a wire DTO.
+func FilterRuleFromDto(m model.Model, o *FilterRule) (mdlfilterrule.FilterRule, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil filter rule")
+	}
+	id := uuid.UUID(o.RuleId)
+	fr := mdlfilterrule.NewFilterRule(id)
+	fr.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		fr.SetDescription(*o.Description)
+	}
+	return fr, nil
+}
+
+func FilterRuleToDto(v mdlfilterrule.FilterRule) FilterRule {
+	if v == nil {
+		return FilterRule{}
+	}
+	out := FilterRule{
+		RuleId:      uuidToOpenAPI(v.GetRuleId()),
+		DisplayName: v.GetDisplayName(),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	return out
+}
+
+// MergeRuleFromDto builds a MergeRule from a wire DTO.
+func MergeRuleFromDto(m model.Model, o *MergeRule) (mdlmergerule.MergeRule, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil merge rule")
+	}
+	id := uuid.UUID(o.RuleId)
+	mr := mdlmergerule.NewMergeRule(id)
+	mr.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		mr.SetDescription(*o.Description)
+	}
+	return mr, nil
+}
+
+func MergeRuleToDto(v mdlmergerule.MergeRule) MergeRule {
+	if v == nil {
+		return MergeRule{}
+	}
+	out := MergeRule{
+		RuleId:      uuidToOpenAPI(v.GetRuleId()),
+		DisplayName: v.GetDisplayName(),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
 	return out
 }

@@ -42,6 +42,9 @@ var documentKinds = map[events.ResourceType]struct{}{
 
 	events.ArtifactResource:         {},
 	events.ArtifactInstanceResource: {},
+
+	events.FilterRuleResource: {},
+	events.MergeRuleResource:  {},
 }
 
 // ResourceType returns the underlying [events.ResourceType].

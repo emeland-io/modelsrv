@@ -72,7 +72,8 @@ func New() (Backend, error) {
 	}
 
 	chain.SetModel(m)
-	chain.Register(phase0.NewFilterFunc())
+	chain.RegisterFilter(phase0.New())
+	registerMergeRules(m)
 
 	return &backendData{
 		model:    m,

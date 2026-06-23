@@ -18,8 +18,10 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	mdlevent "go.emeland.io/modelsrv/pkg/model/event"
+	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
+	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -176,6 +178,30 @@ type FindingTypeModel interface {
 	GetFindingTypeByName(name string) finding.FindingType
 }
 
+// FilterRuleModel provides CRUD operations for [filterrule.FilterRule] resources.
+type FilterRuleModel interface {
+	// AddFilterRule registers a FilterRule in the model.
+	AddFilterRule(filterRule mdlfilterrule.FilterRule) error
+	// DeleteFilterRuleById removes the FilterRule with the given id.
+	DeleteFilterRuleById(id uuid.UUID) error
+	// GetFilterRules returns all registered FilterRules.
+	GetFilterRules() ([]mdlfilterrule.FilterRule, error)
+	// GetFilterRuleById returns the FilterRule with the given id, or nil if not found.
+	GetFilterRuleById(id uuid.UUID) mdlfilterrule.FilterRule
+}
+
+// MergeRuleModel provides CRUD operations for [mergerule.MergeRule] resources.
+type MergeRuleModel interface {
+	// AddMergeRule registers a MergeRule in the model.
+	AddMergeRule(mergeRule mdlmergerule.MergeRule) error
+	// DeleteMergeRuleById removes the MergeRule with the given id.
+	DeleteMergeRuleById(id uuid.UUID) error
+	// GetMergeRules returns all registered MergeRules.
+	GetMergeRules() ([]mdlmergerule.MergeRule, error)
+	// GetMergeRuleById returns the MergeRule with the given id, or nil if not found.
+	GetMergeRuleById(id uuid.UUID) mdlmergerule.MergeRule
+}
+
 // ArtifactModel provides CRUD operations for [artifact.Artifact] resources.
 type ArtifactModel interface {
 	// AddArtifact registers an Artifact in the model.
@@ -218,6 +244,8 @@ type Model interface {
 	ComponentInstanceModel
 	FindingModel
 	FindingTypeModel
+	FilterRuleModel
+	MergeRuleModel
 	ArtifactModel
 	ArtifactInstanceModel
 	iam.OrgUnitModel
@@ -267,6 +295,9 @@ type modelData struct {
 	bindingsByUUID        map[uuid.UUID]iam.Binding
 
 	productsByUUID map[uuid.UUID]mdlprod.Product
+
+	filterRulesByUUID map[uuid.UUID]mdlfilterrule.FilterRule
+	mergeRulesByUUID  map[uuid.UUID]mdlmergerule.MergeRule
 }
 
 // ensure Model interface is implemented correctly
@@ -312,6 +343,9 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		bindingsByUUID:        make(map[uuid.UUID]iam.Binding),
 
 		productsByUUID: make(map[uuid.UUID]mdlprod.Product),
+
+		filterRulesByUUID: make(map[uuid.UUID]mdlfilterrule.FilterRule),
+		mergeRulesByUUID:  make(map[uuid.UUID]mdlmergerule.MergeRule),
 	}
 
 	return model, nil
@@ -1054,4 +1088,44 @@ func (m *modelData) GetProductById(id uuid.UUID) mdlprod.Product {
 // GetProducts implements [Model].
 func (m *modelData) GetProducts() ([]mdlprod.Product, error) {
 	return getAllEventEnabled(m, m.productsByUUID)
+}
+
+// AddFilterRule implements [Model].
+func (m *modelData) AddFilterRule(filterRule mdlfilterrule.FilterRule) error {
+	return addEventEnabled(m, filterRule, mdlfilterrule.FilterRule.GetRuleId, func(x mdlfilterrule.FilterRule, s events.EventSink) { x.Register(s) }, m.filterRulesByUUID, events.FilterRuleResource)
+}
+
+// DeleteFilterRuleById implements [Model].
+func (m *modelData) DeleteFilterRuleById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.filterRulesByUUID, events.FilterRuleResource, common.ErrFilterRuleNotFound)
+}
+
+// GetFilterRuleById implements [Model].
+func (m *modelData) GetFilterRuleById(id uuid.UUID) mdlfilterrule.FilterRule {
+	return getEventEnabled(m, id, m.filterRulesByUUID)
+}
+
+// GetFilterRules implements [Model].
+func (m *modelData) GetFilterRules() ([]mdlfilterrule.FilterRule, error) {
+	return getAllEventEnabled(m, m.filterRulesByUUID)
+}
+
+// AddMergeRule implements [Model].
+func (m *modelData) AddMergeRule(mergeRule mdlmergerule.MergeRule) error {
+	return addEventEnabled(m, mergeRule, mdlmergerule.MergeRule.GetRuleId, func(x mdlmergerule.MergeRule, s events.EventSink) { x.Register(s) }, m.mergeRulesByUUID, events.MergeRuleResource)
+}
+
+// DeleteMergeRuleById implements [Model].
+func (m *modelData) DeleteMergeRuleById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.mergeRulesByUUID, events.MergeRuleResource, common.ErrMergeRuleNotFound)
+}
+
+// GetMergeRuleById implements [Model].
+func (m *modelData) GetMergeRuleById(id uuid.UUID) mdlmergerule.MergeRule {
+	return getEventEnabled(m, id, m.mergeRulesByUUID)
+}
+
+// GetMergeRules implements [Model].
+func (m *modelData) GetMergeRules() ([]mdlmergerule.MergeRule, error) {
+	return getAllEventEnabled(m, m.mergeRulesByUUID)
 }

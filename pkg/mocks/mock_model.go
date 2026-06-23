@@ -18,8 +18,10 @@ import (
 	artifact "go.emeland.io/modelsrv/pkg/model/artifact"
 	component "go.emeland.io/modelsrv/pkg/model/component"
 	context "go.emeland.io/modelsrv/pkg/model/context"
+	filterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	finding "go.emeland.io/modelsrv/pkg/model/finding"
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
+	mergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	node "go.emeland.io/modelsrv/pkg/model/node"
 	product "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -176,6 +178,20 @@ func (mr *MockModelMockRecorder) AddContextType(contextType any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddContextType", reflect.TypeOf((*MockModel)(nil).AddContextType), contextType)
 }
 
+// AddFilterRule mocks base method.
+func (m *MockModel) AddFilterRule(filterRule filterrule.FilterRule) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddFilterRule", filterRule)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddFilterRule indicates an expected call of AddFilterRule.
+func (mr *MockModelMockRecorder) AddFilterRule(filterRule any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddFilterRule", reflect.TypeOf((*MockModel)(nil).AddFilterRule), filterRule)
+}
+
 // AddFinding mocks base method.
 func (m *MockModel) AddFinding(f finding.Finding) error {
 	m.ctrl.T.Helper()
@@ -230,6 +246,20 @@ func (m *MockModel) AddIdentity(arg0 iam.Identity) error {
 func (mr *MockModelMockRecorder) AddIdentity(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddIdentity", reflect.TypeOf((*MockModel)(nil).AddIdentity), arg0)
+}
+
+// AddMergeRule mocks base method.
+func (m *MockModel) AddMergeRule(mergeRule mergerule.MergeRule) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddMergeRule", mergeRule)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddMergeRule indicates an expected call of AddMergeRule.
+func (mr *MockModelMockRecorder) AddMergeRule(mergeRule any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMergeRule", reflect.TypeOf((*MockModel)(nil).AddMergeRule), mergeRule)
 }
 
 // AddNode mocks base method.
@@ -526,6 +556,20 @@ func (mr *MockModelMockRecorder) DeleteContextTypeById(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteContextTypeById", reflect.TypeOf((*MockModel)(nil).DeleteContextTypeById), id)
 }
 
+// DeleteFilterRuleById mocks base method.
+func (m *MockModel) DeleteFilterRuleById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFilterRuleById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFilterRuleById indicates an expected call of DeleteFilterRuleById.
+func (mr *MockModelMockRecorder) DeleteFilterRuleById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFilterRuleById", reflect.TypeOf((*MockModel)(nil).DeleteFilterRuleById), id)
+}
+
 // DeleteFindingById mocks base method.
 func (m *MockModel) DeleteFindingById(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -580,6 +624,20 @@ func (m *MockModel) DeleteIdentity(arg0 uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteIdentity(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentity", reflect.TypeOf((*MockModel)(nil).DeleteIdentity), arg0)
+}
+
+// DeleteMergeRuleById mocks base method.
+func (m *MockModel) DeleteMergeRuleById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMergeRuleById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMergeRuleById indicates an expected call of DeleteMergeRuleById.
+func (mr *MockModelMockRecorder) DeleteMergeRuleById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMergeRuleById", reflect.TypeOf((*MockModel)(nil).DeleteMergeRuleById), id)
 }
 
 // DeleteNodeById mocks base method.
@@ -983,6 +1041,35 @@ func (mr *MockModelMockRecorder) GetContexts() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContexts", reflect.TypeOf((*MockModel)(nil).GetContexts))
 }
 
+// GetFilterRuleById mocks base method.
+func (m *MockModel) GetFilterRuleById(id uuid.UUID) filterrule.FilterRule {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFilterRuleById", id)
+	ret0, _ := ret[0].(filterrule.FilterRule)
+	return ret0
+}
+
+// GetFilterRuleById indicates an expected call of GetFilterRuleById.
+func (mr *MockModelMockRecorder) GetFilterRuleById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFilterRuleById", reflect.TypeOf((*MockModel)(nil).GetFilterRuleById), id)
+}
+
+// GetFilterRules mocks base method.
+func (m *MockModel) GetFilterRules() ([]filterrule.FilterRule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFilterRules")
+	ret0, _ := ret[0].([]filterrule.FilterRule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFilterRules indicates an expected call of GetFilterRules.
+func (mr *MockModelMockRecorder) GetFilterRules() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFilterRules", reflect.TypeOf((*MockModel)(nil).GetFilterRules))
+}
+
 // GetFindingById mocks base method.
 func (m *MockModel) GetFindingById(id uuid.UUID) finding.Finding {
 	m.ctrl.T.Helper()
@@ -1111,6 +1198,35 @@ func (m *MockModel) GetIdentityById(arg0 uuid.UUID) iam.Identity {
 func (mr *MockModelMockRecorder) GetIdentityById(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityById", reflect.TypeOf((*MockModel)(nil).GetIdentityById), arg0)
+}
+
+// GetMergeRuleById mocks base method.
+func (m *MockModel) GetMergeRuleById(id uuid.UUID) mergerule.MergeRule {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMergeRuleById", id)
+	ret0, _ := ret[0].(mergerule.MergeRule)
+	return ret0
+}
+
+// GetMergeRuleById indicates an expected call of GetMergeRuleById.
+func (mr *MockModelMockRecorder) GetMergeRuleById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMergeRuleById", reflect.TypeOf((*MockModel)(nil).GetMergeRuleById), id)
+}
+
+// GetMergeRules mocks base method.
+func (m *MockModel) GetMergeRules() ([]mergerule.MergeRule, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMergeRules")
+	ret0, _ := ret[0].([]mergerule.MergeRule)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMergeRules indicates an expected call of GetMergeRules.
+func (mr *MockModelMockRecorder) GetMergeRules() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMergeRules", reflect.TypeOf((*MockModel)(nil).GetMergeRules))
 }
 
 // GetNodeById mocks base method.

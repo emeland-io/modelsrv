@@ -630,3 +630,41 @@ func (a *ApiServer) GetLandscapeProductsProductId(ctx context.Context, request G
 	}
 	return GetLandscapeProductsProductId200JSONResponse(ProductToDto(item)), nil
 }
+
+// GetLandscapeFilterRules implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFilterRules(ctx context.Context, request GetLandscapeFilterRulesRequestObject) (GetLandscapeFilterRulesResponseObject, error) {
+	items, err := a.Backend.GetFilterRules()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeFilterRules200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/filter-rules", items)), nil
+}
+
+// GetLandscapeFilterRulesRuleId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeFilterRulesRuleId(ctx context.Context, request GetLandscapeFilterRulesRuleIdRequestObject) (GetLandscapeFilterRulesRuleIdResponseObject, error) {
+	item := a.Backend.GetFilterRuleById(request.RuleId)
+	if item == nil {
+		msg := fmt.Sprintf("filter rule %s not found", request.RuleId.String())
+		return GetLandscapeFilterRulesRuleId404JSONResponse(msg), nil
+	}
+	return GetLandscapeFilterRulesRuleId200JSONResponse(FilterRuleToDto(item)), nil
+}
+
+// GetLandscapeMergeRules implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMergeRules(ctx context.Context, request GetLandscapeMergeRulesRequestObject) (GetLandscapeMergeRulesResponseObject, error) {
+	items, err := a.Backend.GetMergeRules()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeMergeRules200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/merge-rules", items)), nil
+}
+
+// GetLandscapeMergeRulesRuleId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMergeRulesRuleId(ctx context.Context, request GetLandscapeMergeRulesRuleIdRequestObject) (GetLandscapeMergeRulesRuleIdResponseObject, error) {
+	item := a.Backend.GetMergeRuleById(request.RuleId)
+	if item == nil {
+		msg := fmt.Sprintf("merge rule %s not found", request.RuleId.String())
+		return GetLandscapeMergeRulesRuleId404JSONResponse(msg), nil
+	}
+	return GetLandscapeMergeRulesRuleId200JSONResponse(MergeRuleToDto(item)), nil
+}

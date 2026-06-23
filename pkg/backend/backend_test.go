@@ -37,6 +37,33 @@ var _ = Describe("Backend", func() {
 			b, _ := backend.New()
 			Expect(b.GetEventManager()).NotTo(BeNil())
 		})
+
+		It("registers phase0 as a discoverable FilterRule", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			rules, err := b.GetModel().GetFilterRules()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rules).NotTo(BeEmpty())
+
+			var phase0Rule bool
+			for _, rule := range rules {
+				if rule.GetDisplayName() == "Phase 0 referential integrity" {
+					phase0Rule = true
+					Expect(rule.GetDescription()).To(ContainSubstring("referential integrity"))
+				}
+			}
+			Expect(phase0Rule).To(BeTrue())
+		})
+
+		It("registers static MergeRules", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			rules, err := b.GetModel().GetMergeRules()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(len(rules)).To(BeNumerically(">=", 2))
+		})
 	})
 
 	Describe("wiring: model mutations flow through the filter chain", func() {
@@ -53,8 +80,14 @@ var _ = Describe("Backend", func() {
 			sys := model.MakeTestSystem(uuid.New(), "test-sys", common.Version{})
 			Expect(b.GetModel().AddSystem(sys)).To(Succeed())
 
-			Expect(intercepted).NotTo(BeEmpty())
-			Expect(intercepted[0].ResourceType).To(Equal(events.SystemResource))
+			var sawSystem bool
+			for _, ev := range intercepted {
+				if ev.ResourceType == events.SystemResource {
+					sawSystem = true
+					break
+				}
+			}
+			Expect(sawSystem).To(BeTrue())
 		})
 
 		It("the chain receives the same Model instance that Backend constructed", func() {
@@ -88,13 +121,16 @@ var _ = Describe("Backend", func() {
 				return []events.Event{ev, extra}
 			})
 
+			seqBefore, err := b.GetEventManager().GetCurrentSequenceId(context.Background())
+			Expect(err).NotTo(HaveOccurred())
+
 			sys := model.MakeTestSystem(uuid.New(), "expand-sys", common.Version{})
 			Expect(b.GetModel().AddSystem(sys)).To(Succeed())
 
 			Expect(count).To(BeNumerically(">", 0))
-			seqID, err := b.GetEventManager().GetCurrentSequenceId(context.Background())
+			seqAfter, err := b.GetEventManager().GetCurrentSequenceId(context.Background())
 			Expect(err).NotTo(HaveOccurred())
-			Expect(seqID).To(Equal(uint64(2))) // 1 for the system creation, 1 for the finding creation
+			Expect(seqAfter - seqBefore).To(Equal(uint64(2))) // system creation + expanded finding
 		})
 	})
 
