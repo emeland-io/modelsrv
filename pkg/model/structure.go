@@ -14,6 +14,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -23,6 +24,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -202,6 +204,30 @@ type MergeRuleModel interface {
 	GetMergeRuleById(id uuid.UUID) mdlmergerule.MergeRule
 }
 
+// CapabilityModel provides CRUD operations for [capability.Capability] resources.
+type CapabilityModel interface {
+	// AddCapability registers a Capability in the model.
+	AddCapability(capability mdlcapability.Capability) error
+	// DeleteCapabilityById removes the Capability with the given id.
+	DeleteCapabilityById(id uuid.UUID) error
+	// GetCapabilities returns all registered Capabilities.
+	GetCapabilities() ([]mdlcapability.Capability, error)
+	// GetCapabilityById returns the Capability with the given id, or nil if not found.
+	GetCapabilityById(id uuid.UUID) mdlcapability.Capability
+}
+
+// ParameterModel provides CRUD operations for [parameter.Parameter] resources.
+type ParameterModel interface {
+	// AddParameter registers a Parameter in the model.
+	AddParameter(parameter mdlparameter.Parameter) error
+	// DeleteParameterById removes the Parameter with the given id.
+	DeleteParameterById(id uuid.UUID) error
+	// GetParameters returns all registered Parameters.
+	GetParameters() ([]mdlparameter.Parameter, error)
+	// GetParameterById returns the Parameter with the given id, or nil if not found.
+	GetParameterById(id uuid.UUID) mdlparameter.Parameter
+}
+
 // ArtifactModel provides CRUD operations for [artifact.Artifact] resources.
 type ArtifactModel interface {
 	// AddArtifact registers an Artifact in the model.
@@ -246,6 +272,8 @@ type Model interface {
 	FindingTypeModel
 	FilterRuleModel
 	MergeRuleModel
+	CapabilityModel
+	ParameterModel
 	ArtifactModel
 	ArtifactInstanceModel
 	iam.OrgUnitModel
@@ -298,6 +326,9 @@ type modelData struct {
 
 	filterRulesByUUID map[uuid.UUID]mdlfilterrule.FilterRule
 	mergeRulesByUUID  map[uuid.UUID]mdlmergerule.MergeRule
+
+	capabilitiesByUUID map[uuid.UUID]mdlcapability.Capability
+	parametersByUUID   map[uuid.UUID]mdlparameter.Parameter
 }
 
 // ensure Model interface is implemented correctly
@@ -346,6 +377,9 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 		filterRulesByUUID: make(map[uuid.UUID]mdlfilterrule.FilterRule),
 		mergeRulesByUUID:  make(map[uuid.UUID]mdlmergerule.MergeRule),
+
+		capabilitiesByUUID: make(map[uuid.UUID]mdlcapability.Capability),
+		parametersByUUID:   make(map[uuid.UUID]mdlparameter.Parameter),
 	}
 
 	return model, nil
@@ -1128,4 +1162,44 @@ func (m *modelData) GetMergeRuleById(id uuid.UUID) mdlmergerule.MergeRule {
 // GetMergeRules implements [Model].
 func (m *modelData) GetMergeRules() ([]mdlmergerule.MergeRule, error) {
 	return getAllEventEnabled(m, m.mergeRulesByUUID)
+}
+
+// AddCapability implements [Model].
+func (m *modelData) AddCapability(capability mdlcapability.Capability) error {
+	return addEventEnabled(m, capability, mdlcapability.Capability.GetCapabilityId, func(x mdlcapability.Capability, s events.EventSink) { x.Register(s) }, m.capabilitiesByUUID, events.CapabilityResource)
+}
+
+// DeleteCapabilityById implements [Model].
+func (m *modelData) DeleteCapabilityById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.capabilitiesByUUID, events.CapabilityResource, common.ErrCapabilityNotFound)
+}
+
+// GetCapabilityById implements [Model].
+func (m *modelData) GetCapabilityById(id uuid.UUID) mdlcapability.Capability {
+	return getEventEnabled(m, id, m.capabilitiesByUUID)
+}
+
+// GetCapabilities implements [Model].
+func (m *modelData) GetCapabilities() ([]mdlcapability.Capability, error) {
+	return getAllEventEnabled(m, m.capabilitiesByUUID)
+}
+
+// AddParameter implements [Model].
+func (m *modelData) AddParameter(parameter mdlparameter.Parameter) error {
+	return addEventEnabled(m, parameter, mdlparameter.Parameter.GetParameterId, func(x mdlparameter.Parameter, s events.EventSink) { x.Register(s) }, m.parametersByUUID, events.ParameterResource)
+}
+
+// DeleteParameterById implements [Model].
+func (m *modelData) DeleteParameterById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.parametersByUUID, events.ParameterResource, common.ErrParameterNotFound)
+}
+
+// GetParameterById implements [Model].
+func (m *modelData) GetParameterById(id uuid.UUID) mdlparameter.Parameter {
+	return getEventEnabled(m, id, m.parametersByUUID)
+}
+
+// GetParameters implements [Model].
+func (m *modelData) GetParameters() ([]mdlparameter.Parameter, error) {
+	return getAllEventEnabled(m, m.parametersByUUID)
 }

@@ -668,3 +668,57 @@ func (a *ApiServer) GetLandscapeMergeRulesRuleId(ctx context.Context, request Ge
 	}
 	return GetLandscapeMergeRulesRuleId200JSONResponse(MergeRuleToDto(item)), nil
 }
+
+// GetLandscapeCapabilities implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapabilities(ctx context.Context, request GetLandscapeCapabilitiesRequestObject) (GetLandscapeCapabilitiesResponseObject, error) {
+	items, err := a.Backend.GetCapabilities()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.CapabilityResource, items)
+	}
+	return GetLandscapeCapabilities200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capabilities", items)), nil
+}
+
+// GetLandscapeCapabilitiesCapabilityId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapabilitiesCapabilityId(ctx context.Context, request GetLandscapeCapabilitiesCapabilityIdRequestObject) (GetLandscapeCapabilitiesCapabilityIdResponseObject, error) {
+	item := a.Backend.GetCapabilityById(request.CapabilityId)
+	if item == nil {
+		msg := fmt.Sprintf("capability %s not found", request.CapabilityId.String())
+		return GetLandscapeCapabilitiesCapabilityId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.CapabilityResource, item) {
+		msg := fmt.Sprintf("capability %s not found", request.CapabilityId.String())
+		return GetLandscapeCapabilitiesCapabilityId404JSONResponse(msg), nil
+	}
+	return GetLandscapeCapabilitiesCapabilityId200JSONResponse(CapabilityToDto(item)), nil
+}
+
+// GetLandscapeParameters implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeParameters(ctx context.Context, request GetLandscapeParametersRequestObject) (GetLandscapeParametersResponseObject, error) {
+	items, err := a.Backend.GetParameters()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ParameterResource, items)
+	}
+	return GetLandscapeParameters200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/parameters", items)), nil
+}
+
+// GetLandscapeParametersParameterId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeParametersParameterId(ctx context.Context, request GetLandscapeParametersParameterIdRequestObject) (GetLandscapeParametersParameterIdResponseObject, error) {
+	item := a.Backend.GetParameterById(request.ParameterId)
+	if item == nil {
+		msg := fmt.Sprintf("parameter %s not found", request.ParameterId.String())
+		return GetLandscapeParametersParameterId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ParameterResource, item) {
+		msg := fmt.Sprintf("parameter %s not found", request.ParameterId.String())
+		return GetLandscapeParametersParameterId404JSONResponse(msg), nil
+	}
+	return GetLandscapeParametersParameterId200JSONResponse(ParameterToDto(item)), nil
+}
