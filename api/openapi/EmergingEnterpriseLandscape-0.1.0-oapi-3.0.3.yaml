@@ -908,6 +908,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/capabilities:
+    get:
+      description: Retrieve all capabilities registered in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/capabilities/{capabilityId}:
+    get:
+      description: Retrieve a capability by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: capabilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capability'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/parameters:
+    get:
+      description: Retrieve all parameters registered in the landscape.
+      tags: [landscape]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/parameters/{parameterId}:
+    get:
+      description: Retrieve a parameter by its UUID.
+      tags: [landscape]
+      parameters:
+        - name: parameterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Parameter'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /events/register:
     post:
       description: Register a new event consumer.
@@ -1258,6 +1328,9 @@ components:
             # event pipeline visibility
             - FilterRule
             - MergeRule
+            # phase-3 capabilities
+            - Capability
+            - Parameter
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.
@@ -1571,6 +1644,64 @@ components:
             $ref: '#/components/schemas/Annotation'
       required:
         - productId
+        - displayName
+    Capability:
+      type: object
+      description: A capability represents a technical building block offered by a product or system.
+      properties:
+        capabilityId:
+          type: string
+          description: An UUID that uniquely identifies the capability.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the capability.
+        versions:
+          type: array
+          description: References to capability versions.
+          items:
+            $ref: '#/components/schemas/CapabilityVersionRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the capability.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - capabilityId
+        - displayName
+    CapabilityVersionRef:
+      type: object
+      description: A reference to a capability version.
+      properties:
+        capabilityVersionId:
+          type: string
+          description: The UUID of the referenced capability version.
+          format: uuid
+      required:
+        - capabilityVersionId
+    Parameter:
+      type: object
+      description: A parameter defines an identifier and a list of discrete, finite values that the parameter can take.
+      properties:
+        parameterId:
+          type: string
+          description: An UUID that uniquely identifies the parameter.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the parameter.
+        values:
+          type: array
+          description: The discrete values this parameter can take.
+          items:
+            type: string
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the parameter.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - parameterId
         - displayName
     ContextType:
       type: object

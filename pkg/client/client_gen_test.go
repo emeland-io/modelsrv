@@ -18,6 +18,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -26,6 +27,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -37,11 +39,13 @@ var (
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
+	_ = mdlcapability.NewCapability
 	_ = mdlfilterrule.NewFilterRule
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = node.NewNode
+	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -73,6 +77,8 @@ var testIDs = map[string]uuid.UUID{
 	"Product":           uuid.New(),
 	"FilterRule":        uuid.New(),
 	"MergeRule":         uuid.New(),
+	"Capability":        uuid.New(),
+	"Parameter":         uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -290,6 +296,21 @@ func loadTestModel(t *testing.T, m model.Model) {
 		mr := mdlmergerule.NewMergeRule(testIDs["MergeRule"])
 		mr.SetDisplayName("Test MergeRule")
 		require.NoError(t, m.AddMergeRule(mr))
+	}
+
+	// --- Capability ---
+	{
+		cap := mdlcapability.NewCapability(testIDs["Capability"])
+		cap.SetDisplayName("Test Capability")
+		require.NoError(t, m.AddCapability(cap))
+	}
+
+	// --- Parameter ---
+	{
+		param := mdlparameter.NewParameter(testIDs["Parameter"])
+		param.SetDisplayName("Test Parameter")
+		param.SetValues([]string{"val1", "val2"})
+		require.NoError(t, m.AddParameter(param))
 	}
 
 }
@@ -892,6 +913,58 @@ func TestGetByIdMergeRule(t *testing.T) {
 	assert.Equal(t, "Test MergeRule", got.GetDisplayName())
 }
 
+func TestListCapability(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetCapabilities()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Capability list should not be empty")
+}
+
+func TestGetByIdCapability(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetCapabilityById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrCapabilityNotFound)
+
+	// known id → success
+	got, err := c.GetCapabilityById(testIDs["Capability"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Capability"], got.GetCapabilityId())
+	assert.Equal(t, "Test Capability", got.GetDisplayName())
+}
+
+func TestListParameter(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetParameters()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Parameter list should not be empty")
+}
+
+func TestGetByIdParameter(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetParameterById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrParameterNotFound)
+
+	// known id → success
+	got, err := c.GetParameterById(testIDs["Parameter"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Parameter"], got.GetParameterId())
+	assert.Equal(t, "Test Parameter", got.GetDisplayName())
+}
+
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType
 // enum contains an entry for every resource type that has a wire kind.
 func TestResourceRefEnumCompleteness(t *testing.T) {
@@ -926,6 +999,8 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"Product",
 		"FilterRule",
 		"MergeRule",
+		"Capability",
+		"Parameter",
 	}
 
 	for _, kind := range wireKinds {

@@ -271,6 +271,26 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 			return uuid.Nil, nil, err
 		}
 		return v.GetRuleId(), v, nil
+	case events.CapabilityResource:
+		var o Capability
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := CapabilityFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetCapabilityId(), v, nil
+	case events.ParameterResource:
+		var o Parameter
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := ParameterFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetParameterId(), v, nil
 	default:
 		return uuid.Nil, nil, fmt.Errorf("unsupported resource type for upsert: %s", rt)
 	}

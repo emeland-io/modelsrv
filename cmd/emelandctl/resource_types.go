@@ -206,4 +206,12 @@ var resourceTypes = []resourceDef{
 			{name: "desc", specKey: "description", usage: "Description of the merge rule"},
 		},
 	},
+	{
+		use: "capability", short: "Create a Capability resource",
+		kind: "Capability", idField: "capabilityId", listPath: "/landscape/capabilities",
+	},
+	{
+		use: "parameter", short: "Create a Parameter resource",
+		kind: "Parameter", idField: "parameterId", listPath: "/landscape/parameters",
+	},
 }
