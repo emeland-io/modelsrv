@@ -16,11 +16,19 @@ A finding carries:
 
 | Field | Purpose |
 |-------|---------|
-| `Summary` | Human-readable one-line description of the violation (also the resource name). |
-| `Description` | Optional longer explanation. |
+| `DisplayName` | Human-readable name of the finding (also the resource name). |
+| `Description` | Detailed explanation of the violation (formerly carried in `Summary`). |
 | `TypeRef` | Reference to the `FindingType` that classifies this finding (see below). |
 | `Resources` | Ordered list of `ResourceRef` values — subject resource first, then any referenced-but-missing resources. |
 | `Annotations` | Arbitrary key/value metadata. |
+
+### Read API shape
+
+`GET /api/landscape/findings` and `GET /api/landscape/findings/{id}` return an
+enriched **FindingView** that includes resolved `type` and `resources` objects
+(with human-readable `displayName` values), a `reference` URI, and `annotations`.
+Phase-0 findings use `displayName: "Phase 0 Integrity check"` and put the
+detailed violation text in `description`.
 
 ## What is a FindingType?
 
@@ -69,7 +77,7 @@ resource's UUID and the `FindingKind` string (using UUID v5, namespace
 
 - **No duplicates** — applying the same event multiple times produces exactly
   one finding, not many.
-- **Upsert semantics** — if the condition changes (e.g. the summary is updated),
+- **Upsert semantics** — if the condition changes (e.g. the description is updated),
   the finding is replaced in-place.
 - **Coexistence** — a single subject resource can have multiple findings
   simultaneously (e.g. a `Context` that is both missing its type and referencing
