@@ -318,31 +318,6 @@ func (c *ModelSrvClient) GetComponentInstanceById(id uuid.UUID) (component.Compo
 	return oapi.ComponentInstanceFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetFindings() ([]common.InstanceListItem, error) {
-	resp, err := c.oapi_client.GetLandscapeFindingsWithResponse(context.TODO())
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
-	}
-	return oapi.InstanceListFromDto(resp.JSON200)
-}
-
-func (c *ModelSrvClient) GetFindingById(id uuid.UUID) (finding.Finding, error) {
-	resp, err := c.oapi_client.GetLandscapeFindingsFindingIdWithResponse(context.TODO(), id)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode() == http.StatusNotFound {
-		return nil, common.ErrFindingNotFound
-	}
-	if resp.StatusCode() != http.StatusOK {
-		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
-	}
-	return oapi.FindingFromDto(nil, resp.JSON200)
-}
-
 func (c *ModelSrvClient) GetOrgUnits() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeOrgUnitsWithResponse(context.TODO())
 	if err != nil {

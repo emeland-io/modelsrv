@@ -190,8 +190,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	fd := finding.NewFinding(findingId)
-	fd.SetSummary("First Finding")
+	fd.SetDisplayName("First Finding")
 	fd.SetDescription("This is the first test finding.")
+	fd.SetFindingTypeById(findingTypeId)
 	fd.SetResources([]*common.ResourceRef{
 		{
 			ResourceType: events.ParseResourceType("API"),
@@ -614,13 +615,14 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var findingArr oapi.InstanceList
+		var findingArr []oapi.FindingView
 		err = json.Unmarshal(body, &findingArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(findingArr)).To(Equal(1))
 
-		Expect(*(findingArr[0].InstanceId)).To(Equal(findingId))
-		Expect(*(findingArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())))
+		Expect(findingArr[0].Id).To(Equal(findingId))
+		Expect(findingArr[0].Reference).To(Equal(fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())))
+		Expect(findingArr[0].DisplayName).To(Equal("First Finding"))
 
 	})
 
@@ -637,12 +639,14 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var finding oapi.Finding
+		var finding oapi.FindingView
 		err = json.Unmarshal(body, &finding)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(finding.FindingId).To(Equal(findingId))
+		Expect(finding.Id).To(Equal(findingId))
 
 		Expect(len(finding.Resources)).To(Equal(2))
+		Expect(finding.Resources[0].ResourceType).To(Equal("API"))
+		Expect(finding.Type.DisplayName).To(Equal("Test Finding Type"))
 	})
 
 	It("should call GET on /landscape/findingTypes", func() {

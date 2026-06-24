@@ -30,7 +30,7 @@ func resourceRefsToDto(refs []*common.ResourceRef) []ResourceRef {
 		}
 		out = append(out, ResourceRef{
 			ResourceId:   openapi_types.UUID(r.ResourceId),
-			ResourceType: r.ResourceType,
+			ResourceType: r.ResourceType.String(),
 		})
 	}
 	return out

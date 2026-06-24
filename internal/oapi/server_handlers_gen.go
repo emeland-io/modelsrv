@@ -307,33 +307,6 @@ func (a *ApiServer) GetLandscapeComponentInstancesComponentInstanceId(ctx contex
 	return GetLandscapeComponentInstancesComponentInstanceId200JSONResponse(ComponentInstanceToDto(item)), nil
 }
 
-// GetLandscapeFindings implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeFindings(ctx context.Context, request GetLandscapeFindingsRequestObject) (GetLandscapeFindingsResponseObject, error) {
-	items, err := a.Backend.GetFindings()
-	if err != nil {
-		return nil, err
-	}
-	if a.Authz != nil {
-		principal := authz.PrincipalFromCtx(ctx)
-		items = authz.FilterVisible(a.Authz, principal, events.FindingResource, items)
-	}
-	return GetLandscapeFindings200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findings", items)), nil
-}
-
-// GetLandscapeFindingsFindingId implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeFindingsFindingId(ctx context.Context, request GetLandscapeFindingsFindingIdRequestObject) (GetLandscapeFindingsFindingIdResponseObject, error) {
-	item := a.Backend.GetFindingById(request.FindingId)
-	if item == nil {
-		msg := fmt.Sprintf("finding %s not found", request.FindingId.String())
-		return GetLandscapeFindingsFindingId404JSONResponse(ErrorString(msg)), nil
-	}
-	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.FindingResource, item) {
-		msg := fmt.Sprintf("finding %s not found", request.FindingId.String())
-		return GetLandscapeFindingsFindingId404JSONResponse(ErrorString(msg)), nil
-	}
-	return GetLandscapeFindingsFindingId200JSONResponse(FindingToDto(item)), nil
-}
-
 // GetLandscapeOrgUnits implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeOrgUnits(ctx context.Context, request GetLandscapeOrgUnitsRequestObject) (GetLandscapeOrgUnitsResponseObject, error) {
 	items, err := a.Backend.GetOrgUnits()

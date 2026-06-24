@@ -170,7 +170,7 @@ func FindingFromDto(m model.Model, of *Finding) (finding.Finding, error) {
 	}
 	id := uuid.UUID(of.FindingId)
 	f := finding.NewFinding(id)
-	f.SetSummary(of.Summary)
+	f.SetDisplayName(of.DisplayName)
 	if of.Description != nil {
 		f.SetDescription(*of.Description)
 	}
@@ -198,7 +198,7 @@ func FindingToDto(f finding.Finding) Finding {
 	desc := f.GetDescription()
 	out := Finding{
 		FindingId:   uuidToOpenAPI(f.GetFindingId()),
-		Summary:     f.GetSummary(),
+		DisplayName: f.GetDisplayName(),
 		Description: &desc,
 		Resources:   resourceRefsToDto(f.GetResources()),
 		Annotations: AnnotationsToDto(f.GetAnnotations()),
