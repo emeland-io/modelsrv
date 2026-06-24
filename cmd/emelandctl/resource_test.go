@@ -98,15 +98,15 @@ func TestCreateAPIWithAllFlags(t *testing.T) {
 	assert.Equal(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", r.Spec["system"])
 }
 
-func TestCreateFindingUsesSummaryField(t *testing.T) {
+func TestCreateFindingUsesDisplayNameField(t *testing.T) {
 	dir := t.TempDir()
 	err := executeCmd("create", "-d", dir, "finding", "Missing TLS")
 	require.NoError(t, err)
 
 	r := readYAMLFile(t, filepath.Join(dir, "finding-*.yaml"))
 	assert.Equal(t, "Finding", r.Kind)
-	assert.Equal(t, "Missing TLS", r.Spec["summary"])
-	assert.Nil(t, r.Spec["displayName"])
+	assert.Equal(t, "Missing TLS", r.Spec["displayName"])
+	assert.Nil(t, r.Spec["summary"])
 }
 
 func TestCreateSystemWithAbstractFlag(t *testing.T) {

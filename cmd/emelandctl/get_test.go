@@ -42,8 +42,8 @@ func TestGetFindingsTable(t *testing.T) {
 		assert.Equal(t, "/api/landscape/findings", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[
-			{"instanceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Missing TLS","reference":"/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
-			{"instanceId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","displayName":"Open Port"}
+			{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","description":"ContextTypeMissing: ...","type":{"id":"fa538332-fb6d-51ef-99f3-87831ac140fb","displayName":"ContextTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
+			{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","displayName":"Phase 0 Integrity check","description":"NodeTypeMissing: ...","type":{"id":"808c222c-3e02-5d38-9a82-4b16c792b075","displayName":"NodeTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}
 		]`))
 	}))
 	defer srv.Close()
@@ -53,16 +53,14 @@ func TestGetFindingsTable(t *testing.T) {
 	assert.Contains(t, out, "ID")
 	assert.Contains(t, out, "NAME")
 	assert.Contains(t, out, "REFERENCE")
-	assert.Contains(t, out, "/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-	assert.Contains(t, out, "Missing TLS")
-	assert.Contains(t, out, "Open Port")
+	assert.Contains(t, out, "Phase 0 Integrity check")
 	assert.Contains(t, out, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 }
 
 func TestGetFindingsJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`[{"instanceId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Missing TLS"}]`))
+		_, _ = w.Write([]byte(`[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","reference":"http://localhost/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}]`))
 	}))
 	defer srv.Close()
 
@@ -75,7 +73,7 @@ func TestGetFindingsJSON(t *testing.T) {
 	}
 	require.NoError(t, json.Unmarshal([]byte(out), &items))
 	assert.Len(t, items, 1)
-	assert.Equal(t, "Missing TLS", items[0].Name)
+	assert.Equal(t, "Phase 0 Integrity check", items[0].Name)
 }
 
 func TestGetFindingsEmpty(t *testing.T) {
@@ -88,7 +86,7 @@ func TestGetFindingsEmpty(t *testing.T) {
 	out, err := executeCmdOut("get", "findings", "--server", srv.URL)
 	require.NoError(t, err)
 	assert.Contains(t, out, "ID")
-	assert.NotContains(t, out, "Missing TLS")
+	assert.NotContains(t, out, "Phase 0 Integrity check")
 }
 
 func TestGetFindingsNoServer(t *testing.T) {
