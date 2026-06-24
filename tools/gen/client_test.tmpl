@@ -85,7 +85,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 	}
 {{end}}{{end}}
 }
-{{range .}}{{if .HasClientTest}}
+{{range .}}{{if and .HasClientTest (not .SkipClientMethods)}}
 func TestList{{.Name}}(t *testing.T) {
 	c, m := setupTestServer(t)
 	loadTestModel(t, m)

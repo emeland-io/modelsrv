@@ -138,6 +138,8 @@ type TypeSpec struct {
 	WireIDOptional bool
 	// GenServerHandlers emits GetLandscape* list/get handlers in server_handlers_gen.go.
 	GenServerHandlers bool
+	// SkipClientMethods skips generated pkg/client list/get wrappers (hand-written instead).
+	SkipClientMethods bool
 	// EventsResource is the events.ResourceType const name (e.g. "SystemResource").
 	EventsResource string
 	// OapiWireTypeName is the oapi DTO struct name (defaults to Name; API stays "API").

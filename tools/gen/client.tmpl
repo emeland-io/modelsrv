@@ -42,7 +42,7 @@ var (
 	_ mdlprod.Product
 	_ system.System
 )
-{{range .}}{{if .GenClientMethods}}
+{{range .}}{{if and .GenClientMethods (not .SkipClientMethods)}}
 func (c *ModelSrvClient) {{.ClientListMethod}}() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.{{.ClientListOapiMethod}}WithResponse(context.TODO())
 	if err != nil {

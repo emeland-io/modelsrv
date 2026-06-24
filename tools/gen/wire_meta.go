@@ -29,6 +29,10 @@ var skipAuthzByName = map[string]bool{
 	"MergeRule":  true,
 }
 
+var skipClientMethodsByName = map[string]bool{
+	"Finding": true,
+}
+
 var wireKindToEventsResource = map[string]string{
 	"ContextType":       "ContextTypeResource",
 	"Context":           "ContextResource",
@@ -203,8 +207,12 @@ func enrichWireMeta(spec *TypeSpec) {
 	}
 	spec.WireDomainIDGetter = strings.TrimSuffix(spec.ConvertDomainIDMethod, "()")
 
+	spec.SkipClientMethods = skipClientMethodsByName[spec.Name]
+
 	if spec.GenClientMethods {
-		spec.GenServerHandlers = true
+		if !spec.SkipClientMethods {
+			spec.GenServerHandlers = true
+		}
 		if v, ok := backendListByName[spec.Name]; ok {
 			spec.BackendListMethod = v
 		} else {

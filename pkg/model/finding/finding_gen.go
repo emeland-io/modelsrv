@@ -22,8 +22,8 @@ type Finding interface {
 	GetResourceId() uuid.UUID
 	GetResourceName() string
 
-	GetSummary() string
-	SetSummary(string)
+	GetDisplayName() string
+	SetDisplayName(string)
 
 	GetDescription() string
 	SetDescription(string)
@@ -48,7 +48,7 @@ type findingData struct {
 	isRegistered bool
 
 	FindingId   uuid.UUID
-	Summary     string
+	DisplayName string
 	Description string
 	TypeRef     *FindingTypeRef
 	Resources   []*common.ResourceRef
@@ -79,17 +79,17 @@ func (o *findingData) GetResourceId() uuid.UUID {
 
 // GetResourceName implements the hasIdAndName interface.
 func (o *findingData) GetResourceName() string {
-	return o.Summary
+	return o.DisplayName
 }
 
-// GetSummary implements [Summary].
-func (o *findingData) GetSummary() string {
-	return o.Summary
+// GetDisplayName implements [DisplayName].
+func (o *findingData) GetDisplayName() string {
+	return o.DisplayName
 }
 
-// SetSummary implements [Finding].
-func (o *findingData) SetSummary(val string) {
-	o.Summary = val
+// SetDisplayName implements [Finding].
+func (o *findingData) SetDisplayName(val string) {
+	o.DisplayName = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.FindingResource, events.UpdateOperation, o.FindingId, o)
