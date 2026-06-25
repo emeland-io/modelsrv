@@ -28,6 +28,6 @@ func TestGetByIdFinding(t *testing.T) {
 
 	got, err := c.GetFindingById(testIDs["Finding"])
 	require.NoError(t, err)
-	assert.Equal(t, testIDs["Finding"], uuid.UUID(got.Id))
+	assert.Equal(t, testIDs["Finding"], uuid.UUID(got.FindingId))
 	assert.Equal(t, "Test Finding", got.DisplayName)
 }
