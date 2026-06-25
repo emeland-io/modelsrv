@@ -319,7 +319,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FindingView'
   /landscape/findings/{findingId}:
     get:
       description: Retrieve details of a specific finding by its UUID.
@@ -337,7 +339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Finding'
+                $ref: '#/components/schemas/FindingView'
         '404':
           description: Not Found
           content:
@@ -1014,8 +1016,9 @@ components:
         findingId:
           type: string
           format: uuid
-        summary:
+        displayName:
           type: string
+          description: The human-readable name of the finding.
         description:
           type: string
         type:
@@ -1032,9 +1035,103 @@ components:
             $ref: '#/components/schemas/Annotation'
       required:
         - findingId
-        - summary
-        - FindingType
+        - displayName
+        - type
         - resources
+    FindingTypeView:
+      type: object
+      description: A resolved finding type reference for read API responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the finding class.
+      required:
+        - id
+        - displayName
+    ResourceView:
+      type: object
+      description: A resolved resource reference for read API responses.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The UUID of the resource referenced.
+        resourceType:
+          enum:
+            # phase-0 context types
+            - Context
+            - ContextType
+            - Node
+            - NodeType
+            # phase-1 structure types
+            - System
+            - SystemInstance
+            - API
+            - ApiInstance
+            - Component
+            - ComponentInstance
+            # phase-2 IAM types
+            - Identity
+            - OrgUnit
+            - Group
+            - Binding
+            - RoleSpec
+            - PermissionSpec
+            - Role
+            - Permission
+            - Product
+            # phase-5 risk types
+            - Finding
+            - FindingType
+            # phase-8 artifact types
+            - Artifact
+            - ArtifactInstance
+            # event pipeline visibility
+            - FilterRule
+            - MergeRule
+          description: The type of the resource referenced.
+        displayName:
+          type: string
+          description: The human-readable name of the resource referenced.
+      required:
+        - id
+        - resourceType
+    FindingView:
+      type: object
+      description: An enriched finding for read API responses with resolved type and resource references.
+      properties:
+        findingId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the finding.
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/FindingTypeView'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceView'
+        reference:
+          type: string
+          format: uri
+          description: A URI reference to this finding.
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the finding.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - findingId
+        - displayName
+        - type
+        - resources
+        - reference
     FindingType:
       type: object
       description: Represents a type of findings in the EmELand model. A finding type defines the type of rule violation and provides metadata about the rule. They are defined by the original source of a finding, e.g., a data collector or a compliance standard. Use the FindingType of a Finding to ensure any further processing or filtering is only applied to findings that are actually understood by the filter.

@@ -154,7 +154,7 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 	// --- Finding ---
 	{
 		f := finding.NewFinding(testIDs["Finding"])
-		f.SetSummary("Test Finding")
+		f.SetDisplayName("Test Finding")
 		f.SetFindingTypeById(testIDs["FindingType"])
 		require.NoError(t, m.AddFinding(f))
 	}
@@ -808,7 +808,7 @@ func TestStoreFindingApplyReplication(t *testing.T) {
 
 	resourceID := uuid.New()
 	f := finding.NewFinding(resourceID)
-	f.SetSummary("Test Finding")
+	f.SetDisplayName("Test Finding")
 	f.SetFindingTypeById(testIDs["FindingType"])
 	require.NoError(t, m.Apply(events.Event{
 		ResourceType: events.FindingResource,

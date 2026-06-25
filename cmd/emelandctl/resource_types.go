@@ -77,7 +77,7 @@ var resourceTypes = []resourceDef{
 	},
 	{
 		use: "finding", short: "Create a Finding resource",
-		kind: "Finding", idField: "findingId", nameField: "summary", listPath: "/landscape/findings",
+		kind: "Finding", idField: "findingId", nameField: "displayName", listPath: "/landscape/findings",
 		flags: []flagDef{
 			{name: "desc", specKey: "description", usage: "Description of the finding"},
 		},

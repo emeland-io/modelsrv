@@ -285,10 +285,10 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		fid := uuid.New()
 		ftid := uuid.New()
 		res := map[string]interface{}{
-			"findingId": fid.String(),
-			"summary":   "sum",
-			"resources": []interface{}{},
-			"Type":      map[string]interface{}{"findingTypeId": ftid.String()},
+			"findingId":   fid.String(),
+			"displayName": "name",
+			"resources":   []interface{}{},
+			"Type":        map[string]interface{}{"findingTypeId": ftid.String()},
 		}
 		ev := oapi.Event{
 			Kind:      "Finding",

@@ -27,6 +27,8 @@ import (
 // SHA-1 namespace so each (subject id, kind) maps to one finding id.
 var phase0Namespace = uuid.MustParse("7a3f2c1e-4b8d-5e9f-a0b1-c2d3e4f56789")
 
+const phase0FindingDisplayName = "Phase 0 Integrity check"
+
 func findingID(subjectID uuid.UUID, kind finding.FindingKind) uuid.UUID {
 	key := append(subjectID[:], []byte(kind)...)
 	return uuid.NewSHA1(phase0Namespace, key)
@@ -48,13 +50,14 @@ func ensureFindingType(m model.Model, kind finding.FindingKind) uuid.UUID {
 	return id
 }
 
-func upsertFinding(m model.Model, kind finding.FindingKind, summary string, resources []*common.ResourceRef) {
+func upsertFinding(m model.Model, kind finding.FindingKind, description string, resources []*common.ResourceRef) {
 	subjectID := resources[0].ResourceId // idempotent: same subject+kind reuses id
 	id := findingID(subjectID, kind)
 
 	f := finding.NewFinding(id)
 	f.SetFindingTypeById(ensureFindingType(m, kind))
-	f.SetSummary(summary)
+	f.SetDisplayName(phase0FindingDisplayName)
+	f.SetDescription(description)
 	f.SetResources(resources)
 
 	if err := m.AddFinding(f); err != nil {

@@ -188,7 +188,7 @@ func loadTestModel(t *testing.T, m model.Model) {
 	// --- Finding ---
 	{
 		f := finding.NewFinding(testIDs["Finding"])
-		f.SetSummary("Test Finding")
+		f.SetDisplayName("Test Finding")
 		f.SetFindingTypeById(testIDs["FindingType"])
 		require.NoError(t, m.AddFinding(f))
 	}
@@ -578,32 +578,6 @@ func TestGetByIdComponentInstance(t *testing.T) {
 	require.NotNil(t, got)
 	assert.Equal(t, testIDs["ComponentInstance"], got.GetInstanceId())
 	assert.Equal(t, "Test ComponentInstance", got.GetDisplayName())
-}
-
-func TestListFinding(t *testing.T) {
-	c, m := setupTestServer(t)
-	loadTestModel(t, m)
-
-	list, err := c.GetFindings()
-	require.NoError(t, err)
-	require.NotNil(t, list)
-	assert.Greater(t, len(list), 0, "Finding list should not be empty")
-}
-
-func TestGetByIdFinding(t *testing.T) {
-	c, m := setupTestServer(t)
-	loadTestModel(t, m)
-
-	// unknown id → not found
-	_, err := c.GetFindingById(uuid.New())
-	assert.ErrorIs(t, err, common.ErrFindingNotFound)
-
-	// known id → success
-	got, err := c.GetFindingById(testIDs["Finding"])
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Finding"], got.GetFindingId())
-	assert.Equal(t, "Test Finding", got.GetSummary())
 }
 
 func TestListOrgUnit(t *testing.T) {

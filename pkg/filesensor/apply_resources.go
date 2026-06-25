@@ -116,6 +116,9 @@ func parseApiRefSlice(spec map[string]any, key string) ([]mdlapi.ApiRef, error) 
 }
 
 func findingTitle(spec map[string]any) (string, error) {
+	if s, ok := stringField(spec, "displayName"); ok && strings.TrimSpace(s) != "" {
+		return strings.TrimSpace(s), nil
+	}
 	if s, ok := stringField(spec, "summary"); ok && strings.TrimSpace(s) != "" {
 		return strings.TrimSpace(s), nil
 	}
@@ -318,7 +321,7 @@ func applyFinding(spec map[string]any, m model.Model) error {
 		return err
 	}
 	f := finding.NewFinding(id)
-	f.SetSummary(title)
+	f.SetDisplayName(title)
 	if desc, ok := stringField(spec, "description"); ok {
 		f.SetDescription(desc)
 	}

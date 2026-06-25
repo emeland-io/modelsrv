@@ -50,7 +50,7 @@ func cloneResourceRefs(resourceRef []*common.ResourceRef) []ResourceRef {
 	respArr := make([]ResourceRef, 0, len(resourceRef))
 	for _, resRef := range resourceRef {
 		respArr = append(respArr, ResourceRef{
-			ResourceType: resRef.ResourceType,
+			ResourceType: resRef.ResourceType.String(),
 			ResourceId:   resRef.ResourceId,
 		})
 	}

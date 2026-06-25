@@ -3530,7 +3530,7 @@ func (r GetLandscapeFindingTypesFindingTypeIdResponse) StatusCode() int {
 type GetLandscapeFindingsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]FindingView
 }
 
 // Status returns HTTPResponse.Status
@@ -3552,7 +3552,7 @@ func (r GetLandscapeFindingsResponse) StatusCode() int {
 type GetLandscapeFindingsFindingIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Finding
+	JSON200      *FindingView
 	JSON404      *ErrorString
 }
 
@@ -5480,7 +5480,7 @@ func ParseGetLandscapeFindingsResponse(rsp *http.Response) (*GetLandscapeFinding
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []FindingView
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5506,7 +5506,7 @@ func ParseGetLandscapeFindingsFindingIdResponse(rsp *http.Response) (*GetLandsca
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Finding
+		var dest FindingView
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

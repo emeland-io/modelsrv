@@ -522,7 +522,7 @@ var allTypes = []TypeSpec{
 		Dir:         "finding",
 		EventType:   "Finding",
 		IDField:     "FindingId",
-		NameField:   "Summary",
+		NameField:   "DisplayName",
 		HasHandler:  true,
 		NotFoundErr: "ErrFindingNotFound",
 		ExtraImports: []string{
@@ -530,7 +530,7 @@ var allTypes = []TypeSpec{
 			"go.emeland.io/modelsrv/pkg/model/annotations",
 		},
 		Fields: []Field{
-			{Name: "Summary", Type: "string"},
+			{Name: "DisplayName", Type: "string"},
 			{Name: "Description", Type: "string"},
 			{Name: "TypeRef", Type: "*FindingTypeRef", SkipAccessor: true},
 			{Name: "Resources", Type: "[]*common.ResourceRef"},
@@ -545,12 +545,12 @@ var allTypes = []TypeSpec{
 		OapiTypeName:            "Finding",
 		TestDisplayName:         "Test Finding",
 		TestIDAssertExpr:        "uuid.UUID(got.FindingId)",
-		TestNameAssertExpr:      "got.Summary",
+		TestNameAssertExpr:      "got.DisplayName",
 		NotFoundSentinel:        "common.ErrFindingNotFound",
 		TestDeps:                []string{"FindingType"},
 		WireKind:                "Finding",
 		TestSetup: `f := finding.NewFinding(testIDs["Finding"])
-			f.SetSummary("Test Finding")
+			f.SetDisplayName("Test Finding")
 			f.SetFindingTypeById(testIDs["FindingType"])
 			require.NoError(t, m.AddFinding(f))`,
 		CustomMethods: []string{

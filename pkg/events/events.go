@@ -238,60 +238,15 @@ func (o Operation) WireOperation() string {
 // registered resources forward annotation updates as updates on the enclosing resource
 // (for example a system update), and POST /events/push decodes only those entity kinds.
 func ParseWireKind(s string) ResourceType {
-	switch s {
-	case "Node":
-		return NodeResource
-	case "NodeType":
-		return NodeTypeResource
-	case "Context":
-		return ContextResource
-	case "ContextType":
-		return ContextTypeResource
-	case "System":
-		return SystemResource
-	case "SystemInstance":
-		return SystemInstanceResource
-	case "API":
-		return APIResource
-	case "ApiInstance", "APIInstance":
-		return APIInstanceResource
-	case "Component":
-		return ComponentResource
-	case "ComponentInstance":
-		return ComponentInstanceResource
-	case "OrgUnit":
-		return OrgUnitResource
-	case "Group":
-		return GroupResource
-	case "Identity":
-		return IdentityResource
-	case "PermissionSpec":
-		return PermissionSpecResource
-	case "RoleSpec":
-		return RoleSpecResource
-	case "Permission":
-		return PermissionResource
-	case "Role":
-		return RoleResource
-	case "Binding":
-		return BindingResource
-	case "Product":
-		return ProductResource
-	case "Finding":
-		return FindingResource
-	case "FindingType":
-		return FindingTypeResource
-	case "Artifact":
-		return ArtifactResource
-	case "ArtifactInstance":
-		return ArtifactInstanceResource
-	case "FilterRule":
-		return FilterRuleResource
-	case "MergeRule":
-		return MergeRuleResource
-	default:
-		return UnknownResourceType
+	for rt, name := range resourceTypeValues {
+		if rt == UnknownResourceType || rt == AnnotationsResource {
+			continue
+		}
+		if s == name || s == rt.WireKind() {
+			return rt
+		}
 	}
+	return UnknownResourceType
 }
 
 // ParseWireOperation maps JSON Event.operation strings (Create, Update, Delete) to Operation.

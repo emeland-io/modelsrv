@@ -33,9 +33,5 @@ func enrichDomainMeta(spec *TypeSpec) {
 	spec.DomainPkgAlias = meta.Alias
 	spec.DomainTypeName = spec.Name
 	spec.DomainIDGetter = "got.Get" + spec.IDField + "()"
-	if spec.NameField == "Summary" {
-		spec.DomainNameGetter = "got.GetSummary()"
-	} else {
-		spec.DomainNameGetter = "got.GetDisplayName()"
-	}
+	spec.DomainNameGetter = "got.GetDisplayName()"
 }
