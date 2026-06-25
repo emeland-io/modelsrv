@@ -38,7 +38,37 @@ var (
 	metricsReg     *prometheus.Registry
 )
 
+// NewHandler builds the modelsrv HTTP handler (API + swagger + metrics) without
+// starting a listener. The caller is responsible for serving it on their own
+// http.Server. Use this when embedding modelsrv behind additional middleware
+// (e.g. an auth layer).
+//
+// Note: StartMetricsListener is not compatible with NewHandler; it only works
+// with StartWebListener which manages its own server lifecycle.
+func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL string, opts WebListenerOptions) http.Handler {
+	var authzEval *authz.Evaluator
+	if opts.TrustAuthHeaders {
+		authzEval = authz.NewEvaluator(opts.AuthzConfig)
+	}
+	server := oapi.NewApiServer(backend, eventMgr, baseURL, authzEval)
+	strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{TrustAuthHeaders: opts.TrustAuthHeaders})
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(metrics.NewCollector(backend))
+
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+
+	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
+	r.PathPrefix("/swagger").Handler(spa)
+	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
+
+	return oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
+}
+
 // StartWebListener starts the web endpoint serving the Swagger-UI and API
+// on its own goroutine. Use StopWebListener to shut it down.
 //
 // addr is the address and port to bind to, e.g. "localhost:24000"
 func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string, opts WebListenerOptions) error {
@@ -50,12 +80,12 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	}
 	webListener = ln
 
-	baseUrl := fmt.Sprintf("http://%s/api", ln.Addr().String())
+	baseURL := fmt.Sprintf("http://%s/api", ln.Addr().String())
 	var authzEval *authz.Evaluator
 	if opts.TrustAuthHeaders {
 		authzEval = authz.NewEvaluator(opts.AuthzConfig)
 	}
-	server := oapi.NewApiServer(backend, eventMgr, baseUrl, authzEval)
+	server := oapi.NewApiServer(backend, eventMgr, baseURL, authzEval)
 	strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{TrustAuthHeaders: opts.TrustAuthHeaders})
 
 	metricsReg = prometheus.NewRegistry()
@@ -63,19 +93,16 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	metricsReg.MustRegister(metrics.NewCollector(backend))
 
 	r := mux.NewRouter()
+	// Indirection: metricsHandler can be swapped to a redirect by StartMetricsListener.
 	metricsHandler = promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{})
 	r.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		metricsHandler.ServeHTTP(w, req)
 	}))
 
-	// TODO: turn staticPath in configurable value, especially for non-container setups
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
 	r.PathPrefix("/swagger").Handler(spa)
-
-	// Manual endpoint: event history query
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 
-	// get an `http.Handler` that we can use
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
 	setupLog.Info("Starting Web-Endpoint: ", "address: ", ln.Addr().String())
