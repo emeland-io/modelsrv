@@ -42,8 +42,8 @@ func TestGetFindingsTable(t *testing.T) {
 		assert.Equal(t, "/api/landscape/findings", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[
-			{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","description":"ContextTypeMissing: ...","type":{"id":"fa538332-fb6d-51ef-99f3-87831ac140fb","displayName":"ContextTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
-			{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","displayName":"Phase 0 Integrity check","description":"NodeTypeMissing: ...","type":{"id":"808c222c-3e02-5d38-9a82-4b16c792b075","displayName":"NodeTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}
+			{"findingId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","description":"ContextTypeMissing: ...","type":{"id":"fa538332-fb6d-51ef-99f3-87831ac140fb","displayName":"ContextTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"},
+			{"findingId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","displayName":"Phase 0 Integrity check","description":"NodeTypeMissing: ...","type":{"id":"808c222c-3e02-5d38-9a82-4b16c792b075","displayName":"NodeTypeMissing"},"resources":[],"reference":"http://localhost:8081/api/landscape/findings/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"}
 		]`))
 	}))
 	defer srv.Close()
@@ -60,7 +60,7 @@ func TestGetFindingsTable(t *testing.T) {
 func TestGetFindingsJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","reference":"http://localhost/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}]`))
+		_, _ = w.Write([]byte(`[{"findingId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","displayName":"Phase 0 Integrity check","reference":"http://localhost/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"}]`))
 	}))
 	defer srv.Close()
 

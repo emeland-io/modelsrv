@@ -60,6 +60,7 @@ func fetchResourceList(baseURL, path string) ([]common.InstanceListItem, error) 
 	}
 	var raw []struct {
 		InstanceId  *string `json:"instanceId"`
+		FindingId   *string `json:"findingId"`
 		Id          *string `json:"id"`
 		DisplayName *string `json:"displayName"`
 		Reference   *string `json:"reference"`
@@ -73,6 +74,8 @@ func fetchResourceList(baseURL, path string) ([]common.InstanceListItem, error) 
 		switch {
 		case r.InstanceId != nil:
 			item.Id, _ = uuid.Parse(*r.InstanceId)
+		case r.FindingId != nil:
+			item.Id, _ = uuid.Parse(*r.FindingId)
 		case r.Id != nil:
 			item.Id, _ = uuid.Parse(*r.Id)
 		}

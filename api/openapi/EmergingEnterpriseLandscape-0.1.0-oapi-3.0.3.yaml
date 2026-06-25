@@ -1103,7 +1103,7 @@ components:
       type: object
       description: An enriched finding for read API responses with resolved type and resource references.
       properties:
-        id:
+        findingId:
           type: string
           format: uuid
         displayName:
@@ -1127,7 +1127,7 @@ components:
           items:
             $ref: '#/components/schemas/Annotation'
       required:
-        - id
+        - findingId
         - displayName
         - type
         - resources

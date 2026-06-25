@@ -15,7 +15,7 @@ func findingToView(m model.Model, baseURL string, f finding.Finding) FindingView
 	}
 	id := f.GetFindingId()
 	out := FindingView{
-		Id:          uuidToOpenAPI(id),
+		FindingId:   uuidToOpenAPI(id),
 		DisplayName: f.GetDisplayName(),
 		Reference:   fmt.Sprintf("%s/landscape/findings/%s", baseURL, id.String()),
 		Annotations: AnnotationsToDto(f.GetAnnotations()),

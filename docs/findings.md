@@ -24,9 +24,10 @@ A finding carries:
 
 ### Read API shape
 
-`GET /api/landscape/findings` and `GET /api/landscape/findings/{id}` return an
-enriched **FindingView** that includes resolved `type` and `resources` objects
-(with human-readable `displayName` values), a `reference` URI, and `annotations`.
+`GET /api/landscape/findings` and `GET /api/landscape/findings/{findingId}`
+return an enriched **FindingView** that includes `findingId`, resolved `type` and
+`resources` objects (with human-readable `displayName` values), a `reference`
+URI, and `annotations`.
 Phase-0 findings use `displayName: "Phase 0 Integrity check"` and put the
 detailed violation text in `description`.
 
