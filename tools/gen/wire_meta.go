@@ -22,6 +22,8 @@ var skipConvertByName = map[string]bool{
 	"Binding":           true,
 	"FilterRule":        true,
 	"MergeRule":         true,
+	"Capability":        true,
+	"Parameter":         true,
 }
 
 var skipAuthzByName = map[string]bool{
@@ -55,6 +57,8 @@ var wireKindToEventsResource = map[string]string{
 	"Binding":           "BindingResource",
 	"FilterRule":        "FilterRuleResource",
 	"MergeRule":         "MergeRuleResource",
+	"Capability":        "CapabilityResource",
+	"Parameter":         "ParameterResource",
 }
 
 var restListPathByName = map[string]string{
@@ -83,6 +87,8 @@ var restListPathByName = map[string]string{
 	"Binding":           "/landscape/bindings",
 	"FilterRule":        "/landscape/filter-rules",
 	"MergeRule":         "/landscape/merge-rules",
+	"Capability":        "/landscape/capabilities",
+	"Parameter":         "/landscape/parameters",
 }
 
 var serverRequestIDByName = map[string]string{
@@ -118,6 +124,8 @@ var serverResourceLabelByName = map[string]string{
 	"Binding":           "binding",
 	"FilterRule":        "filter rule",
 	"MergeRule":         "merge rule",
+	"Capability":        "capability",
+	"Parameter":         "parameter",
 }
 
 var server404UseErrorString = map[string]bool{

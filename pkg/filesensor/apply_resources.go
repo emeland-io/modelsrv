@@ -9,6 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -16,6 +17,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -44,6 +46,10 @@ func parseResourceTypeForRef(s string) (events.ResourceType, error) {
 		return events.FilterRuleResource, nil
 	case "MergeRule":
 		return events.MergeRuleResource, nil
+	case "Capability":
+		return events.CapabilityResource, nil
+	case "Parameter":
+		return events.ParameterResource, nil
 	default:
 		return 0, fmt.Errorf("unknown resource type %q", s)
 	}
@@ -436,4 +442,64 @@ func applyMergeRule(spec map[string]any, m model.Model) error {
 		mr.SetDescription(desc)
 	}
 	return m.AddMergeRule(mr)
+}
+
+func applyCapability(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "capabilityId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	c := mdlcapability.NewCapability(id)
+	c.SetDisplayName(name)
+	if versions, ok := spec["versions"]; ok {
+		if vList, ok := versions.([]any); ok {
+			refs := make([]mdlcapability.CapabilityVersionRef, 0, len(vList))
+			for _, v := range vList {
+				if vMap, ok := v.(map[string]any); ok {
+					vid, err := parseUUIDField(vMap, "capabilityVersionId")
+					if err != nil {
+						return err
+					}
+					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid})
+				}
+			}
+			c.SetVersions(refs)
+		}
+	}
+	if err := applyAnnotations(c.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddCapability(c)
+}
+
+func applyParameter(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "parameterId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	param := mdlparameter.NewParameter(id)
+	param.SetDisplayName(name)
+	if values, ok := spec["values"]; ok {
+		if vList, ok := values.([]any); ok {
+			strs := make([]string, 0, len(vList))
+			for _, v := range vList {
+				if s, ok := v.(string); ok {
+					strs = append(strs, s)
+				}
+			}
+			param.SetValues(strs)
+		}
+	}
+	if err := applyAnnotations(param.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddParameter(param)
 }

@@ -1167,4 +1167,71 @@ var allTypes = []TypeSpec{
 			mr.SetDisplayName("Test MergeRule")
 			require.NoError(t, m.AddMergeRule(mr))`,
 	},
+	{
+		Name:            "Capability",
+		Dir:             "capability",
+		EventType:       "Capability",
+		IDField:         "CapabilityId",
+		NameField:       "DisplayName",
+		HasHandler:      true,
+		NotFoundErr:     "ErrCapabilityNotFound",
+		HandlerPkgAlias: "mdlcapability",
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "Versions", Type: "[]CapabilityVersionRef"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		HasClientTest:           true,
+		GenClientMethods:        true,
+		ClientListMethod:        "GetCapabilities",
+		ClientGetByIdMethod:     "GetCapabilityById",
+		ClientListOapiMethod:    "GetLandscapeCapabilities",
+		ClientGetByIdOapiMethod: "GetLandscapeCapabilitiesCapabilityId",
+		OapiTypeName:            "Capability",
+		TestDisplayName:         "Test Capability",
+		TestIDAssertExpr:        "uuid.UUID(got.CapabilityId)",
+		TestNameAssertExpr:      "got.DisplayName",
+		NotFoundSentinel:        "common.ErrCapabilityNotFound",
+		WireKind:                "Capability",
+		TestSetup: `cap := mdlcapability.NewCapability(testIDs["Capability"])
+			cap.SetDisplayName("Test Capability")
+			require.NoError(t, m.AddCapability(cap))`,
+	},
+	{
+		Name:            "Parameter",
+		Dir:             "parameter",
+		EventType:       "Parameter",
+		IDField:         "ParameterId",
+		NameField:       "DisplayName",
+		HasHandler:      true,
+		NotFoundErr:     "ErrParameterNotFound",
+		HandlerPkgAlias: "mdlparameter",
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "Values", Type: "[]string"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		HasClientTest:           true,
+		GenClientMethods:        true,
+		ClientListMethod:        "GetParameters",
+		ClientGetByIdMethod:     "GetParameterById",
+		ClientListOapiMethod:    "GetLandscapeParameters",
+		ClientGetByIdOapiMethod: "GetLandscapeParametersParameterId",
+		OapiTypeName:            "Parameter",
+		TestDisplayName:         "Test Parameter",
+		TestIDAssertExpr:        "uuid.UUID(got.ParameterId)",
+		TestNameAssertExpr:      "got.DisplayName",
+		NotFoundSentinel:        "common.ErrParameterNotFound",
+		WireKind:                "Parameter",
+		TestSetup: `param := mdlparameter.NewParameter(testIDs["Parameter"])
+			param.SetDisplayName("Test Parameter")
+			param.SetValues([]string{"val1", "val2"})
+			require.NoError(t, m.AddParameter(param))`,
+	},
 }

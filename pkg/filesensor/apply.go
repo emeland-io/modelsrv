@@ -311,6 +311,10 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyFilterRule(doc.Spec, m)
 	case events.MergeRuleResource:
 		return applyMergeRule(doc.Spec, m)
+	case events.CapabilityResource:
+		return applyCapability(doc.Spec, m)
+	case events.ParameterResource:
+		return applyParameter(doc.Spec, m)
 	case events.UnknownResourceType:
 		return fmt.Errorf("kind is required")
 	default:

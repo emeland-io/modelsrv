@@ -12,6 +12,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -20,6 +21,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -31,11 +33,13 @@ var (
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
+	_ = mdlcapability.NewCapability
 	_ = mdlfilterrule.NewFilterRule
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = node.NewNode
+	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -66,6 +70,8 @@ var testIDs = map[string]uuid.UUID{
 	"Product":           uuid.New(),
 	"FilterRule":        uuid.New(),
 	"MergeRule":         uuid.New(),
+	"Capability":        uuid.New(),
+	"Parameter":         uuid.New(),
 }
 
 func newStoreModel(t *testing.T) (model.Model, events.EventSink) {
@@ -243,6 +249,19 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		mr := mdlmergerule.NewMergeRule(testIDs["MergeRule"])
 		mr.SetDisplayName("Test MergeRule")
 		require.NoError(t, m.AddMergeRule(mr))
+	}
+	// --- Capability ---
+	{
+		cap := mdlcapability.NewCapability(testIDs["Capability"])
+		cap.SetDisplayName("Test Capability")
+		require.NoError(t, m.AddCapability(cap))
+	}
+	// --- Parameter ---
+	{
+		param := mdlparameter.NewParameter(testIDs["Parameter"])
+		param.SetDisplayName("Test Parameter")
+		param.SetValues([]string{"val1", "val2"})
+		require.NoError(t, m.AddParameter(param))
 	}
 }
 
@@ -1460,4 +1479,101 @@ func TestStoreMergeRuleApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetMergeRuleById(resourceID))
+}
+
+func TestStoreCapabilityCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Capability"]
+	got := m.GetCapabilityById(id)
+	require.NotNil(t, got, "expected Capability to be stored")
+	assert.Equal(t, id, got.GetCapabilityId())
+
+	list, err := m.GetCapabilities()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteCapabilityById(testIDs["Capability"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapabilityById(id))
+
+	err = m.DeleteCapabilityById(testIDs["Capability"])
+	assert.ErrorIs(t, err, common.ErrCapabilityNotFound)
+}
+
+func TestStoreCapabilityApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	cap := mdlcapability.NewCapability(resourceID)
+	cap.SetDisplayName("Test Capability")
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.CapabilityResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{cap},
+	}))
+
+	got := m.GetCapabilityById(resourceID)
+	require.NotNil(t, got, "expected replicated Capability")
+	assert.Equal(t, resourceID, got.GetCapabilityId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.CapabilityResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapabilityById(resourceID))
+}
+
+func TestStoreParameterCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Parameter"]
+	got := m.GetParameterById(id)
+	require.NotNil(t, got, "expected Parameter to be stored")
+	assert.Equal(t, id, got.GetParameterId())
+
+	list, err := m.GetParameters()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteParameterById(testIDs["Parameter"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetParameterById(id))
+
+	err = m.DeleteParameterById(testIDs["Parameter"])
+	assert.ErrorIs(t, err, common.ErrParameterNotFound)
+}
+
+func TestStoreParameterApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	param := mdlparameter.NewParameter(resourceID)
+	param.SetDisplayName("Test Parameter")
+	param.SetValues([]string{"val1", "val2"})
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.ParameterResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{param},
+	}))
+
+	got := m.GetParameterById(resourceID)
+	require.NotNil(t, got, "expected replicated Parameter")
+	assert.Equal(t, resourceID, got.GetParameterId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.ParameterResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetParameterById(resourceID))
 }

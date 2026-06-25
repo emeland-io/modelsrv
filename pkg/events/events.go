@@ -98,6 +98,10 @@ const (
 	FilterRuleResource
 	MergeRuleResource
 
+	// Phase 3 capabilities
+	CapabilityResource
+	ParameterResource
+
 	// Value objects
 	AnnotationsResource
 )
@@ -142,6 +146,10 @@ var resourceTypeValues = map[ResourceType]string{
 	// Event pipeline visibility
 	FilterRuleResource: "FilterRule",
 	MergeRuleResource:  "MergeRule",
+
+	// Phase 3 capabilities
+	CapabilityResource: "Capability",
+	ParameterResource:  "Parameter",
 
 	// Value objects
 	AnnotationsResource: "Annotations",
@@ -289,6 +297,10 @@ func ParseWireKind(s string) ResourceType {
 		return FilterRuleResource
 	case "MergeRule":
 		return MergeRuleResource
+	case "Capability":
+		return CapabilityResource
+	case "Parameter":
+		return ParameterResource
 	default:
 		return UnknownResourceType
 	}
