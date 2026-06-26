@@ -37,6 +37,7 @@ func nodeSummaryToView(m model.Model, baseURL string, n node.Node) NodeSummaryVi
 	if typeID := n.GetNodeTypeId(); typeID != uuid.Nil {
 		out.NodeType = nodeTypeViewFromModel(m, typeID)
 	}
+	out.Annotations = AnnotationsToDto(n.GetAnnotations())
 	return out
 }
 
@@ -48,6 +49,6 @@ func nodeToView(m model.Model, baseURL string, n node.Node) NodeView {
 		Description: summary.Description,
 		Reference:   summary.Reference,
 		NodeType:    summary.NodeType,
-		Annotations: AnnotationsToDto(n.GetAnnotations()),
+		Annotations: summary.Annotations,
 	}
 }

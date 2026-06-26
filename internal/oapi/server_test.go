@@ -628,6 +628,10 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(findingArr[0].FindingId).To(Equal(findingId))
 		Expect(findingArr[0].Reference).To(Equal(fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())))
 		Expect(findingArr[0].DisplayName).To(Equal("First Finding"))
+		Expect(findingArr[0].Annotations).NotTo(BeNil())
+		Expect(len(*findingArr[0].Annotations)).To(Equal(1))
+		Expect((*findingArr[0].Annotations)[0].Key).To(Equal("category"))
+		Expect((*findingArr[0].Annotations)[0].Value).To(Equal("storage"))
 
 	})
 

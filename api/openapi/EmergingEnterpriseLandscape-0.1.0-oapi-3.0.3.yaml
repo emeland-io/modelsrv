@@ -1632,6 +1632,11 @@ components:
           description: A URI reference to this node.
         nodeType:
           $ref: '#/components/schemas/NodeTypeView'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the node.
+          items:
+            $ref: '#/components/schemas/Annotation'
       required:
         - nodeId
         - displayName

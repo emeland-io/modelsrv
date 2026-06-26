@@ -167,6 +167,10 @@ var _ = Describe("calling the modelsrv API functions for phase 0", func() {
 		Expect(nodeArr[0].NodeType.NodeTypeId).To(Equal(nodeTypeId))
 		Expect(nodeArr[0].NodeType.Resource).To(Equal(oapi.NodeTypeViewResourceNodeType))
 		Expect(nodeArr[0].NodeType.DisplayName).To(Equal("Test Node Type"))
+		Expect(nodeArr[0].Annotations).NotTo(BeNil())
+		Expect(len(*nodeArr[0].Annotations)).To(Equal(1))
+		Expect((*nodeArr[0].Annotations)[0].Key).To(Equal("category"))
+		Expect((*nodeArr[0].Annotations)[0].Value).To(Equal("storage"))
 
 	})
 
