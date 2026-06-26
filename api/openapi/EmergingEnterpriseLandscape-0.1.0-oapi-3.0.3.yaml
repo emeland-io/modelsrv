@@ -496,7 +496,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/NodeSummaryView'
   /landscape/nodes/{nodeId}:
     get:
       description: Retrieve details of a specific node by its UUID.
@@ -514,7 +516,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Node'
+                $ref: '#/components/schemas/NodeView'
         '404':
           description: Not Found
           content:
@@ -1042,14 +1044,14 @@ components:
       type: object
       description: A resolved finding type reference for read API responses.
       properties:
-        id:
+        findingTypeId:
           type: string
           format: uuid
         displayName:
           type: string
           description: The human-readable name of the finding class.
       required:
-        - id
+        - findingTypeId
         - displayName
     ResourceView:
       type: object
@@ -1111,7 +1113,7 @@ components:
           description: The human-readable name of the finding.
         description:
           type: string
-        type:
+        findingType:
           $ref: '#/components/schemas/FindingTypeView'
         resources:
           type: array
@@ -1129,7 +1131,7 @@ components:
       required:
         - findingId
         - displayName
-        - type
+        - findingType
         - resources
         - reference
     FindingType:
@@ -1592,6 +1594,78 @@ components:
       required:
         - contextTypeId
         - displayName
+    NodeTypeView:
+      type: object
+      description: A resolved node type reference for read API responses.
+      properties:
+        nodeTypeId:
+          type: string
+          format: uuid
+        resource:
+          type: string
+          enum:
+            - NodeType
+          description: The type of the resource referenced.
+        displayName:
+          type: string
+          description: The human-readable name of the node type.
+      required:
+        - nodeTypeId
+        - resource
+        - displayName
+    NodeSummaryView:
+      type: object
+      description: An enriched node summary for read API list responses with resolved node type reference.
+      properties:
+        nodeId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the node.
+        description:
+          type: string
+          description: A human-readable description of the node.
+        reference:
+          type: string
+          format: uri
+          description: A URI reference to this node.
+        nodeType:
+          $ref: '#/components/schemas/NodeTypeView'
+      required:
+        - nodeId
+        - displayName
+        - reference
+        - nodeType
+    NodeView:
+      type: object
+      description: An enriched node for read API detail responses with resolved node type reference.
+      properties:
+        nodeId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the node.
+        description:
+          type: string
+          description: A human-readable description of the node.
+        reference:
+          type: string
+          format: uri
+          description: A URI reference to this node.
+        nodeType:
+          $ref: '#/components/schemas/NodeTypeView'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the node.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - nodeId
+        - displayName
+        - reference
+        - nodeType
     NodeType:
       type: object
       description: Represents a type of node in the EmELand model. A node type defines the characteristics and capabilities of nodes that belong to this type.
