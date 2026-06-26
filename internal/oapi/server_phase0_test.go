@@ -154,13 +154,23 @@ var _ = Describe("calling the modelsrv API functions for phase 0", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var instanceArr oapi.InstanceList
-		err = json.Unmarshal(body, &instanceArr)
+		var nodeArr []oapi.NodeSummaryView
+		err = json.Unmarshal(body, &nodeArr)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(instanceArr)).To(Equal(1))
+		Expect(len(nodeArr)).To(Equal(1))
 
-		Expect(*(instanceArr[0].InstanceId)).To(Equal(nodeId))
-		Expect(*(instanceArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/nodes/%s", nodeId.String())))
+		Expect(nodeArr[0].NodeId).To(Equal(nodeId))
+		Expect(nodeArr[0].DisplayName).To(Equal("Test Node"))
+		Expect(nodeArr[0].Reference).To(Equal(fmt.Sprintf("http://localhost/landscape/nodes/%s", nodeId.String())))
+		Expect(nodeArr[0].Description).NotTo(BeNil())
+		Expect(*nodeArr[0].Description).To(Equal("A test node for testing purposes"))
+		Expect(nodeArr[0].NodeType.NodeTypeId).To(Equal(nodeTypeId))
+		Expect(nodeArr[0].NodeType.Resource).To(Equal(oapi.NodeTypeViewResourceNodeType))
+		Expect(nodeArr[0].NodeType.DisplayName).To(Equal("Test Node Type"))
+		Expect(nodeArr[0].Annotations).NotTo(BeNil())
+		Expect(len(*nodeArr[0].Annotations)).To(Equal(1))
+		Expect((*nodeArr[0].Annotations)[0].Key).To(Equal("category"))
+		Expect((*nodeArr[0].Annotations)[0].Value).To(Equal("storage"))
 
 	})
 
@@ -177,10 +187,17 @@ var _ = Describe("calling the modelsrv API functions for phase 0", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var node oapi.Node
+		var node oapi.NodeView
 		err = json.Unmarshal(body, &node)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(node.NodeId).To(Equal(nodeId))
+		Expect(node.DisplayName).To(Equal("Test Node"))
+		Expect(node.Reference).To(Equal(fmt.Sprintf("http://localhost/landscape/nodes/%s", nodeId.String())))
+		Expect(node.NodeType.DisplayName).To(Equal("Test Node Type"))
+		Expect(node.Annotations).NotTo(BeNil())
+		Expect(len(*node.Annotations)).To(Equal(1))
+		Expect((*node.Annotations)[0].Key).To(Equal("category"))
+		Expect((*node.Annotations)[0].Value).To(Equal("storage"))
 	})
 
 })

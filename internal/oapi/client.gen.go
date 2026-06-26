@@ -3755,7 +3755,7 @@ func (r GetLandscapeNodeTypesNodeTypeIdResponse) StatusCode() int {
 type GetLandscapeNodesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]NodeSummaryView
 }
 
 // Status returns HTTPResponse.Status
@@ -3777,7 +3777,7 @@ func (r GetLandscapeNodesResponse) StatusCode() int {
 type GetLandscapeNodesNodeIdResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *Node
+	JSON200      *NodeView
 	JSON404      *ErrorString
 }
 
@@ -5775,7 +5775,7 @@ func ParseGetLandscapeNodesResponse(rsp *http.Response) (*GetLandscapeNodesRespo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []NodeSummaryView
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5801,7 +5801,7 @@ func ParseGetLandscapeNodesNodeIdResponse(rsp *http.Response) (*GetLandscapeNode
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Node
+		var dest NodeView
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

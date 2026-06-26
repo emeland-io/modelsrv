@@ -25,12 +25,12 @@ func findingToView(m model.Model, baseURL string, f finding.Finding) FindingView
 	}
 	if typeID := f.GetFindingTypeId(); typeID != uuid.Nil {
 		typeView := FindingTypeView{
-			Id: uuidToOpenAPI(typeID),
+			FindingTypeId: uuidToOpenAPI(typeID),
 		}
 		if ft := m.GetFindingTypeById(typeID); ft != nil {
 			typeView.DisplayName = ft.GetDisplayName()
 		}
-		out.Type = typeView
+		out.FindingType = typeView
 	}
 	refs := f.GetResources()
 	out.Resources = make([]ResourceView, 0, len(refs))
