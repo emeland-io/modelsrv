@@ -43,12 +43,6 @@ func nodeSummaryToView(m model.Model, baseURL string, n node.Node) NodeSummaryVi
 
 func nodeToView(m model.Model, baseURL string, n node.Node) NodeView {
 	summary := nodeSummaryToView(m, baseURL, n)
-	return NodeView{
-		NodeId:      summary.NodeId,
-		DisplayName: summary.DisplayName,
-		Description: summary.Description,
-		Reference:   summary.Reference,
-		NodeType:    summary.NodeType,
-		Annotations: summary.Annotations,
-	}
+
+	return NodeView(summary)
 }
