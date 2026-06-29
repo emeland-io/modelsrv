@@ -145,33 +145,6 @@ func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, r
 	return GetLandscapeFindingTypesFindingTypeId200JSONResponse(FindingTypeToDto(item)), nil
 }
 
-// GetLandscapeNodes implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeNodes(ctx context.Context, request GetLandscapeNodesRequestObject) (GetLandscapeNodesResponseObject, error) {
-	items, err := a.Backend.GetNodes()
-	if err != nil {
-		return nil, err
-	}
-	if a.Authz != nil {
-		principal := authz.PrincipalFromCtx(ctx)
-		items = authz.FilterVisible(a.Authz, principal, events.NodeResource, items)
-	}
-	return GetLandscapeNodes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/nodes", items)), nil
-}
-
-// GetLandscapeNodesNodeId implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeNodesNodeId(ctx context.Context, request GetLandscapeNodesNodeIdRequestObject) (GetLandscapeNodesNodeIdResponseObject, error) {
-	item := a.Backend.GetNodeById(request.NodeId)
-	if item == nil {
-		msg := fmt.Sprintf("node %s not found", request.NodeId.String())
-		return GetLandscapeNodesNodeId404JSONResponse(msg), nil
-	}
-	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.NodeResource, item) {
-		msg := fmt.Sprintf("node %s not found", request.NodeId.String())
-		return GetLandscapeNodesNodeId404JSONResponse(msg), nil
-	}
-	return GetLandscapeNodesNodeId200JSONResponse(NodeToDto(item)), nil
-}
-
 // GetLandscapeApiInstances implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLandscapeApiInstancesRequestObject) (GetLandscapeApiInstancesResponseObject, error) {
 	items, err := a.Backend.GetApiInstances()

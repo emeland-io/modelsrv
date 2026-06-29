@@ -424,32 +424,6 @@ func TestGetByIdFindingType(t *testing.T) {
 	assert.Equal(t, "Test FindingType", got.GetDisplayName())
 }
 
-func TestListNode(t *testing.T) {
-	c, m := setupTestServer(t)
-	loadTestModel(t, m)
-
-	list, err := c.GetNodes()
-	require.NoError(t, err)
-	require.NotNil(t, list)
-	assert.Greater(t, len(list), 0, "Node list should not be empty")
-}
-
-func TestGetByIdNode(t *testing.T) {
-	c, m := setupTestServer(t)
-	loadTestModel(t, m)
-
-	// unknown id → not found
-	_, err := c.GetNodeById(uuid.New())
-	assert.ErrorIs(t, err, common.ErrNodeNotFound)
-
-	// known id → success
-	got, err := c.GetNodeById(testIDs["Node"])
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	assert.Equal(t, testIDs["Node"], got.GetNodeId())
-	assert.Equal(t, "Test Node", got.GetDisplayName())
-}
-
 func TestListApiInstance(t *testing.T) {
 	c, m := setupTestServer(t)
 	loadTestModel(t, m)

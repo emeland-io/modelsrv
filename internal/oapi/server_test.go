@@ -119,6 +119,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	testNode := node.NewNode(nodeId)
+	testNode.SetDisplayName("Test Node")
+	testNode.SetDescription("A test node for testing purposes")
+	testNode.SetTypeRef(&node.NodeTypeRef{NodeTypeId: nodeTypeId})
+	testNode.GetAnnotations().Add("category", "storage")
 	err = backend.AddNode(testNode)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -203,6 +207,7 @@ var _ = BeforeSuite(func() {
 			ResourceId:   componentId,
 		},
 	})
+	fd.GetAnnotations().Add("category", "storage")
 	err = backend.AddFinding(fd)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -623,6 +628,10 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(findingArr[0].FindingId).To(Equal(findingId))
 		Expect(findingArr[0].Reference).To(Equal(fmt.Sprintf("http://localhost/landscape/findings/%s", findingId.String())))
 		Expect(findingArr[0].DisplayName).To(Equal("First Finding"))
+		Expect(findingArr[0].Annotations).NotTo(BeNil())
+		Expect(len(*findingArr[0].Annotations)).To(Equal(1))
+		Expect((*findingArr[0].Annotations)[0].Key).To(Equal("category"))
+		Expect((*findingArr[0].Annotations)[0].Value).To(Equal("storage"))
 
 	})
 
@@ -646,7 +655,11 @@ var _ = Describe("calling the modelsrv API functions", func() {
 
 		Expect(len(finding.Resources)).To(Equal(2))
 		Expect(finding.Resources[0].ResourceType).To(Equal("API"))
-		Expect(finding.Type.DisplayName).To(Equal("Test Finding Type"))
+		Expect(finding.FindingType.DisplayName).To(Equal("Test Finding Type"))
+		Expect(finding.Annotations).NotTo(BeNil())
+		Expect(len(*finding.Annotations)).To(Equal(1))
+		Expect((*finding.Annotations)[0].Key).To(Equal("category"))
+		Expect((*finding.Annotations)[0].Value).To(Equal("storage"))
 	})
 
 	It("should call GET on /landscape/findingTypes", func() {

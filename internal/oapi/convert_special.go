@@ -69,6 +69,9 @@ func NodeFromDto(m model.Model, on *Node) (node.Node, error) {
 	id := uuid.UUID(on.NodeId)
 	n := node.NewNode(id)
 	n.SetDisplayName(on.DisplayName)
+	if on.Description != nil {
+		n.SetDescription(*on.Description)
+	}
 	ntid := uuid.UUID(on.NodeType)
 	n.SetTypeRef(&node.NodeTypeRef{
 		NodeTypeId: ntid,
@@ -93,6 +96,9 @@ func NodeToDto(n node.Node) Node {
 		NodeId:      uuidToOpenAPI(n.GetNodeId()),
 		DisplayName: n.GetDisplayName(),
 		Annotations: AnnotationsToDto(n.GetAnnotations()),
+	}
+	if desc := n.GetDescription(); desc != "" {
+		out.Description = &desc
 	}
 	if typeID := n.GetNodeTypeId(); typeID != uuid.Nil {
 		out.NodeType = uuidToOpenAPI(typeID)
