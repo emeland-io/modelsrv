@@ -894,7 +894,10 @@ func CapabilityFromDto(m model.Model, o *Capability) (mdlcapability.Capability, 
 	if o.Versions != nil {
 		refs := make([]mdlcapability.CapabilityVersionRef, len(*o.Versions))
 		for i, v := range *o.Versions {
-			refs[i] = mdlcapability.CapabilityVersionRef{CapabilityVersionId: uuid.UUID(v.CapabilityVersionId)}
+			refs[i] = mdlcapability.CapabilityVersionRef{
+				CapabilityVersionId: uuid.UUID(v.CapabilityVersionId),
+				Version:             versionFromDto(v.Version),
+			}
 		}
 		c.SetVersions(refs)
 	}
@@ -915,7 +918,10 @@ func CapabilityToDto(v mdlcapability.Capability) Capability {
 	if vers := v.GetVersions(); len(vers) > 0 {
 		refs := make([]CapabilityVersionRef, len(vers))
 		for i, r := range vers {
-			refs[i] = CapabilityVersionRef{CapabilityVersionId: uuidToOpenAPI(r.CapabilityVersionId)}
+			refs[i] = CapabilityVersionRef{
+				CapabilityVersionId: uuidToOpenAPI(r.CapabilityVersionId),
+				Version:             versionToDto(r.Version),
+			}
 		}
 		out.Versions = &refs
 	}

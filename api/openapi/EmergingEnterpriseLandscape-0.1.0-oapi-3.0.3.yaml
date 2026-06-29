@@ -1677,6 +1677,8 @@ components:
           type: string
           description: The UUID of the referenced capability version.
           format: uuid
+        version:
+          $ref: '#/components/schemas/Version'
       required:
         - capabilityVersionId
     Parameter:

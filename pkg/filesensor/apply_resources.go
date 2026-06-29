@@ -467,7 +467,11 @@ func applyCapability(spec map[string]any, m model.Model) error {
 					if err != nil {
 						return err
 					}
-					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid})
+					ver, err := parseVersionSpec(vMap["version"])
+					if err != nil {
+						return err
+					}
+					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid, Version: ver})
 				}
 			}
 			c.SetVersions(refs)
