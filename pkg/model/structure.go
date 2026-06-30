@@ -15,6 +15,7 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
 	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -228,6 +229,22 @@ type ParameterModel interface {
 	GetParameterById(id uuid.UUID) mdlparameter.Parameter
 }
 
+// CapacityResourceTypeModel provides CRUD operations for [capacity.CapacityResourceType] resources.
+type CapacityResourceTypeModel interface {
+	AddCapacityResourceType(capacityResourceType mdlcap.CapacityResourceType) error
+	DeleteCapacityResourceTypeById(id uuid.UUID) error
+	GetCapacityResourceTypes() ([]mdlcap.CapacityResourceType, error)
+	GetCapacityResourceTypeById(id uuid.UUID) mdlcap.CapacityResourceType
+}
+
+// CapacityModel provides CRUD operations for [capacity.Capacity] resources.
+type CapacityModel interface {
+	AddCapacity(c mdlcap.Capacity) error
+	DeleteCapacityById(id uuid.UUID) error
+	GetCapacities() ([]mdlcap.Capacity, error)
+	GetCapacityById(id uuid.UUID) mdlcap.Capacity
+}
+
 // ArtifactModel provides CRUD operations for [artifact.Artifact] resources.
 type ArtifactModel interface {
 	// AddArtifact registers an Artifact in the model.
@@ -274,6 +291,8 @@ type Model interface {
 	MergeRuleModel
 	CapabilityModel
 	ParameterModel
+	CapacityResourceTypeModel
+	CapacityModel
 	ArtifactModel
 	ArtifactInstanceModel
 	iam.OrgUnitModel
@@ -327,8 +346,11 @@ type modelData struct {
 	filterRulesByUUID map[uuid.UUID]mdlfilterrule.FilterRule
 	mergeRulesByUUID  map[uuid.UUID]mdlmergerule.MergeRule
 
-	capabilitiesByUUID map[uuid.UUID]mdlcapability.Capability
-	parametersByUUID   map[uuid.UUID]mdlparameter.Parameter
+	capabilitiesByUUID          map[uuid.UUID]mdlcapability.Capability
+	parametersByUUID            map[uuid.UUID]mdlparameter.Parameter
+	capacityResourceTypesByUUID map[uuid.UUID]mdlcap.CapacityResourceType
+	capacitiesByUUID            map[uuid.UUID]mdlcap.Capacity
+	capacitiesByTuple           map[capacityTupleKey]uuid.UUID
 }
 
 // ensure Model interface is implemented correctly
@@ -378,8 +400,11 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		filterRulesByUUID: make(map[uuid.UUID]mdlfilterrule.FilterRule),
 		mergeRulesByUUID:  make(map[uuid.UUID]mdlmergerule.MergeRule),
 
-		capabilitiesByUUID: make(map[uuid.UUID]mdlcapability.Capability),
-		parametersByUUID:   make(map[uuid.UUID]mdlparameter.Parameter),
+		capabilitiesByUUID:          make(map[uuid.UUID]mdlcapability.Capability),
+		parametersByUUID:            make(map[uuid.UUID]mdlparameter.Parameter),
+		capacityResourceTypesByUUID: make(map[uuid.UUID]mdlcap.CapacityResourceType),
+		capacitiesByUUID:            make(map[uuid.UUID]mdlcap.Capacity),
+		capacitiesByTuple:           make(map[capacityTupleKey]uuid.UUID),
 	}
 
 	return model, nil

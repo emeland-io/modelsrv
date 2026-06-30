@@ -38,6 +38,8 @@ func ResourceTypes(m Model) []ResourceTypeInfo {
 		{"MergeRule", countFunc(m.GetMergeRules)},
 		{"Capability", countFunc(m.GetCapabilities)},
 		{"Parameter", countFunc(m.GetParameters)},
+		{"CapacityResourceType", countFunc(m.GetCapacityResourceTypes)},
+		{"Capacity", countFunc(m.GetCapacities)},
 	}
 }
 

@@ -102,6 +102,10 @@ const (
 	CapabilityResource
 	ParameterResource
 
+	// Phase 7
+	CapacityResourceTypeResource
+	CapacityResource
+
 	// Value objects
 	AnnotationsResource
 )
@@ -150,6 +154,10 @@ var resourceTypeValues = map[ResourceType]string{
 	// Phase 3 capabilities
 	CapabilityResource: "Capability",
 	ParameterResource:  "Parameter",
+
+	// Phase 7
+	CapacityResourceTypeResource: "CapacityResourceType",
+	CapacityResource:             "Capacity",
 
 	// Value objects
 	AnnotationsResource: "Annotations",

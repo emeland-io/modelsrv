@@ -9,6 +9,8 @@ import (
 
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
 
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 
 	model "go.emeland.io/modelsrv/pkg/model"
@@ -106,6 +108,21 @@ func ArtifactFromDto(m model.Model, o *Artifact) (artifact.Artifact, error) {
 	}
 	if o.Hash != nil {
 		v.SetHash(*o.Hash)
+	}
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+// CapacityResourceTypeFromDto builds a domain CapacityResourceType from a wire DTO.
+func CapacityResourceTypeFromDto(m model.Model, o *CapacityResourceType) (mdlcap.CapacityResourceType, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil capacity resource type")
+	}
+	id := uuid.UUID(o.CapacityResourceTypeId)
+	v := mdlcap.NewCapacityResourceType(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
 	}
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 	return v, nil

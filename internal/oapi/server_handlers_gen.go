@@ -641,3 +641,49 @@ func (a *ApiServer) GetLandscapeParametersParameterId(ctx context.Context, reque
 	}
 	return GetLandscapeParametersParameterId200JSONResponse(ParameterToDto(item)), nil
 }
+
+// GetLandscapeCapacityResourceTypes implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapacityResourceTypes(ctx context.Context, request GetLandscapeCapacityResourceTypesRequestObject) (GetLandscapeCapacityResourceTypesResponseObject, error) {
+	items, err := a.Backend.GetCapacityResourceTypes()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeCapacityResourceTypes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capacityResourceTypes", items)), nil
+}
+
+// GetLandscapeCapacityResourceTypesCapacityResourceTypeId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapacityResourceTypesCapacityResourceTypeId(ctx context.Context, request GetLandscapeCapacityResourceTypesCapacityResourceTypeIdRequestObject) (GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponseObject, error) {
+	item := a.Backend.GetCapacityResourceTypeById(request.CapacityResourceTypeId)
+	if item == nil {
+		msg := fmt.Sprintf("capacity resource type %s not found", request.CapacityResourceTypeId.String())
+		return GetLandscapeCapacityResourceTypesCapacityResourceTypeId404JSONResponse(msg), nil
+	}
+	return GetLandscapeCapacityResourceTypesCapacityResourceTypeId200JSONResponse(CapacityResourceTypeToDto(item)), nil
+}
+
+// GetLandscapeCapacities implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapacities(ctx context.Context, request GetLandscapeCapacitiesRequestObject) (GetLandscapeCapacitiesResponseObject, error) {
+	items, err := a.Backend.GetCapacities()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.CapacityResource, items)
+	}
+	return GetLandscapeCapacities200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capacities", items)), nil
+}
+
+// GetLandscapeCapacitiesCapacityId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapacitiesCapacityId(ctx context.Context, request GetLandscapeCapacitiesCapacityIdRequestObject) (GetLandscapeCapacitiesCapacityIdResponseObject, error) {
+	item := a.Backend.GetCapacityById(request.CapacityId)
+	if item == nil {
+		msg := fmt.Sprintf("capacity %s not found", request.CapacityId.String())
+		return GetLandscapeCapacitiesCapacityId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.CapacityResource, item) {
+		msg := fmt.Sprintf("capacity %s not found", request.CapacityId.String())
+		return GetLandscapeCapacitiesCapacityId404JSONResponse(msg), nil
+	}
+	return GetLandscapeCapacitiesCapacityId200JSONResponse(CapacityToDto(item)), nil
+}

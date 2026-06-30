@@ -10,6 +10,7 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
 	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -958,5 +959,73 @@ func ParameterToDto(v mdlparameter.Parameter) Parameter {
 		out.Values = &vals
 	}
 	out.Annotations = AnnotationsToDto(v.GetAnnotations())
+	return out
+}
+
+// CapacityFromDto builds a domain Capacity from a wire DTO.
+func CapacityFromDto(m model.Model, o *Capacity) (mdlcap.Capacity, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil capacity")
+	}
+	id := uuid.UUID(o.CapacityId)
+	v := mdlcap.NewCapacity(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	typeID := uuid.UUID(o.ResourceTypeRef.CapacityResourceTypeId)
+	if m != nil {
+		if crt := m.GetCapacityResourceTypeById(typeID); crt != nil {
+			v.SetCapacityResourceTypeByRef(crt)
+		} else {
+			v.SetCapacityResourceTypeById(typeID)
+		}
+	} else {
+		v.SetCapacityResourceTypeById(typeID)
+	}
+	contextID := uuid.UUID(o.ContextRef.ContextId)
+	if m != nil {
+		if ctx := m.GetContextById(contextID); ctx != nil {
+			v.SetContextByRef(ctx)
+		} else {
+			v.SetContextById(contextID)
+		}
+	} else {
+		v.SetContextById(contextID)
+	}
+	cat, err := mdlcap.ParseCategory(string(o.Category))
+	if err != nil {
+		return nil, err
+	}
+	v.SetCategory(cat)
+	amount, err := mdlcap.ParseAmount(o.Amount)
+	if err != nil {
+		return nil, err
+	}
+	v.SetAmount(amount)
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+func CapacityToDto(v mdlcap.Capacity) Capacity {
+	if v == nil {
+		return Capacity{}
+	}
+	out := Capacity{
+		CapacityId:  uuidToOpenAPI(v.GetCapacityId()),
+		DisplayName: v.GetDisplayName(),
+		Category:    CapacityCategory(v.GetCategory()),
+		Amount:      string(v.GetAmount()),
+		ResourceTypeRef: CapacityResourceTypeRef{
+			CapacityResourceTypeId: uuidToOpenAPI(v.GetCapacityResourceTypeId()),
+		},
+		ContextRef: CapacityContextRef{
+			ContextId: uuidToOpenAPI(v.GetContextId()),
+		},
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
 	return out
 }

@@ -147,6 +147,18 @@ type ClientInterface interface {
 	// GetLandscapeCapabilitiesCapabilityId request
 	GetLandscapeCapabilitiesCapabilityId(ctx context.Context, capabilityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeCapacities request
+	GetLandscapeCapacities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeCapacitiesCapacityId request
+	GetLandscapeCapacitiesCapacityId(ctx context.Context, capacityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeCapacityResourceTypes request
+	GetLandscapeCapacityResourceTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeCapacityResourceTypesCapacityResourceTypeId request
+	GetLandscapeCapacityResourceTypesCapacityResourceTypeId(ctx context.Context, capacityResourceTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeComponentInstances request
 	GetLandscapeComponentInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -507,6 +519,54 @@ func (c *Client) GetLandscapeCapabilities(ctx context.Context, reqEditors ...Req
 
 func (c *Client) GetLandscapeCapabilitiesCapabilityId(ctx context.Context, capabilityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeCapabilitiesCapabilityIdRequest(c.Server, capabilityId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeCapacities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeCapacitiesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeCapacitiesCapacityId(ctx context.Context, capacityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeCapacitiesCapacityIdRequest(c.Server, capacityId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeCapacityResourceTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeCapacityResourceTypesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeCapacityResourceTypesCapacityResourceTypeId(ctx context.Context, capacityResourceTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeCapacityResourceTypesCapacityResourceTypeIdRequest(c.Server, capacityResourceTypeId)
 	if err != nil {
 		return nil, err
 	}
@@ -1563,6 +1623,128 @@ func NewGetLandscapeCapabilitiesCapabilityIdRequest(server string, capabilityId 
 	}
 
 	operationPath := fmt.Sprintf("/landscape/capabilities/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeCapacitiesRequest generates requests for GetLandscapeCapacities
+func NewGetLandscapeCapacitiesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/capacities")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeCapacitiesCapacityIdRequest generates requests for GetLandscapeCapacitiesCapacityId
+func NewGetLandscapeCapacitiesCapacityIdRequest(server string, capacityId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "capacityId", runtime.ParamLocationPath, capacityId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/capacities/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeCapacityResourceTypesRequest generates requests for GetLandscapeCapacityResourceTypes
+func NewGetLandscapeCapacityResourceTypesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/capacityResourceTypes")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeCapacityResourceTypesCapacityResourceTypeIdRequest generates requests for GetLandscapeCapacityResourceTypesCapacityResourceTypeId
+func NewGetLandscapeCapacityResourceTypesCapacityResourceTypeIdRequest(server string, capacityResourceTypeId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "capacityResourceTypeId", runtime.ParamLocationPath, capacityResourceTypeId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/capacityResourceTypes/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2988,6 +3170,18 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeCapabilitiesCapabilityIdWithResponse request
 	GetLandscapeCapabilitiesCapabilityIdWithResponse(ctx context.Context, capabilityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeCapabilitiesCapabilityIdResponse, error)
 
+	// GetLandscapeCapacitiesWithResponse request
+	GetLandscapeCapacitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeCapacitiesResponse, error)
+
+	// GetLandscapeCapacitiesCapacityIdWithResponse request
+	GetLandscapeCapacitiesCapacityIdWithResponse(ctx context.Context, capacityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeCapacitiesCapacityIdResponse, error)
+
+	// GetLandscapeCapacityResourceTypesWithResponse request
+	GetLandscapeCapacityResourceTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeCapacityResourceTypesResponse, error)
+
+	// GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse request
+	GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse(ctx context.Context, capacityResourceTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse, error)
+
 	// GetLandscapeComponentInstancesWithResponse request
 	GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error)
 
@@ -3490,6 +3684,96 @@ func (r GetLandscapeCapabilitiesCapabilityIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeCapabilitiesCapabilityIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeCapacitiesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeCapacitiesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeCapacitiesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeCapacitiesCapacityIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Capacity
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeCapacitiesCapacityIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeCapacitiesCapacityIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeCapacityResourceTypesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeCapacityResourceTypesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeCapacityResourceTypesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *CapacityResourceType
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4639,6 +4923,42 @@ func (c *ClientWithResponses) GetLandscapeCapabilitiesCapabilityIdWithResponse(c
 	return ParseGetLandscapeCapabilitiesCapabilityIdResponse(rsp)
 }
 
+// GetLandscapeCapacitiesWithResponse request returning *GetLandscapeCapacitiesResponse
+func (c *ClientWithResponses) GetLandscapeCapacitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeCapacitiesResponse, error) {
+	rsp, err := c.GetLandscapeCapacities(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeCapacitiesResponse(rsp)
+}
+
+// GetLandscapeCapacitiesCapacityIdWithResponse request returning *GetLandscapeCapacitiesCapacityIdResponse
+func (c *ClientWithResponses) GetLandscapeCapacitiesCapacityIdWithResponse(ctx context.Context, capacityId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeCapacitiesCapacityIdResponse, error) {
+	rsp, err := c.GetLandscapeCapacitiesCapacityId(ctx, capacityId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeCapacitiesCapacityIdResponse(rsp)
+}
+
+// GetLandscapeCapacityResourceTypesWithResponse request returning *GetLandscapeCapacityResourceTypesResponse
+func (c *ClientWithResponses) GetLandscapeCapacityResourceTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeCapacityResourceTypesResponse, error) {
+	rsp, err := c.GetLandscapeCapacityResourceTypes(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeCapacityResourceTypesResponse(rsp)
+}
+
+// GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse request returning *GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse
+func (c *ClientWithResponses) GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse(ctx context.Context, capacityResourceTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse, error) {
+	rsp, err := c.GetLandscapeCapacityResourceTypesCapacityResourceTypeId(ctx, capacityResourceTypeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse(rsp)
+}
+
 // GetLandscapeComponentInstancesWithResponse request returning *GetLandscapeComponentInstancesResponse
 func (c *ClientWithResponses) GetLandscapeComponentInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeComponentInstancesResponse, error) {
 	rsp, err := c.GetLandscapeComponentInstances(ctx, reqEditors...)
@@ -5473,6 +5793,124 @@ func ParseGetLandscapeCapabilitiesCapabilityIdResponse(rsp *http.Response) (*Get
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Capability
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeCapacitiesResponse parses an HTTP response from a GetLandscapeCapacitiesWithResponse call
+func ParseGetLandscapeCapacitiesResponse(rsp *http.Response) (*GetLandscapeCapacitiesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeCapacitiesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeCapacitiesCapacityIdResponse parses an HTTP response from a GetLandscapeCapacitiesCapacityIdWithResponse call
+func ParseGetLandscapeCapacitiesCapacityIdResponse(rsp *http.Response) (*GetLandscapeCapacitiesCapacityIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeCapacitiesCapacityIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Capacity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeCapacityResourceTypesResponse parses an HTTP response from a GetLandscapeCapacityResourceTypesWithResponse call
+func ParseGetLandscapeCapacityResourceTypesResponse(rsp *http.Response) (*GetLandscapeCapacityResourceTypesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeCapacityResourceTypesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse parses an HTTP response from a GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse call
+func ParseGetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse(rsp *http.Response) (*GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeCapacityResourceTypesCapacityResourceTypeIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CapacityResourceType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

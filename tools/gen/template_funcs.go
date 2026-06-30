@@ -41,9 +41,10 @@ func replicationObjectsArg(spec TypeSpec) string {
 func applyObjectSetup(spec TypeSpec) string {
 	lines := strings.Split(strings.TrimSpace(spec.TestSetup), "\n")
 	var out []string
+	targetAdd := "m.Add" + spec.Name + "("
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.Contains(trimmed, "require.NoError(t, m.Add") {
+		if strings.Contains(trimmed, "require.NoError(t, m.Add") && strings.Contains(trimmed, targetAdd) {
 			continue
 		}
 		line = strings.ReplaceAll(line, fmt.Sprintf(`testIDs["%s"]`, spec.Name), "resourceID")

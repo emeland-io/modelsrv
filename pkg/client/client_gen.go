@@ -12,6 +12,7 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
 	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -41,6 +42,7 @@ var (
 	_ finding.Finding
 	_ iam.OrgUnit
 	_ mdlmergerule.MergeRule
+	_ mdlcap.Capacity
 	_ node.Node
 	_ mdlparameter.Parameter
 	_ mdlprod.Product
@@ -645,4 +647,54 @@ func (c *ModelSrvClient) GetParameterById(id uuid.UUID) (mdlparameter.Parameter,
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.ParameterFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapacityResourceTypes() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeCapacityResourceTypesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapacityResourceTypeById(id uuid.UUID) (mdlcap.CapacityResourceType, error) {
+	resp, err := c.oapi_client.GetLandscapeCapacityResourceTypesCapacityResourceTypeIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrCapacityResourceTypeNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.CapacityResourceTypeFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapacities() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeCapacitiesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapacityById(id uuid.UUID) (mdlcap.Capacity, error) {
+	resp, err := c.oapi_client.GetLandscapeCapacitiesCapacityIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrCapacityNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.CapacityFromDto(nil, resp.JSON200)
 }

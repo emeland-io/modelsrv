@@ -383,6 +383,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/capacityResourceTypes:
+    get:
+      description: Retrieve all capacity resource types in the landscape.
+      tags: [landscape, p7_capacity]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/capacityResourceTypes/{capacityResourceTypeId}:
+    get:
+      description: Retrieve details of a specific capacity resource type by its UUID.
+      tags: [landscape, p7_capacity]
+      parameters:
+        - name: capacityResourceTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityResourceType'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/capacities:
+    get:
+      description: Retrieve all capacity entries in the landscape.
+      tags: [landscape, p7_capacity]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/capacities/{capacityId}:
+    get:
+      description: Retrieve details of a specific capacity entry by its UUID.
+      tags: [landscape, p7_capacity]
+      parameters:
+        - name: capacityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Capacity'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/filter-rules:
     get:
       description: Retrieve all filter rules registered in this modelsrv instance.
@@ -1169,6 +1239,9 @@ components:
             # event pipeline visibility
             - FilterRule
             - MergeRule
+            # phase-7 capacity types
+            - Capacity
+            - CapacityResourceType
           description: The type of the resource referenced.
         displayName:
           type: string
@@ -1336,6 +1409,9 @@ components:
             # phase-3 capabilities
             - Capability
             - Parameter
+            # phase-7 capacity types
+            - Capacity
+            - CapacityResourceType
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.
@@ -2113,6 +2189,87 @@ components:
       required:
         - artifactInstanceId
         - displayName
+    CapacityCategory:
+      type: string
+      description: Classification of how much capacity exists in a context.
+      enum:
+        - requested
+        - provided
+        - consumed
+    CapacityResourceTypeRef:
+      type: object
+      description: Reference to a capacity resource type vocabulary entry.
+      properties:
+        capacityResourceTypeId:
+          type: string
+          format: uuid
+      required:
+        - capacityResourceTypeId
+    CapacityResourceType:
+      type: object
+      description: Shared vocabulary for a measurable capacity limit with a unit.
+      properties:
+        capacityResourceTypeId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+          description: Default measurement unit for amounts of this type (e.g. cores, GiB).
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - capacityResourceTypeId
+        - displayName
+        - unit
+    CapacityContextRef:
+      type: object
+      description: Reference to a Phase 0 context.
+      properties:
+        contextId:
+          type: string
+          format: uuid
+      required:
+        - contextId
+    Capacity:
+      type: object
+      description: Represents how much of a capacity resource type exists in a context, categorized as requested, provided, or consumed.
+      properties:
+        capacityId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the capacity entry.
+        description:
+          type: string
+          description: A brief description of the capacity entry.
+        resourceTypeRef:
+          $ref: '#/components/schemas/CapacityResourceTypeRef'
+        contextRef:
+          $ref: '#/components/schemas/CapacityContextRef'
+        category:
+          $ref: '#/components/schemas/CapacityCategory'
+        amount:
+          type: string
+          description: Non-negative decimal quantity of the capacity resource type in this context and category.
+        annotations:
+          type: array
+          description: Extended metadata for the capacity entry.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - capacityId
+        - displayName
+        - resourceTypeRef
+        - contextRef
+        - category
+        - amount
     Event:
       type: object
       description: Represents a change in the landscape model for event replication between servers.
