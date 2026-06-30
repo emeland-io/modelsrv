@@ -356,7 +356,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FindingType'
   /landscape/findingTypes/{findingTypeId}:
     get:
       description: Retrieve a known types of findings by its UUID.
@@ -1120,6 +1122,9 @@ components:
         displayName:
           type: string
           description: The human-readable name of the finding class.
+        description:
+          type: string
+          description: A brief description of the finding class's purpose and scope.
       required:
         - findingTypeId
         - displayName

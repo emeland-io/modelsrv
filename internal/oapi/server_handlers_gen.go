@@ -118,33 +118,6 @@ func (a *ApiServer) GetLandscapeNodeTypesNodeTypeId(ctx context.Context, request
 	return GetLandscapeNodeTypesNodeTypeId200JSONResponse(NodeTypeToDto(item)), nil
 }
 
-// GetLandscapeFindingTypes implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeFindingTypes(ctx context.Context, request GetLandscapeFindingTypesRequestObject) (GetLandscapeFindingTypesResponseObject, error) {
-	items, err := a.Backend.GetFindingTypes()
-	if err != nil {
-		return nil, err
-	}
-	if a.Authz != nil {
-		principal := authz.PrincipalFromCtx(ctx)
-		items = authz.FilterVisible(a.Authz, principal, events.FindingTypeResource, items)
-	}
-	return GetLandscapeFindingTypes200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/findingTypes", items)), nil
-}
-
-// GetLandscapeFindingTypesFindingTypeId implements [StrictServerInterface].
-func (a *ApiServer) GetLandscapeFindingTypesFindingTypeId(ctx context.Context, request GetLandscapeFindingTypesFindingTypeIdRequestObject) (GetLandscapeFindingTypesFindingTypeIdResponseObject, error) {
-	item := a.Backend.GetFindingTypeById(request.FindingTypeId)
-	if item == nil {
-		msg := fmt.Sprintf("finding type %s not found", request.FindingTypeId.String())
-		return GetLandscapeFindingTypesFindingTypeId404JSONResponse(msg), nil
-	}
-	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.FindingTypeResource, item) {
-		msg := fmt.Sprintf("finding type %s not found", request.FindingTypeId.String())
-		return GetLandscapeFindingTypesFindingTypeId404JSONResponse(msg), nil
-	}
-	return GetLandscapeFindingTypesFindingTypeId200JSONResponse(FindingTypeToDto(item)), nil
-}
-
 // GetLandscapeApiInstances implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeApiInstances(ctx context.Context, request GetLandscapeApiInstancesRequestObject) (GetLandscapeApiInstancesResponseObject, error) {
 	items, err := a.Backend.GetApiInstances()
