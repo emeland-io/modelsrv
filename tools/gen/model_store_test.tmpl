@@ -15,11 +15,13 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	mdlfilterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -31,11 +33,13 @@ var (
 	_ = common.ErrContextNotFound
 	_ = component.NewComponent
 	_ = mdlctx.NewContext
+	_ = mdlcapability.NewCapability
 	_ = mdlfilterrule.NewFilterRule
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = node.NewNode
+	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )

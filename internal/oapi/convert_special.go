@@ -9,6 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -17,6 +18,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -878,5 +880,83 @@ func MergeRuleToDto(v mdlmergerule.MergeRule) MergeRule {
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc
 	}
+	return out
+}
+
+// CapabilityFromDto builds a Capability from a wire DTO.
+func CapabilityFromDto(m model.Model, o *Capability) (mdlcapability.Capability, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil capability")
+	}
+	id := uuid.UUID(o.CapabilityId)
+	c := mdlcapability.NewCapability(id)
+	c.SetDisplayName(o.DisplayName)
+	if o.Versions != nil {
+		refs := make([]mdlcapability.CapabilityVersionRef, len(*o.Versions))
+		for i, v := range *o.Versions {
+			refs[i] = mdlcapability.CapabilityVersionRef{
+				CapabilityVersionId: uuid.UUID(v.CapabilityVersionId),
+				Version:             versionFromDto(v.Version),
+			}
+		}
+		c.SetVersions(refs)
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(c.GetAnnotations(), o.Annotations)
+	}
+	return c, nil
+}
+
+func CapabilityToDto(v mdlcapability.Capability) Capability {
+	if v == nil {
+		return Capability{}
+	}
+	out := Capability{
+		CapabilityId: uuidToOpenAPI(v.GetCapabilityId()),
+		DisplayName:  v.GetDisplayName(),
+	}
+	if vers := v.GetVersions(); len(vers) > 0 {
+		refs := make([]CapabilityVersionRef, len(vers))
+		for i, r := range vers {
+			refs[i] = CapabilityVersionRef{
+				CapabilityVersionId: uuidToOpenAPI(r.CapabilityVersionId),
+				Version:             versionToDto(r.Version),
+			}
+		}
+		out.Versions = &refs
+	}
+	out.Annotations = AnnotationsToDto(v.GetAnnotations())
+	return out
+}
+
+// ParameterFromDto builds a Parameter from a wire DTO.
+func ParameterFromDto(m model.Model, o *Parameter) (mdlparameter.Parameter, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil parameter")
+	}
+	id := uuid.UUID(o.ParameterId)
+	param := mdlparameter.NewParameter(id)
+	param.SetDisplayName(o.DisplayName)
+	if o.Values != nil {
+		param.SetValues(*o.Values)
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(param.GetAnnotations(), o.Annotations)
+	}
+	return param, nil
+}
+
+func ParameterToDto(v mdlparameter.Parameter) Parameter {
+	if v == nil {
+		return Parameter{}
+	}
+	out := Parameter{
+		ParameterId: uuidToOpenAPI(v.GetParameterId()),
+		DisplayName: v.GetDisplayName(),
+	}
+	if vals := v.GetValues(); len(vals) > 0 {
+		out.Values = &vals
+	}
+	out.Annotations = AnnotationsToDto(v.GetAnnotations())
 	return out
 }

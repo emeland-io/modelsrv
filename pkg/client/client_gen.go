@@ -11,6 +11,7 @@ import (
 	"go.emeland.io/modelsrv/internal/oapi"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
+	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -19,6 +20,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -34,11 +36,13 @@ var (
 	_ mdlapi.API
 	_ component.Component
 	_ mdlctx.ContextType
+	_ mdlcapability.Capability
 	_ mdlfilterrule.FilterRule
 	_ finding.Finding
 	_ iam.OrgUnit
 	_ mdlmergerule.MergeRule
 	_ node.Node
+	_ mdlparameter.Parameter
 	_ mdlprod.Product
 	_ system.System
 )
@@ -616,4 +620,54 @@ func (c *ModelSrvClient) GetMergeRuleById(id uuid.UUID) (mdlmergerule.MergeRule,
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.MergeRuleFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapabilities() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilitiesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapabilityById(id uuid.UUID) (mdlcapability.Capability, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilitiesCapabilityIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrCapabilityNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.CapabilityFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetParameters() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeParametersWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetParameterById(id uuid.UUID) (mdlparameter.Parameter, error) {
+	resp, err := c.oapi_client.GetLandscapeParametersParameterIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrParameterNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ParameterFromDto(nil, resp.JSON200)
 }
