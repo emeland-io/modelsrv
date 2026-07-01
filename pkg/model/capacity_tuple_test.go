@@ -69,7 +69,9 @@ func TestCapacityTupleUpsert(t *testing.T) {
 	conflict := newCapacity(conflictID, crtID, ctxID, "conflict")
 	assert.ErrorIs(t, m.AddCapacity(conflict), common.ErrCapacityTupleConflict)
 	assert.Nil(t, m.GetCapacityById(conflictID))
-	assert.Equal(t, "v2", m.GetCapacityById(capID).GetDisplayName())
+	still := m.GetCapacityById(capID)
+	require.NotNil(t, still)
+	assert.Equal(t, "v2", still.GetDisplayName())
 }
 
 func TestAddCapacityRejectsUnresolvedRefs(t *testing.T) {

@@ -27,7 +27,7 @@ func (o *capacityData) SetContextRef(val *context.ContextRef) {
 	o.ContextRef = val
 
 	if o.isRegistered {
-		o.sink.Receive(events.CapacityResource, events.UpdateOperation, o.CapacityId, o)
+		_ = o.sink.Receive(events.CapacityResource, events.UpdateOperation, o.CapacityId, o)
 	}
 }
 
