@@ -301,9 +301,65 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		Expect(ok).To(BeTrue())
 		Expect(f.GetFindingTypeId()).To(Equal(ftid))
 	})
+
+	It("coalesces Finding TypeRef from domain encode shape", func() {
+		m := replicationTestModel()
+		fid := uuid.New()
+		ftid := finding.TypeIDForKind(finding.ContextParentNotFound)
+		res := map[string]interface{}{
+			"findingId":   fid.String(),
+			"displayName": "Phase 0 Integrity check",
+			"resources":   []interface{}{},
+			"TypeRef":     map[string]interface{}{"FindingTypeId": ftid.String()},
+		}
+		ev := oapi.Event{
+			Kind:      "Finding",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		f, ok := out.Objects[0].(finding.Finding)
+		Expect(ok).To(BeTrue())
+		Expect(f.GetFindingTypeId()).To(Equal(ftid))
+	})
 })
 
 var _ = Describe("replication wire: encode then decode round-trip", func() {
+	It("preserves phase0 finding type ref for read API display name resolution", func() {
+		m := replicationTestModel()
+		phase0.EnsureWellKnownFindingTypes(m)
+
+		fid := uuid.New()
+		kind := finding.ContextTypeMissing
+		ftid := finding.TypeIDForKind(kind)
+		f := finding.NewFinding(fid)
+		f.SetDisplayName("Phase 0 Integrity check")
+		f.SetFindingTypeById(ftid)
+		f.SetDescription("ContextTypeMissing: context cccc0002-0000-4000-8000-000000000002 has no type assigned")
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.FindingResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   fid,
+			Objects:      []any{f},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		fOut, ok := back.Objects[0].(finding.Finding)
+		Expect(ok).To(BeTrue())
+		Expect(fOut.GetFindingTypeId()).To(Equal(ftid))
+
+		Expect(m.Apply(back)).To(Succeed())
+		stored := m.GetFindingById(fid)
+		Expect(stored.GetFindingTypeId()).To(Equal(ftid))
+		ft := m.GetFindingTypeById(ftid)
+		Expect(ft).NotTo(BeNil())
+		Expect(ft.GetDisplayName()).To(Equal(string(kind)))
+	})
+
 	It("preserves system id and display name", func() {
 		m := replicationTestModel()
 		sysID := uuid.New()
