@@ -13,6 +13,7 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
 	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -38,6 +39,7 @@ var (
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
+	_ = mdlcap.NewCapacity
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
@@ -72,6 +74,7 @@ var testIDs = map[string]uuid.UUID{
 	"MergeRule":         uuid.New(),
 	"Capability":        uuid.New(),
 	"Parameter":         uuid.New(),
+	"Capacity":          uuid.New(),
 }
 
 func newStoreModel(t *testing.T) (model.Model, events.EventSink) {
@@ -262,6 +265,27 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		param.SetDisplayName("Test Parameter")
 		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+	// --- Capacity ---
+	{
+		cap := mdlcap.NewCapacity(testIDs["Capacity"])
+		cap.SetDisplayName("Production CPU provided")
+		crt := mdlcap.NewCapacityResourceType(uuid.New())
+		crt.SetDisplayName("CPU")
+		crt.SetUnit("cores")
+		ct := mdlctx.NewContextType(uuid.New())
+		ct.SetDisplayName("Test ContextType")
+		ctx := mdlctx.NewContext(uuid.New())
+		ctx.SetDisplayName("Test Context")
+		ctx.SetContextTypeById(ct.GetContextTypeId())
+		cap.SetCapacityResourceTypeById(crt.GetCapacityResourceTypeId())
+		cap.SetContextById(ctx.GetContextId())
+		cap.SetCategory(mdlcap.CategoryProvided)
+		cap.SetAmount(mdlcap.Amount("64"))
+		require.NoError(t, m.AddCapacityResourceType(crt))
+		require.NoError(t, m.AddContextType(ct))
+		require.NoError(t, m.AddContext(ctx))
+		require.NoError(t, m.AddCapacity(cap))
 	}
 }
 
@@ -633,6 +657,7 @@ func TestStoreAPIApplyReplication(t *testing.T) {
 	a := mdlapi.NewAPI(resourceID)
 	a.SetDisplayName("Test API")
 	a.SetSystem(&system.SystemRef{SystemId: testIDs["System"]})
+	require.NoError(t, m.AddApi(a))
 	require.NoError(t, m.Apply(events.Event{
 		ResourceType: events.APIResource,
 		Operation:    events.CreateOperation,
@@ -1576,4 +1601,67 @@ func TestStoreParameterApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetParameterById(resourceID))
+}
+
+func TestStoreCapacityCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Capacity"]
+	got := m.GetCapacityById(id)
+	require.NotNil(t, got, "expected Capacity to be stored")
+	assert.Equal(t, id, got.GetCapacityId())
+
+	list, err := m.GetCapacities()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteCapacityById(testIDs["Capacity"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapacityById(id))
+
+	err = m.DeleteCapacityById(testIDs["Capacity"])
+	assert.ErrorIs(t, err, common.ErrCapacityNotFound)
+}
+
+func TestStoreCapacityApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	cap := mdlcap.NewCapacity(resourceID)
+	cap.SetDisplayName("Production CPU provided")
+	crt := mdlcap.NewCapacityResourceType(uuid.New())
+	crt.SetDisplayName("CPU")
+	crt.SetUnit("cores")
+	ct := mdlctx.NewContextType(uuid.New())
+	ct.SetDisplayName("Test ContextType")
+	ctx := mdlctx.NewContext(uuid.New())
+	ctx.SetDisplayName("Test Context")
+	ctx.SetContextTypeById(ct.GetContextTypeId())
+	cap.SetCapacityResourceTypeById(crt.GetCapacityResourceTypeId())
+	cap.SetContextById(ctx.GetContextId())
+	cap.SetCategory(mdlcap.CategoryProvided)
+	cap.SetAmount(mdlcap.Amount("64"))
+	require.NoError(t, m.AddCapacityResourceType(crt))
+	require.NoError(t, m.AddContextType(ct))
+	require.NoError(t, m.AddContext(ctx))
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.CapacityResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{cap},
+	}))
+
+	got := m.GetCapacityById(resourceID)
+	require.NotNil(t, got, "expected replicated Capacity")
+	assert.Equal(t, resourceID, got.GetCapacityId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.CapacityResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapacityById(resourceID))
 }

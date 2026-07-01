@@ -12,6 +12,8 @@ import (
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
 var _ = Describe("DecodeDocuments", func() {
@@ -278,5 +280,90 @@ var _ = Describe("ApplyDocument", func() {
 			api := m.GetApiById(uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
 			Expect(api).NotTo(BeNil())
 		})
+	})
+})
+
+var _ = Describe("Capacity documents", func() {
+	var (
+		m     model.Model
+		crtID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		ctxID = uuid.MustParse("33333333-3333-3333-3333-333333333333")
+		capID = uuid.MustParse("22222222-2222-2222-2222-222222222222")
+		ctID  = uuid.MustParse("44444444-4444-4444-4444-444444444444")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		crt := mdlcap.NewCapacityResourceType(crtID)
+		crt.SetDisplayName("CPU")
+		crt.SetUnit("cores")
+		Expect(m.AddCapacityResourceType(crt)).To(Succeed())
+
+		ct := mdlctx.NewContextType(ctID)
+		ct.SetDisplayName("Environment")
+		Expect(m.AddContextType(ct)).To(Succeed())
+
+		ctx := mdlctx.NewContext(ctxID)
+		ctx.SetDisplayName("Production")
+		ctx.SetContextTypeById(ctID)
+		Expect(m.AddContext(ctx)).To(Succeed())
+	})
+
+	validCapacityDoc := func() filesensor.Document {
+		return filesensor.Document{
+			Version: "emeland.io/v1",
+			Kind:    filesensor.DocumentKind(events.CapacityResource),
+			Spec: map[string]any{
+				"capacityId":  capID.String(),
+				"displayName": "Production CPU provided",
+				"description": "Available CPU in production context",
+				"resourceTypeRef": map[string]any{
+					"capacityResourceTypeId": crtID.String(),
+				},
+				"contextRef": map[string]any{
+					"contextId": ctxID.String(),
+				},
+				"category": "provided",
+				"amount":   "64",
+				"annotations": map[string]any{
+					"emeland.io/owner-groups": "platform-team",
+				},
+			},
+		}
+	}
+
+	It("applies a valid Capacity YAML document after dependencies exist", func() {
+		Expect(filesensor.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
+		got := m.GetCapacityById(capID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetDisplayName()).To(Equal("Production CPU provided"))
+		Expect(string(got.GetCategory())).To(Equal("provided"))
+		Expect(string(got.GetAmount())).To(Equal("64"))
+		Expect(got.GetCapacityResourceTypeId()).To(Equal(crtID))
+		Expect(got.GetContextId()).To(Equal(ctxID))
+	})
+
+	It("rejects invalid category", func() {
+		doc := validCapacityDoc()
+		doc.Spec["category"] = "unknown"
+		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("invalid capacity category")))
+	})
+
+	It("rejects negative amount", func() {
+		doc := validCapacityDoc()
+		doc.Spec["amount"] = "-1"
+		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("non-negative")))
+	})
+
+	It("rejects tuple conflict when CapacityId differs", func() {
+		Expect(filesensor.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
+
+		doc := validCapacityDoc()
+		doc.Spec["capacityId"] = uuid.New().String()
+		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capacity tuple already exists")))
 	})
 })

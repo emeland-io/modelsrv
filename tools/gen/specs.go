@@ -1234,4 +1234,129 @@ var allTypes = []TypeSpec{
 			param.SetValues([]string{"val1", "val2"})
 			require.NoError(t, m.AddParameter(param))`,
 	},
+	{
+		Name:             "CapacityResourceType",
+		Dir:              "capacity",
+		EventType:        "CapacityResourceType",
+		IDField:          "CapacityResourceTypeId",
+		NameField:        "DisplayName",
+		HasHandler:       true,
+		NotFoundErr:      "ErrCapacityResourceTypeNotFound",
+		NotFoundSentinel: "common.ErrCapacityResourceTypeNotFound",
+		HandlerPkgAlias:  "mdlcap",
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "Description", Type: "string"},
+			{Name: "Unit", Type: "string"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		WireKind:                "CapacityResourceType",
+		GenClientMethods:        true,
+		ClientListMethod:        "GetCapacityResourceTypes",
+		ClientGetByIdMethod:     "GetCapacityResourceTypeById",
+		ClientListOapiMethod:    "GetLandscapeCapacityResourceTypes",
+		ClientGetByIdOapiMethod: "GetLandscapeCapacityResourceTypesCapacityResourceTypeId",
+		OapiTypeName:            "CapacityResourceType",
+		TestSetup: `crt := mdlcap.NewCapacityResourceType(testIDs["CapacityResourceType"])
+			crt.SetDisplayName("CPU")
+			crt.SetUnit("cores")
+			require.NoError(t, m.AddCapacityResourceType(crt))`,
+	},
+	{
+		Name:            "Capacity",
+		Dir:             "capacity",
+		EventType:       "Capacity",
+		IDField:         "CapacityId",
+		NameField:       "DisplayName",
+		HasHandler:      true,
+		NotFoundErr:     "ErrCapacityNotFound",
+		HandlerPkgAlias: "mdlcap",
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/context",
+		},
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "Description", Type: "string"},
+			{Name: "ResourceTypeRef", Type: "*CapacityResourceTypeRef", SkipAccessor: true},
+			{Name: "ContextRef", Type: "*context.ContextRef", SkipAccessor: true},
+			{Name: "Category", Type: "Category"},
+			{Name: "Amount", Type: "Amount"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		HasClientTest:           true,
+		GenClientMethods:        true,
+		ClientListMethod:        "GetCapacities",
+		ClientGetByIdMethod:     "GetCapacityById",
+		ClientListOapiMethod:    "GetLandscapeCapacities",
+		ClientGetByIdOapiMethod: "GetLandscapeCapacitiesCapacityId",
+		OapiTypeName:            "Capacity",
+		TestDisplayName:         "Production CPU provided",
+		TestIDAssertExpr:        "uuid.UUID(got.CapacityId)",
+		TestNameAssertExpr:      "got.DisplayName",
+		NotFoundSentinel:        "common.ErrCapacityNotFound",
+		TestDeps:                []string{},
+		WireKind:                "Capacity",
+		TestSetup: `cap := mdlcap.NewCapacity(testIDs["Capacity"])
+			cap.SetDisplayName("Production CPU provided")
+			crt := mdlcap.NewCapacityResourceType(uuid.New())
+			crt.SetDisplayName("CPU")
+			crt.SetUnit("cores")
+			ct := mdlctx.NewContextType(uuid.New())
+			ct.SetDisplayName("Test ContextType")
+			ctx := mdlctx.NewContext(uuid.New())
+			ctx.SetDisplayName("Test Context")
+			ctx.SetContextTypeById(ct.GetContextTypeId())
+			cap.SetCapacityResourceTypeById(crt.GetCapacityResourceTypeId())
+			cap.SetContextById(ctx.GetContextId())
+			cap.SetCategory(mdlcap.CategoryProvided)
+			cap.SetAmount(mdlcap.Amount("64"))
+			require.NoError(t, m.AddCapacityResourceType(crt))
+			require.NoError(t, m.AddContextType(ct))
+			require.NoError(t, m.AddContext(ctx))
+			require.NoError(t, m.AddCapacity(cap))`,
+		CustomMethods: []string{
+			"GetCapacityResourceType() (CapacityResourceType, error)",
+			"GetCapacityResourceTypeId() uuid.UUID",
+			"SetResourceTypeRef(*CapacityResourceTypeRef)",
+			"SetCapacityResourceTypeByRef(capacityResourceType CapacityResourceType)",
+			"SetCapacityResourceTypeById(capacityResourceTypeId uuid.UUID)",
+			"GetContext() (context.Context, error)",
+			"GetContextId() uuid.UUID",
+			"SetContextRef(*context.ContextRef)",
+			"SetContextByRef(ctx context.Context)",
+			"SetContextById(contextId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "ResourceTypeRef",
+			RefTypeName:       "CapacityResourceTypeRef",
+			ResourceTypeName:  "CapacityResourceType",
+			ResolvedMethod:    "ResolvedCapacityResourceType",
+			EmbedFieldName:    "CapacityResourceType",
+			RefIDFieldName:    "CapacityResourceTypeId",
+			ResourceIDGetter:  "GetCapacityResourceTypeId",
+			ModelLookupByID:   "GetCapacityResourceTypeById",
+			EffectiveIDMethod: "EffectiveCapacityResourceTypeID",
+			SetByID:           true,
+			SetByIDParamName:  "capacityResourceTypeId",
+		},
+		RefByRefs: []RefByRefSpec{
+			{
+				MethodName:       "SetContextByRef",
+				ParamName:        "ctx",
+				ResourceTypeName: "Context",
+				ParamGoType:      "context.Context",
+				SetterName:       "SetContextRef",
+				RefTypeName:      "ContextRef",
+				RefTypeGoType:    "context.ContextRef",
+				EmbedFieldName:   "Context",
+				RefIDFieldName:   "ContextId",
+				ResourceIDGetter: "GetContextId",
+				NilCheck:         true,
+			},
+		},
+	},
 }

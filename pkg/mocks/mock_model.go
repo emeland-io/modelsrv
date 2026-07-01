@@ -17,6 +17,7 @@ import (
 	api "go.emeland.io/modelsrv/pkg/model/api"
 	artifact "go.emeland.io/modelsrv/pkg/model/artifact"
 	capability "go.emeland.io/modelsrv/pkg/model/capability"
+	capacity "go.emeland.io/modelsrv/pkg/model/capacity"
 	component "go.emeland.io/modelsrv/pkg/model/component"
 	context "go.emeland.io/modelsrv/pkg/model/context"
 	filterrule "go.emeland.io/modelsrv/pkg/model/filterrule"
@@ -136,6 +137,34 @@ func (m *MockModel) AddCapability(arg0 capability.Capability) error {
 func (mr *MockModelMockRecorder) AddCapability(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCapability", reflect.TypeOf((*MockModel)(nil).AddCapability), arg0)
+}
+
+// AddCapacity mocks base method.
+func (m *MockModel) AddCapacity(c capacity.Capacity) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddCapacity", c)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddCapacity indicates an expected call of AddCapacity.
+func (mr *MockModelMockRecorder) AddCapacity(c any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCapacity", reflect.TypeOf((*MockModel)(nil).AddCapacity), c)
+}
+
+// AddCapacityResourceType mocks base method.
+func (m *MockModel) AddCapacityResourceType(capacityResourceType capacity.CapacityResourceType) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddCapacityResourceType", capacityResourceType)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddCapacityResourceType indicates an expected call of AddCapacityResourceType.
+func (mr *MockModelMockRecorder) AddCapacityResourceType(capacityResourceType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCapacityResourceType", reflect.TypeOf((*MockModel)(nil).AddCapacityResourceType), capacityResourceType)
 }
 
 // AddComponent mocks base method.
@@ -542,6 +571,34 @@ func (m *MockModel) DeleteCapabilityById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteCapabilityById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCapabilityById", reflect.TypeOf((*MockModel)(nil).DeleteCapabilityById), id)
+}
+
+// DeleteCapacityById mocks base method.
+func (m *MockModel) DeleteCapacityById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCapacityById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCapacityById indicates an expected call of DeleteCapacityById.
+func (mr *MockModelMockRecorder) DeleteCapacityById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCapacityById", reflect.TypeOf((*MockModel)(nil).DeleteCapacityById), id)
+}
+
+// DeleteCapacityResourceTypeById mocks base method.
+func (m *MockModel) DeleteCapacityResourceTypeById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCapacityResourceTypeById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCapacityResourceTypeById indicates an expected call of DeleteCapacityResourceTypeById.
+func (mr *MockModelMockRecorder) DeleteCapacityResourceTypeById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCapacityResourceTypeById", reflect.TypeOf((*MockModel)(nil).DeleteCapacityResourceTypeById), id)
 }
 
 // DeleteComponentById mocks base method.
@@ -1010,6 +1067,64 @@ func (m *MockModel) GetCapabilityById(id uuid.UUID) capability.Capability {
 func (mr *MockModelMockRecorder) GetCapabilityById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilityById", reflect.TypeOf((*MockModel)(nil).GetCapabilityById), id)
+}
+
+// GetCapacities mocks base method.
+func (m *MockModel) GetCapacities() ([]capacity.Capacity, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapacities")
+	ret0, _ := ret[0].([]capacity.Capacity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCapacities indicates an expected call of GetCapacities.
+func (mr *MockModelMockRecorder) GetCapacities() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapacities", reflect.TypeOf((*MockModel)(nil).GetCapacities))
+}
+
+// GetCapacityById mocks base method.
+func (m *MockModel) GetCapacityById(id uuid.UUID) capacity.Capacity {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapacityById", id)
+	ret0, _ := ret[0].(capacity.Capacity)
+	return ret0
+}
+
+// GetCapacityById indicates an expected call of GetCapacityById.
+func (mr *MockModelMockRecorder) GetCapacityById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapacityById", reflect.TypeOf((*MockModel)(nil).GetCapacityById), id)
+}
+
+// GetCapacityResourceTypeById mocks base method.
+func (m *MockModel) GetCapacityResourceTypeById(id uuid.UUID) capacity.CapacityResourceType {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapacityResourceTypeById", id)
+	ret0, _ := ret[0].(capacity.CapacityResourceType)
+	return ret0
+}
+
+// GetCapacityResourceTypeById indicates an expected call of GetCapacityResourceTypeById.
+func (mr *MockModelMockRecorder) GetCapacityResourceTypeById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapacityResourceTypeById", reflect.TypeOf((*MockModel)(nil).GetCapacityResourceTypeById), id)
+}
+
+// GetCapacityResourceTypes mocks base method.
+func (m *MockModel) GetCapacityResourceTypes() ([]capacity.CapacityResourceType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapacityResourceTypes")
+	ret0, _ := ret[0].([]capacity.CapacityResourceType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCapacityResourceTypes indicates an expected call of GetCapacityResourceTypes.
+func (mr *MockModelMockRecorder) GetCapacityResourceTypes() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapacityResourceTypes", reflect.TypeOf((*MockModel)(nil).GetCapacityResourceTypes))
 }
 
 // GetComponentById mocks base method.

@@ -19,6 +19,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
@@ -41,6 +42,7 @@ var (
 	_ finding.Finding
 	_ iam.OrgUnit
 	_ mdlmergerule.MergeRule
+	_ mdlcap.Capacity
 	_ node.Node
 	_ mdlparameter.Parameter
 	_ mdlprod.Product

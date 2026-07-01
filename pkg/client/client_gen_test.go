@@ -19,6 +19,7 @@ import (
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	"go.emeland.io/modelsrv/pkg/model/artifact"
 	mdlcapability "go.emeland.io/modelsrv/pkg/model/capability"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -44,6 +45,7 @@ var (
 	_ = finding.NewFinding
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
+	_ = mdlcap.NewCapacity
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
@@ -79,6 +81,7 @@ var testIDs = map[string]uuid.UUID{
 	"MergeRule":         uuid.New(),
 	"Capability":        uuid.New(),
 	"Parameter":         uuid.New(),
+	"Capacity":          uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -311,6 +314,28 @@ func loadTestModel(t *testing.T, m model.Model) {
 		param.SetDisplayName("Test Parameter")
 		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+
+	// --- Capacity ---
+	{
+		cap := mdlcap.NewCapacity(testIDs["Capacity"])
+		cap.SetDisplayName("Production CPU provided")
+		crt := mdlcap.NewCapacityResourceType(uuid.New())
+		crt.SetDisplayName("CPU")
+		crt.SetUnit("cores")
+		ct := mdlctx.NewContextType(uuid.New())
+		ct.SetDisplayName("Test ContextType")
+		ctx := mdlctx.NewContext(uuid.New())
+		ctx.SetDisplayName("Test Context")
+		ctx.SetContextTypeById(ct.GetContextTypeId())
+		cap.SetCapacityResourceTypeById(crt.GetCapacityResourceTypeId())
+		cap.SetContextById(ctx.GetContextId())
+		cap.SetCategory(mdlcap.CategoryProvided)
+		cap.SetAmount(mdlcap.Amount("64"))
+		require.NoError(t, m.AddCapacityResourceType(crt))
+		require.NoError(t, m.AddContextType(ct))
+		require.NoError(t, m.AddContext(ctx))
+		require.NoError(t, m.AddCapacity(cap))
 	}
 
 }
@@ -939,6 +964,32 @@ func TestGetByIdParameter(t *testing.T) {
 	assert.Equal(t, "Test Parameter", got.GetDisplayName())
 }
 
+func TestListCapacity(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetCapacities()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Capacity list should not be empty")
+}
+
+func TestGetByIdCapacity(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetCapacityById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrCapacityNotFound)
+
+	// known id → success
+	got, err := c.GetCapacityById(testIDs["Capacity"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Capacity"], got.GetCapacityId())
+	assert.Equal(t, "Production CPU provided", got.GetDisplayName())
+}
+
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType
 // enum contains an entry for every resource type that has a wire kind.
 func TestResourceRefEnumCompleteness(t *testing.T) {
@@ -975,6 +1026,8 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"MergeRule",
 		"Capability",
 		"Parameter",
+		"CapacityResourceType",
+		"Capacity",
 	}
 
 	for _, kind := range wireKinds {

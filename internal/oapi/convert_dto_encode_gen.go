@@ -7,6 +7,8 @@ import (
 
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
 
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 
 	node "go.emeland.io/modelsrv/pkg/model/node"
@@ -96,6 +98,21 @@ func ArtifactToDto(v artifact.Artifact) Artifact {
 		Description: &desc,
 		Hash:        &hash,
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	return out
+}
+
+func CapacityResourceTypeToDto(v mdlcap.CapacityResourceType) CapacityResourceType {
+	if v == nil {
+		return CapacityResourceType{}
+	}
+	out := CapacityResourceType{
+		CapacityResourceTypeId: uuidToOpenAPI(v.GetCapacityResourceTypeId()),
+		DisplayName:            v.GetDisplayName(),
+		Annotations:            AnnotationsToDto(v.GetAnnotations()),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
 	}
 	return out
 }

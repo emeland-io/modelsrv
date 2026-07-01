@@ -15,6 +15,8 @@ import (
 	"go.emeland.io/modelsrv/internal/oapi"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -114,5 +116,53 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 			}
 			return g.GetDisplayName()
 		}, "3s", "20ms").Should(Equal("Chained System"))
+	})
+
+	It("replicates Capacity mutations to a subscriber", func() {
+		mA, _, srvA := newServer()
+		defer srvA.Close()
+		mB, _, srvB := newServer()
+		defer srvB.Close()
+
+		postEventsRegister(srvA.URL+"/api", srvB.URL+"/api")
+
+		crtID := uuid.New()
+		ctxID := uuid.New()
+		capID := uuid.New()
+
+		seedCapacityDeps := func(m model.Model) {
+			crt := mdlcap.NewCapacityResourceType(crtID)
+			crt.SetDisplayName("CPU")
+			crt.SetUnit("cores")
+			Expect(m.AddCapacityResourceType(crt)).To(Succeed())
+
+			ct := mdlctx.NewContextType(uuid.New())
+			ct.SetDisplayName("Environment")
+			Expect(m.AddContextType(ct)).To(Succeed())
+
+			ctx := mdlctx.NewContext(ctxID)
+			ctx.SetDisplayName("Production")
+			ctx.SetContextTypeById(ct.GetContextTypeId())
+			Expect(m.AddContext(ctx)).To(Succeed())
+		}
+
+		seedCapacityDeps(mA)
+		seedCapacityDeps(mB)
+
+		cap := mdlcap.NewCapacity(capID)
+		cap.SetDisplayName("Production CPU provided")
+		cap.SetCapacityResourceTypeById(crtID)
+		cap.SetContextById(ctxID)
+		cap.SetCategory(mdlcap.CategoryProvided)
+		cap.SetAmount(mdlcap.Amount("64"))
+		Expect(mA.AddCapacity(cap)).To(Succeed())
+
+		Eventually(func() string {
+			got := mB.GetCapacityById(capID)
+			if got == nil {
+				return ""
+			}
+			return string(got.GetAmount())
+		}, "2s", "20ms").Should(Equal("64"))
 	})
 })

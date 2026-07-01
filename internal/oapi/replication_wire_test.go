@@ -9,6 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
@@ -547,6 +548,52 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(bOut.GetRole().EffectiveRoleID()).To(Equal(rid))
 		Expect(bOut.GetSubject().EffectiveKind()).To(Equal(iam.SubjectKindGroup))
 		Expect(bOut.GetSubject().EffectiveGroupID()).To(Equal(gid))
+	})
+
+	It("round-trips Capacity via PushWireEventFromDomain", func() {
+		m := replicationTestModel()
+		crtID := uuid.New()
+		ctxID := uuid.New()
+		capID := uuid.New()
+
+		crt := mdlcap.NewCapacityResourceType(crtID)
+		crt.SetDisplayName("CPU")
+		crt.SetUnit("cores")
+		Expect(m.AddCapacityResourceType(crt)).To(Succeed())
+
+		ct := mdlctx.NewContextType(uuid.New())
+		ct.SetDisplayName("Environment")
+		Expect(m.AddContextType(ct)).To(Succeed())
+
+		ctx := mdlctx.NewContext(ctxID)
+		ctx.SetDisplayName("Production")
+		ctx.SetContextTypeById(ct.GetContextTypeId())
+		Expect(m.AddContext(ctx)).To(Succeed())
+
+		cap := mdlcap.NewCapacity(capID)
+		cap.SetDisplayName("Production CPU provided")
+		cap.SetCapacityResourceTypeById(crtID)
+		cap.SetContextById(ctxID)
+		cap.SetCategory(mdlcap.CategoryProvided)
+		cap.SetAmount(mdlcap.Amount("64"))
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.CapacityResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   capID,
+			Objects:      []any{cap},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		out, ok := back.Objects[0].(mdlcap.Capacity)
+		Expect(ok).To(BeTrue())
+		Expect(out.GetCapacityId()).To(Equal(capID))
+		Expect(out.GetCapacityResourceTypeId()).To(Equal(crtID))
+		Expect(out.GetContextId()).To(Equal(ctxID))
+		Expect(string(out.GetCategory())).To(Equal("provided"))
+		Expect(string(out.GetAmount())).To(Equal("64"))
 	})
 })
 
