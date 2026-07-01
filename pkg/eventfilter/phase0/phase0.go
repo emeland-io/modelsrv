@@ -38,16 +38,38 @@ func findingID(subjectID uuid.UUID, kind finding.FindingKind) uuid.UUID {
 func ensureFindingType(m model.Model, kind finding.FindingKind) uuid.UUID {
 	name := string(kind)
 	if ft := m.GetFindingTypeByName(name); ft != nil {
+		backfillFindingTypeDescription(m, ft, kind)
 		return ft.GetFindingTypeId()
 	}
 
 	id := finding.TypeIDForKind(kind)
+	if ft := m.GetFindingTypeById(id); ft != nil {
+		backfillFindingTypeDescription(m, ft, kind)
+		return id
+	}
+
 	ft := finding.NewFindingType(id)
 	ft.SetDisplayName(name)
+	if desc := finding.DescriptionForKind(kind); desc != "" {
+		ft.SetDescription(desc)
+	}
 	if err := m.AddFindingType(ft); err != nil {
 		log.Printf("phase0: AddFindingType kind=%s id=%s: %v", kind, id, err)
 	}
 	return id
+}
+
+func backfillFindingTypeDescription(m model.Model, ft finding.FindingType, kind finding.FindingKind) {
+	desc := finding.DescriptionForKind(kind)
+	if desc == "" || ft.GetDescription() != "" {
+		return
+	}
+	updated := finding.NewFindingType(ft.GetFindingTypeId())
+	updated.SetDisplayName(ft.GetDisplayName())
+	updated.SetDescription(desc)
+	if err := m.AddFindingType(updated); err != nil {
+		log.Printf("phase0: backfill FindingType description kind=%s id=%s: %v", kind, ft.GetFindingTypeId(), err)
+	}
 }
 
 func upsertFinding(m model.Model, kind finding.FindingKind, description string, resources []*common.ResourceRef) {
@@ -72,6 +94,18 @@ func deleteFinding(m model.Model, subjectID uuid.UUID, kind finding.FindingKind)
 	}
 	if err := m.DeleteFindingById(id); err != nil && !errors.Is(err, common.ErrFindingNotFound) {
 		log.Printf("phase0: DeleteFindingById id=%s kind=%s: %v", id, kind, err)
+	}
+}
+
+// EnsureWellKnownFindingTypes registers or backfills the canonical phase-0
+// FindingType resources (display name and description) in the model.
+func EnsureWellKnownFindingTypes(m model.Model) {
+	for _, kind := range []finding.FindingKind{
+		finding.ContextTypeMissing,
+		finding.ContextParentNotFound,
+		finding.NodeTypeMissing,
+	} {
+		ensureFindingType(m, kind)
 	}
 }
 

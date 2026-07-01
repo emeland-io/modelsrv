@@ -32,8 +32,9 @@ var skipAuthzByName = map[string]bool{
 }
 
 var skipClientMethodsByName = map[string]bool{
-	"Finding": true,
-	"Node":    true,
+	"Finding":     true,
+	"FindingType": true,
+	"Node":        true,
 }
 
 var wireKindToEventsResource = map[string]string{

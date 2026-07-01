@@ -675,13 +675,15 @@ var _ = Describe("calling the modelsrv API functions", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(body)).NotTo(Equal(0))
 
-		var findingArr oapi.InstanceList
+		var findingArr []oapi.FindingType
 		err = json.Unmarshal(body, &findingArr)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(findingArr)).To(Equal(1))
 
-		Expect(*(findingArr[0].InstanceId)).To(Equal(findingTypeId))
-		Expect(*(findingArr[0].Reference)).To(Equal(fmt.Sprintf("http://localhost/landscape/findingTypes/%s", findingTypeId.String())))
+		Expect(*findingArr[0].FindingTypeId).To(Equal(findingTypeId))
+		Expect(*findingArr[0].DisplayName).To(Equal("Test Finding Type"))
+		Expect(findingArr[0].Description).NotTo(BeNil())
+		Expect(*findingArr[0].Description).To(Equal("A test finding type for testing purposes"))
 
 	})
 

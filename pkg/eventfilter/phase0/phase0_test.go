@@ -121,6 +121,7 @@ var _ = Describe("phase0 FilterFunc", func() {
 				ft := m.GetFindingTypeById(ftid)
 				Expect(ft).NotTo(BeNil())
 				Expect(ft.GetDisplayName()).To(Equal(string(finding.ContextTypeMissing)))
+				Expect(ft.GetDescription()).To(Equal(finding.DescriptionForKind(finding.ContextTypeMissing)))
 			})
 
 			It("reuses an existing FindingType matched by display name", func() {

@@ -13,6 +13,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/finding"
 )
 
 var _ = Describe("Backend", func() {
@@ -36,6 +37,15 @@ var _ = Describe("Backend", func() {
 		It("exposes a non-nil EventManager", func() {
 			b, _ := backend.New()
 			Expect(b.GetEventManager()).NotTo(BeNil())
+		})
+
+		It("registers well-known FindingTypes with descriptions at startup", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			ft := b.GetModel().GetFindingTypeById(finding.TypeIDForKind(finding.NodeTypeMissing))
+			Expect(ft).NotTo(BeNil())
+			Expect(ft.GetDescription()).To(Equal(finding.DescriptionForKind(finding.NodeTypeMissing)))
 		})
 
 		It("registers phase0 as a discoverable FilterRule", func() {

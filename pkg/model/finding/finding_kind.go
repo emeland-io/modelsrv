@@ -32,3 +32,18 @@ var findingTypeNamespace = uuid.MustParse("c3d4e5f6-a7b8-9012-cdef-012345678901"
 func TypeIDForKind(kind FindingKind) uuid.UUID {
 	return uuid.NewSHA1(findingTypeNamespace, []byte(kind))
 }
+
+// DescriptionForKind returns the canonical human-readable description for a
+// well-known [FindingKind]. Unknown kinds return an empty string.
+func DescriptionForKind(kind FindingKind) string {
+	switch kind {
+	case ContextTypeMissing:
+		return "A Context resource references a ContextType by UUID that is not registered in the model, or has no ContextType assigned at all."
+	case ContextParentNotFound:
+		return "A Context resource references a parent Context by UUID that is not registered in the model."
+	case NodeTypeMissing:
+		return "A Node resource has no NodeType assigned."
+	default:
+		return ""
+	}
+}

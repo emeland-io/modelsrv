@@ -29,6 +29,9 @@ func findingToView(m model.Model, baseURL string, f finding.Finding) FindingView
 		}
 		if ft := m.GetFindingTypeById(typeID); ft != nil {
 			typeView.DisplayName = ft.GetDisplayName()
+			if desc := ft.GetDescription(); desc != "" {
+				typeView.Description = &desc
+			}
 		}
 		out.FindingType = typeView
 	}

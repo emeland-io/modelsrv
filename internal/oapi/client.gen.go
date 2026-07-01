@@ -3724,7 +3724,7 @@ func (r GetLandscapeFilterRulesRuleIdResponse) StatusCode() int {
 type GetLandscapeFindingTypesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]FindingType
 }
 
 // Status returns HTTPResponse.Status
@@ -5800,7 +5800,7 @@ func ParseGetLandscapeFindingTypesResponse(rsp *http.Response) (*GetLandscapeFin
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []FindingType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

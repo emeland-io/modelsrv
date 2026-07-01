@@ -73,6 +73,7 @@ func New() (Backend, error) {
 
 	chain.SetModel(m)
 	chain.RegisterFilter(phase0.New())
+	phase0.EnsureWellKnownFindingTypes(m)
 	registerMergeRules(m)
 
 	return &backendData{
