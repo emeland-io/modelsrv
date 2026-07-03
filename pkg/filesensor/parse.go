@@ -46,9 +46,10 @@ var documentKinds = map[events.ResourceType]struct{}{
 	events.FilterRuleResource: {},
 	events.MergeRuleResource:  {},
 
-	events.CapabilityResource: {},
-	events.ParameterResource:  {},
-	events.CapacityResource:   {},
+	events.CapabilityResource:           {},
+	events.ParameterResource:            {},
+	events.CapacityResourceTypeResource: {},
+	events.CapacityResource:             {},
 }
 
 // ResourceType returns the underlying [events.ResourceType].

@@ -315,6 +315,8 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyCapability(doc.Spec, m)
 	case events.ParameterResource:
 		return applyParameter(doc.Spec, m)
+	case events.CapacityResourceTypeResource:
+		return applyCapacityResourceType(doc.Spec, m)
 	case events.CapacityResource:
 		return applyCapacity(doc.Spec, m)
 	case events.UnknownResourceType:

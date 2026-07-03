@@ -12,7 +12,6 @@ import (
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
-	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 )
 
@@ -283,6 +282,33 @@ var _ = Describe("ApplyDocument", func() {
 	})
 })
 
+var _ = Describe("CapacityResourceType documents", func() {
+	It("applies a valid CapacityResourceType YAML document", func() {
+		crtID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		doc := filesensor.Document{
+			Version: "emeland.io/v1",
+			Kind:    filesensor.DocumentKind(events.CapacityResourceTypeResource),
+			Spec: map[string]any{
+				"capacityResourceTypeId": crtID.String(),
+				"displayName":            "CPU cores",
+				"description":            "Virtual CPU cores",
+				"unit":                   "cores",
+			},
+		}
+		Expect(filesensor.ApplyDocument(doc, m)).To(Succeed())
+
+		got := m.GetCapacityResourceTypeById(crtID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetDisplayName()).To(Equal("CPU cores"))
+		Expect(got.GetDescription()).To(Equal("Virtual CPU cores"))
+		Expect(got.GetUnit()).To(Equal("cores"))
+	})
+})
+
 var _ = Describe("Capacity documents", func() {
 	var (
 		m     model.Model
@@ -298,10 +324,15 @@ var _ = Describe("Capacity documents", func() {
 		m, err = model.NewModel(sink)
 		Expect(err).NotTo(HaveOccurred())
 
-		crt := mdlcap.NewCapacityResourceType(crtID)
-		crt.SetDisplayName("CPU")
-		crt.SetUnit("cores")
-		Expect(m.AddCapacityResourceType(crt)).To(Succeed())
+		Expect(filesensor.ApplyDocument(filesensor.Document{
+			Version: "emeland.io/v1",
+			Kind:    filesensor.DocumentKind(events.CapacityResourceTypeResource),
+			Spec: map[string]any{
+				"capacityResourceTypeId": crtID.String(),
+				"displayName":            "CPU",
+				"unit":                   "cores",
+			},
+		}, m)).To(Succeed())
 
 		ct := mdlctx.NewContextType(ctID)
 		ct.SetDisplayName("Environment")
