@@ -638,6 +638,62 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(bOut.GetSubject().EffectiveGroupID()).To(Equal(gid))
 	})
 
+	It("round-trips CapacityResourceType via PushWireEventFromDomain", func() {
+		m := replicationTestModel()
+		crtID := uuid.New()
+
+		crt := mdlcap.NewCapacityResourceType(crtID)
+		crt.SetDisplayName("CPU cores")
+		crt.SetDescription("Virtual CPU cores")
+		crt.SetUnit("cores")
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.CapacityResourceTypeResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   crtID,
+			Objects:      []any{crt},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		out, ok := back.Objects[0].(mdlcap.CapacityResourceType)
+		Expect(ok).To(BeTrue())
+		Expect(out.GetCapacityResourceTypeId()).To(Equal(crtID))
+		Expect(out.GetDisplayName()).To(Equal("CPU cores"))
+		Expect(out.GetUnit()).To(Equal("cores"))
+
+		Expect(m.Apply(back)).To(Succeed())
+		stored := m.GetCapacityResourceTypeById(crtID)
+		Expect(stored).NotTo(BeNil())
+		Expect(stored.GetUnit()).To(Equal("cores"))
+
+		crt.SetUnit("vCPU")
+		wireUpdate, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.CapacityResourceTypeResource,
+			Operation:    events.UpdateOperation,
+			ResourceId:   crtID,
+			Objects:      []any{crt},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		backUpdate, err := oapi.ReplicationEventFromWire(m, &wireUpdate)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(m.Apply(backUpdate)).To(Succeed())
+		Expect(m.GetCapacityResourceTypeById(crtID).GetUnit()).To(Equal("vCPU"))
+
+		wireDelete, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.CapacityResourceTypeResource,
+			Operation:    events.DeleteOperation,
+			ResourceId:   crtID,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		backDelete, err := oapi.ReplicationEventFromWire(m, &wireDelete)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(m.Apply(backDelete)).To(Succeed())
+		Expect(m.GetCapacityResourceTypeById(crtID)).To(BeNil())
+	})
+
 	It("round-trips Capacity via PushWireEventFromDomain", func() {
 		m := replicationTestModel()
 		crtID := uuid.New()
