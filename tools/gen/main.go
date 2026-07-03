@@ -55,6 +55,7 @@ type convertGenSpec struct {
 	HasHash             bool
 	HasAnnotations      bool
 	IamStyleDescription bool
+	ExtraStringFields   []string
 }
 
 func main() {
@@ -270,6 +271,12 @@ func buildConvertSpecs() convertGenData {
 			continue
 		}
 		cgs := convertGenSpec{TypeSpec: spec}
+		handledStringFields := map[string]bool{
+			"DisplayName": true,
+			"Summary":     true,
+			"Description": true,
+			"Hash":        true,
+		}
 		for _, f := range spec.Fields {
 			switch f.Name {
 			case "DisplayName":
@@ -282,6 +289,10 @@ func buildConvertSpecs() convertGenData {
 				cgs.HasHash = true
 			case "Annotations":
 				cgs.HasAnnotations = true
+			default:
+				if f.Type == "string" && !handledStringFields[f.Name] {
+					cgs.ExtraStringFields = append(cgs.ExtraStringFields, f.Name)
+				}
 			}
 		}
 		if spec.Dir == "iam" {

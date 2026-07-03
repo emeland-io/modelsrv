@@ -110,6 +110,7 @@ func CapacityResourceTypeToDto(v mdlcap.CapacityResourceType) CapacityResourceTy
 		CapacityResourceTypeId: uuidToOpenAPI(v.GetCapacityResourceTypeId()),
 		DisplayName:            v.GetDisplayName(),
 		Annotations:            AnnotationsToDto(v.GetAnnotations()),
+		Unit:                   v.GetUnit(),
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc

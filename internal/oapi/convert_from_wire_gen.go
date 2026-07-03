@@ -124,6 +124,7 @@ func CapacityResourceTypeFromDto(m model.Model, o *CapacityResourceType) (mdlcap
 	if o.Description != nil {
 		v.SetDescription(*o.Description)
 	}
+	v.SetUnit(o.Unit)
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 	return v, nil
 }
