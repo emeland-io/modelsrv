@@ -84,7 +84,7 @@ var _ = Describe("replication wire: PushWireEventFromDomain (encode)", func() {
 		Expect(wire.Resource).To(BeNil())
 	})
 
-	It("embeds the JSON-marshaled system fields in Resource for create", func() {
+	It("embeds OpenAPI-shaped system fields in Resource for create", func() {
 		sysID := uuid.New()
 		sys := system.NewSystem(sysID)
 		sys.SetDisplayName("push-name")
@@ -97,7 +97,39 @@ var _ = Describe("replication wire: PushWireEventFromDomain (encode)", func() {
 		wire, err := oapi.PushWireEventFromDomain(ev)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(wire.Resource).NotTo(BeNil())
-		Expect(*wire.Resource).To(HaveKeyWithValue("DisplayName", "push-name"))
+		Expect(*wire.Resource).To(HaveKeyWithValue("displayName", "push-name"))
+	})
+
+	It("includes context annotations in the wire resource payload", func() {
+		m := replicationTestModel()
+		ctid := uuid.New()
+		cid := uuid.New()
+		ct := mdlctx.NewContextType(ctid)
+		ct.SetDisplayName("env-type")
+		Expect(m.AddContextType(ct)).To(Succeed())
+
+		c := mdlctx.NewContext(cid)
+		c.SetDisplayName("Production")
+		c.SetContextTypeById(ctid)
+		c.GetAnnotations().Add("env", "prod")
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.ContextResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   cid,
+			Objects:      []any{c},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(wire.Resource).NotTo(BeNil())
+		anns, ok := (*wire.Resource)["annotations"].([]interface{})
+		Expect(ok).To(BeTrue())
+		Expect(anns).To(ContainElement(map[string]interface{}{"key": "env", "value": "prod"}))
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		ctxOut, ok := back.Objects[0].(mdlctx.Context)
+		Expect(ok).To(BeTrue())
+		Expect(ctxOut.GetAnnotations().GetValue("env")).To(Equal("prod"))
 	})
 })
 

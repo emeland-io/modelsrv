@@ -30,6 +30,9 @@ var modelStoreTestTemplate string
 //go:embed replication_decode.tmpl
 var replicationDecodeTemplate string
 
+//go:embed replication_encode.tmpl
+var replicationEncodeTemplate string
+
 //go:embed server_handler.tmpl
 var serverHandlerTemplate string
 
@@ -186,6 +189,7 @@ func main() {
 
 	oapiDir := filepath.Clean(filepath.Join(filepath.Dir(genFile), "../../internal/oapi"))
 	replicationTmpl := template.Must(template.New("replication_decode").Parse(replicationDecodeTemplate))
+	replicationEncodeTmpl := template.Must(template.New("replication_encode").Parse(replicationEncodeTemplate))
 	serverHandlerTmpl := template.Must(template.New("server_handler").Parse(serverHandlerTemplate))
 	convertFromTmpl := template.Must(template.New("convert_from").Parse(convertFromTemplate))
 	convertToTmpl := template.Must(template.New("convert_to").Parse(convertToTemplate))
@@ -210,9 +214,33 @@ func main() {
 	}
 
 	writeOapi("replication_decode_gen.go", replicationTmpl, allTypes)
+	writeOapi("replication_encode_gen.go", replicationEncodeTmpl, buildReplicationEncodeGenData())
 	writeOapi("server_handlers_gen.go", serverHandlerTmpl, allTypes)
 	writeOapi("convert_from_wire_gen.go", convertFromTmpl, buildConvertFromGenData())
 	writeOapi("convert_dto_encode_gen.go", convertToTmpl, buildConvertToGenData())
+}
+
+type replicationEncodeGenData struct {
+	Imports []string
+	Specs   []TypeSpec
+}
+
+// buildReplicationEncodeGenData collects the types that flow through replication
+// (i.e. have an events.ResourceType and a domain package) for replication_encode.tmpl.
+func buildReplicationEncodeGenData() replicationEncodeGenData {
+	var specs []TypeSpec
+	base := map[string]string{}
+	for _, spec := range allTypes {
+		if spec.EventsResource == "" || spec.DomainPkgImport == "" {
+			continue
+		}
+		specs = append(specs, spec)
+		base[spec.DomainPkgImport] = spec.DomainPkgAlias
+	}
+	return replicationEncodeGenData{
+		Imports: formatImportLines(base, nil),
+		Specs:   specs,
+	}
 }
 
 func buildConvertFromGenData() convertGenData {
