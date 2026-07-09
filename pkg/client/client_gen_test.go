@@ -54,34 +54,35 @@ var (
 
 // testIDs holds a pre-generated UUID for each resource type name.
 var testIDs = map[string]uuid.UUID{
-	"ContextType":       uuid.New(),
-	"Context":           uuid.New(),
-	"System":            uuid.New(),
-	"NodeType":          uuid.New(),
-	"FindingType":       uuid.New(),
-	"Node":              uuid.New(),
-	"ApiInstance":       uuid.New(),
-	"API":               uuid.New(),
-	"Component":         uuid.New(),
-	"SystemInstance":    uuid.New(),
-	"ComponentInstance": uuid.New(),
-	"Finding":           uuid.New(),
-	"OrgUnit":           uuid.New(),
-	"Group":             uuid.New(),
-	"Identity":          uuid.New(),
-	"PermissionSpec":    uuid.New(),
-	"RoleSpec":          uuid.New(),
-	"Permission":        uuid.New(),
-	"Role":              uuid.New(),
-	"Binding":           uuid.New(),
-	"Artifact":          uuid.New(),
-	"ArtifactInstance":  uuid.New(),
-	"Product":           uuid.New(),
-	"FilterRule":        uuid.New(),
-	"MergeRule":         uuid.New(),
-	"Capability":        uuid.New(),
-	"Parameter":         uuid.New(),
-	"Capacity":          uuid.New(),
+	"ContextType":          uuid.New(),
+	"Context":              uuid.New(),
+	"System":               uuid.New(),
+	"NodeType":             uuid.New(),
+	"FindingType":          uuid.New(),
+	"Node":                 uuid.New(),
+	"ApiInstance":          uuid.New(),
+	"API":                  uuid.New(),
+	"Component":            uuid.New(),
+	"SystemInstance":       uuid.New(),
+	"ComponentInstance":    uuid.New(),
+	"Finding":              uuid.New(),
+	"OrgUnit":              uuid.New(),
+	"Group":                uuid.New(),
+	"Identity":             uuid.New(),
+	"PermissionSpec":       uuid.New(),
+	"RoleSpec":             uuid.New(),
+	"Permission":           uuid.New(),
+	"Role":                 uuid.New(),
+	"Binding":              uuid.New(),
+	"Artifact":             uuid.New(),
+	"ArtifactInstance":     uuid.New(),
+	"Product":              uuid.New(),
+	"FilterRule":           uuid.New(),
+	"MergeRule":            uuid.New(),
+	"Capability":           uuid.New(),
+	"Parameter":            uuid.New(),
+	"CapacityResourceType": uuid.New(),
+	"Capacity":             uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -314,6 +315,14 @@ func loadTestModel(t *testing.T, m model.Model) {
 		param.SetDisplayName("Test Parameter")
 		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+
+	// --- CapacityResourceType ---
+	{
+		crt := mdlcap.NewCapacityResourceType(testIDs["CapacityResourceType"])
+		crt.SetDisplayName("CPU cores")
+		crt.SetUnit("cores")
+		require.NoError(t, m.AddCapacityResourceType(crt))
 	}
 
 	// --- Capacity ---
@@ -962,6 +971,32 @@ func TestGetByIdParameter(t *testing.T) {
 	require.NotNil(t, got)
 	assert.Equal(t, testIDs["Parameter"], got.GetParameterId())
 	assert.Equal(t, "Test Parameter", got.GetDisplayName())
+}
+
+func TestListCapacityResourceType(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetCapacityResourceTypes()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "CapacityResourceType list should not be empty")
+}
+
+func TestGetByIdCapacityResourceType(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetCapacityResourceTypeById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrCapacityResourceTypeNotFound)
+
+	// known id → success
+	got, err := c.GetCapacityResourceTypeById(testIDs["CapacityResourceType"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["CapacityResourceType"], got.GetCapacityResourceTypeId())
+	assert.Equal(t, "CPU cores", got.GetDisplayName())
 }
 
 func TestListCapacity(t *testing.T) {

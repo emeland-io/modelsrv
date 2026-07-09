@@ -8,6 +8,29 @@ import (
 	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 )
 
+func applyCapacityResourceType(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "capacityResourceTypeId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	crt := mdlcap.NewCapacityResourceType(id)
+	crt.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		crt.SetDescription(desc)
+	}
+	if unit, ok := stringField(spec, "unit"); ok {
+		crt.SetUnit(unit)
+	}
+	if err := applyAnnotations(crt.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddCapacityResourceType(crt)
+}
+
 func applyCapacity(spec map[string]any, m model.Model) error {
 	id, err := parseUUIDField(spec, "capacityId")
 	if err != nil {

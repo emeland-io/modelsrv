@@ -39,6 +39,9 @@ func {{.FromDtoFuncName}}(m model.Model, o *{{.OapiWireTypeName}}) ({{.DomainPkg
 		v.SetHash(*o.Hash)
 	}
 {{- end}}
+{{- range .ExtraStringFields}}
+	v.Set{{.}}(o.{{.}})
+{{- end}}
 {{- if .HasAnnotations}}
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 {{- end}}

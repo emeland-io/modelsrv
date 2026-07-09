@@ -47,34 +47,35 @@ var (
 )
 
 var testIDs = map[string]uuid.UUID{
-	"ContextType":       uuid.New(),
-	"Context":           uuid.New(),
-	"System":            uuid.New(),
-	"NodeType":          uuid.New(),
-	"FindingType":       uuid.New(),
-	"Node":              uuid.New(),
-	"ApiInstance":       uuid.New(),
-	"API":               uuid.New(),
-	"Component":         uuid.New(),
-	"SystemInstance":    uuid.New(),
-	"ComponentInstance": uuid.New(),
-	"Finding":           uuid.New(),
-	"OrgUnit":           uuid.New(),
-	"Group":             uuid.New(),
-	"Identity":          uuid.New(),
-	"PermissionSpec":    uuid.New(),
-	"RoleSpec":          uuid.New(),
-	"Permission":        uuid.New(),
-	"Role":              uuid.New(),
-	"Binding":           uuid.New(),
-	"Artifact":          uuid.New(),
-	"ArtifactInstance":  uuid.New(),
-	"Product":           uuid.New(),
-	"FilterRule":        uuid.New(),
-	"MergeRule":         uuid.New(),
-	"Capability":        uuid.New(),
-	"Parameter":         uuid.New(),
-	"Capacity":          uuid.New(),
+	"ContextType":          uuid.New(),
+	"Context":              uuid.New(),
+	"System":               uuid.New(),
+	"NodeType":             uuid.New(),
+	"FindingType":          uuid.New(),
+	"Node":                 uuid.New(),
+	"ApiInstance":          uuid.New(),
+	"API":                  uuid.New(),
+	"Component":            uuid.New(),
+	"SystemInstance":       uuid.New(),
+	"ComponentInstance":    uuid.New(),
+	"Finding":              uuid.New(),
+	"OrgUnit":              uuid.New(),
+	"Group":                uuid.New(),
+	"Identity":             uuid.New(),
+	"PermissionSpec":       uuid.New(),
+	"RoleSpec":             uuid.New(),
+	"Permission":           uuid.New(),
+	"Role":                 uuid.New(),
+	"Binding":              uuid.New(),
+	"Artifact":             uuid.New(),
+	"ArtifactInstance":     uuid.New(),
+	"Product":              uuid.New(),
+	"FilterRule":           uuid.New(),
+	"MergeRule":            uuid.New(),
+	"Capability":           uuid.New(),
+	"Parameter":            uuid.New(),
+	"CapacityResourceType": uuid.New(),
+	"Capacity":             uuid.New(),
 }
 
 func newStoreModel(t *testing.T) (model.Model, events.EventSink) {
@@ -265,6 +266,13 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		param.SetDisplayName("Test Parameter")
 		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+	// --- CapacityResourceType ---
+	{
+		crt := mdlcap.NewCapacityResourceType(testIDs["CapacityResourceType"])
+		crt.SetDisplayName("CPU cores")
+		crt.SetUnit("cores")
+		require.NoError(t, m.AddCapacityResourceType(crt))
 	}
 	// --- Capacity ---
 	{
@@ -1601,6 +1609,55 @@ func TestStoreParameterApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetParameterById(resourceID))
+}
+
+func TestStoreCapacityResourceTypeCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["CapacityResourceType"]
+	got := m.GetCapacityResourceTypeById(id)
+	require.NotNil(t, got, "expected CapacityResourceType to be stored")
+	assert.Equal(t, id, got.GetCapacityResourceTypeId())
+
+	list, err := m.GetCapacityResourceTypes()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteCapacityResourceTypeById(testIDs["CapacityResourceType"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapacityResourceTypeById(id))
+
+	err = m.DeleteCapacityResourceTypeById(testIDs["CapacityResourceType"])
+	assert.ErrorIs(t, err, common.ErrCapacityResourceTypeNotFound)
+}
+
+func TestStoreCapacityResourceTypeApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	crt := mdlcap.NewCapacityResourceType(resourceID)
+	crt.SetDisplayName("CPU cores")
+	crt.SetUnit("cores")
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.CapacityResourceTypeResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{crt},
+	}))
+
+	got := m.GetCapacityResourceTypeById(resourceID)
+	require.NotNil(t, got, "expected replicated CapacityResourceType")
+	assert.Equal(t, resourceID, got.GetCapacityResourceTypeId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.CapacityResourceTypeResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapacityResourceTypeById(resourceID))
 }
 
 func TestStoreCapacityCRUD(t *testing.T) {

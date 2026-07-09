@@ -38,6 +38,9 @@ func {{.ToDtoFuncName}}(v {{.DomainPkgAlias}}.{{.DomainTypeName}}) {{.OapiWireTy
 		{{.WireIDField}}:  uuidToOpenAPI(v.{{.WireDomainIDGetter}}()),
 		DisplayName: v.GetDisplayName(),
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
+{{- range .ExtraStringFields}}
+		{{.}}: v.Get{{.}}(),
+{{- end}}
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc

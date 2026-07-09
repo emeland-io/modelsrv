@@ -1253,15 +1253,19 @@ var allTypes = []TypeSpec{
 			{Name: "Unit", Type: "string"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
-		WireKind:                "CapacityResourceType",
+		HasClientTest:           true,
 		GenClientMethods:        true,
 		ClientListMethod:        "GetCapacityResourceTypes",
 		ClientGetByIdMethod:     "GetCapacityResourceTypeById",
 		ClientListOapiMethod:    "GetLandscapeCapacityResourceTypes",
 		ClientGetByIdOapiMethod: "GetLandscapeCapacityResourceTypesCapacityResourceTypeId",
 		OapiTypeName:            "CapacityResourceType",
+		TestDisplayName:         "CPU cores",
+		TestIDAssertExpr:        "uuid.UUID(got.CapacityResourceTypeId)",
+		TestNameAssertExpr:      "got.DisplayName",
+		WireKind:                "CapacityResourceType",
 		TestSetup: `crt := mdlcap.NewCapacityResourceType(testIDs["CapacityResourceType"])
-			crt.SetDisplayName("CPU")
+			crt.SetDisplayName("CPU cores")
 			crt.SetUnit("cores")
 			require.NoError(t, m.AddCapacityResourceType(crt))`,
 	},
