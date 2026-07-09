@@ -10,13 +10,8 @@ import (
 
 // PushWireEventFromDomain builds an OpenAPI [Event] for POST /events/push from a domain [events.Event].
 //
-// For create/update, the resource body is produced by encoding/json on the first domain object.
-// That matches how subscribers decode: JSON is unmarshalled into OpenAPI structs (tags such as
-// "systemId" accept common casings from the encoder).
-//
-// Callers should avoid deeply cyclic object graphs (for example a [system.System] whose parent
-// embeds a fully-resolved upstream system); in those cases prefer refs that carry IDs only, or
-// build a dedicated DTO before placing it in [events.Event.Objects].
+// For create/update, the resource body is produced via domain→OpenAPI DTO encoders so annotations,
+// scalar refs, and other wire fields match what subscribers decode.
 func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 	if ev == nil {
 		return Event{}, fmt.Errorf("nil event")
@@ -38,7 +33,7 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 	if !ok {
 		return Event{}, fmt.Errorf("create/update event missing resource object for kind %s", kind)
 	}
-	m, err := jsonMap(obj)
+	m, err := encodeReplicationResourceToWireMap(ev.ResourceType, obj)
 	if err != nil {
 		return Event{}, err
 	}
