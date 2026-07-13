@@ -185,7 +185,7 @@ func applyNode(spec map[string]any, m model.Model) error {
 	if desc, ok := stringField(spec, "description"); ok {
 		n.SetDescription(desc)
 	}
-	if typeID, has, err := optionalUUIDRef(spec, "nodeTypeId"); err != nil {
+	if typeID, has, err := optionalFirstUUIDRef(spec, "nodeTypeId", "nodeType"); err != nil {
 		return err
 	} else if has {
 		n.SetTypeRef(&node.NodeTypeRef{NodeTypeId: typeID})

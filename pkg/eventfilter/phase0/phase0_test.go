@@ -9,6 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/node"
@@ -414,6 +415,71 @@ var _ = Describe("phase0 FilterFunc", func() {
 			nt.SetDisplayName("nt")
 			Expect(m.AddNodeType(nt)).To(Succeed())
 
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
+		})
+	})
+
+	Describe("ReconcileAll", func() {
+		It("clears stale NodeTypeMissing findings when the type is already registered", func() {
+			m := newModel()
+			phase0.EnsureWellKnownFindingTypes(m)
+
+			typeID := uuid.New()
+			nodeID := uuid.New()
+			nt := node.NewNodeType(typeID)
+			nt.SetDisplayName("nt")
+			Expect(m.AddNodeType(nt)).To(Succeed())
+
+			n := node.NewNode(nodeID)
+			n.SetDisplayName("n")
+			n.SetNodeTypeById(typeID)
+			Expect(m.AddNode(n)).To(Succeed())
+
+			staleID := uuid.NewSHA1(uuid.MustParse("7a3f2c1e-4b8d-5e9f-a0b1-c2d3e4f56789"), append(nodeID[:], []byte(finding.NodeTypeMissing)...))
+			stale := finding.NewFinding(staleID)
+			stale.SetFindingTypeById(finding.TypeIDForKind(finding.NodeTypeMissing))
+			stale.SetDisplayName("Phase 0 Integrity check")
+			stale.SetDescription("stale")
+			stale.SetResources([]*common.ResourceRef{
+				{ResourceId: nodeID, ResourceType: events.NodeResource},
+				{ResourceId: typeID, ResourceType: events.NodeTypeResource},
+			})
+			Expect(m.AddFinding(stale)).To(Succeed())
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(HaveLen(1))
+
+			phase0.ReconcileAll(m)
+
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
+		})
+	})
+
+	Describe("replicated Finding upsert", func() {
+		It("drops a stale NodeTypeMissing finding when the node type is registered", func() {
+			m, _ := newModelWithPhase0Chain()
+			typeID := uuid.New()
+			nodeID := uuid.New()
+
+			nt := node.NewNodeType(typeID)
+			nt.SetDisplayName("nt")
+			Expect(m.AddNodeType(nt)).To(Succeed())
+
+			n := node.NewNode(nodeID)
+			n.SetDisplayName("n")
+			n.SetNodeTypeById(typeID)
+			Expect(m.AddNode(n)).To(Succeed())
+			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
+
+			staleID := uuid.NewSHA1(uuid.MustParse("7a3f2c1e-4b8d-5e9f-a0b1-c2d3e4f56789"), append(nodeID[:], []byte(finding.NodeTypeMissing)...))
+			stale := finding.NewFinding(staleID)
+			stale.SetFindingTypeById(finding.TypeIDForKind(finding.NodeTypeMissing))
+			stale.SetDisplayName("Phase 0 Integrity check")
+			stale.SetDescription("NodeTypeMissing: stale replicated finding")
+			stale.SetResources([]*common.ResourceRef{
+				{ResourceId: nodeID, ResourceType: events.NodeResource},
+				{ResourceId: typeID, ResourceType: events.NodeTypeResource},
+			})
+
+			Expect(m.AddFinding(stale)).To(Succeed())
 			Expect(findingsOfKind(m, finding.NodeTypeMissing)).To(BeEmpty())
 		})
 	})

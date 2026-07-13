@@ -14,6 +14,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/node"
 )
 
 var _ = Describe("Backend", func() {
@@ -164,6 +165,36 @@ var _ = Describe("Backend", func() {
 			ct := mdlctx.NewContextType(typeID)
 			ct.SetDisplayName("t")
 			Expect(m.AddContextType(ct)).To(Succeed())
+
+			var sawFindingDelete bool
+			for _, ev := range intercepted {
+				if ev.ResourceType == events.FindingResource && ev.Operation == events.DeleteOperation {
+					sawFindingDelete = true
+					break
+				}
+			}
+			Expect(sawFindingDelete).To(BeTrue())
+		})
+
+		It("propagates a Finding delete through the chain when a missing NodeType is added", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			var intercepted []events.Event
+			b.GetChain().Register(func(_ model.Model, ev events.Event) []events.Event {
+				intercepted = append(intercepted, ev)
+				return []events.Event{ev}
+			})
+
+			m := b.GetModel()
+			typeID := uuid.New()
+			n := node.NewNode(uuid.New())
+			n.SetNodeTypeById(typeID)
+			Expect(m.AddNode(n)).To(Succeed())
+
+			nt := node.NewNodeType(typeID)
+			nt.SetDisplayName("t")
+			Expect(m.AddNodeType(nt)).To(Succeed())
 
 			var sawFindingDelete bool
 			for _, ev := range intercepted {
