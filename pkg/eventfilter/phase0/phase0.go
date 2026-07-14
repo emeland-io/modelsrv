@@ -109,6 +109,32 @@ func EnsureWellKnownFindingTypes(m model.Model) {
 	}
 }
 
+// ReconcileAll re-evaluates phase-0 checks for every Context and Node in the model.
+// Call after bulk load (e.g. file-sensor initial scan) so findings reflect the final
+// registry state when resources were applied in an order that skipped reconciliation.
+func ReconcileAll(m model.Model) {
+	contexts, err := m.GetContexts()
+	if err != nil {
+		log.Printf("phase0: ReconcileAll GetContexts: %v", err)
+	}
+	for _, c := range contexts {
+		if cur := m.GetContextById(c.GetContextId()); cur != nil {
+			checkContext(m, cur)
+		}
+	}
+
+	nodes, err := m.GetNodes()
+	if err != nil {
+		log.Printf("phase0: ReconcileAll GetNodes: %v", err)
+		return
+	}
+	for _, n := range nodes {
+		if cur := m.GetNodeById(n.GetNodeId()); cur != nil {
+			checkNode(m, cur)
+		}
+	}
+}
+
 // New returns the phase-0 filter with its discoverable identity.
 func New() eventfilter.Filter {
 	return eventfilter.Filter{
@@ -148,6 +174,12 @@ func filterFunc() eventfilter.FilterFunc {
 			case events.NodeTypeResource:
 				if typeID, ok := nodeTypeIDFromEvent(ev); ok {
 					reconcileNodesReferencingNodeType(m, typeID)
+				}
+			case events.FindingResource:
+				if len(ev.Objects) > 0 {
+					if f, ok := ev.Objects[0].(finding.Finding); ok {
+						reconcileFindingSubject(m, f)
+					}
 				}
 			}
 		case events.DeleteOperation:
@@ -244,6 +276,83 @@ func reconcileChildContextsAfterParentDeleted(m model.Model, deletedParentID uui
 			checkContextParent(m, cur)
 		}
 	}
+}
+
+func reconcileFindingSubject(m model.Model, f finding.Finding) {
+	if f == nil {
+		return
+	}
+	refs := f.GetResources()
+	if len(refs) == 0 || refs[0] == nil {
+		return
+	}
+	subjectID := refs[0].ResourceId
+
+	kind, ok := findingKindForTypeID(m, f.GetFindingTypeId())
+	if !ok {
+		return
+	}
+	switch kind {
+	case finding.ContextTypeMissing:
+		if cur := m.GetContextById(subjectID); cur != nil && contextTypeCheckPasses(m, cur) {
+			deleteFinding(m, subjectID, finding.ContextTypeMissing)
+		}
+	case finding.ContextParentNotFound:
+		if cur := m.GetContextById(subjectID); cur != nil && contextParentCheckPasses(m, cur) {
+			deleteFinding(m, subjectID, finding.ContextParentNotFound)
+		}
+	case finding.NodeTypeMissing:
+		if cur := m.GetNodeById(subjectID); cur != nil && nodeTypeCheckPasses(m, cur) {
+			deleteFinding(m, subjectID, finding.NodeTypeMissing)
+		}
+	}
+}
+
+func findingKindForTypeID(m model.Model, typeID uuid.UUID) (finding.FindingKind, bool) {
+	if typeID == uuid.Nil {
+		return "", false
+	}
+	for _, kind := range []finding.FindingKind{
+		finding.ContextTypeMissing,
+		finding.ContextParentNotFound,
+		finding.NodeTypeMissing,
+	} {
+		if typeID == finding.TypeIDForKind(kind) {
+			return kind, true
+		}
+	}
+	if ft := m.GetFindingTypeById(typeID); ft != nil {
+		return finding.FindingKind(ft.GetDisplayName()), true
+	}
+	return "", false
+}
+
+func contextTypeCheckPasses(m model.Model, ctx mdlctx.Context) bool {
+	typeID := ctx.GetContextTypeId()
+	if typeID == uuid.Nil {
+		return false
+	}
+	return m.GetContextTypeById(typeID) != nil
+}
+
+func contextParentCheckPasses(m model.Model, ctx mdlctx.Context) bool {
+	parentID := ctx.GetParentId()
+	if parentID == uuid.Nil {
+		return true
+	}
+	return m.GetContextById(parentID) != nil
+}
+
+func nodeTypeCheckPasses(m model.Model, n node.Node) bool {
+	typeID := n.GetNodeTypeId()
+	embedded, _ := n.GetNodeType()
+	if typeID == uuid.Nil {
+		return embedded != nil
+	}
+	if m.GetNodeTypeById(typeID) != nil {
+		return true
+	}
+	return embedded != nil && embedded.GetNodeTypeId() == typeID
 }
 
 func reconcileNodesReferencingNodeType(m model.Model, typeID uuid.UUID) {

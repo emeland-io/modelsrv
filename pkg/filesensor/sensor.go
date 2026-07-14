@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.uber.org/zap"
 )
@@ -47,6 +48,8 @@ func run(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger)
 
 	if err := scanDir(dir, apply); err != nil {
 		log.Errorw("filesensor: initial scan failed", "dir", dir, "error", err.Error())
+	} else {
+		phase0.ReconcileAll(m)
 	}
 
 	watcher, err := fsnotify.NewWatcher()
