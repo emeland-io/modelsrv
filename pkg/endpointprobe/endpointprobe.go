@@ -2,6 +2,7 @@ package endpointprobe
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
@@ -34,7 +35,11 @@ func BuildURL(protocol, host, port, path string) (string, error) {
 	resolvedPort := defaultPort(protocol, port)
 	normalizedPath := normalizePath(path)
 
-	return fmt.Sprintf("%s://%s:%s%s", protocol, host, resolvedPort, normalizedPath), nil
+	return (&url.URL{
+		Scheme: protocol,
+		Host:   host + ":" + resolvedPort,
+		Path:   normalizedPath,
+	}).String(), nil
 }
 
 // TargetFromApiInstance derives a probe target from ApiInstance endpoint annotations.
