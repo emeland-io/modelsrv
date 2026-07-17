@@ -8,14 +8,18 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/backend"
 	"go.emeland.io/modelsrv/pkg/endpoint"
+	"go.emeland.io/modelsrv/pkg/endpointprobe"
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.uber.org/zap"
 )
+
+const certprobeShutdownTimeout = 30 * time.Second
 
 var serviceAddr string
 var dataDir string
@@ -24,6 +28,10 @@ var trustAuthHeaders bool
 var auditorIdentity string
 var auditorGroup string
 var publicResourceTypes string
+var enableCertprobe bool
+var certprobeInterval time.Duration
+var certprobeTimeout time.Duration
+var maxConcurrentProbes int
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
@@ -58,12 +66,16 @@ var serverCmd = &cobra.Command{
 		logger.Infow("starting modelsrv",
 			"listen", serviceAddr,
 			"dataDir", dataPath,
+			"certprobe", enableCertprobe,
 		)
 		logger.Infof("REST API: http://%s/api", serviceAddr)
 		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
 		logger.Info("file sensor: watching for YAML in data directory")
 
-		filesensor.Start(context.Background(), dataPath, b.GetModel(), logger)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		filesensor.Start(ctx, dataPath, b.GetModel(), logger)
 
 		webOpts := endpoint.WebListenerOptions{
 			TrustAuthHeaders: trustAuthHeaders,
@@ -85,12 +97,58 @@ var serverCmd = &cobra.Command{
 			}
 		}
 
+		var scheduler *endpointprobe.Scheduler
+		if enableCertprobe {
+			reg := endpoint.MetricsRegistry()
+			if reg == nil {
+				logger.Error("metrics registry not initialized; cannot start certprobe")
+				return
+			}
+
+			scheduler = &endpointprobe.Scheduler{
+				Client:              endpointprobe.NewModelClient(b.GetModel()),
+				Prober:              endpointprobe.NewProber(certprobeTimeout),
+				Metrics:             endpointprobe.NewMetrics(reg),
+				Interval:            certprobeInterval,
+				MaxConcurrentProbes: maxConcurrentProbes,
+				Logger:              logger,
+			}
+
+			go scheduler.Run(ctx)
+			logger.Infow("certprobe started",
+				"interval", certprobeInterval,
+				"timeout", certprobeTimeout,
+				"maxConcurrentProbes", maxConcurrentProbes,
+			)
+		}
+
 		logger.Info("server is running (Ctrl+C to stop)")
 
 		sigCh := make(chan os.Signal, 1)
 		notifyShutdownSignals(sigCh)
 		sig := <-sigCh
 		logger.Infow("shutdown signal received", "signal", sig.String())
+
+		cancel()
+
+		if scheduler != nil {
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), certprobeShutdownTimeout)
+			defer shutdownCancel()
+
+			done := make(chan struct{})
+			go func() {
+				scheduler.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+				logger.Info("certprobe stopped")
+			case <-shutdownCtx.Done():
+				logger.Warn("shutdown timeout waiting for in-flight cert probes")
+			}
+		}
+
 		endpoint.StopWebListener()
 		logger.Info("goodbye")
 	},
@@ -106,6 +164,10 @@ func init() {
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")
 	serverCmd.Flags().StringVar(&auditorGroup, "auditor-group", envOrDefault("AUDITOR_GROUP", ""), "Group id treated as auditor when present in X-Auth-Groups")
 	serverCmd.Flags().StringVar(&publicResourceTypes, "public-resource-types", envOrDefault("PUBLIC_RESOURCE_TYPES", ""), "Comma-separated resource types always visible (e.g. ContextType,FindingType)")
+	serverCmd.Flags().BoolVar(&enableCertprobe, "enable-certprobe", envOrDefault("ENABLE_CERTPROBE", "true") == "true", "Run certificate probing as a background process inside modelsrv")
+	serverCmd.Flags().DurationVar(&certprobeInterval, "certprobe-interval", 5*time.Minute, "Certprobe background scan interval")
+	serverCmd.Flags().DurationVar(&certprobeTimeout, "certprobe-timeout", 10*time.Second, "Per-probe HTTP/TLS timeout")
+	serverCmd.Flags().IntVar(&maxConcurrentProbes, "max-concurrent-probes", 10, "Certprobe worker pool size")
 }
 
 func envOrDefault(key, fallback string) string {

@@ -137,6 +137,13 @@ func StopWebListener() {
 	webListener = nil
 }
 
+// MetricsRegistry returns the Prometheus registry used by the web listener.
+// Callers may register additional collectors (e.g. certprobe gauges) after
+// StartWebListener. Returns nil if the web listener has not been started.
+func MetricsRegistry() *prometheus.Registry {
+	return metricsReg
+}
+
 // StartMetricsListener starts a dedicated HTTP server for /metrics on the given address.
 // When called, the main port's /metrics is replaced with a redirect to the dedicated endpoint.
 func StartMetricsListener(addr string) error {

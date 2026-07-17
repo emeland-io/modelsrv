@@ -62,9 +62,9 @@ func TargetFromApiInstance(ai api.ApiInstance) (ProbeTarget, bool, error) {
 
 	target := ProbeTarget{
 		ApiInstanceID: ai.GetInstanceId(),
-		DisplayName:     ai.GetDisplayName(),
-		URL:             url,
-		DedupeKey:       host + ":" + port,
+		DisplayName:   ai.GetDisplayName(),
+		URL:           url,
+		DedupeKey:     host + ":" + port,
 	}
 
 	if apiRef := ai.GetApiRef(); apiRef != nil {
