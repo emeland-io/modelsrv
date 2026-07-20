@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -25,14 +24,11 @@ func newTLSServer() *httptest.Server {
 }
 
 func apiInstanceForServer(server *httptest.Server) api.ApiInstance {
-	parsed, err := url.Parse(server.URL)
-	Expect(err).NotTo(HaveOccurred())
-
-	host, port, err := net.SplitHostPort(parsed.Host)
+	host, port, err := net.SplitHostPort(server.Listener.Addr().String())
 	Expect(err).NotTo(HaveOccurred())
 
 	ai := api.NewApiInstance(uuid.New())
-	ai.GetAnnotations().Add(annProtocol, parsed.Scheme)
+	ai.GetAnnotations().Add(annProtocol, "https")
 	ai.GetAnnotations().Add(annHost, host)
 	ai.GetAnnotations().Add(annPort, port)
 	return ai
