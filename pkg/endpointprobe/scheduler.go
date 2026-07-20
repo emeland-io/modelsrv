@@ -20,21 +20,50 @@ type ApiInstanceClient interface {
 // EventHook is an optional callback invoked after each probe (CERT-004 stub).
 type EventHook func(ProbeResult)
 
+const defaultDebounce = 5 * time.Second
+
 // Scheduler periodically scans ApiInstances and fans out probes to a worker pool.
 type Scheduler struct {
 	Client              ApiInstanceClient
 	Prober              *Prober
 	Metrics             *Metrics
 	Interval            time.Duration
+	Debounce            time.Duration
 	MaxConcurrentProbes int
 	Logger              *zap.SugaredLogger
 	EventHook           EventHook
 
-	wg sync.WaitGroup
+	triggerOnce sync.Once
+	trigger     chan struct{}
+	wg          sync.WaitGroup
+}
+
+// Notify requests a debounced rescan. Safe to call before Run; never blocks the caller.
+func (s *Scheduler) Notify() {
+	s.initTrigger()
+	select {
+	case s.trigger <- struct{}{}:
+	default:
+	}
+}
+
+func (s *Scheduler) initTrigger() {
+	s.triggerOnce.Do(func() {
+		s.trigger = make(chan struct{}, 1)
+	})
+}
+
+func (s *Scheduler) debounceDuration() time.Duration {
+	if s.Debounce > 0 {
+		return s.Debounce
+	}
+	return defaultDebounce
 }
 
 // Run executes probe cycles until ctx is cancelled. The first cycle runs immediately.
 func (s *Scheduler) Run(ctx context.Context) {
+	s.initTrigger()
+
 	s.wg.Add(1)
 	defer s.wg.Done()
 
@@ -43,11 +72,46 @@ func (s *Scheduler) Run(ctx context.Context) {
 	ticker := time.NewTicker(s.Interval)
 	defer ticker.Stop()
 
+	debounce := s.debounceDuration()
+	var debounceTimer *time.Timer
+	var debounceC <-chan time.Time
+
+	stopDebounceTimer := func() {
+		if debounceTimer == nil {
+			return
+		}
+		if !debounceTimer.Stop() {
+			select {
+			case <-debounceTimer.C:
+			default:
+			}
+		}
+		debounceTimer = nil
+		debounceC = nil
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
+			stopDebounceTimer()
 			return
 		case <-ticker.C:
+			stopDebounceTimer()
+			s.runOnce(ctx)
+		case <-s.trigger:
+			if debounceTimer != nil {
+				if !debounceTimer.Stop() {
+					select {
+					case <-debounceTimer.C:
+					default:
+					}
+				}
+			}
+			debounceTimer = time.NewTimer(debounce)
+			debounceC = debounceTimer.C
+		case <-debounceC:
+			debounceTimer = nil
+			debounceC = nil
 			s.runOnce(ctx)
 		}
 	}
