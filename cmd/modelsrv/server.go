@@ -15,6 +15,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/backend"
 	"go.emeland.io/modelsrv/pkg/endpoint"
 	"go.emeland.io/modelsrv/pkg/endpointprobe"
+	"go.emeland.io/modelsrv/pkg/eventfilter"
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.uber.org/zap"
 )
@@ -30,6 +31,7 @@ var auditorGroup string
 var publicResourceTypes string
 var enableCertprobe bool
 var certprobeInterval time.Duration
+var certprobeDebounce time.Duration
 var certprobeTimeout time.Duration
 var maxConcurrentProbes int
 
@@ -98,6 +100,7 @@ var serverCmd = &cobra.Command{
 		}
 
 		var scheduler *endpointprobe.Scheduler
+		var rescanFilterID eventfilter.FilterID
 		if enableCertprobe {
 			reg := endpoint.MetricsRegistry()
 			if reg == nil {
@@ -110,13 +113,16 @@ var serverCmd = &cobra.Command{
 				Prober:              endpointprobe.NewProber(certprobeTimeout),
 				Metrics:             endpointprobe.NewMetrics(reg),
 				Interval:            certprobeInterval,
+				Debounce:            certprobeDebounce,
 				MaxConcurrentProbes: maxConcurrentProbes,
 				Logger:              logger,
 			}
 
 			go scheduler.Run(ctx)
+			rescanFilterID = b.GetChain().RegisterFilter(endpointprobe.NewRescanFilter(scheduler))
 			logger.Infow("certprobe started",
 				"interval", certprobeInterval,
+				"debounce", certprobeDebounce,
 				"timeout", certprobeTimeout,
 				"maxConcurrentProbes", maxConcurrentProbes,
 			)
@@ -132,6 +138,8 @@ var serverCmd = &cobra.Command{
 		cancel()
 
 		if scheduler != nil {
+			b.GetChain().Unregister(rescanFilterID)
+
 			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), certprobeShutdownTimeout)
 			defer shutdownCancel()
 
@@ -166,6 +174,7 @@ func init() {
 	serverCmd.Flags().StringVar(&publicResourceTypes, "public-resource-types", envOrDefault("PUBLIC_RESOURCE_TYPES", ""), "Comma-separated resource types always visible (e.g. ContextType,FindingType)")
 	serverCmd.Flags().BoolVar(&enableCertprobe, "enable-certprobe", envOrDefault("ENABLE_CERTPROBE", "true") == "true", "Run certificate probing as a background process inside modelsrv")
 	serverCmd.Flags().DurationVar(&certprobeInterval, "certprobe-interval", 5*time.Minute, "Certprobe background scan interval")
+	serverCmd.Flags().DurationVar(&certprobeDebounce, "certprobe-debounce", envDurationOrDefault("CERTPROBE_DEBOUNCE", 5*time.Second), "Debounce window before event-triggered certprobe rescans")
 	serverCmd.Flags().DurationVar(&certprobeTimeout, "certprobe-timeout", 10*time.Second, "Per-probe HTTP/TLS timeout")
 	serverCmd.Flags().IntVar(&maxConcurrentProbes, "max-concurrent-probes", 10, "Certprobe worker pool size")
 }
@@ -173,6 +182,15 @@ func init() {
 func envOrDefault(key, fallback string) string {
 	if v, ok := os.LookupEnv(key); ok {
 		return v
+	}
+	return fallback
+}
+
+func envDurationOrDefault(key string, fallback time.Duration) time.Duration {
+	if v, ok := os.LookupEnv(key); ok {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
 	}
 	return fallback
 }
