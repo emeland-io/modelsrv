@@ -164,9 +164,9 @@ func TestTargetFromApiInstance(t *testing.T) {
 			wantOK: true,
 			want: ProbeTarget{
 				ApiInstanceID: instanceID,
-				DisplayName:     "Health API",
-				URL:             "http://example.com:80/",
-				DedupeKey:       "example.com:80",
+				DisplayName:   "Health API",
+				URL:           "http://example.com:80/",
+				DedupeKey:     "example.com:80",
 			},
 		},
 		{
@@ -199,8 +199,8 @@ func TestTargetFromApiInstance(t *testing.T) {
 			wantOK: true,
 			want: ProbeTarget{
 				ApiInstanceID: instanceID,
-				URL:             "https://example.com:443/",
-				DedupeKey:       "example.com:443",
+				URL:           "https://example.com:443/",
+				DedupeKey:     "example.com:443",
 			},
 		},
 	}
