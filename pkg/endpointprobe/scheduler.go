@@ -20,7 +20,10 @@ type ApiInstanceClient interface {
 // EventHook is an optional callback invoked after each probe (CERT-004 stub).
 type EventHook func(ProbeResult)
 
-const defaultDebounce = 5 * time.Second
+const (
+	defaultDebounce      = 5 * time.Second
+	defaultExpiryWarning = 720 * time.Hour
+)
 
 // Scheduler periodically scans ApiInstances and fans out probes to a worker pool.
 type Scheduler struct {
@@ -29,9 +32,11 @@ type Scheduler struct {
 	Metrics             *Metrics
 	Interval            time.Duration
 	Debounce            time.Duration
+	ExpiryWarning       time.Duration
 	MaxConcurrentProbes int
 	Logger              *zap.SugaredLogger
 	EventHook           EventHook
+	Publisher           FindingPublisher
 
 	triggerOnce sync.Once
 	trigger     chan struct{}
@@ -58,6 +63,13 @@ func (s *Scheduler) debounceDuration() time.Duration {
 		return s.Debounce
 	}
 	return defaultDebounce
+}
+
+func (s *Scheduler) expiryWarning() time.Duration {
+	if s.ExpiryWarning > 0 {
+		return s.ExpiryWarning
+	}
+	return defaultExpiryWarning
 }
 
 // Run executes probe cycles until ctx is cancelled. The first cycle runs immediately.
@@ -158,6 +170,14 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 			result := s.Prober.Probe(ctx, t)
 			if s.Metrics != nil {
 				s.Metrics.Record(result)
+			}
+			if s.Publisher != nil {
+				if err := reconcileFinding(s.Publisher, s.expiryWarning(), result); err != nil {
+					s.Logger.Warnw("finding reconcile failed",
+						"apiInstanceId", t.ApiInstanceID,
+						"error", err,
+					)
+				}
 			}
 			if s.EventHook != nil {
 				s.EventHook(result)

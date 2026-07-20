@@ -19,6 +19,18 @@ const (
 
 	// NodeTypeMissing is raised when a Node has no NodeType assigned.
 	NodeTypeMissing FindingKind = "NodeTypeMissing"
+
+	// CertificateExpiringSoon is raised when an ApiInstance TLS certificate
+	// will expire within the configured warning threshold.
+	CertificateExpiringSoon FindingKind = "CertificateExpiringSoon"
+
+	// CertificateExpired is raised when an ApiInstance TLS certificate
+	// has already expired (remaining lifetime ≤ 0).
+	CertificateExpired FindingKind = "CertificateExpired"
+
+	// CertificateProbeFailed is raised when a certificate probe against an
+	// ApiInstance endpoint fails (connection error, timeout, etc.).
+	CertificateProbeFailed FindingKind = "CertificateProbeFailed"
 )
 
 // findingTypeNamespace is the UUID v5 namespace used to derive stable
@@ -43,6 +55,12 @@ func DescriptionForKind(kind FindingKind) string {
 		return "A Context resource references a parent Context by UUID that is not registered in the model."
 	case NodeTypeMissing:
 		return "A Node resource has no NodeType assigned."
+	case CertificateExpiringSoon:
+		return "An ApiInstance TLS certificate will expire within the configured warning threshold."
+	case CertificateExpired:
+		return "An ApiInstance TLS certificate has already expired."
+	case CertificateProbeFailed:
+		return "A certificate probe against an ApiInstance endpoint failed."
 	default:
 		return ""
 	}
