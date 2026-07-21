@@ -38,17 +38,19 @@ func startReactiveScheduler(instances []api.ApiInstance) (*Scheduler, *atomic.In
 	var probeCount atomic.Int32
 	ctx, cancel := context.WithCancel(context.Background())
 
-	sched := &Scheduler{
+	sched, err := NewScheduler(SchedulerConfig{
 		Client:              &fakeApiInstanceClient{instances: instances},
 		Prober:              NewProber(5 * time.Second),
 		Interval:            time.Hour,
 		Debounce:            50 * time.Millisecond,
+		ExpiryWarning:       720 * time.Hour,
 		MaxConcurrentProbes: 1,
 		Logger:              zap.NewNop().Sugar(),
 		EventHook: func(ProbeResult) {
 			probeCount.Add(1)
 		},
-	}
+	})
+	Expect(err).NotTo(HaveOccurred())
 
 	go sched.Run(ctx)
 	return sched, &probeCount, cancel
@@ -175,17 +177,19 @@ var _ = Describe("Reactive scheduler", func() {
 
 				ctx, cancel := context.WithCancel(context.Background())
 
-				sched = &Scheduler{
+				sched, err = NewScheduler(SchedulerConfig{
 					Client:              NewModelClient(b.GetModel()),
 					Prober:              NewProber(5 * time.Second),
 					Interval:            time.Hour,
 					Debounce:            50 * time.Millisecond,
+					ExpiryWarning:       720 * time.Hour,
 					MaxConcurrentProbes: 1,
 					Logger:              zap.NewNop().Sugar(),
 					EventHook: func(ProbeResult) {
 						probeCount.Add(1)
 					},
-				}
+				})
+				Expect(err).NotTo(HaveOccurred())
 
 				filterID := b.GetChain().RegisterFilter(NewRescanFilter(sched))
 				DeferCleanup(func() { b.GetChain().Unregister(filterID) })
@@ -215,4 +219,41 @@ var _ = Describe("Reactive scheduler", func() {
 			})
 		})
 	})
+})
+
+var _ = Describe("NewScheduler", func() {
+	valid := func() SchedulerConfig {
+		return SchedulerConfig{
+			Client:              &fakeApiInstanceClient{},
+			Prober:              NewProber(time.Second),
+			Interval:            time.Minute,
+			Debounce:            time.Second,
+			ExpiryWarning:       720 * time.Hour,
+			MaxConcurrentProbes: 1,
+			Logger:              zap.NewNop().Sugar(),
+		}
+	}
+
+	It("accepts a fully configured scheduler", func() {
+		s, err := NewScheduler(valid())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(s).NotTo(BeNil())
+	})
+
+	DescribeTable("rejects missing required fields",
+		func(mutate func(*SchedulerConfig), wantSubstring string) {
+			cfg := valid()
+			mutate(&cfg)
+			_, err := NewScheduler(cfg)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(wantSubstring))
+		},
+		Entry("nil client", func(c *SchedulerConfig) { c.Client = nil }, "client is required"),
+		Entry("nil prober", func(c *SchedulerConfig) { c.Prober = nil }, "prober is required"),
+		Entry("nil logger", func(c *SchedulerConfig) { c.Logger = nil }, "logger is required"),
+		Entry("zero interval", func(c *SchedulerConfig) { c.Interval = 0 }, "interval must be positive"),
+		Entry("zero debounce", func(c *SchedulerConfig) { c.Debounce = 0 }, "debounce must be positive"),
+		Entry("zero expiry warning", func(c *SchedulerConfig) { c.ExpiryWarning = 0 }, "expiry warning must be positive"),
+		Entry("zero max concurrent probes", func(c *SchedulerConfig) { c.MaxConcurrentProbes = 0 }, "max concurrent probes must be positive"),
+	)
 })

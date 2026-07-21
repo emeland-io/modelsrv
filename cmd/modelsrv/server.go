@@ -111,7 +111,7 @@ var serverCmd = &cobra.Command{
 
 			endpointprobe.EnsureWellKnownFindingTypes(b.GetModel())
 
-			scheduler = &endpointprobe.Scheduler{
+			scheduler, err = endpointprobe.NewScheduler(endpointprobe.SchedulerConfig{
 				Client:              endpointprobe.NewModelClient(b.GetModel()),
 				Prober:              endpointprobe.NewProber(certprobeTimeout),
 				Metrics:             endpointprobe.NewMetrics(reg),
@@ -121,6 +121,10 @@ var serverCmd = &cobra.Command{
 				MaxConcurrentProbes: maxConcurrentProbes,
 				Logger:              logger,
 				Publisher:           endpointprobe.NewModelFindingPublisher(b.GetModel()),
+			})
+			if err != nil {
+				logger.Errorw("invalid certprobe configuration", "error", err)
+				return
 			}
 
 			go scheduler.Run(ctx)

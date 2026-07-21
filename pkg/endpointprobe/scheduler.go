@@ -2,6 +2,8 @@ package endpointprobe
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,13 +19,23 @@ type ApiInstanceClient interface {
 	GetApiInstanceById(id uuid.UUID) (api.ApiInstance, error)
 }
 
-// EventHook is an optional callback invoked after each probe (CERT-004 stub).
+// EventHook is an optional callback invoked after each probe.
 type EventHook func(ProbeResult)
 
-const (
-	defaultDebounce      = 5 * time.Second
-	defaultExpiryWarning = 720 * time.Hour
-)
+// SchedulerConfig holds the inputs for [NewScheduler].
+// Metrics, EventHook, and Publisher are optional; all other fields are required.
+type SchedulerConfig struct {
+	Client              ApiInstanceClient
+	Prober              *Prober
+	Metrics             *Metrics
+	Interval            time.Duration
+	Debounce            time.Duration
+	ExpiryWarning       time.Duration
+	MaxConcurrentProbes int
+	Logger              *zap.SugaredLogger
+	EventHook           EventHook
+	Publisher           FindingPublisher
+}
 
 // Scheduler periodically scans ApiInstances and fans out probes to a worker pool.
 type Scheduler struct {
@@ -43,6 +55,44 @@ type Scheduler struct {
 	wg          sync.WaitGroup
 }
 
+// NewScheduler validates cfg and returns a ready-to-run Scheduler.
+// Defaults belong in the CLI (main), not here.
+func NewScheduler(cfg SchedulerConfig) (*Scheduler, error) {
+	if cfg.Client == nil {
+		return nil, errors.New("client is required")
+	}
+	if cfg.Prober == nil {
+		return nil, errors.New("prober is required")
+	}
+	if cfg.Logger == nil {
+		return nil, errors.New("logger is required")
+	}
+	if cfg.Interval <= 0 {
+		return nil, fmt.Errorf("interval must be positive, got %s", cfg.Interval)
+	}
+	if cfg.Debounce <= 0 {
+		return nil, fmt.Errorf("debounce must be positive, got %s", cfg.Debounce)
+	}
+	if cfg.ExpiryWarning <= 0 {
+		return nil, fmt.Errorf("expiry warning must be positive, got %s", cfg.ExpiryWarning)
+	}
+	if cfg.MaxConcurrentProbes <= 0 {
+		return nil, fmt.Errorf("max concurrent probes must be positive, got %d", cfg.MaxConcurrentProbes)
+	}
+	return &Scheduler{
+		Client:              cfg.Client,
+		Prober:              cfg.Prober,
+		Metrics:             cfg.Metrics,
+		Interval:            cfg.Interval,
+		Debounce:            cfg.Debounce,
+		ExpiryWarning:       cfg.ExpiryWarning,
+		MaxConcurrentProbes: cfg.MaxConcurrentProbes,
+		Logger:              cfg.Logger,
+		EventHook:           cfg.EventHook,
+		Publisher:           cfg.Publisher,
+	}, nil
+}
+
 // Notify requests a debounced rescan. Safe to call before Run; never blocks the caller.
 func (s *Scheduler) Notify() {
 	s.initTrigger()
@@ -58,20 +108,6 @@ func (s *Scheduler) initTrigger() {
 	})
 }
 
-func (s *Scheduler) debounceDuration() time.Duration {
-	if s.Debounce > 0 {
-		return s.Debounce
-	}
-	return defaultDebounce
-}
-
-func (s *Scheduler) expiryWarning() time.Duration {
-	if s.ExpiryWarning > 0 {
-		return s.ExpiryWarning
-	}
-	return defaultExpiryWarning
-}
-
 // Run executes probe cycles until ctx is cancelled. The first cycle runs immediately.
 func (s *Scheduler) Run(ctx context.Context) {
 	s.initTrigger()
@@ -84,7 +120,7 @@ func (s *Scheduler) Run(ctx context.Context) {
 	ticker := time.NewTicker(s.Interval)
 	defer ticker.Stop()
 
-	debounce := s.debounceDuration()
+	debounce := s.Debounce
 	var debounceTimer *time.Timer
 	var debounceC <-chan time.Time
 
@@ -172,7 +208,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 				s.Metrics.Record(result)
 			}
 			if s.Publisher != nil {
-				if err := reconcileFinding(s.Publisher, s.expiryWarning(), result); err != nil {
+				if err := reconcileFinding(s.Publisher, s.ExpiryWarning, result); err != nil {
 					s.Logger.Warnw("finding reconcile failed",
 						"apiInstanceId", t.ApiInstanceID,
 						"error", err,
