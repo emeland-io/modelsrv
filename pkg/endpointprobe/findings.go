@@ -28,7 +28,7 @@ func findingID(apiInstanceID uuid.UUID, kind finding.FindingKind) uuid.UUID {
 
 func buildFinding(pub FindingPublisher, apiInstanceID uuid.UUID, kind finding.FindingKind, description string) finding.Finding {
 	f := finding.NewFinding(findingID(apiInstanceID, kind))
-	f.SetFindingTypeById(pub.EnsureType(kind))
+	f.SetFindingTypeById(pub.TypeID(kind))
 	f.SetDisplayName(certFindingDisplayName)
 	f.SetDescription(description)
 	f.SetResources([]*common.ResourceRef{

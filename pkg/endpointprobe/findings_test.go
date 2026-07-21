@@ -12,6 +12,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.uber.org/zap"
 )
 
 // fakePublisher records Upsert/Delete calls for decision-table assertions.
@@ -30,7 +31,7 @@ func (f *fakePublisher) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (f *fakePublisher) EnsureType(kind finding.FindingKind) uuid.UUID {
+func (f *fakePublisher) TypeID(kind finding.FindingKind) uuid.UUID {
 	return finding.TypeIDForKind(kind)
 }
 
@@ -221,7 +222,7 @@ var _ = Describe("Certificate findings", func() {
 			b, err = backend.New()
 			Expect(err).NotTo(HaveOccurred())
 			m = b.GetModel()
-			pub = NewModelFindingPublisher(m)
+			pub = NewModelFindingPublisher(m, zap.NewNop().Sugar())
 		})
 
 		It("makes findings appear in the model after an expiring probe (GET /landscape/findings source)", func() {
@@ -242,13 +243,20 @@ var _ = Describe("Certificate findings", func() {
 		})
 
 		It("EnsureWellKnownFindingTypes pre-registers all certificate FindingTypes", func() {
-			EnsureWellKnownFindingTypes(m)
+			EnsureWellKnownFindingTypes(m, zap.NewNop().Sugar())
 			for _, kind := range certFindingKinds {
 				ft := m.GetFindingTypeById(finding.TypeIDForKind(kind))
 				Expect(ft).NotTo(BeNil(), "kind %s", kind)
 				Expect(ft.GetDisplayName()).To(Equal(string(kind)))
 				Expect(ft.GetDescription()).To(Equal(finding.DescriptionForKind(kind)))
 			}
+		})
+
+		It("caches TypeIDs so TypeID does not re-register on each call", func() {
+			id1 := pub.TypeID(finding.CertificateExpired)
+			id2 := pub.TypeID(finding.CertificateExpired)
+			Expect(id1).To(Equal(id2))
+			Expect(id1).To(Equal(finding.TypeIDForKind(finding.CertificateExpired)))
 		})
 
 		It("is idempotent: re-probing the same state does not duplicate findings", func() {

@@ -1,32 +1,45 @@
 package endpointprobe
 
 import (
-	"log"
-
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.uber.org/zap"
 )
 
 // FindingPublisher upserts or deletes Finding resources after a probe cycle.
 type FindingPublisher interface {
 	Upsert(f finding.Finding) error
 	Delete(id uuid.UUID) error
-	// EnsureType registers or reuses the FindingType for kind and returns its id
-	// (same pattern as phase0 ensureFindingType).
-	EnsureType(kind finding.FindingKind) uuid.UUID
+	// TypeID returns the cached FindingType id for kind.
+	TypeID(kind finding.FindingKind) uuid.UUID
 }
 
 // ModelFindingPublisher applies Finding create/delete events via [model.Model.Apply],
 // the same pipeline used by POST /events/push.
 type ModelFindingPublisher struct {
-	Model model.Model
+	Model   model.Model
+	Logger  *zap.SugaredLogger
+	typeIDs map[finding.FindingKind]uuid.UUID
 }
 
 // NewModelFindingPublisher returns a FindingPublisher backed by m.
-func NewModelFindingPublisher(m model.Model) *ModelFindingPublisher {
-	return &ModelFindingPublisher{Model: m}
+// It registers the well-known certificate FindingTypes and caches their IDs
+// so probe cycles do not re-look them up.
+func NewModelFindingPublisher(m model.Model, logger *zap.SugaredLogger) *ModelFindingPublisher {
+	if logger == nil {
+		logger = zap.NewNop().Sugar()
+	}
+	p := &ModelFindingPublisher{
+		Model:   m,
+		Logger:  logger,
+		typeIDs: make(map[finding.FindingKind]uuid.UUID, len(certFindingKinds)),
+	}
+	for _, kind := range certFindingKinds {
+		p.typeIDs[kind] = ensureFindingType(m, logger, kind)
+	}
+	return p
 }
 
 // Upsert implements [FindingPublisher].
@@ -48,23 +61,28 @@ func (p *ModelFindingPublisher) Delete(id uuid.UUID) error {
 	})
 }
 
-// EnsureType implements [FindingPublisher].
-func (p *ModelFindingPublisher) EnsureType(kind finding.FindingKind) uuid.UUID {
-	return ensureFindingType(p.Model, kind)
+// TypeID implements [FindingPublisher].
+func (p *ModelFindingPublisher) TypeID(kind finding.FindingKind) uuid.UUID {
+	if id, ok := p.typeIDs[kind]; ok {
+		return id
+	}
+	id := ensureFindingType(p.Model, p.Logger, kind)
+	p.typeIDs[kind] = id
+	return id
 }
 
 // ensureFindingType returns the FindingType id for kind: existing match by name,
 // else create with [finding.TypeIDForKind] (mirrors phase0).
-func ensureFindingType(m model.Model, kind finding.FindingKind) uuid.UUID {
+func ensureFindingType(m model.Model, logger *zap.SugaredLogger, kind finding.FindingKind) uuid.UUID {
 	name := string(kind)
 	if ft := m.GetFindingTypeByName(name); ft != nil {
-		backfillFindingTypeDescription(m, ft, kind)
+		backfillFindingTypeDescription(m, logger, ft, kind)
 		return ft.GetFindingTypeId()
 	}
 
 	id := finding.TypeIDForKind(kind)
 	if ft := m.GetFindingTypeById(id); ft != nil {
-		backfillFindingTypeDescription(m, ft, kind)
+		backfillFindingTypeDescription(m, logger, ft, kind)
 		return id
 	}
 
@@ -74,12 +92,12 @@ func ensureFindingType(m model.Model, kind finding.FindingKind) uuid.UUID {
 		ft.SetDescription(desc)
 	}
 	if err := m.AddFindingType(ft); err != nil {
-		log.Printf("endpointprobe: AddFindingType kind=%s id=%s: %v", kind, id, err)
+		logger.Warnw("AddFindingType failed", "kind", kind, "id", id, "error", err)
 	}
 	return id
 }
 
-func backfillFindingTypeDescription(m model.Model, ft finding.FindingType, kind finding.FindingKind) {
+func backfillFindingTypeDescription(m model.Model, logger *zap.SugaredLogger, ft finding.FindingType, kind finding.FindingKind) {
 	desc := finding.DescriptionForKind(kind)
 	if desc == "" || ft.GetDescription() != "" {
 		return
@@ -88,14 +106,21 @@ func backfillFindingTypeDescription(m model.Model, ft finding.FindingType, kind 
 	updated.SetDisplayName(ft.GetDisplayName())
 	updated.SetDescription(desc)
 	if err := m.AddFindingType(updated); err != nil {
-		log.Printf("endpointprobe: backfill FindingType description kind=%s id=%s: %v", kind, ft.GetFindingTypeId(), err)
+		logger.Warnw("backfill FindingType description failed",
+			"kind", kind,
+			"id", ft.GetFindingTypeId(),
+			"error", err,
+		)
 	}
 }
 
 // EnsureWellKnownFindingTypes registers or backfills the canonical certificate
 // FindingType resources (display name and description) in the model.
-func EnsureWellKnownFindingTypes(m model.Model) {
+func EnsureWellKnownFindingTypes(m model.Model, logger *zap.SugaredLogger) {
+	if logger == nil {
+		logger = zap.NewNop().Sugar()
+	}
 	for _, kind := range certFindingKinds {
-		ensureFindingType(m, kind)
+		ensureFindingType(m, logger, kind)
 	}
 }
