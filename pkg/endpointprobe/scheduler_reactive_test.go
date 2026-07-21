@@ -51,6 +51,9 @@ func startReactiveScheduler(instances []api.ApiInstance) (*Scheduler, *atomic.In
 		},
 	})
 	Expect(err).NotTo(HaveOccurred())
+	if err != nil || sched == nil {
+		panic("NewScheduler failed") // unreachable; satisfies nilaway
+	}
 
 	go sched.Run(ctx)
 	return sched, &probeCount, cancel
@@ -190,6 +193,9 @@ var _ = Describe("Reactive scheduler", func() {
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
+				if err != nil || sched == nil {
+					panic("NewScheduler failed") // unreachable; satisfies nilaway
+				}
 
 				filterID := b.GetChain().RegisterFilter(NewRescanFilter(sched))
 				DeferCleanup(func() { b.GetChain().Unregister(filterID) })
