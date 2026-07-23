@@ -33,6 +33,7 @@ var enableCertprobe bool
 var certprobeInterval time.Duration
 var certprobeDebounce time.Duration
 var certprobeTimeout time.Duration
+var certprobeExpiryWarning time.Duration
 var maxConcurrentProbes int
 
 // serverCmd represents the server command
@@ -108,14 +109,20 @@ var serverCmd = &cobra.Command{
 				return
 			}
 
-			scheduler = &endpointprobe.Scheduler{
+			scheduler, err = endpointprobe.NewScheduler(endpointprobe.SchedulerConfig{
 				Client:              endpointprobe.NewModelClient(b.GetModel()),
 				Prober:              endpointprobe.NewProber(certprobeTimeout),
 				Metrics:             endpointprobe.NewMetrics(reg),
 				Interval:            certprobeInterval,
 				Debounce:            certprobeDebounce,
+				ExpiryWarning:       certprobeExpiryWarning,
 				MaxConcurrentProbes: maxConcurrentProbes,
 				Logger:              logger,
+				Publisher:           endpointprobe.NewModelFindingPublisher(b.GetModel(), logger),
+			})
+			if err != nil {
+				logger.Errorw("invalid certprobe configuration", "error", err)
+				return
 			}
 
 			go scheduler.Run(ctx)
@@ -124,6 +131,7 @@ var serverCmd = &cobra.Command{
 				"interval", certprobeInterval,
 				"debounce", certprobeDebounce,
 				"timeout", certprobeTimeout,
+				"expiryWarning", certprobeExpiryWarning,
 				"maxConcurrentProbes", maxConcurrentProbes,
 			)
 		}
@@ -176,6 +184,7 @@ func init() {
 	serverCmd.Flags().DurationVar(&certprobeInterval, "certprobe-interval", 5*time.Minute, "Certprobe background scan interval")
 	serverCmd.Flags().DurationVar(&certprobeDebounce, "certprobe-debounce", envDurationOrDefault("CERTPROBE_DEBOUNCE", 5*time.Second), "Debounce window before event-triggered certprobe rescans")
 	serverCmd.Flags().DurationVar(&certprobeTimeout, "certprobe-timeout", 10*time.Second, "Per-probe HTTP/TLS timeout")
+	serverCmd.Flags().DurationVar(&certprobeExpiryWarning, "expiry-warning", 720*time.Hour, "Raise CertificateExpiringSoon when remaining cert lifetime is at or below this duration")
 	serverCmd.Flags().IntVar(&maxConcurrentProbes, "max-concurrent-probes", 10, "Certprobe worker pool size")
 }
 
