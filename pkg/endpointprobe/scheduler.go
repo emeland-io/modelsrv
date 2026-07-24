@@ -240,46 +240,5 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 }
 
 func (s *Scheduler) scan(ctx context.Context) ([]ProbeTarget, error) {
-	items, err := s.Client.GetApiInstances()
-	if err != nil {
-		return nil, err
-	}
-
-	seen := make(map[string]struct{})
-	targets := make([]ProbeTarget, 0, len(items))
-
-	for _, item := range items {
-		if ctx.Err() != nil {
-			break
-		}
-
-		ai, err := s.Client.GetApiInstanceById(item.Id)
-		if err != nil {
-			s.Logger.Warnw("failed to fetch api instance",
-				"apiInstanceId", item.Id,
-				"error", err,
-			)
-			continue
-		}
-
-		target, ok, err := TargetFromApiInstance(ai)
-		if err != nil {
-			s.Logger.Warnw("invalid endpoint annotations",
-				"apiInstanceId", item.Id,
-				"error", err,
-			)
-			continue
-		}
-		if !ok {
-			continue
-		}
-
-		if _, dup := seen[target.DedupeKey]; dup {
-			continue
-		}
-		seen[target.DedupeKey] = struct{}{}
-		targets = append(targets, target)
-	}
-
-	return targets, nil
+	return CollectTargets(ctx, s.Client, s.Logger)
 }

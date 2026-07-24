@@ -12,6 +12,7 @@ objects on the query API. Values MUST be flat UTF-8 strings — nested YAML maps
 
 - [Certificate probe tickets](certificate-probe-tickets.md) — implementation breakdown
 - [Findings](findings.md) — certificate findings (future milestone)
+- [README: OpenTelemetry Collector integration](../README.md#opentelemetry-collector-integration) — export `http_check` config via `modelsrv certprobe`
 
 ## Scope
 
