@@ -16,16 +16,16 @@ go run ./cmd/modelsrv server --data-dir ./data --metrics-addr :9090
 
 ### OpenTelemetry Collector integration
 
-As an alternative (or complement) to in-process certprobe, export an OpenTelemetry Collector [`http_check`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receivers fragment from the same ApiInstance target set:
+As an alternative (or complement) to in-process certprobe, export an OpenTelemetry Collector [`http_check`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receivers fragment from ApiInstances on a **running** modelsrv:
 
 ```bash
 go run ./cmd/modelsrv certprobe \
-  --data-dir ./data \
+  --server http://localhost:8080/api/ \
   --otel-config-out ./http_check.yaml \
   --collection-interval 5m
 ```
 
-The command loads YAML from `--data-dir` the same way as `modelsrv server`, discovers probe URLs with the same annotation rules and host:port dedupe as the background daemon, and writes a fragment like:
+The command queries the landscape over HTTP (`--server`, default `http://localhost:8080/api/` or `MODELSRV_URL`), so resources replicated from upstream subscribers are included — not only local YAML. It discovers probe URLs with the same annotation rules and host:port dedupe as the background daemon, and writes a fragment like:
 
 ```yaml
 receivers:
