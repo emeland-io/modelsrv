@@ -2,7 +2,6 @@ package filesensor
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -25,27 +24,13 @@ func Start(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogge
 	go run(ctx, dir, m, log)
 }
 
-// LoadDir applies all .yaml/.yml files in dir to m once and runs phase0 reconcile.
-// Unlike Start, it does not create a watcher and returns when the scan completes.
-// It creates dir if missing. Per-document apply failures are logged and skipped;
-// a non-nil error is returned only when the directory cannot be read or created.
-func LoadDir(dir string, m model.Model, log *zap.SugaredLogger) error {
-	if log == nil {
-		log = zap.NewNop().Sugar()
-	}
+func run(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("filesensor: create data directory: %w", err)
+		log.Errorw("filesensor: could not create data directory", "dir", dir, "error", err.Error())
+		return
 	}
-	apply := applyFileFunc(m, log)
-	if err := scanDir(dir, apply); err != nil {
-		return fmt.Errorf("filesensor: scan directory: %w", err)
-	}
-	phase0.ReconcileAll(m)
-	return nil
-}
 
-func applyFileFunc(m model.Model, log *zap.SugaredLogger) func(path string) {
-	return func(path string) {
+	apply := func(path string) {
 		res, err := ProcessFile(path, m)
 		if err != nil {
 			log.Errorw("filesensor: could not read or parse YAML file", "path", path, "error", err.Error())
@@ -60,15 +45,6 @@ func applyFileFunc(m model.Model, log *zap.SugaredLogger) func(path string) {
 			log.Errorw("filesensor: no documents applied", "path", path, "skipped", len(res.Failed))
 		}
 	}
-}
-
-func run(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		log.Errorw("filesensor: could not create data directory", "dir", dir, "error", err.Error())
-		return
-	}
-
-	apply := applyFileFunc(m, log)
 
 	if err := scanDir(dir, apply); err != nil {
 		log.Errorw("filesensor: initial scan failed", "dir", dir, "error", err.Error())
