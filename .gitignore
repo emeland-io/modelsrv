@@ -2,6 +2,7 @@ cover.out
 .vscode/
 bin/
 /data/*
+/test/loadscale/load_scale_report.md
 
 .gomodcache/
 .gocache/

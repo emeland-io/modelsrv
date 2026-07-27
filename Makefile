@@ -36,6 +36,19 @@ gen: ## Regenerate OpenAPI server, client, and pkg/client models (same packages 
 test: generate fmt vet ## Run tests.
 	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
+# Sorted, comma-separated lists of instance/change counts; override to customize the scan,
+# e.g. `make test-load-scale LOAD_SCALE_INSTANCE_COUNTS=10,1000,10000`.
+LOAD_SCALE_INSTANCE_COUNTS ?= 10,100,1000
+LOAD_SCALE_CHANGE_COUNTS ?= 10,100,1000
+LOAD_SCALE_REPORT_PATH ?= $(shell pwd)/test/loadscale/load_scale_report.md
+
+.PHONY: test-load-scale
+test-load-scale: ## Run the opt-in load/scale memory test (large numbers of resources & changes). Writes a markdown report to LOAD_SCALE_REPORT_PATH.
+	LOAD_SCALE_INSTANCE_COUNTS=$(LOAD_SCALE_INSTANCE_COUNTS) \
+	LOAD_SCALE_CHANGE_COUNTS=$(LOAD_SCALE_CHANGE_COUNTS) \
+	LOAD_SCALE_REPORT_PATH=$(LOAD_SCALE_REPORT_PATH) \
+	go test -tags=load_n_scale -run TestLoadScale -v -timeout 60m ./test/loadscale/...
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
