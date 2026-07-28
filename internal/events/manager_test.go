@@ -35,6 +35,10 @@ func emitSystemCreate(sink events.EventSink, id uuid.UUID) error {
 	return sink.Receive(events.SystemResource, events.CreateOperation, id, sys)
 }
 
+func emitSystemDelete(sink events.EventSink, id uuid.UUID) error {
+	return sink.Receive(events.SystemResource, events.DeleteOperation, id)
+}
+
 var _ = Describe("EventManager", func() {
 	var (
 		ctx context.Context
@@ -92,6 +96,22 @@ var _ = Describe("EventManager", func() {
 
 			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
 			Expect(atomic.LoadInt32(count)).To(Equal(int32(2)))
+		})
+
+		It("replays only currently-live resources, reflecting deletes that happened before the subscriber was added", func() {
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+			id1 := uuid.New()
+			id2 := uuid.New()
+			Expect(emitSystemCreate(sink, id1)).To(Succeed())
+			Expect(emitSystemCreate(sink, id2)).To(Succeed())
+			Expect(emitSystemDelete(sink, id1)).To(Succeed())
+
+			srv, count := newPushCountingServer()
+			defer srv.Close()
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+			Expect(atomic.LoadInt32(count)).To(Equal(int32(1)))
 		})
 
 		It("delivers no replay when there were no prior events", func() {

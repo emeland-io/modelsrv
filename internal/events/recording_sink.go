@@ -9,7 +9,8 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
-// recordingSink appends to the manager's master list, bumps sequence, and notifies subscribers.
+// recordingSink records to the manager's latest-state store and history
+// ring, bumps the sequence number, and notifies subscribers.
 type recordingSink struct {
 	mgr *eventManager
 }

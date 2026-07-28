@@ -2,6 +2,7 @@ package eventmgr
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -153,4 +154,43 @@ func TestQueryEvents_CompactionSynthesizesEvictedResourceState(t *testing.T) {
 		assert.Equal(t, uint64(1), results[0].SequenceId)
 		assert.Equal(t, []any{"only"}, results[0].Objects)
 	})
+}
+
+func TestQueryEvents_PaginationDeliversFullSyntheticPrefixDespiteLimit(t *testing.T) {
+	mgr, err := NewEventManager(WithHistoryLimit(2))
+	require.NoError(t, err)
+
+	sink, err := mgr.GetSink()
+	require.NoError(t, err)
+
+	const liveCount = 10
+	ids := make([]uuid.UUID, liveCount)
+	for i := range ids {
+		ids[i] = uuid.New()
+		require.NoError(t, sink.Receive(events.SystemResource, events.CreateOperation, ids[i], fmt.Sprintf("v%d", i)))
+	}
+	// Ring capacity is 2, so by now only the last 2 creates remain in the
+	// tail; the other 8 resources are live-but-evicted and must come back
+	// via synthesis, in full, even though each page's Limit (3) is smaller
+	// than that.
+
+	ctx := context.Background()
+	seen := make(map[uuid.UUID]bool)
+	sinceSeq := uint64(0)
+	for page := 0; page < 20 && len(seen) < liveCount; page++ {
+		results, err := mgr.QueryEvents(ctx, events.EventQuery{SinceSeq: sinceSeq, Limit: 3})
+		require.NoError(t, err)
+		if len(results) == 0 {
+			break
+		}
+		for _, r := range results {
+			seen[r.ResourceId] = true
+		}
+		sinceSeq = results[len(results)-1].SequenceId
+	}
+
+	assert.Len(t, seen, liveCount, "every live resource must be delivered exactly once across pagination, with no silent loss")
+	for _, id := range ids {
+		assert.True(t, seen[id], "resource %s was never delivered", id)
+	}
 }
