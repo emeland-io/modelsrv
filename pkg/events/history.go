@@ -30,6 +30,12 @@ func NewStoredEvent(seq uint64, ts time.Time, rt ResourceType, op Operation, id 
 }
 
 // EventQuery defines filters and pagination for querying event history.
+//
+// SinceSeq queries reaching further back than the EventManager's configured
+// retention window (see eventmgr.WithHistoryLimit) still succeed: history
+// for resources that aged out of the window but still exist is synthesized
+// as a Create carrying their current state, so replaying the full result in
+// order reconstructs the same state a new subscriber would receive.
 type EventQuery struct {
 	Operation      *Operation
 	ResourceType   *ResourceType

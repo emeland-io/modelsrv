@@ -5,10 +5,24 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
 var _ events.EventManager = (*eventManager)(nil)
+
+// Option configures an eventManager at construction time.
+type Option func(*eventManager)
+
+// WithHistoryLimit sets how many recent events QueryEvents can serve
+// exactly. n must be positive or it is ignored (the default applies).
+func WithHistoryLimit(n int) Option {
+	return func(e *eventManager) {
+		if n > 0 {
+			e.historyLimit = n
+		}
+	}
+}
 
 type eventManager struct {
 	mu             sync.RWMutex
@@ -16,17 +30,23 @@ type eventManager struct {
 	subscribers    []events.Subscriber
 	sinkFactory    func() (events.EventSink, error)
 
-	masterList   *events.ListSink
-	storedEvents []events.StoredEvent
+	latestState  *latestStateStore
+	historyTail  *historyRing
+	historyLimit int
 	modelSink    events.EventSink
 }
 
-func NewEventManager() (events.EventManager, error) {
+func NewEventManager(opts ...Option) (events.EventManager, error) {
 	e := &eventManager{
 		sequenceNumber: 0,
 		subscribers:    make([]events.Subscriber, 0),
-		masterList:     events.NewListSink(),
+		latestState:    newLatestStateStore(),
+		historyLimit:   DefaultHistoryLimit,
 	}
+	for _, opt := range opts {
+		opt(e)
+	}
+	e.historyTail = newHistoryRing(e.historyLimit)
 	e.sinkFactory = func() (events.EventSink, error) {
 		return e.getOrCreateModelSink(), nil
 	}
@@ -79,7 +99,7 @@ func (e *eventManager) AddSubscriber(subURL string) error {
 		return err
 	}
 	e.subscribers = append(e.subscribers, newSub)
-	past := e.masterList.GetEvents()
+	past := e.latestState.GetEvents()
 	e.mu.Unlock()
 
 	for i := range past {
@@ -112,11 +132,42 @@ func (e *eventManager) RemoveSubscriber(url string) error {
 	return fmt.Errorf("subscriber %s not found", url)
 }
 
+// tailResourceKey identifies a resource within a historyRing snapshot, using
+// the same wire-format ResourceType string StoredEvent already carries (no
+// parsing round-trip needed).
+type tailResourceKey struct {
+	resourceType string
+	resourceId   uuid.UUID
+}
+
 func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]events.StoredEvent, error) {
-	// NOTE: storedEvents only grows via append under write lock. Capturing the slice header
-	// under RLock freezes the length we iterate over; concurrent appends are safe.
 	e.mu.RLock()
-	all := e.storedEvents // TODO: add a cap/eviction strategy for production use
+	tail := e.historyTail.Snapshot()
+	compactionSeq, compactionAt := e.historyTail.CompactionBoundary()
+
+	var all []events.StoredEvent
+	if q.SinceSeq < compactionSeq {
+		// Some events have aged out of the tail. Synthesize a Create for
+		// every live resource that has no representation left in the tail
+		// at all; resources with at least one real tail event don't need
+		// one (upsert semantics mean the tail alone reconstructs them
+		// correctly, so a synthetic entry would only be a redundant
+		// duplicate).
+		inTail := make(map[tailResourceKey]struct{}, len(tail))
+		for _, ev := range tail {
+			inTail[tailResourceKey{ev.ResourceType, ev.ResourceId}] = struct{}{}
+		}
+		for _, ev := range e.latestState.GetEvents() {
+			key := tailResourceKey{ev.ResourceType.WireKind(), ev.ResourceId}
+			if _, present := inTail[key]; present {
+				continue
+			}
+			all = append(all, events.NewStoredEvent(
+				compactionSeq, compactionAt, ev.ResourceType, events.CreateOperation, ev.ResourceId, ev.Objects,
+			))
+		}
+	}
+	all = append(all, tail...)
 	e.mu.RUnlock()
 
 	limit := q.Limit

@@ -29,9 +29,9 @@ func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation
 	}
 
 	r.mgr.mu.Lock()
-	_ = r.mgr.masterList.Receive(resType, op, resourceId, objects...)
+	r.mgr.latestState.Receive(resType, op, resourceId, objects...)
 	r.mgr.sequenceNumber++
-	r.mgr.storedEvents = append(r.mgr.storedEvents, events.NewStoredEvent(
+	r.mgr.historyTail.Add(events.NewStoredEvent(
 		r.mgr.sequenceNumber, time.Now(), resType, op, resourceId, objects,
 	))
 	subs := make([]events.Subscriber, len(r.mgr.subscribers))
