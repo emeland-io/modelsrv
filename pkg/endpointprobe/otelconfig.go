@@ -27,17 +27,57 @@ type httpCheckReceiver struct {
 	Targets            []httpCheckTarget          `yaml:"targets"`
 }
 
-type httpCheckConfig struct {
-	Receivers map[string]httpCheckReceiver `yaml:"receivers"`
+// CollectorConfigOptions controls the output of [RenderCollectorConfig].
+type CollectorConfigOptions struct {
+	// CollectionInterval for the httpcheck receiver. Defaults to 5m.
+	CollectionInterval time.Duration
+	// ListenAddr for the emeland exporter's modelsrv HTTP API.
+	ListenAddr string
+	// ExpiryThreshold for certificate findings. Defaults to 720h (30 days).
+	ExpiryThreshold time.Duration
+	// Subscribers is a list of downstream modelsrv URLs.
+	Subscribers []string
 }
 
-// RenderHTTPCheckConfig builds an OpenTelemetry Collector receivers fragment for
-// the http_check receiver, with httpcheck.tls.cert_remaining enabled and one GET
-// target per ProbeTarget.URL. Targets are sorted by URL for stable output.
-// collectionInterval defaults to 5m when zero or negative.
-func RenderHTTPCheckConfig(targets []ProbeTarget, collectionInterval time.Duration) ([]byte, error) {
-	if collectionInterval <= 0 {
-		collectionInterval = defaultCollectionInterval
+// collectorConfig is the top-level OTel Collector config structure.
+type collectorConfig struct {
+	Receivers map[string]httpCheckReceiver `yaml:"receivers"`
+	Exporters map[string]emelandExporter  `yaml:"exporters"`
+	Service   collectorService            `yaml:"service"`
+}
+
+type emelandExporter struct {
+	ListenAddr      string            `yaml:"listen_addr"`
+	ExpiryThreshold string            `yaml:"expiry_threshold,omitempty"`
+	Subscribers     []string          `yaml:"subscribers,omitempty"`
+	EndpointMapping map[string]string `yaml:"endpoint_mapping"`
+}
+
+type collectorService struct {
+	Pipelines map[string]collectorPipeline `yaml:"pipelines"`
+}
+
+type collectorPipeline struct {
+	Receivers []string `yaml:"receivers"`
+	Exporters []string `yaml:"exporters"`
+}
+
+// RenderCollectorConfig builds a complete OTel Collector config for the
+// modelsrv-otel-exporter binary. It includes the httpcheck receiver, the
+// emeland exporter with endpoint_mapping, and the service pipeline.
+//
+// The output is ready to run as-is:
+//
+//	modelsrv-otel-exporter --config <output-file>
+func RenderCollectorConfig(targets []ProbeTarget, opts CollectorConfigOptions) ([]byte, error) {
+	if opts.CollectionInterval <= 0 {
+		opts.CollectionInterval = defaultCollectionInterval
+	}
+	if opts.ListenAddr == "" {
+		opts.ListenAddr = "0.0.0.0:24200"
+	}
+	if opts.ExpiryThreshold <= 0 {
+		opts.ExpiryThreshold = 30 * 24 * time.Hour
 	}
 
 	sorted := make([]ProbeTarget, len(targets))
@@ -47,21 +87,39 @@ func RenderHTTPCheckConfig(targets []ProbeTarget, collectionInterval time.Durati
 	})
 
 	outTargets := make([]httpCheckTarget, 0, len(sorted))
+	endpointMapping := make(map[string]string, len(sorted))
 	for _, t := range sorted {
 		outTargets = append(outTargets, httpCheckTarget{
 			Method:   "GET",
 			Endpoint: t.URL,
 		})
+		endpointMapping[t.URL] = t.ApiInstanceID.String()
 	}
 
-	cfg := httpCheckConfig{
+	cfg := collectorConfig{
 		Receivers: map[string]httpCheckReceiver{
-			"http_check": {
-				CollectionInterval: formatCollectionInterval(collectionInterval),
+			"httpcheck": {
+				CollectionInterval: formatCollectionInterval(opts.CollectionInterval),
 				Metrics: map[string]httpCheckMetric{
 					"httpcheck.tls.cert_remaining": {Enabled: true},
 				},
 				Targets: outTargets,
+			},
+		},
+		Exporters: map[string]emelandExporter{
+			"emeland": {
+				ListenAddr:      opts.ListenAddr,
+				ExpiryThreshold: formatExpiryThreshold(opts.ExpiryThreshold),
+				Subscribers:     opts.Subscribers,
+				EndpointMapping: endpointMapping,
+			},
+		},
+		Service: collectorService{
+			Pipelines: map[string]collectorPipeline{
+				"metrics": {
+					Receivers: []string{"httpcheck"},
+					Exporters: []string{"emeland"},
+				},
 			},
 		},
 	}
@@ -70,10 +128,10 @@ func RenderHTTPCheckConfig(targets []ProbeTarget, collectionInterval time.Durati
 	enc := yaml.NewEncoder(&buf)
 	enc.SetIndent(2)
 	if err := enc.Encode(&cfg); err != nil {
-		return nil, fmt.Errorf("marshal http_check config: %w", err)
+		return nil, fmt.Errorf("marshal collector config: %w", err)
 	}
 	if err := enc.Close(); err != nil {
-		return nil, fmt.Errorf("marshal http_check config: %w", err)
+		return nil, fmt.Errorf("marshal collector config: %w", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -93,4 +151,11 @@ func formatCollectionInterval(d time.Duration) string {
 		return fmt.Sprintf("%ds", d/time.Second)
 	}
 	return d.String()
+}
+
+func formatExpiryThreshold(d time.Duration) string {
+	if d <= 0 {
+		return "720h"
+	}
+	return formatCollectionInterval(d)
 }
