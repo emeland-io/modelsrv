@@ -18,30 +18,39 @@ var (
 	certprobeServerURL          string
 	certprobeOtelConfigOut      string
 	certprobeCollectionInterval time.Duration
+	certprobeListenAddr         string
+	certprobeExpiryThreshold    time.Duration
+	certprobeSubscribers        []string
 )
 
-// certprobeCmd renders OpenTelemetry Collector http_check config from ApiInstance endpoints.
+// certprobeCmd generates a ready-to-run OTel Collector config for modelsrv-otel-exporter.
 var certprobeCmd = &cobra.Command{
 	Use:   "certprobe",
-	Short: "Export OpenTelemetry Collector http_check config from ApiInstance endpoints",
-	Long: `Query ApiInstances from a running modelsrv (--server), discover probe URLs using
-the same annotation rules as the in-process certprobe daemon, and write an
-OpenTelemetry Collector receivers fragment for the http_check receiver.
+	Short: "Generate OTel Collector config for modelsrv-otel-exporter",
+	Long: `Query ApiInstances from a running modelsrv (--server), discover probe URLs
+from emeland.io/endpoint.* annotations, and write a complete OTel Collector
+config for the modelsrv-otel-exporter binary.
 
-The landscape is read over HTTP so resources from upstream subscribers and other
-sensors are included — not only local file-sensor YAML.
+The generated config includes:
+- httpcheck receiver with targets derived from ApiInstance annotations
+- emeland exporter with endpoint_mapping (URL -> ApiInstance UUID)
+- service pipeline wiring them together
 
-The output enables httpcheck.tls.cert_remaining and lists one GET target per unique
-host:port derived from emeland.io/endpoint.* annotations.`,
+Usage:
+  modelsrv certprobe --otel-config-out collector.yaml --subscriber http://modelsrv:8080
+  modelsrv-otel-exporter --config collector.yaml`,
 	RunE: runCertprobe,
 }
 
 func init() {
 	rootCmd.AddCommand(certprobeCmd)
 
-	certprobeCmd.Flags().StringVar(&certprobeOtelConfigOut, "otel-config-out", "", "Path to write the http_check receivers YAML fragment (required)")
-	certprobeCmd.Flags().StringVarP(&certprobeServerURL, "server", "s", envOrDefault("MODELSRV_URL", "http://localhost:8080/api/"), "Running modelsrv API base URL (e.g. http://localhost:8080/api/)")
-	certprobeCmd.Flags().DurationVar(&certprobeCollectionInterval, "collection-interval", 5*time.Minute, "collection_interval written into the http_check receiver config")
+	certprobeCmd.Flags().StringVar(&certprobeOtelConfigOut, "otel-config-out", "", "Path to write the collector config (required)")
+	certprobeCmd.Flags().StringVarP(&certprobeServerURL, "server", "s", envOrDefault("MODELSRV_URL", "http://localhost:8080/api/"), "Running modelsrv API base URL")
+	certprobeCmd.Flags().DurationVar(&certprobeCollectionInterval, "collection-interval", 5*time.Minute, "collection_interval for the httpcheck receiver")
+	certprobeCmd.Flags().StringVar(&certprobeListenAddr, "listen-addr", "0.0.0.0:24200", "listen_addr for the emeland exporter")
+	certprobeCmd.Flags().DurationVar(&certprobeExpiryThreshold, "expiry-threshold", 30*24*time.Hour, "Expiry threshold for certificate findings")
+	certprobeCmd.Flags().StringArrayVar(&certprobeSubscribers, "subscriber", nil, "Downstream modelsrv URL to push events to (repeatable)")
 	_ = certprobeCmd.MarkFlagRequired("otel-config-out")
 }
 
@@ -70,7 +79,12 @@ func runCertprobe(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("collect targets: %w", err)
 	}
 
-	out, err := endpointprobe.RenderHTTPCheckConfig(targets, certprobeCollectionInterval)
+	out, err := endpointprobe.RenderCollectorConfig(targets, endpointprobe.CollectorConfigOptions{
+		CollectionInterval: certprobeCollectionInterval,
+		ListenAddr:         certprobeListenAddr,
+		ExpiryThreshold:    certprobeExpiryThreshold,
+		Subscribers:        certprobeSubscribers,
+	})
 	if err != nil {
 		return err
 	}
@@ -84,7 +98,7 @@ func runCertprobe(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("write %s: %w", certprobeOtelConfigOut, err)
 	}
 
-	logger.Infow("wrote http_check config",
+	logger.Infow("wrote collector config",
 		"path", certprobeOtelConfigOut,
 		"server", baseURL,
 		"targets", len(targets),
