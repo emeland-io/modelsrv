@@ -9,5 +9,5 @@ import (
 
 func TestEndpointprobeReactive(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "pkg/endpointprobe Reactive Suite")
+	RunSpecs(t, "pkg/endpointprobe Suite")
 }

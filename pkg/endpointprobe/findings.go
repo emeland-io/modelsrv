@@ -10,6 +10,18 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 )
 
+// ProbeResult holds the outcome of a single HTTP/TLS probe.
+// It is the wire contract used by reconcileFinding and by future
+// producers that turn OTel httpcheck metrics into Findings.
+type ProbeResult struct {
+	Target        ProbeTarget
+	Success       bool
+	CertRemaining time.Duration
+	HasCert       bool
+	Err           error
+	ProbedAt      time.Time
+}
+
 // SHA-1 namespace so each (apiInstanceId, kind) maps to one finding id.
 var certFindingNamespace = uuid.MustParse("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
 

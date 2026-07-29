@@ -3,8 +3,17 @@ package endpointprobe
 import (
 	"context"
 
+	"github.com/google/uuid"
+	"go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.uber.org/zap"
 )
+
+// ApiInstanceClient lists and fetches ApiInstances from modelsrv.
+type ApiInstanceClient interface {
+	GetApiInstances() ([]common.InstanceListItem, error)
+	GetApiInstanceById(id uuid.UUID) (api.ApiInstance, error)
+}
 
 // CollectTargets lists ApiInstances, derives probe targets via TargetFromApiInstance,
 // and dedupes by DedupeKey (host:port, first wins). Skips instances without endpoint
