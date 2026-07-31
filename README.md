@@ -6,17 +6,9 @@ The EmELand model server provides the example mapping of the Emerging Enterprise
 
 ## Usage
 
-### In-process certificate probing
-
-Run the model server with certprobe enabled (default) to probe ApiInstance endpoints declared via [`emeland.io/endpoint.*` annotations](docs/endpoint-annotations.md):
-
-```bash
-go run ./cmd/modelsrv server --data-dir ./data --metrics-addr :9090
-```
-
 ### OpenTelemetry Collector integration
 
-As an alternative (or complement) to in-process certprobe, export an OpenTelemetry Collector [`http_check`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receivers fragment from ApiInstances on a **running** modelsrv:
+Export an OpenTelemetry Collector [`http_check`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receivers fragment from ApiInstances on a **running** modelsrv. The collector performs endpoint and TLS certificate checks; modelsrv does not probe endpoints itself.
 
 ```bash
 go run ./cmd/modelsrv certprobe \
@@ -25,7 +17,7 @@ go run ./cmd/modelsrv certprobe \
   --collection-interval 5m
 ```
 
-The command queries the landscape over HTTP (`--server`, default `http://localhost:8080/api/` or `MODELSRV_URL`), so resources replicated from upstream subscribers are included — not only local YAML. It discovers probe URLs with the same annotation rules and host:port dedupe as the background daemon, and writes a fragment like:
+The command queries the landscape over HTTP (`--server`, default `http://localhost:8080/api/` or `MODELSRV_URL`), so resources replicated from upstream subscribers are included — not only local YAML. It discovers probe URLs from [`emeland.io/endpoint.*` annotations](docs/endpoint-annotations.md) with host:port dedupe, and writes a fragment like:
 
 ```yaml
 receivers:
@@ -48,7 +40,7 @@ When ApiInstances change, regenerate the fragment and reload the collector:
 1. **File write + SIGHUP** — rewrite `--otel-config-out` (cron or on model change), then send `SIGHUP` to the collector process so it reloads configuration from disk.
 2. **OpAMP supervisor** — when an [OpAMP](https://opentelemetry.io/docs/collector/management/) supervisor manages the collector, push the updated config through OpAMP instead of signaling the process directly.
 
-In-process certprobe (`modelsrv server --enable-certprobe`) and collector-side `httpcheck.tls.cert_remaining` are complementary: the former also writes EmELand Findings; the latter fits existing OTel pipelines.
+Collector-side `httpcheck.tls.cert_remaining` is the source of truth for certificate lifetime. EmELand certificate Findings are produced separately from those metrics (not by an in-process prober in modelsrv).
 
 ## Contributing
 

@@ -2,7 +2,8 @@
 
 Well-known `emeland.io/endpoint.*` annotation keys for **ApiInstance** resources.
 These declare where an API instance is reachable on the network so external tooling
-(for example the **certprobe** service) can perform synthetic HTTP/TLS checks.
+(for example an OpenTelemetry Collector [`httpcheck`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receiver)
+can perform synthetic HTTP/TLS checks.
 
 modelsrv stores annotations as `map[string]string` in the model and `{ key, value }`
 objects on the query API. Values MUST be flat UTF-8 strings — nested YAML maps under
@@ -10,7 +11,6 @@ objects on the query API. Values MUST be flat UTF-8 strings — nested YAML maps
 
 **Related docs**
 
-- [Certificate probe tickets](certificate-probe-tickets.md) — implementation breakdown
 - [Findings](findings.md) — certificate findings (future milestone)
 - [README: OpenTelemetry Collector integration](../README.md#opentelemetry-collector-integration) — export `http_check` config via `modelsrv certprobe`
 
@@ -70,10 +70,9 @@ Probe URL is built as:
 ## Certificate metadata
 
 **Do not** declare certificate expiry or issuer in ApiInstance annotations for v1.
-The certprobe service discovers certificate state live via TLS and exposes metrics
-(for example `certprobe_cert_remaining_seconds`). Optional write-back of cert
-metadata or Findings is described in [certificate-probe-tickets.md](certificate-probe-tickets.md)
-(M5).
+Certificate state is discovered live by the OpenTelemetry Collector httpcheck receiver
+and exposed as `httpcheck.tls.cert_remaining`. EmELand Findings derived from those
+metrics are handled outside the in-process modelsrv probing path.
 
 ## `reference` vs probe URL
 

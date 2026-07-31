@@ -42,8 +42,8 @@ type CollectorConfigOptions struct {
 // collectorConfig is the top-level OTel Collector config structure.
 type collectorConfig struct {
 	Receivers map[string]httpCheckReceiver `yaml:"receivers"`
-	Exporters map[string]emelandExporter  `yaml:"exporters"`
-	Service   collectorService            `yaml:"service"`
+	Exporters map[string]emelandExporter   `yaml:"exporters"`
+	Service   collectorService             `yaml:"service"`
 }
 
 type emelandExporter struct {

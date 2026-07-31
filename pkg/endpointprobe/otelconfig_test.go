@@ -9,11 +9,42 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.emeland.io/modelsrv/pkg/model/api"
+	"go.emeland.io/modelsrv/pkg/model/common"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
-func TestRenderCollectorConfig_KnownAnnotations(t *testing.T) {
+// inMemoryApiInstanceClient is a test double that serves a fixed set of
+// ApiInstances without talking to a running modelsrv.
+type inMemoryApiInstanceClient struct {
+	instances []api.ApiInstance
+	listErr   error
+}
+
+func (c *inMemoryApiInstanceClient) GetApiInstances() ([]common.InstanceListItem, error) {
+	if c.listErr != nil {
+		return nil, c.listErr
+	}
+	items := make([]common.InstanceListItem, 0, len(c.instances))
+	for _, ai := range c.instances {
+		items = append(items, common.InstanceListItem{
+			Id:   ai.GetInstanceId(),
+			Name: ai.GetDisplayName(),
+		})
+	}
+	return items, nil
+}
+
+func (c *inMemoryApiInstanceClient) GetApiInstanceById(id uuid.UUID) (api.ApiInstance, error) {
+	for _, ai := range c.instances {
+		if ai.GetInstanceId() == id {
+			return ai, nil
+		}
+	}
+	return nil, common.ErrApiInstanceNotFound
+}
+
+func TestRenderHTTPCheckConfig_KnownAnnotations(t *testing.T) {
 	t.Parallel()
 
 	apiInstanceID := uuid.MustParse("88888888-0000-4000-8000-000000000001")
@@ -116,7 +147,7 @@ func TestCollectTargets_SkipAndDedupe(t *testing.T) {
 	ai3.GetAnnotations().Add(annHost, "example.com")
 	ai3.GetAnnotations().Add(annPath, "/metrics")
 
-	client := &fakeApiInstanceClient{instances: []api.ApiInstance{ai1, ai2, ai3}}
+	client := &inMemoryApiInstanceClient{instances: []api.ApiInstance{ai1, ai2, ai3}}
 	targets, err := CollectTargets(context.Background(), client, zap.NewNop().Sugar())
 	require.NoError(t, err)
 	require.Len(t, targets, 1)
