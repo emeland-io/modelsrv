@@ -6,22 +6,52 @@ The EmELand model server provides the example mapping of the Emerging Enterprise
 
 ## Usage
 
+Endpoint annotations (`emeland.io/endpoint.*`) declare where an ApiInstance is reachable.
+**Writing OTel collector config** and **probing those endpoints** are separate concerns:
+
+| Mechanism | Role |
+|-----------|------|
+| `modelsrv server --otel-config-out` | **Writes** collector YAML on ApiInstance events (does not probe) |
+| `modelsrv certprobe` | **Writes** the same collector YAML on demand (does not probe) |
+| `modelsrv-otel-exporter --config …` | **Probes** via the OTel `httpcheck` receiver using that YAML |
+
+Despite the name, `modelsrv certprobe` only generates config — it never contacts the annotated hosts. modelsrv itself does not probe endpoints.
+
 ### OpenTelemetry Collector integration
 
-Export an OpenTelemetry Collector [`http_check`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receivers fragment from ApiInstances on a **running** modelsrv. The collector performs endpoint and TLS certificate checks; modelsrv does not probe endpoints itself.
+Keep an OpenTelemetry Collector
+[`httpcheck`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver)
+config in sync with ApiInstance endpoint annotations. modelsrv only maintains the YAML;
+the collector (or `modelsrv-otel-exporter`) performs the actual HTTP/TLS checks.
+
+#### Event-driven (normal path)
+
+Start modelsrv with `--otel-config-out` so ApiInstance create/update/delete events rewrite the
+collector config automatically:
 
 ```bash
-go run ./cmd/modelsrv certprobe \
-  --server http://localhost:8080/api/ \
-  --otel-config-out ./http_check.yaml \
-  --collection-interval 5m
+go run ./cmd/modelsrv server \
+  --data-dir ./data \
+  --otel-config-out ./collector.yaml \
+  --otel-subscriber http://modelsrv:8080
 ```
 
-The command queries the landscape over HTTP (`--server`, default `http://localhost:8080/api/` or `MODELSRV_URL`), so resources replicated from upstream subscribers are included — not only local YAML. It discovers probe URLs from [`emeland.io/endpoint.*` annotations](docs/endpoint-annotations.md) with host:port dedupe, and writes a fragment like:
+Relevant flags (also available as env vars where noted):
+
+| Flag | Env | Default | Purpose |
+|------|-----|---------|---------|
+| `--otel-config-out` | `OTEL_CONFIG_OUT` | *(empty / off)* | Path to keep in sync |
+| `--otel-config-debounce` | `OTEL_CONFIG_DEBOUNCE` | `2s` | Debounce before rewrite |
+| `--otel-collection-interval` | — | `5m` | `collection_interval` for httpcheck |
+| `--otel-listen-addr` | — | `0.0.0.0:24200` | emeland exporter listen address |
+| `--otel-expiry-threshold` | — | `720h` | Certificate expiry threshold |
+| `--otel-subscriber` | — | *(none)* | Downstream modelsrv URL (repeatable) |
+
+The written file is a complete collector config:
 
 ```yaml
 receivers:
-  http_check:
+  httpcheck:
     collection_interval: 5m
     metrics:
       httpcheck.tls.cert_remaining:
@@ -29,16 +59,53 @@ receivers:
     targets:
       - method: GET
         endpoint: https://payments.prod.eu.example.com:443/api/v1/health
+exporters:
+  emeland:
+    listen_addr: 0.0.0.0:24200
+    expiry_threshold: 720h
+    subscribers:
+      - http://modelsrv:8080
+    endpoint_mapping:
+      https://payments.prod.eu.example.com:443/api/v1/health: 88888888-0000-4000-8000-000000000001
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - httpcheck
+      exporters:
+        - emeland
 ```
 
-Merge `receivers.http_check` into your full collector config (exporters and pipelines remain operator-owned). Enable TLS certificate metrics as shown; see the httpcheckreceiver docs for optional timing and validation metrics.
+Point `modelsrv-otel-exporter --config <path>` at the same file. When ApiInstances change,
+modelsrv rewrites the file within the debounce window; unchanged content is not rewritten.
+
+#### On-demand CLI (`modelsrv certprobe`)
+
+`modelsrv certprobe` is a **config generator**, not a probe runner. It queries ApiInstances from a
+running modelsrv and writes collector YAML (httpcheck receiver + emeland exporter + pipeline).
+It does **not** dial annotated hosts; use `modelsrv-otel-exporter` for that.
+
+```bash
+go run ./cmd/modelsrv certprobe \
+  --server http://localhost:8080/api/ \
+  --otel-config-out ./collector.yaml \
+  --subscriber http://modelsrv:8080 \
+  --collection-interval 5m
+```
+
+The command queries the landscape over HTTP (`--server`, default `http://localhost:8080/api/` or
+`MODELSRV_URL`), so resources replicated from upstream subscribers are included — not only local
+YAML. It uses the same annotation rules and host:port dedupe as the background writer.
 
 #### Reload strategy
 
-When ApiInstances change, regenerate the fragment and reload the collector:
+modelsrv owns rewriting the config file. Reloading the collector remains operator-owned:
 
-1. **File write + SIGHUP** — rewrite `--otel-config-out` (cron or on model change), then send `SIGHUP` to the collector process so it reloads configuration from disk.
-2. **OpAMP supervisor** — when an [OpAMP](https://opentelemetry.io/docs/collector/management/) supervisor manages the collector, push the updated config through OpAMP instead of signaling the process directly.
+1. **File write + SIGHUP** — after modelsrv (or `certprobe`) updates the file, send `SIGHUP` to
+   the collector so it reloads from disk.
+2. **OpAMP supervisor** — when an [OpAMP](https://opentelemetry.io/docs/collector/management/)
+   supervisor manages the collector, push the updated config through OpAMP instead of signaling
+   the process directly.
 
 Collector-side `httpcheck.tls.cert_remaining` is the source of truth for certificate lifetime. EmELand certificate Findings are produced separately from those metrics (not by an in-process prober in modelsrv).
 

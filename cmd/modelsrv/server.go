@@ -16,9 +16,13 @@ import (
 	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/backend"
 	"go.emeland.io/modelsrv/pkg/endpoint"
+	"go.emeland.io/modelsrv/pkg/endpointprobe"
+	"go.emeland.io/modelsrv/pkg/eventfilter"
 	"go.emeland.io/modelsrv/pkg/filesensor"
 	"go.uber.org/zap"
 )
+
+const otelConfigShutdownTimeout = 30 * time.Second
 
 var serviceAddr string
 var dataDir string
@@ -27,13 +31,13 @@ var trustAuthHeaders bool
 var auditorIdentity string
 var auditorGroup string
 var publicResourceTypes string
-var enableCertprobe bool
-var certprobeInterval time.Duration
-var certprobeDebounce time.Duration
-var certprobeTimeout time.Duration
-var certprobeExpiryWarning time.Duration
-var maxConcurrentProbes int
 var eventHistoryLimit int
+var otelConfigOut string
+var otelConfigDebounce time.Duration
+var otelCollectionInterval time.Duration
+var otelListenAddr string
+var otelExpiryThreshold time.Duration
+var otelSubscribers []string
 
 // serverCmd represents the server command
 var serverCmd = &cobra.Command{
@@ -68,6 +72,7 @@ var serverCmd = &cobra.Command{
 		logger.Infow("starting modelsrv",
 			"listen", serviceAddr,
 			"dataDir", dataPath,
+			"otelConfigOut", otelConfigOut,
 		)
 		logger.Infof("REST API: http://%s/api", serviceAddr)
 		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
@@ -75,6 +80,32 @@ var serverCmd = &cobra.Command{
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+
+		var configWriter *endpointprobe.ConfigWriter
+		var configSyncFilterID eventfilter.FilterID
+		if otelConfigOut != "" {
+			configWriter, err = endpointprobe.NewConfigWriter(endpointprobe.ConfigWriterConfig{
+				Path:     otelConfigOut,
+				Debounce: otelConfigDebounce,
+				Logger:   logger,
+				Opts: endpointprobe.CollectorConfigOptions{
+					CollectionInterval: otelCollectionInterval,
+					ListenAddr:         otelListenAddr,
+					ExpiryThreshold:    otelExpiryThreshold,
+					Subscribers:        otelSubscribers,
+				},
+			})
+			if err != nil {
+				logger.Errorw("invalid otel config writer configuration", "error", err)
+				return
+			}
+			go configWriter.Run(ctx)
+			configSyncFilterID = b.GetChain().RegisterFilter(endpointprobe.NewConfigSyncFilter(configWriter))
+			logger.Infow("otel config sync started",
+				"path", otelConfigOut,
+				"debounce", otelConfigDebounce,
+			)
+		}
 
 		filesensor.Start(ctx, dataPath, b.GetModel(), logger)
 
@@ -107,6 +138,25 @@ var serverCmd = &cobra.Command{
 
 		cancel()
 
+		if configWriter != nil {
+			b.GetChain().Unregister(configSyncFilterID)
+
+			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), otelConfigShutdownTimeout)
+			done := make(chan struct{})
+			go func() {
+				configWriter.Wait()
+				close(done)
+			}()
+
+			select {
+			case <-done:
+				logger.Info("otel config sync stopped")
+			case <-shutdownCtx.Done():
+				logger.Warn("shutdown timeout waiting for otel config writer")
+			}
+			shutdownCancel()
+		}
+
 		endpoint.StopWebListener()
 		logger.Info("goodbye")
 	},
@@ -122,13 +172,13 @@ func init() {
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")
 	serverCmd.Flags().StringVar(&auditorGroup, "auditor-group", envOrDefault("AUDITOR_GROUP", ""), "Group id treated as auditor when present in X-Auth-Groups")
 	serverCmd.Flags().StringVar(&publicResourceTypes, "public-resource-types", envOrDefault("PUBLIC_RESOURCE_TYPES", ""), "Comma-separated resource types always visible (e.g. ContextType,FindingType)")
-	serverCmd.Flags().BoolVar(&enableCertprobe, "enable-certprobe", envOrDefault("ENABLE_CERTPROBE", "true") == "true", "Run certificate probing as a background process inside modelsrv")
-	serverCmd.Flags().DurationVar(&certprobeInterval, "certprobe-interval", 5*time.Minute, "Certprobe background scan interval")
-	serverCmd.Flags().DurationVar(&certprobeDebounce, "certprobe-debounce", envDurationOrDefault("CERTPROBE_DEBOUNCE", 5*time.Second), "Debounce window before event-triggered certprobe rescans")
-	serverCmd.Flags().DurationVar(&certprobeTimeout, "certprobe-timeout", 10*time.Second, "Per-probe HTTP/TLS timeout")
-	serverCmd.Flags().DurationVar(&certprobeExpiryWarning, "expiry-warning", 720*time.Hour, "Raise CertificateExpiringSoon when remaining cert lifetime is at or below this duration")
-	serverCmd.Flags().IntVar(&maxConcurrentProbes, "max-concurrent-probes", 10, "Certprobe worker pool size")
 	serverCmd.Flags().IntVar(&eventHistoryLimit, "event-history-limit", envIntOrDefault("EVENT_HISTORY_LIMIT", eventmgr.DefaultHistoryLimit), "Number of recent events the /events history API can serve exactly; older queries return synthesized current-state entries instead of an error")
+	serverCmd.Flags().StringVar(&otelConfigOut, "otel-config-out", envOrDefault("OTEL_CONFIG_OUT", ""), "If set, keep an OTel collector config at this path in sync with ApiInstance endpoint annotations")
+	serverCmd.Flags().DurationVar(&otelConfigDebounce, "otel-config-debounce", envDurationOrDefault("OTEL_CONFIG_DEBOUNCE", 2*time.Second), "Debounce window before rewriting --otel-config-out")
+	serverCmd.Flags().DurationVar(&otelCollectionInterval, "otel-collection-interval", 5*time.Minute, "collection_interval for the httpcheck receiver in --otel-config-out")
+	serverCmd.Flags().StringVar(&otelListenAddr, "otel-listen-addr", "0.0.0.0:24200", "listen_addr for the emeland exporter in --otel-config-out")
+	serverCmd.Flags().DurationVar(&otelExpiryThreshold, "otel-expiry-threshold", 30*24*time.Hour, "Expiry threshold for the emeland exporter in --otel-config-out")
+	serverCmd.Flags().StringArrayVar(&otelSubscribers, "otel-subscriber", nil, "Downstream modelsrv URL for the emeland exporter in --otel-config-out (repeatable)")
 }
 
 func envOrDefault(key, fallback string) string {

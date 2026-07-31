@@ -24,17 +24,25 @@ var (
 )
 
 // certprobeCmd generates a ready-to-run OTel Collector config for modelsrv-otel-exporter.
+// Despite the subcommand name, this CLI does not probe endpoints — it only writes YAML.
 var certprobeCmd = &cobra.Command{
 	Use:   "certprobe",
-	Short: "Generate OTel Collector config for modelsrv-otel-exporter",
+	Short: "Generate OTel Collector config (does not probe endpoints)",
 	Long: `Query ApiInstances from a running modelsrv (--server), discover probe URLs
 from emeland.io/endpoint.* annotations, and write a complete OTel Collector
 config for the modelsrv-otel-exporter binary.
+
+This command is a config generator only. It does not dial annotated hosts.
+Actual probing is done by modelsrv-otel-exporter --config <file>
+(collector httpcheck receiver).
 
 The generated config includes:
 - httpcheck receiver with targets derived from ApiInstance annotations
 - emeland exporter with endpoint_mapping (URL -> ApiInstance UUID)
 - service pipeline wiring them together
+
+For continuous updates while the server runs, prefer:
+  modelsrv server --otel-config-out collector.yaml
 
 Usage:
   modelsrv certprobe --otel-config-out collector.yaml --subscriber http://modelsrv:8080

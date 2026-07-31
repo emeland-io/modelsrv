@@ -1,9 +1,18 @@
 # ApiInstance endpoint annotation registry
 
 Well-known `emeland.io/endpoint.*` annotation keys for **ApiInstance** resources.
-These declare where an API instance is reachable on the network so external tooling
-(for example an OpenTelemetry Collector [`httpcheck`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver) receiver)
-can perform synthetic HTTP/TLS checks.
+These declare where an API instance is reachable on the network so tooling can
+perform synthetic HTTP/TLS checks.
+
+**Who probes vs who writes config**
+
+| Mechanism | Role |
+|-----------|------|
+| `modelsrv server --otel-config-out` / `modelsrv certprobe` | Writes OTel collector YAML only (does **not** probe) |
+| `modelsrv-otel-exporter` | Probes via the collector `httpcheck` receiver using that YAML |
+
+Despite the name, `modelsrv certprobe` only generates collector config. modelsrv itself
+does not probe endpoints.
 
 modelsrv stores annotations as `map[string]string` in the model and `{ key, value }`
 objects on the query API. Values MUST be flat UTF-8 strings — nested YAML maps under
@@ -12,7 +21,7 @@ objects on the query API. Values MUST be flat UTF-8 strings — nested YAML maps
 **Related docs**
 
 - [Findings](findings.md) — certificate findings (future milestone)
-- [README: OpenTelemetry Collector integration](../README.md#opentelemetry-collector-integration) — export `http_check` config via `modelsrv certprobe`
+- [README: OpenTelemetry Collector integration](../README.md#opentelemetry-collector-integration) — event-driven `--otel-config-out` and on-demand `modelsrv certprobe`
 
 ## Scope
 
@@ -66,6 +75,10 @@ Probe URL is built as:
 - `protocol` MUST be `http` or `https`.
 - `path` MUST start with `/` (a leading slash is added if missing).
 - An ApiInstance without `emeland.io/endpoint.host` is not a probe target.
+
+When modelsrv is started with `--otel-config-out`, create/update/delete of ApiInstances that
+carry these annotations (including annotation add/remove) updates the collector config within
+the debounce window (`--otel-config-debounce`, default `2s`).
 
 ## Certificate metadata
 
