@@ -8,25 +8,46 @@ func normalizeReplicationWireMap(rt events.ResourceType, wire map[string]interfa
 	stripInvalidAnnotationsForOpenAPI(wire)
 	switch rt {
 	case events.SystemResource:
-		coalesceObjectToUUIDScalar(wire, "Parent", "parent", "SystemId", "systemId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"Parent", "parent"},
+			"parent", "SystemId", "systemId")
 
 	case events.SystemInstanceResource:
-		coalesceObjectToUUIDScalar(wire, "System", "system", "SystemId", "systemId")
-		coalesceObjectToUUIDScalar(wire, "Context", "context", "ContextId", "contextId")
+		// Do NOT map systemInstanceId here — that is this resource's own ID field.
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"System", "system", "systemId"},
+			"system", "SystemId", "systemId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"Context", "context", "contextId"},
+			"context", "ContextId", "contextId")
 
 	case events.APIResource:
-		coalesceObjectToUUIDScalar(wire, "System", "system", "SystemId", "systemId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"System", "system", "systemId"},
+			"system", "SystemId", "systemId")
 
 	case events.APIInstanceResource:
-		coalesceObjectToUUIDScalar(wire, "Api", "api", "ApiID", "ApiId", "apiId")
-		coalesceObjectToUUIDScalar(wire, "SystemInstance", "systemInstance", "InstanceId", "instanceId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"Api", "api", "apiId"},
+			"api", "ApiID", "ApiId", "apiId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"SystemInstance", "systemInstance", "systemInstanceId"},
+			"systemInstance", "InstanceId", "instanceId", "systemInstanceId")
 
 	case events.ComponentResource:
-		coalesceObjectToUUIDScalar(wire, "System", "system", "SystemId", "systemId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"System", "system", "systemId"},
+			"system", "SystemId", "systemId")
 
 	case events.ComponentInstanceResource:
-		coalesceObjectToUUIDScalar(wire, "Component", "component", "ComponentId", "componentId")
-		coalesceObjectToUUIDScalar(wire, "SystemInstance", "systemInstance", "InstanceId", "instanceId")
+		// systemInstanceId is the parent SystemInstance ref (OpenAPI field systemInstance).
+		// The instance's own ID stays componentInstanceId — no conflict.
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"Component", "component", "componentId"},
+			"component", "ComponentId", "componentId")
+		coalesceRefSourcesToOpenAPIField(wire,
+			[]string{"SystemInstance", "systemInstance", "systemInstanceId"},
+			"systemInstance", "InstanceId", "instanceId", "systemInstanceId")
 
 	case events.ContextResource:
 		coalesceRefSourcesToOpenAPIField(wire, []string{"TypeRef", "Type", "type"}, "type", "ContextTypeId", "contextTypeId")

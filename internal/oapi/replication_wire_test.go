@@ -10,6 +10,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
@@ -231,6 +232,32 @@ var _ = Describe("replication wire: ReplicationEventFromWire (decode + normalize
 		Expect(si.GetSystemRef().SystemId).To(Equal(sid))
 		Expect(si.GetContextRef()).NotTo(BeNil())
 		Expect(si.GetContextRef().ContextId).To(Equal(cid))
+	})
+
+	It("decodes ComponentInstance with YAML-style componentId and systemInstanceId scalars", func() {
+		m := replicationTestModel()
+		cid := uuid.MustParse("ca1b2c3d-4e5f-4a6b-8c9d-1e2f3a4b5c6d")
+		siid := uuid.MustParse("e8b9c1d2-3f4a-4b5c-6d7e-8f9a1b2c3d4e")
+		iid := uuid.MustParse("d1a1b2c3-0000-4d5e-8f00-000000000001")
+		res := map[string]interface{}{
+			"componentInstanceId": iid.String(),
+			"displayName":         "App Frontend (prod-eu)",
+			"componentId":         cid.String(),
+			"systemInstanceId":    siid.String(),
+		}
+		ev := oapi.Event{
+			Kind:      "ComponentInstance",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		out, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).NotTo(HaveOccurred())
+		ci, ok := out.Objects[0].(component.ComponentInstance)
+		Expect(ok).To(BeTrue())
+		Expect(ci.GetComponentRef()).NotTo(BeNil())
+		Expect(ci.GetComponentRef().ComponentId).To(Equal(cid))
+		Expect(ci.GetSystemInstance()).NotTo(BeNil())
+		Expect(ci.GetSystemInstance().InstanceId).To(Equal(siid))
 	})
 
 	It("coalesces Node nested nodeType ref", func() {
