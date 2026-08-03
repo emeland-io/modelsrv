@@ -57,7 +57,7 @@ func TestConfigWriter_UpsertRemoveFlush(t *testing.T) {
 
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	recv := parsed.Receivers["httpcheck"]
+	recv := parsed.Receivers["http_check"]
 	require.Len(t, recv.Targets, 1)
 	assert.Equal(t, "https://payments.example.com:443/health", recv.Targets[0].Endpoint)
 	assert.Equal(t, id.String(), parsed.Exporters["emeland"].EndpointMapping["https://payments.example.com:443/health"])
@@ -68,7 +68,7 @@ func TestConfigWriter_UpsertRemoveFlush(t *testing.T) {
 	raw, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 	assert.Empty(t, parsed.Exporters["emeland"].EndpointMapping)
 }
 
@@ -141,8 +141,8 @@ func TestConfigWriter_DedupeDeterministic(t *testing.T) {
 
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 1)
-	assert.Equal(t, "https://shared.example.com:443/low", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 1)
+	assert.Equal(t, "https://shared.example.com:443/low", parsed.Receivers["http_check"].Targets[0].Endpoint)
 	assert.Equal(t, low.String(), parsed.Exporters["emeland"].EndpointMapping["https://shared.example.com:443/low"])
 }
 
@@ -183,5 +183,5 @@ func TestConfigWriter_EmptyFlushCreatesFile(t *testing.T) {
 
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 }

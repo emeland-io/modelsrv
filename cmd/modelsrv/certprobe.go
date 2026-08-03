@@ -34,10 +34,10 @@ config for the modelsrv-otel-exporter binary.
 
 This command is a config generator only. It does not dial annotated hosts.
 Actual probing is done by modelsrv-otel-exporter --config <file>
-(collector httpcheck receiver).
+(collector http_check receiver).
 
 The generated config includes:
-- httpcheck receiver with targets derived from ApiInstance annotations
+- http_check receiver with targets derived from ApiInstance annotations
 - emeland exporter with endpoint_mapping (URL -> ApiInstance UUID)
 - service pipeline wiring them together
 
@@ -55,7 +55,7 @@ func init() {
 
 	certprobeCmd.Flags().StringVar(&certprobeOtelConfigOut, "otel-config-out", "", "Path to write the collector config (required)")
 	certprobeCmd.Flags().StringVarP(&certprobeServerURL, "server", "s", envOrDefault("MODELSRV_URL", "http://localhost:8080/api/"), "Running modelsrv API base URL")
-	certprobeCmd.Flags().DurationVar(&certprobeCollectionInterval, "collection-interval", 5*time.Minute, "collection_interval for the httpcheck receiver")
+	certprobeCmd.Flags().DurationVar(&certprobeCollectionInterval, "collection-interval", 5*time.Minute, "collection_interval for the http_check receiver")
 	certprobeCmd.Flags().StringVar(&certprobeListenAddr, "listen-addr", "0.0.0.0:24200", "listen_addr for the emeland exporter")
 	certprobeCmd.Flags().DurationVar(&certprobeExpiryThreshold, "expiry-threshold", 30*24*time.Hour, "Expiry threshold for certificate findings")
 	certprobeCmd.Flags().StringArrayVar(&certprobeSubscribers, "subscriber", nil, "Downstream modelsrv URL to push events to (repeatable)")

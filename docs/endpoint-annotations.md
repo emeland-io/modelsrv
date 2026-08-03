@@ -9,7 +9,7 @@ perform synthetic HTTP/TLS checks.
 | Mechanism | Role |
 |-----------|------|
 | `modelsrv server --otel-config-out` / `modelsrv certprobe` | Writes OTel collector YAML only (does **not** probe) |
-| `modelsrv-otel-exporter` | Probes via the collector `httpcheck` receiver using that YAML |
+| `modelsrv-otel-exporter` | Probes via the collector `http_check` receiver using that YAML |
 
 Despite the name, `modelsrv certprobe` only generates collector config. modelsrv itself
 does not probe endpoints.

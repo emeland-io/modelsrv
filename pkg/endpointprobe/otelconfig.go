@@ -29,7 +29,7 @@ type httpCheckReceiver struct {
 
 // CollectorConfigOptions controls the output of [RenderCollectorConfig].
 type CollectorConfigOptions struct {
-	// CollectionInterval for the httpcheck receiver. Defaults to 5m.
+	// CollectionInterval for the http_check receiver. Defaults to 5m.
 	CollectionInterval time.Duration
 	// ListenAddr for the emeland exporter's modelsrv HTTP API.
 	ListenAddr string
@@ -63,7 +63,7 @@ type collectorPipeline struct {
 }
 
 // RenderCollectorConfig builds a complete OTel Collector config for the
-// modelsrv-otel-exporter binary. It includes the httpcheck receiver, the
+// modelsrv-otel-exporter binary. It includes the http_check receiver, the
 // emeland exporter with endpoint_mapping, and the service pipeline.
 //
 // The output is ready to run as-is:
@@ -98,7 +98,9 @@ func RenderCollectorConfig(targets []ProbeTarget, opts CollectorConfigOptions) (
 
 	cfg := collectorConfig{
 		Receivers: map[string]httpCheckReceiver{
-			"httpcheck": {
+			// Component type is http_check (snake_case); httpcheck is a deprecated alias.
+			// See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/httpcheckreceiver
+			"http_check": {
 				CollectionInterval: formatCollectionInterval(opts.CollectionInterval),
 				Metrics: map[string]httpCheckMetric{
 					"httpcheck.tls.cert_remaining": {Enabled: true},
@@ -117,7 +119,7 @@ func RenderCollectorConfig(targets []ProbeTarget, opts CollectorConfigOptions) (
 		Service: collectorService{
 			Pipelines: map[string]collectorPipeline{
 				"metrics": {
-					Receivers: []string{"httpcheck"},
+					Receivers: []string{"http_check"},
 					Exporters: []string{"emeland"},
 				},
 			},

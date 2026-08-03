@@ -88,8 +88,8 @@ func TestConfigSyncFilter_CreateUpdateDelete(t *testing.T) {
 	require.NoError(t, err)
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 1)
-	assert.Equal(t, "https://payments.example.com:443/", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 1)
+	assert.Equal(t, "https://payments.example.com:443/", parsed.Receivers["http_check"].Targets[0].Endpoint)
 
 	// Update host
 	ai.GetAnnotations().Add(annHost, "orders.example.com")
@@ -107,8 +107,8 @@ func TestConfigSyncFilter_CreateUpdateDelete(t *testing.T) {
 	raw, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 1)
-	assert.Equal(t, "https://orders.example.com:443/", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 1)
+	assert.Equal(t, "https://orders.example.com:443/", parsed.Receivers["http_check"].Targets[0].Endpoint)
 
 	deleteEv := events.Event{
 		ResourceType: events.APIInstanceResource,
@@ -123,7 +123,7 @@ func TestConfigSyncFilter_CreateUpdateDelete(t *testing.T) {
 	raw, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 }
 
 func TestConfigSyncFilter_AnnotationRemoval(t *testing.T) {
@@ -156,7 +156,7 @@ func TestConfigSyncFilter_AnnotationRemoval(t *testing.T) {
 	require.NoError(t, err)
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 }
 
 func TestConfigSyncFilter_InvalidProtocolRemovesTarget(t *testing.T) {
@@ -188,7 +188,7 @@ func TestConfigSyncFilter_InvalidProtocolRemovesTarget(t *testing.T) {
 	require.NoError(t, err)
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 }
 
 func TestConfigSyncFilter_BackendIntegration(t *testing.T) {
@@ -223,8 +223,8 @@ func TestConfigSyncFilter_BackendIntegration(t *testing.T) {
 	require.NoError(t, err)
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 1)
-	assert.Equal(t, "https://payments.example.com:443/api/v1/health", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 1)
+	assert.Equal(t, "https://payments.example.com:443/api/v1/health", parsed.Receivers["http_check"].Targets[0].Endpoint)
 	assert.Equal(t, id.String(), parsed.Exporters["emeland"].EndpointMapping["https://payments.example.com:443/api/v1/health"])
 
 	// Annotation update via model
@@ -236,8 +236,8 @@ func TestConfigSyncFilter_BackendIntegration(t *testing.T) {
 	raw, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 1)
-	assert.Equal(t, "https://orders.example.com:443/api/v1/health", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 1)
+	assert.Equal(t, "https://orders.example.com:443/api/v1/health", parsed.Receivers["http_check"].Targets[0].Endpoint)
 
 	require.NoError(t, b.GetModel().DeleteApiInstanceById(id))
 	require.NoError(t, w.Flush())
@@ -245,5 +245,5 @@ func TestConfigSyncFilter_BackendIntegration(t *testing.T) {
 	raw, err = os.ReadFile(path)
 	require.NoError(t, err)
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	assert.Empty(t, parsed.Receivers["httpcheck"].Targets)
+	assert.Empty(t, parsed.Receivers["http_check"].Targets)
 }

@@ -11,8 +11,8 @@ import (
 // collector config in sync with ApiInstance endpoint annotations.
 func NewConfigSyncFilter(w *ConfigWriter) eventfilter.Filter {
 	return eventfilter.Filter{
-		DisplayName: "httpcheck-config-sync",
-		Description: "Maintains the OTel httpcheck collector config from ApiInstance endpoint annotations",
+		DisplayName: "http_check-config-sync",
+		Description: "Maintains the OTel http_check collector config from ApiInstance endpoint annotations",
 		Fn:          configSyncFilterFunc(w),
 	}
 }

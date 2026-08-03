@@ -175,7 +175,7 @@ func init() {
 	serverCmd.Flags().IntVar(&eventHistoryLimit, "event-history-limit", envIntOrDefault("EVENT_HISTORY_LIMIT", eventmgr.DefaultHistoryLimit), "Number of recent events the /events history API can serve exactly; older queries return synthesized current-state entries instead of an error")
 	serverCmd.Flags().StringVar(&otelConfigOut, "otel-config-out", envOrDefault("OTEL_CONFIG_OUT", ""), "If set, keep an OTel collector config at this path in sync with ApiInstance endpoint annotations")
 	serverCmd.Flags().DurationVar(&otelConfigDebounce, "otel-config-debounce", envDurationOrDefault("OTEL_CONFIG_DEBOUNCE", 2*time.Second), "Debounce window before rewriting --otel-config-out")
-	serverCmd.Flags().DurationVar(&otelCollectionInterval, "otel-collection-interval", 5*time.Minute, "collection_interval for the httpcheck receiver in --otel-config-out")
+	serverCmd.Flags().DurationVar(&otelCollectionInterval, "otel-collection-interval", 5*time.Minute, "collection_interval for the http_check receiver in --otel-config-out")
 	serverCmd.Flags().StringVar(&otelListenAddr, "otel-listen-addr", "0.0.0.0:24200", "listen_addr for the emeland exporter in --otel-config-out")
 	serverCmd.Flags().DurationVar(&otelExpiryThreshold, "otel-expiry-threshold", 30*24*time.Hour, "Expiry threshold for the emeland exporter in --otel-config-out")
 	serverCmd.Flags().StringArrayVar(&otelSubscribers, "otel-subscriber", nil, "Downstream modelsrv URL for the emeland exporter in --otel-config-out (repeatable)")
