@@ -32,10 +32,12 @@ both logs retain full history forever.
    limit** (default 1000 events), not the total number of events ever
    observed. Once the limit is exceeded, evicted history must not simply
    vanish: querying further back than the retention window must synthesize
-   the missing prefix as a "Create" event carrying each live resource's
-   current state, such that applying the full response (synthetic prefix +
-   retained tail) reconstructs the same overall state that a new subscriber
-   would receive via `masterList`'s replay.
+   the missing prefix as a "Create" event carrying the current state of
+   each live resource that has no remaining representation in the retained
+   tail (resources already present in the tail are skipped — a synthetic
+   Create would only duplicate them). Applying the full response
+   (synthetic prefix + retained tail) still reconstructs the same overall
+   state that a new subscriber would receive via `masterList`'s replay.
 3. No other externally observable behavior changes (API shapes, semantics of
    in-window queries, subscriber replay content) except as described in (2).
 
@@ -46,10 +48,10 @@ both logs retain full history forever.
   (`GetEvents()[0]`, `[1]`, ...) and is unrelated to the two logs above.
 - No change to `EventQuery`/wire API shapes, sequence ID semantics, or
   `GetCurrentSequenceId`/`IncrementSequenceId`.
-- No attempt to make the synthesized prefix historically exact for resources
-  that receive further updates within the retained tail (see "Correctness
-  argument" below) — only final-state equivalence is guaranteed, matching
-  what the user asked for.
+- No attempt to synthesize entries for resources still represented in the
+  retained tail, nor to make any synthetic prefix historically exact (see
+  "Correctness argument" below) — only final-state equivalence is
+  guaranteed.
 
 ## Architecture
 
@@ -137,18 +139,25 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
     e.mu.RLock()
     tail := e.historyTail.Snapshot()
     compactionSeq, compactionAt := e.historyTail.CompactionBoundary()
-    var all []events.StoredEvent
+    var synthetic []events.StoredEvent
     if q.SinceSeq < compactionSeq {
+        // Skip resources already present in the tail — synthesizing them
+        // would only produce redundant Creates that the tail already covers.
+        inTail := /* set of (ResourceType, ResourceId) in tail */
         for _, ev := range e.latestState.GetEvents() {
-            all = append(all, events.NewStoredEvent(
+            if _, present := inTail[key]; present {
+                continue
+            }
+            synthetic = append(synthetic, events.NewStoredEvent(
                 compactionSeq, compactionAt, ev.ResourceType, events.CreateOperation, ev.ResourceId, ev.Objects,
             ))
         }
     }
-    all = append(all, tail...)
     e.mu.RUnlock()
 
-    // existing filter/limit loop, unchanged
+    // Filters (SinceSeq/Operation/ResourceType/ResourceId/IncludePayload)
+    // apply to both synthetic and tail. Limit caps the retained tail only:
+    // the synthetic prefix is always delivered in full (see below).
     ...
 }
 ```
@@ -158,11 +167,21 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
   behavior is byte-for-byte identical to the current unbounded
   implementation. Divergence is only observable once the retention limit has
   actually been exceeded.
+- Synthesis is partial: only live resources with **no** remaining entry in
+  the retained tail get a synthetic Create. Resources already represented
+  in the tail are omitted from the prefix (response shape is shorter than
+  "one synthetic entry per live resource"; final-state LWW still holds
+  because the tail alone reconstructs those resources).
 - All synthesized entries share `SequenceId = compactionSeq`, so they sort
   correctly before the real tail (whose oldest entry has
-  `SequenceId = compactionSeq + 1`), and existing `SinceSeq`/`Operation`/
-  `ResourceType`/`ResourceId`/`Limit`/`IncludePayload` filtering applies to
-  them unchanged — no new filter branches needed.
+  `SequenceId = compactionSeq + 1`). Existing `SinceSeq`/`Operation`/
+  `ResourceType`/`ResourceId`/`IncludePayload` filters apply to them;
+  **`Limit` does not** — the synthetic prefix is always returned in full
+  within a single response. Capping it would let a paginating client
+  (`SinceSeq` = last delivered `SequenceId`, which equals `compactionSeq`
+  for every synthetic entry) permanently skip whatever didn't fit on the
+  first page. Once `SinceSeq` reaches the retention boundary, subsequent
+  calls page the retained tail normally and honor `Limit`.
 - Ordering of synthesized entries follows `latestState`'s insertion order
   (creation order), matching today's general "older resources first"
   character of the log.
@@ -173,17 +192,17 @@ Claim: applying the full response (synthetic prefix, in order, followed by
 the retained tail, in order) always reconstructs the same final state as
 `latestState.GetEvents()` (i.e. what a new subscriber gets).
 
-- Resources with no further real events in the tail: the synthetic entry
-  *is* their current state (nothing changed since). Final state after
-  applying it matches `latestState` trivially.
-- Resources with further real events in the tail: those real events are
-  replayed, in their correct relative order, *after* the synthetic entry
-  (all tail `SequenceId`s exceed `compactionSeq`). Because
-  `applyReplicationUpsert` is last-write-wins per resource, the last real
-  tail event for that resource determines the final state, which by
-  construction equals what's currently in `latestState` — regardless of
-  what the synthetic entry said. The synthetic entry only affects
-  intermediate (not final) state for these resources.
+- Resources with no representation in the tail: the synthetic entry *is*
+  their current state. Final state after applying it matches `latestState`
+  trivially.
+- Resources already present in the tail: no synthetic entry is emitted
+  (would be redundant). The tail's real events alone reconstruct them;
+  because `applyReplicationUpsert` is last-write-wins per resource, the
+  last real tail event determines the final state, which equals
+  `latestState`. (The older "prefix+tail for every live resource" algorithm
+  also reached the same final state via LWW, but produced a longer
+  response and a different intermediate apply path; this design prefers
+  the reduced shape.)
 - Deleted resources: absent from `latestState`, so no synthetic entry is
   produced. If a real Delete event for that resource is still in the tail,
   it's a harmless no-op delete-of-nothing. If the Delete event itself has
@@ -274,11 +293,12 @@ doc comments updated to describe compaction).
   default 1000 cap): unaffected, add a new sub-test that constructs a
   manager with `WithHistoryLimit(2)` (or similar small number), pushes past
   the cap, and asserts: (a) a query with `SinceSeq` before the eviction
-  boundary returns a synthesized `Create` reflecting current state for the
-  evicted resource, (b) a query with `SinceSeq` inside the retained tail is
-  unaffected, (c) applying the full synthesized+tail response for a resource
-  that receives further tail updates ends up matching
-  `mgr.GetSubscribers()`-style replay content (i.e. `latestState`).
+  boundary returns a synthesized `Create` for the evicted resource only
+  (resources still in the tail are not duplicated), (b) a query with
+  `SinceSeq` inside the retained tail is unaffected, (c) the synthetic
+  prefix is returned in full even when `Limit` is smaller than the
+  prefix, (d) applying the full synthesized+tail response ends up matching
+  `latestState`.
 - `internal/events/manager_test.go` (existing): verify `AddSubscriber`
   replay is unaffected for the common case (events well under the cap) and
   correctly reflects compacted state once resources have been deleted.

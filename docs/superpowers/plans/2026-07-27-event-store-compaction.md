@@ -632,7 +632,7 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
 	tail := e.historyTail.Snapshot()
 	compactionSeq, compactionAt := e.historyTail.CompactionBoundary()
 
-	var all []events.StoredEvent
+	var synthetic []events.StoredEvent
 	if q.SinceSeq < compactionSeq {
 		// Some events have aged out of the tail. Synthesize a Create for
 		// every live resource that has no representation left in the tail
@@ -649,12 +649,11 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
 			if _, present := inTail[key]; present {
 				continue
 			}
-			all = append(all, events.NewStoredEvent(
+			synthetic = append(synthetic, events.NewStoredEvent(
 				compactionSeq, compactionAt, ev.ResourceType, events.CreateOperation, ev.ResourceId, ev.Objects,
 			))
 		}
 	}
-	all = append(all, tail...)
 	e.mu.RUnlock()
 
 	limit := q.Limit
@@ -662,27 +661,40 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
 		limit = 100
 	}
 
-	var results []events.StoredEvent
-	for _, ev := range all {
+	matches := func(ev events.StoredEvent) (events.StoredEvent, bool) {
 		if ev.SequenceId <= q.SinceSeq {
-			continue
+			return events.StoredEvent{}, false
 		}
 		if q.Operation != nil && ev.Operation != q.Operation.WireOperation() {
-			continue
+			return events.StoredEvent{}, false
 		}
 		if q.ResourceType != nil && ev.ResourceType != q.ResourceType.WireKind() {
-			continue
+			return events.StoredEvent{}, false
 		}
 		if q.ResourceId != nil && ev.ResourceId != *q.ResourceId {
-			continue
+			return events.StoredEvent{}, false
 		}
 		entry := ev
 		if !q.IncludePayload {
 			entry.Objects = nil
 		}
-		results = append(results, entry)
-		if len(results) >= limit {
-			break
+		return entry, true
+	}
+
+	var results []events.StoredEvent
+	// Synthetic prefix is uncapped by Limit (shared compactionSeq would
+	// break SinceSeq pagination if a page boundary landed inside it).
+	for _, ev := range synthetic {
+		if entry, ok := matches(ev); ok {
+			results = append(results, entry)
+		}
+	}
+	for _, ev := range tail {
+		if entry, ok := matches(ev); ok {
+			results = append(results, entry)
+			if len(results) >= limit {
+				break
+			}
 		}
 	}
 	return results, nil
