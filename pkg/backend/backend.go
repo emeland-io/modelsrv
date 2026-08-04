@@ -22,6 +22,22 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 )
 
+// config holds construction-time settings for New.
+type config struct {
+	eventHistoryLimit int
+}
+
+// Option configures a Backend at construction time.
+type Option func(*config)
+
+// WithEventHistoryLimit sets how many recent events the event manager's
+// history-query API can serve exactly; see eventmgr.WithHistoryLimit for
+// what happens to queries reaching further back. n must be positive or it
+// is ignored (the event manager's own default applies).
+func WithEventHistoryLimit(n int) Option {
+	return func(c *config) { c.eventHistoryLimit = n }
+}
+
 // Backend bundles the model, the filter chain, and the event manager.
 // External consumers (sensors, the web endpoint) retrieve only the part they need.
 type Backend interface {
@@ -50,8 +66,17 @@ type backendData struct {
 // The returned Backend has an empty filter chain; callers register their
 // [eventfilter.FilterFunc]s via [Backend.GetChain].Register before feeding
 // events into the model.
-func New() (Backend, error) {
-	eventMgr, err := eventmgr.NewEventManager()
+func New(opts ...Option) (Backend, error) {
+	cfg := config{}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	var mgrOpts []eventmgr.Option
+	if cfg.eventHistoryLimit > 0 {
+		mgrOpts = append(mgrOpts, eventmgr.WithHistoryLimit(cfg.eventHistoryLimit))
+	}
+	eventMgr, err := eventmgr.NewEventManager(mgrOpts...)
 	if err != nil {
 		return nil, err
 	}

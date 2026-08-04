@@ -9,7 +9,8 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
-// recordingSink appends to the manager's master list, bumps sequence, and notifies subscribers.
+// recordingSink records to the manager's latest-state store and history
+// ring, bumps the sequence number, and notifies subscribers.
 type recordingSink struct {
 	mgr *eventManager
 }
@@ -29,9 +30,9 @@ func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation
 	}
 
 	r.mgr.mu.Lock()
-	_ = r.mgr.masterList.Receive(resType, op, resourceId, objects...)
+	r.mgr.latestState.Receive(resType, op, resourceId, objects...)
 	r.mgr.sequenceNumber++
-	r.mgr.storedEvents = append(r.mgr.storedEvents, events.NewStoredEvent(
+	r.mgr.historyTail.Add(events.NewStoredEvent(
 		r.mgr.sequenceNumber, time.Now(), resType, op, resourceId, objects,
 	))
 	subs := make([]events.Subscriber, len(r.mgr.subscribers))

@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../book"
+		},
+		{
+			"path": "../go-emeland-io-website"
+		},
+		{
+			"path": "../modelsrv-k8s-sensor"
+		},
+		{
+			"path": "../emeland-demo-stack-chart"
+		},
+		{
+			"path": "../timadorus-platform"
+		}
+	],
+	"settings": {
+		"makefile.configureOnOpen": false
+	}
+}

@@ -75,6 +75,28 @@ var _ = Describe("Backend", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(rules)).To(BeNumerically(">=", 2))
 		})
+
+		It("propagates WithEventHistoryLimit down to the event manager's history retention", func() {
+			b, err := backend.New(backend.WithEventHistoryLimit(2))
+			Expect(err).NotTo(HaveOccurred())
+
+			sink, err := b.GetEventManager().GetSink()
+			Expect(err).NotTo(HaveOccurred())
+
+			idA := uuid.New()
+			idB := uuid.New()
+			idC := uuid.New()
+			Expect(sink.Receive(events.SystemResource, events.CreateOperation, idA, "a1")).To(Succeed())
+			Expect(sink.Receive(events.SystemResource, events.CreateOperation, idB, "b1")).To(Succeed())
+			Expect(sink.Receive(events.SystemResource, events.CreateOperation, idC, "c1")).To(Succeed())
+
+			rt := events.SystemResource
+			results, err := b.GetEventManager().QueryEvents(context.Background(), events.EventQuery{ResourceType: &rt, IncludePayload: true})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).To(HaveLen(3))
+			Expect(results[0].ResourceId).To(Equal(idA))
+			Expect(results[0].Objects).To(Equal([]any{"a1"}))
+		})
 	})
 
 	Describe("wiring: model mutations flow through the filter chain", func() {
