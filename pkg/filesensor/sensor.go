@@ -15,22 +15,48 @@ import (
 
 const debounceDelay = 250 * time.Millisecond
 
-// Start watches dir for .yaml/.yml files, applies existing files once, then watches for changes.
-// It returns immediately; work runs in a background goroutine until ctx is cancelled.
+// Start applies existing YAML in dir synchronously, then watches for changes.
+// The watcher runs in a background goroutine until ctx is cancelled.
 func Start(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
-	if log == nil {
-		log = zap.NewNop().Sugar()
-	}
-	go run(ctx, dir, m, log)
+	log = ensureLog(log)
+	ApplyExisting(dir, m, log)
+	StartWatch(ctx, dir, m, log)
 }
 
-func run(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
+// ApplyExisting creates dir if needed, applies all .yaml/.yml files once, then runs phase0.ReconcileAll.
+// Per-file and per-document errors are logged; the function does not return an error for those.
+func ApplyExisting(dir string, m model.Model, log *zap.SugaredLogger) {
+	log = ensureLog(log)
+
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Errorw("filesensor: could not create data directory", "dir", dir, "error", err.Error())
 		return
 	}
 
-	apply := func(path string) {
+	apply := makeApplyFunc(m, log)
+	if err := scanDir(dir, apply); err != nil {
+		log.Errorw("filesensor: initial scan failed", "dir", dir, "error", err.Error())
+		return
+	}
+	phase0.ReconcileAll(m)
+}
+
+// StartWatch watches dir for .yaml/.yml changes and applies them. It does not scan existing files.
+// It returns immediately; the watcher runs in a background goroutine until ctx is cancelled.
+func StartWatch(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
+	log = ensureLog(log)
+	go watch(ctx, dir, m, log)
+}
+
+func ensureLog(log *zap.SugaredLogger) *zap.SugaredLogger {
+	if log == nil {
+		return zap.NewNop().Sugar()
+	}
+	return log
+}
+
+func makeApplyFunc(m model.Model, log *zap.SugaredLogger) func(path string) {
+	return func(path string) {
 		res, err := ProcessFile(path, m)
 		if err != nil {
 			log.Errorw("filesensor: could not read or parse YAML file", "path", path, "error", err.Error())
@@ -45,12 +71,15 @@ func run(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger)
 			log.Errorw("filesensor: no documents applied", "path", path, "skipped", len(res.Failed))
 		}
 	}
+}
 
-	if err := scanDir(dir, apply); err != nil {
-		log.Errorw("filesensor: initial scan failed", "dir", dir, "error", err.Error())
-	} else {
-		phase0.ReconcileAll(m)
+func watch(ctx context.Context, dir string, m model.Model, log *zap.SugaredLogger) {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		log.Errorw("filesensor: could not create data directory", "dir", dir, "error", err.Error())
+		return
 	}
+
+	apply := makeApplyFunc(m, log)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

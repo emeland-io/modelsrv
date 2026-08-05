@@ -1,6 +1,7 @@
 package filesensor_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -396,5 +397,55 @@ var _ = Describe("Capacity documents", func() {
 		doc := validCapacityDoc()
 		doc.Spec["capacityId"] = uuid.New().String()
 		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capacity tuple already exists")))
+	})
+})
+
+var _ = Describe("ApplyExisting", func() {
+	It("applies YAML in dir synchronously before returning", func() {
+		_, file, _, ok := runtime.Caller(0)
+		Expect(ok).To(BeTrue())
+		root := filepath.Join(filepath.Dir(file), "..", "..")
+		src := filepath.Join(root, "test", "fixtures", "simple_system.yaml")
+
+		dir := GinkgoT().TempDir()
+		data, err := os.ReadFile(src)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(os.WriteFile(filepath.Join(dir, "simple_system.yaml"), data, 0644)).To(Succeed())
+
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		filesensor.ApplyExisting(dir, m, nil)
+
+		Expect(m.GetSystemById(uuid.MustParse("b4eaa9f0-0242-4a26-9496-fa2b1a3b9330"))).NotTo(BeNil())
+		Expect(m.GetComponentById(uuid.MustParse("104e9a87-817d-486a-b834-5a70e8c4f68a"))).NotTo(BeNil())
+		Expect(m.GetApiById(uuid.MustParse("c649f2f3-462b-4a6d-8337-0d2e7403c44d"))).NotTo(BeNil())
+	})
+})
+
+var _ = Describe("StartWatch", func() {
+	It("does not scan existing files on start", func() {
+		_, file, _, ok := runtime.Caller(0)
+		Expect(ok).To(BeTrue())
+		root := filepath.Join(filepath.Dir(file), "..", "..")
+		src := filepath.Join(root, "test", "fixtures", "simple_system.yaml")
+
+		dir := GinkgoT().TempDir()
+		data, err := os.ReadFile(src)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(os.WriteFile(filepath.Join(dir, "simple_system.yaml"), data, 0644)).To(Succeed())
+
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		filesensor.StartWatch(ctx, dir, m, nil)
+
+		Consistently(func() bool {
+			return m.GetSystemById(uuid.MustParse("b4eaa9f0-0242-4a26-9496-fa2b1a3b9330")) == nil
+		}, "300ms", "50ms").Should(BeTrue())
 	})
 })
