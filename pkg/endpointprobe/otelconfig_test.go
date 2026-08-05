@@ -68,7 +68,7 @@ func TestRenderHTTPCheckConfig_KnownAnnotations(t *testing.T) {
 	out := string(raw)
 
 	// Receiver
-	assert.Contains(t, out, "httpcheck:")
+	assert.Contains(t, out, "http_check:")
 	assert.Contains(t, out, "collection_interval: 5m")
 	assert.Contains(t, out, "endpoint: https://payments.prod.eu.example.com:443/api/v1/health")
 
@@ -87,7 +87,7 @@ func TestRenderHTTPCheckConfig_KnownAnnotations(t *testing.T) {
 	// Verify it's valid YAML
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	recv := parsed.Receivers["httpcheck"]
+	recv := parsed.Receivers["http_check"]
 	assert.Equal(t, "5m", recv.CollectionInterval)
 	assert.True(t, recv.Metrics["httpcheck.tls.cert_remaining"].Enabled)
 	require.Len(t, recv.Targets, 1)
@@ -104,7 +104,7 @@ func TestRenderCollectorConfig_EmptyTargets(t *testing.T) {
 
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	recv := parsed.Receivers["httpcheck"]
+	recv := parsed.Receivers["http_check"]
 	assert.Equal(t, "5m", recv.CollectionInterval)
 	assert.True(t, recv.Metrics["httpcheck.tls.cert_remaining"].Enabled)
 	assert.Empty(t, recv.Targets)
@@ -122,9 +122,9 @@ func TestRenderCollectorConfig_SortsByURL(t *testing.T) {
 
 	var parsed collectorConfig
 	require.NoError(t, yaml.Unmarshal(raw, &parsed))
-	require.Len(t, parsed.Receivers["httpcheck"].Targets, 2)
-	assert.Equal(t, "https://a.example.com:443/", parsed.Receivers["httpcheck"].Targets[0].Endpoint)
-	assert.Equal(t, "https://z.example.com:443/", parsed.Receivers["httpcheck"].Targets[1].Endpoint)
+	require.Len(t, parsed.Receivers["http_check"].Targets, 2)
+	assert.Equal(t, "https://a.example.com:443/", parsed.Receivers["http_check"].Targets[0].Endpoint)
+	assert.Equal(t, "https://z.example.com:443/", parsed.Receivers["http_check"].Targets[1].Endpoint)
 }
 
 func TestCollectTargets_SkipAndDedupe(t *testing.T) {
