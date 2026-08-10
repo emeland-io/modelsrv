@@ -17,6 +17,18 @@ Endpoint annotations (`emeland.io/endpoint.*`) declare where an ApiInstance is r
 
 Despite the name, `modelsrv certprobe` only generates config — it never contacts the annotated hosts. modelsrv itself does not probe endpoints.
 
+### Server startup subscribers
+
+Pre-register downstream model servers (replicas, sensors, consumers) so they receive landscape events without a manual `POST /api/events/register` after every restart:
+
+```bash
+modelsrv server \
+  --subscribers http://replica:8080/api,http://sensor:8081/api
+# or: SUBSCRIBERS=http://replica:8080/api,http://sensor:8081/api
+```
+
+Initial YAML in `--data-dir` is applied synchronously first; each URL is then registered via the same in-process path as the register API (including synchronous replay of live-state Creates). Later changes are pushed asynchronously to `POST …/events/push`. Invalid URLs are logged and skipped; duplicate URLs are idempotent.
+
 ### OpenTelemetry Collector integration
 
 Keep an OpenTelemetry Collector

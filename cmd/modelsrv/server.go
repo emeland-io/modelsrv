@@ -31,6 +31,7 @@ var trustAuthHeaders bool
 var auditorIdentity string
 var auditorGroup string
 var publicResourceTypes string
+var subscribersFlag string
 var eventHistoryLimit int
 var otelConfigOut string
 var otelConfigDebounce time.Duration
@@ -107,7 +108,9 @@ var serverCmd = &cobra.Command{
 			)
 		}
 
-		filesensor.Start(ctx, dataPath, b.GetModel(), logger)
+		filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
+		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+		filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
 
 		webOpts := endpoint.WebListenerOptions{
 			TrustAuthHeaders: trustAuthHeaders,
@@ -172,6 +175,7 @@ func init() {
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")
 	serverCmd.Flags().StringVar(&auditorGroup, "auditor-group", envOrDefault("AUDITOR_GROUP", ""), "Group id treated as auditor when present in X-Auth-Groups")
 	serverCmd.Flags().StringVar(&publicResourceTypes, "public-resource-types", envOrDefault("PUBLIC_RESOURCE_TYPES", ""), "Comma-separated resource types always visible (e.g. ContextType,FindingType)")
+	serverCmd.Flags().StringVar(&subscribersFlag, "subscribers", envOrDefault("SUBSCRIBERS", ""), "Comma-separated downstream modelsrv base API URLs to pre-register (e.g. http://host:8080/api)")
 	serverCmd.Flags().IntVar(&eventHistoryLimit, "event-history-limit", envIntOrDefault("EVENT_HISTORY_LIMIT", eventmgr.DefaultHistoryLimit), "Number of recent events the /events history API can serve exactly; older queries return synthesized current-state entries instead of an error")
 	serverCmd.Flags().StringVar(&otelConfigOut, "otel-config-out", envOrDefault("OTEL_CONFIG_OUT", ""), "If set, keep an OTel collector config at this path in sync with ApiInstance endpoint annotations")
 	serverCmd.Flags().DurationVar(&otelConfigDebounce, "otel-config-debounce", envDurationOrDefault("OTEL_CONFIG_DEBOUNCE", 2*time.Second), "Debounce window before rewriting --otel-config-out")
