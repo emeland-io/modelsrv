@@ -27,5 +27,15 @@ func init() {
 		notFound: func(err error) bool {
 			return errors.Is(err, common.ErrSystemInstanceNotFound)
 		},
+		exists: func(m Model, id uuid.UUID) bool {
+			return any(m.GetSystemInstanceById(id)) != nil
+		},
+		displayName: func(m Model, id uuid.UUID) string {
+			v := m.GetSystemInstanceById(id)
+			if any(v) == nil {
+				return ""
+			}
+			return v.GetDisplayName()
+		},
 	})
 }

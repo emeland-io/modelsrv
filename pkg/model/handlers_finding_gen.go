@@ -27,5 +27,15 @@ func init() {
 		notFound: func(err error) bool {
 			return errors.Is(err, common.ErrFindingNotFound)
 		},
+		exists: func(m Model, id uuid.UUID) bool {
+			return any(m.GetFindingById(id)) != nil
+		},
+		displayName: func(m Model, id uuid.UUID) string {
+			v := m.GetFindingById(id)
+			if any(v) == nil {
+				return ""
+			}
+			return v.GetDisplayName()
+		},
 	})
 }

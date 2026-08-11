@@ -30,3 +30,26 @@ func TestResourceDisplayName(t *testing.T) {
 		ResourceType: events.ContextResource,
 	}))
 }
+
+func TestResourceExists(t *testing.T) {
+	m, _ := newStoreModel(t)
+
+	ctxID := uuid.New()
+	ctx := mdlctx.NewContext(ctxID)
+	ctx.SetDisplayName("Production")
+	require.NoError(t, m.AddContext(ctx))
+
+	require.True(t, model.ResourceExists(m, &common.ResourceRef{
+		ResourceId:   ctxID,
+		ResourceType: events.ContextResource,
+	}))
+	require.False(t, model.ResourceExists(m, &common.ResourceRef{
+		ResourceId:   uuid.New(),
+		ResourceType: events.ContextResource,
+	}))
+	require.False(t, model.ResourceExists(m, nil))
+	require.False(t, model.ResourceExists(nil, &common.ResourceRef{
+		ResourceId:   ctxID,
+		ResourceType: events.ContextResource,
+	}))
+}
