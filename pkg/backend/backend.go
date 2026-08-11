@@ -18,6 +18,7 @@ import (
 	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/eventfilter"
 	"go.emeland.io/modelsrv/pkg/eventfilter/phase0"
+	"go.emeland.io/modelsrv/pkg/eventfilter/resolvefindings"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
@@ -99,6 +100,8 @@ func New(opts ...Option) (Backend, error) {
 	chain.SetModel(m)
 	chain.RegisterFilter(phase0.New())
 	phase0.EnsureWellKnownFindingTypes(m)
+	chain.RegisterFilter(resolvefindings.New())
+	resolvefindings.EnsureWellKnownFindingTypes(m)
 	registerMergeRules(m)
 
 	return &backendData{

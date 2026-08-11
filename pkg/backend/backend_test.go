@@ -67,6 +67,23 @@ var _ = Describe("Backend", func() {
 			Expect(phase0Rule).To(BeTrue())
 		})
 
+		It("registers resolvefindings as a discoverable FilterRule", func() {
+			b, err := backend.New()
+			Expect(err).NotTo(HaveOccurred())
+
+			rules, err := b.GetModel().GetFilterRules()
+			Expect(err).NotTo(HaveOccurred())
+
+			var resolveRule bool
+			for _, rule := range rules {
+				if rule.GetDisplayName() == "Resolve findings" {
+					resolveRule = true
+					Expect(rule.GetDescription()).To(ContainSubstring("Deletes findings"))
+				}
+			}
+			Expect(resolveRule).To(BeTrue())
+		})
+
 		It("registers static MergeRules", func() {
 			b, err := backend.New()
 			Expect(err).NotTo(HaveOccurred())
