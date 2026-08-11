@@ -51,9 +51,11 @@ the category name using UUID v5 (namespace
 computes these:
 
 ```go
-finding.TypeIDForKind(finding.ContextTypeMissing)   // stable UUID for ContextTypeMissing
-finding.TypeIDForKind(finding.ContextParentNotFound) // stable UUID for ContextParentNotFound
-finding.TypeIDForKind(finding.NodeTypeMissing)       // stable UUID for NodeTypeMissing
+finding.TypeIDForKind(finding.ContextTypeMissing)          // stable UUID for ContextTypeMissing
+finding.TypeIDForKind(finding.ContextParentNotFound)       // stable UUID for ContextParentNotFound
+finding.TypeIDForKind(finding.NodeTypeMissing)             // stable UUID for NodeTypeMissing
+finding.TypeIDForKind(finding.ReferencedResourceNotFound)  // stable UUID for ReferencedResourceNotFound
+finding.TypeIDForKind(finding.MissingResourceReference)    // stable UUID for MissingResourceReference
 ```
 
 This means filter code can call `f.SetFindingTypeById(finding.TypeIDForKind(kind))`
@@ -147,6 +149,80 @@ the model.
 **Resources in the finding:**
 1. The `Node` (subject).
 
+## Resolve-findings filter
+
+The `pkg/eventfilter/resolvefindings` filter cleans up findings when later
+ingress supplies the missing information. It is registered automatically in
+`pkg/backend/backend.go` after phase 0. It does **not** create findings —
+Sensors (for example
+[modelsrv-k8s-sensor#34](https://github.com/emeland-io/modelsrv-k8s-sensor/issues/34))
+emit them; this filter only deletes them when resolved
+([modelsrv#152](https://github.com/emeland-io/modelsrv/issues/152)).
+
+**Unknown kinds are never discarded.** Findings whose `FindingType` / kind is
+not known to modelsrv remain in the model until a positive resolution rule
+matches (or another owner deletes them). The filter always forwards the
+incoming event unchanged.
+
+### Structural dangling-ref resolution (kind-agnostic)
+
+When a landscape resource is created or updated, the filter scans pending
+findings. If a finding’s `Resources` list has length ≥ 2 (subject first, then
+one or more referenced-but-missing resources) and any missing ref matches the
+event’s resource id (and type when set), and that resource now exists in the
+model, the finding is deleted.
+
+This path covers documented `ReferencedResourceNotFound` **and** custom /
+future Sensor kinds that follow the same `Resources` layout. Phase-0 kinds
+(`ContextTypeMissing`, `ContextParentNotFound`, `NodeTypeMissing`) are skipped
+here so phase 0 retains ownership of their negation.
+
+K8s Context parent annotations (`emeland.io/k8s-sensor/context-parent`) should
+map into `Context.Parent` and rely on phase 0’s `ContextParentNotFound`, not
+this filter.
+
+### ReferencedResourceNotFound
+
+**Meaning:** A subject cites a resource UUID that is not registered in the
+local model.
+
+**Resources in the finding:**
+1. The subject resource (e.g. `ApiInstance`, `ComponentInstance`).
+2. The referenced-but-missing resource (e.g. `API`, `Component`).
+
+**Resolved by:** Create/Update of the missing resource when it becomes present
+in the model (structural path above).
+
+### MissingResourceReference
+
+**Meaning:** A subject lacks a required EmELand reference (workflow
+“missing-resource” — e.g. an `ApiInstance` without an API ref annotation).
+
+**Resources in the finding:**
+1. The subject resource only.
+
+**Resolved by:** Create/Update of the subject when its first-class reference is
+populated:
+
+- `ApiInstance` → `ApiRef` with non-nil `ApiID`
+- `ComponentInstance` → `ComponentRef` with non-nil `ComponentId`
+
+Other subject types are left untouched until a rule is documented.
+
+### Sensor contract
+
+External Sensors that emit findings intended for this filter SHOULD:
+
+1. Prefer `finding.TypeIDForKind` when the kind is one of the documented kinds
+   above.
+2. Always use **subject-first** `Resources`, with missing targets after the
+   subject, so unknown kinds can still be resolved structurally.
+3. Prefer the same deterministic finding UUID scheme as phase 0
+   (UUID v5 from subject id + kind) so re-emits upsert rather than duplicate.
+
+Findings that do not match any resolution rule are retained — including
+unknown kinds with only a subject ref and no missing target.
+
 ## Registering FindingTypes for well-known kinds
 
 To give the built-in findings a human-readable `DisplayName` and `Description`,
@@ -160,6 +236,8 @@ The stable UUIDs for the built-in kinds are:
 | `ContextTypeMissing` | `fa538332-fb6d-51ef-99f3-87831ac140fb` |
 | `ContextParentNotFound` | `daf948a3-f77d-582e-9bbe-72251e22373f` |
 | `NodeTypeMissing` | `808c222c-3e02-5d38-9a82-4b16c792b075` |
+| `ReferencedResourceNotFound` | `26a693f2-996d-5310-9e5b-a357722dcda5` |
+| `MissingResourceReference` | `904c4012-fa93-5bbf-a8fe-7907eccce5d5` |
 
 Example YAML:
 
@@ -190,6 +268,23 @@ spec:
   displayName: "NodeTypeMissing"
   description: >
     A Node resource has no NodeType assigned.
+---
+version: emeland.io/v1
+kind: FindingType
+spec:
+  findingTypeId: "26a693f2-996d-5310-9e5b-a357722dcda5"
+  displayName: "ReferencedResourceNotFound"
+  description: >
+    A resource references another resource by UUID that is not registered in
+    the local model.
+---
+version: emeland.io/v1
+kind: FindingType
+spec:
+  findingTypeId: "904c4012-fa93-5bbf-a8fe-7907eccce5d5"
+  displayName: "MissingResourceReference"
+  description: >
+    A resource lacks a required EmELand reference to another resource.
 ```
 
 ## Test manifest repository
@@ -238,15 +333,19 @@ documents the conditions under which each finding is generated.
 To add a new finding category:
 
 1. Add a new `FindingKind` constant to `pkg/model/finding/finding_kind.go`.
-2. Implement a check function in `pkg/eventfilter/phase0/phase0.go` (or a new
-   filter package for a different resource phase) that calls `upsertFinding` /
-   `deleteFinding` with the new kind.
-3. Wire the check into the relevant filter function (e.g. `checkContext` for
-   context-related findings).
-4. Add tests to `pkg/eventfilter/phase0/phase0_test.go`.
-5. Optionally register a `FindingType` YAML definition so the kind has a
+2. Implement creation checks in the appropriate filter (e.g.
+   `pkg/eventfilter/phase0` for phase-0 resources) or in an external Sensor.
+3. For dangling-reference findings that Sensors emit, prefer the
+   subject-first + missing-ref `Resources` layout so
+   `pkg/eventfilter/resolvefindings` can clear them structurally — even before
+   modelsrv knows the kind by name.
+4. For kinds that need subject-field checks (like `MissingResourceReference`),
+   extend the documented rules in `resolvefindings`.
+5. Add tests next to the creating filter / Sensor and, when resolution is
+   modelsrv-owned, in `pkg/eventfilter/resolvefindings`.
+6. Optionally register a `FindingType` YAML definition so the kind has a
    human-readable description in the model.
-6. Add a manifest to `watchedDir/` in
+7. Add a manifest to `watchedDir/` in
    [`emeland-io/test-gitsensor-target`](https://github.com/emeland-io/test-gitsensor-target)
    named `<FindingKind>.yaml` that triggers the new finding (see
    [Test manifest repository](#test-manifest-repository) above).
