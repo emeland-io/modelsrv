@@ -31,6 +31,14 @@ const (
 	// CertificateProbeFailed is raised when a certificate probe against an
 	// ApiInstance endpoint fails (connection error, timeout, etc.).
 	CertificateProbeFailed FindingKind = "CertificateProbeFailed"
+
+	// ReferencedResourceNotFound is raised when a subject cites a resource UUID
+	// that is not registered in the local model. Resources layout: [subject, missing].
+	ReferencedResourceNotFound FindingKind = "ReferencedResourceNotFound"
+
+	// MissingResourceReference is raised when a subject lacks a required EmELand
+	// reference (e.g. ApiInstance without an API ref). Resources layout: [subject].
+	MissingResourceReference FindingKind = "MissingResourceReference"
 )
 
 // findingTypeNamespace is the UUID v5 namespace used to derive stable
@@ -61,6 +69,10 @@ func DescriptionForKind(kind FindingKind) string {
 		return "An ApiInstance TLS certificate has already expired."
 	case CertificateProbeFailed:
 		return "A certificate probe against an ApiInstance endpoint failed."
+	case ReferencedResourceNotFound:
+		return "A resource references another resource by UUID that is not registered in the local model."
+	case MissingResourceReference:
+		return "A resource lacks a required EmELand reference to another resource."
 	default:
 		return ""
 	}
