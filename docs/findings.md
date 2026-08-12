@@ -166,11 +166,13 @@ incoming event unchanged.
 
 ### Structural dangling-ref resolution (kind-agnostic)
 
-When a landscape resource is created or updated, the filter scans pending
-findings. If a finding’s `Resources` list has length ≥ 2 (subject first, then
-one or more referenced-but-missing resources) and any missing ref matches the
-event’s resource id (and type when set), and that resource now exists in the
-model, the finding is deleted.
+When a landscape resource is created or updated, the filter looks up findings
+that cite that resource id via
+[`Model.GetFindingsReferencingResource`](../pkg/model/structure.go) (an index
+maintained on finding add/update/delete). If a finding’s `Resources` list has
+length ≥ 2 (subject first, then one or more referenced-but-missing resources)
+and any missing ref matches the event’s resource id (and type when set), and
+that resource now exists in the model, the finding is deleted.
 
 This path covers documented `ReferencedResourceNotFound` **and** custom /
 future Sensor kinds that follow the same `Resources` layout. Phase-0 kinds

@@ -166,6 +166,55 @@ func TestGetContextsAndGetApis(t *testing.T) {
 	assert.Equal(t, apiID, apis[0].GetApiId())
 }
 
+func TestGetFindingsReferencingResource(t *testing.T) {
+	m, _ := newStoreModel(t)
+
+	subjectID := uuid.New()
+	missingID := uuid.New()
+	otherID := uuid.New()
+
+	assert.Nil(t, m.GetFindingsReferencingResource(uuid.Nil))
+	assert.Nil(t, m.GetFindingsReferencingResource(missingID))
+
+	fid := uuid.New()
+	f := finding.NewFinding(fid)
+	f.SetDisplayName("dangling")
+	f.SetResources([]*common.ResourceRef{
+		{ResourceId: subjectID},
+		{ResourceId: missingID},
+	})
+	require.NoError(t, m.AddFinding(f))
+
+	bySubject := m.GetFindingsReferencingResource(subjectID)
+	require.Len(t, bySubject, 1)
+	assert.Equal(t, fid, bySubject[0].GetFindingId())
+
+	byMissing := m.GetFindingsReferencingResource(missingID)
+	require.Len(t, byMissing, 1)
+	assert.Equal(t, fid, byMissing[0].GetFindingId())
+
+	assert.Nil(t, m.GetFindingsReferencingResource(otherID))
+
+	// Update Resources: drop missingID, cite otherID instead.
+	updated := finding.NewFinding(fid)
+	updated.SetDisplayName("dangling")
+	updated.SetResources([]*common.ResourceRef{
+		{ResourceId: subjectID},
+		{ResourceId: otherID},
+	})
+	require.NoError(t, m.AddFinding(updated))
+
+	assert.Nil(t, m.GetFindingsReferencingResource(missingID))
+	byOther := m.GetFindingsReferencingResource(otherID)
+	require.Len(t, byOther, 1)
+	assert.Equal(t, fid, byOther[0].GetFindingId())
+	require.Len(t, m.GetFindingsReferencingResource(subjectID), 1)
+
+	require.NoError(t, m.DeleteFindingById(fid))
+	assert.Nil(t, m.GetFindingsReferencingResource(subjectID))
+	assert.Nil(t, m.GetFindingsReferencingResource(otherID))
+}
+
 func TestNewModelRejectsNilSink(t *testing.T) {
 	_, err := model.NewModel(nil)
 	require.Error(t, err)

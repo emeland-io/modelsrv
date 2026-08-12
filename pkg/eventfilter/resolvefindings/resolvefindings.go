@@ -109,12 +109,8 @@ func filterFunc() eventfilter.FilterFunc {
 }
 
 func resolveAgainstEvent(m model.Model, ev events.Event) {
-	all, err := m.GetFindings()
-	if err != nil {
-		log.Printf("resolvefindings: GetFindings: %v", err)
-		return
-	}
-	for _, f := range all {
+	candidates := m.GetFindingsReferencingResource(ev.ResourceId)
+	for _, f := range candidates {
 		if f == nil {
 			continue
 		}
