@@ -1344,6 +1344,20 @@ func (mr *MockModelMockRecorder) GetFindings() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindings", reflect.TypeOf((*MockModel)(nil).GetFindings))
 }
 
+// GetFindingsReferencingResource mocks base method.
+func (m *MockModel) GetFindingsReferencingResource(resourceID uuid.UUID) []finding.Finding {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFindingsReferencingResource", resourceID)
+	ret0, _ := ret[0].([]finding.Finding)
+	return ret0
+}
+
+// GetFindingsReferencingResource indicates an expected call of GetFindingsReferencingResource.
+func (mr *MockModelMockRecorder) GetFindingsReferencingResource(resourceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFindingsReferencingResource", reflect.TypeOf((*MockModel)(nil).GetFindingsReferencingResource), resourceID)
+}
+
 // GetGroupById mocks base method.
 func (m *MockModel) GetGroupById(arg0 uuid.UUID) iam.Group {
 	m.ctrl.T.Helper()

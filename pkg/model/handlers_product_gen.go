@@ -27,5 +27,15 @@ func init() {
 		notFound: func(err error) bool {
 			return errors.Is(err, common.ErrProductNotFound)
 		},
+		exists: func(m Model, id uuid.UUID) bool {
+			return any(m.GetProductById(id)) != nil
+		},
+		displayName: func(m Model, id uuid.UUID) string {
+			v := m.GetProductById(id)
+			if any(v) == nil {
+				return ""
+			}
+			return v.GetDisplayName()
+		},
 	})
 }

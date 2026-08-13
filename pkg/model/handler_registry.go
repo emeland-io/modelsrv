@@ -10,11 +10,15 @@ import (
 type upsertHandler func(m Model, obj any) error
 type deleteHandler func(m Model, id uuid.UUID) error
 type notFoundCheck func(err error) bool
+type existsHandler func(m Model, id uuid.UUID) bool
+type displayNameHandler func(m Model, id uuid.UUID) string
 
 type resourceHandler struct {
-	upsert   upsertHandler
-	delete   deleteHandler
-	notFound notFoundCheck
+	upsert      upsertHandler
+	delete      deleteHandler
+	notFound    notFoundCheck
+	exists      existsHandler
+	displayName displayNameHandler
 }
 
 var handlerRegistry = map[events.ResourceType]resourceHandler{}
@@ -25,4 +29,9 @@ func registerHandler(rt events.ResourceType, h resourceHandler) {
 		return
 	}
 	handlerRegistry[rt] = h
+}
+
+func lookupHandler(rt events.ResourceType) (resourceHandler, bool) {
+	h, ok := handlerRegistry[rt]
+	return h, ok
 }

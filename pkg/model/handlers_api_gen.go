@@ -27,5 +27,15 @@ func init() {
 		notFound: func(err error) bool {
 			return errors.Is(err, common.ErrApiNotFound)
 		},
+		exists: func(m Model, id uuid.UUID) bool {
+			return any(m.GetApiById(id)) != nil
+		},
+		displayName: func(m Model, id uuid.UUID) string {
+			v := m.GetApiById(id)
+			if any(v) == nil {
+				return ""
+			}
+			return v.GetDisplayName()
+		},
 	})
 }

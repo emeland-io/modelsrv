@@ -236,9 +236,14 @@ func enrichWireMeta(spec *TypeSpec) {
 		} else {
 			spec.BackendListMethod = spec.ClientListMethod
 		}
+	}
+
+	// Backend get-by-id is needed for server handlers and generated resourceHandler
+	// exists/displayName lookups.
+	if spec.BackendGetByIdMethod == "" {
 		if v, ok := backendGetByIDByName[spec.Name]; ok {
 			spec.BackendGetByIdMethod = v
-		} else {
+		} else if spec.ClientGetByIdMethod != "" {
 			spec.BackendGetByIdMethod = spec.ClientGetByIdMethod
 		}
 	}

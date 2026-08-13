@@ -164,6 +164,10 @@ type FindingModel interface {
 	GetFindings() ([]finding.Finding, error)
 	// GetFindingById returns the Finding with the given id, or nil if not found.
 	GetFindingById(id uuid.UUID) finding.Finding
+	// GetFindingsReferencingResource returns findings whose Resources list cites
+	// resourceID (subject or referenced-but-missing). Order is unspecified.
+	// A nil resourceID yields nil.
+	GetFindingsReferencingResource(resourceID uuid.UUID) []finding.Finding
 }
 
 // FindingTypeModel provides CRUD operations for [finding.FindingType] resources.
@@ -325,8 +329,12 @@ type modelData struct {
 	apiInstancesByUUID       map[uuid.UUID]mdlapi.ApiInstance
 	componentInstancesByUUID map[uuid.UUID]component.ComponentInstance
 
-	findingsByUUID     map[uuid.UUID]finding.Finding
-	findingTypesByUUID map[uuid.UUID]finding.FindingType
+	findingsByUUID map[uuid.UUID]finding.Finding
+	// findingsByResourceID indexes finding IDs by each UUID cited in
+	// Finding.Resources (subject and referenced-but-missing). Maintained by
+	// AddFinding / DeleteFindingById for O(candidates) resolve lookups.
+	findingsByResourceID map[uuid.UUID]map[uuid.UUID]struct{}
+	findingTypesByUUID   map[uuid.UUID]finding.FindingType
 
 	artifactsByUUID         map[uuid.UUID]artifact.Artifact
 	artifactInstancesByUUID map[uuid.UUID]artifact.ArtifactInstance
@@ -379,8 +387,9 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		apiInstancesByUUID:       make(map[uuid.UUID]mdlapi.ApiInstance),
 		componentInstancesByUUID: make(map[uuid.UUID]component.ComponentInstance),
 
-		findingsByUUID:     make(map[uuid.UUID]finding.Finding),
-		findingTypesByUUID: make(map[uuid.UUID]finding.FindingType),
+		findingsByUUID:       make(map[uuid.UUID]finding.Finding),
+		findingsByResourceID: make(map[uuid.UUID]map[uuid.UUID]struct{}),
+		findingTypesByUUID:   make(map[uuid.UUID]finding.FindingType),
 
 		artifactsByUUID:         make(map[uuid.UUID]artifact.Artifact),
 		artifactInstancesByUUID: make(map[uuid.UUID]artifact.ArtifactInstance),
@@ -824,9 +833,31 @@ func (m *modelData) GetFindings() ([]finding.Finding, error) {
 
 // AddFinding implements Model.
 func (m *modelData) AddFinding(f finding.Finding) error {
-	return addEventEnabled(m, f, finding.Finding.GetFindingId,
-		func(x finding.Finding, s events.EventSink) { x.Register(s) },
-		m.findingsByUUID, events.FindingResource)
+	op, id, err := func() (events.Operation, uuid.UUID, error) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		id := f.GetFindingId()
+		if id == uuid.Nil {
+			return events.UnknownOperation, uuid.Nil, common.ErrUUIDNotSet
+		}
+		op := events.CreateOperation
+		if old, exists := m.findingsByUUID[id]; exists {
+			op = events.UpdateOperation
+			unindexFindingLocked(m, old)
+		}
+		f.Register(m.sink)
+		m.findingsByUUID[id] = f
+		indexFindingLocked(m, f)
+		return op, id, nil
+	}()
+	if err != nil {
+		return err
+	}
+	// Do not hold m.mu during sink.Receive: filters call back into Model.
+	if err := m.sink.Receive(events.FindingResource, op, id, f); err != nil {
+		fmt.Println("Error receiving ", events.FindingResource, "| ", op, " event: ", err)
+	}
+	return nil
 }
 
 // DeleteFindingById implements [Model].
@@ -834,9 +865,11 @@ func (m *modelData) DeleteFindingById(id uuid.UUID) error {
 	err := func() error {
 		m.mu.Lock()
 		defer m.mu.Unlock()
-		if _, exists := m.findingsByUUID[id]; !exists {
+		old, exists := m.findingsByUUID[id]
+		if !exists {
 			return common.ErrFindingNotFound
 		}
+		unindexFindingLocked(m, old)
 		delete(m.findingsByUUID, id)
 		return nil
 	}()
@@ -860,6 +893,73 @@ func (m *modelData) GetFindingById(id uuid.UUID) finding.Finding {
 		return nil
 	}
 	return fobj
+}
+
+// GetFindingsReferencingResource implements [FindingModel].
+func (m *modelData) GetFindingsReferencingResource(resourceID uuid.UUID) []finding.Finding {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if resourceID == uuid.Nil {
+		return nil
+	}
+	set := m.findingsByResourceID[resourceID]
+	if len(set) == 0 {
+		return nil
+	}
+	out := make([]finding.Finding, 0, len(set))
+	for fid := range set {
+		if f, ok := m.findingsByUUID[fid]; ok {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+func indexFindingLocked(m *modelData, f finding.Finding) {
+	fid := f.GetFindingId()
+	for _, rid := range findingCitedResourceIDs(f) {
+		set, ok := m.findingsByResourceID[rid]
+		if !ok {
+			set = make(map[uuid.UUID]struct{})
+			m.findingsByResourceID[rid] = set
+		}
+		set[fid] = struct{}{}
+	}
+}
+
+func unindexFindingLocked(m *modelData, f finding.Finding) {
+	fid := f.GetFindingId()
+	for _, rid := range findingCitedResourceIDs(f) {
+		set := m.findingsByResourceID[rid]
+		if set == nil {
+			continue
+		}
+		delete(set, fid)
+		if len(set) == 0 {
+			delete(m.findingsByResourceID, rid)
+		}
+	}
+}
+
+func findingCitedResourceIDs(f finding.Finding) []uuid.UUID {
+	refs := f.GetResources()
+	if len(refs) == 0 {
+		return nil
+	}
+	out := make([]uuid.UUID, 0, len(refs))
+	seen := make(map[uuid.UUID]struct{}, len(refs))
+	for _, ref := range refs {
+		if ref == nil || ref.ResourceId == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[ref.ResourceId]; ok {
+			continue
+		}
+		seen[ref.ResourceId] = struct{}{}
+		out = append(out, ref.ResourceId)
+	}
+	return out
 }
 
 // AddFindingType implements [Model].
