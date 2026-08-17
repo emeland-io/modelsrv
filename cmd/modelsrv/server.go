@@ -26,6 +26,7 @@ const otelConfigShutdownTimeout = 30 * time.Second
 
 var serviceAddr string
 var dataDir string
+var sensorConfig string
 var metricsAddr string
 var trustAuthHeaders bool
 var auditorIdentity string
@@ -73,11 +74,11 @@ var serverCmd = &cobra.Command{
 		logger.Infow("starting modelsrv",
 			"listen", serviceAddr,
 			"dataDir", dataPath,
+			"sensorConfig", sensorConfig,
 			"otelConfigOut", otelConfigOut,
 		)
 		logger.Infof("REST API: http://%s/api", serviceAddr)
 		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
-		logger.Info("file sensor: watching for YAML in data directory")
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -108,9 +109,27 @@ var serverCmd = &cobra.Command{
 			)
 		}
 
-		filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
-		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
-		filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
+		if sensorConfig != "" {
+			cfg, err := filesensor.LoadConfigFile(sensorConfig)
+			if err != nil {
+				logger.Errorw("filesensor: could not load sensor config", "path", sensorConfig, "error", err.Error())
+				return
+			}
+			logger.Infow("file sensor: multi-source config", "path", sensorConfig, "sources", len(cfg.Sources))
+			sources, err := filesensor.OpenSources(ctx, cfg)
+			if err != nil {
+				logger.Errorw("filesensor: could not open sources", "path", sensorConfig, "error", err.Error())
+				return
+			}
+			filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
+			registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+			filesensor.StartSources(ctx, sources, b.GetModel(), logger)
+		} else {
+			logger.Info("file sensor: watching for YAML/JSON/CSV in data directory")
+			filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
+			registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+			filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
+		}
 
 		webOpts := endpoint.WebListenerOptions{
 			TrustAuthHeaders: trustAuthHeaders,
@@ -169,7 +188,8 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", envOrDefault("SERVICE_ADDR", ":8080"), "The address the service listens on")
-	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for YAML model definitions (.yaml/.yml); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for landscape documents (.yaml/.yml/.json/.csv); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&sensorConfig, "sensor-config", envOrDefault("SENSOR_CONFIG", ""), "Optional YAML file listing Sources (file://, https://, s3://) and per-glob parser options; when set, overrides --data-dir")
 	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", envOrDefault("METRICS_ADDR", ""), "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
 	serverCmd.Flags().BoolVar(&trustAuthHeaders, "trust-auth-headers", envOrDefault("TRUST_AUTH_HEADERS", "") == "true", "Trust X-Auth-* identity headers from the BFF and enforce ownership visibility")
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")
