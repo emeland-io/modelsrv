@@ -27,7 +27,61 @@ modelsrv server \
 # or: SUBSCRIBERS=http://replica:8080/api,http://sensor:8081/api
 ```
 
-Initial YAML in `--data-dir` is applied synchronously first; each URL is then registered via the same in-process path as the register API (including synchronous replay of live-state Creates). Later changes are pushed asynchronously to `POST …/events/push`. Invalid URLs are logged and skipped; duplicate URLs are idempotent.
+Initial YAML/JSON in `--data-dir` is applied synchronously first; each URL is then registered via the same in-process path as the register API (including synchronous replay of live-state Creates). Later changes are pushed asynchronously to `POST …/events/push`. Invalid URLs are logged and skipped; duplicate URLs are idempotent.
+
+### File sensor Sources and formats
+
+The reference `modelsrv server` acts as a **file-sensor**: it obtains landscape documents from a
+**Source** and applies them via [`pkg/ingress`](pkg/ingress) (YAML, JSON, CSV). Format parsing lives
+in the modelsrv library; Sensors own persistence. See
+[docs/adr/multi-format-ingress-sources.md](docs/adr/multi-format-ingress-sources.md).
+
+**`--data-dir` (default)** — one local directory. Watches `.yaml` / `.yml` / `.json` / `.jsonl` /
+`.csv` with `fsnotify`. CSV without `--sensor-config` uses the default column layout
+(`resourcetype`, `uuid`, `displayname`, `description`, `annotations`).
+
+**`--sensor-config` / `SENSOR_CONFIG`** — YAML listing one or more Sources. When set, it overrides
+`--data-dir`:
+
+```yaml
+sources:
+  - uri: file:///var/lib/emeland/data
+    watch: true
+  - uri: https://example.com/landscape.json
+    poll: 1m
+  - uri: s3://landscapes/org/data/
+    poll: 1m
+    files:
+      "*.csv":
+        format: csv
+        delimiter: ","
+        columns:
+          resourcetype: kind
+          uuid: id
+          displayname: displayName
+          description: description
+          annotations: annotations
+      "*.yaml":
+        format: yaml
+```
+
+CSV rows carry `resourcetype` (e.g. `Context`, `System`); `uuid` is written to that kind's primary
+ID field (`contextId`, `systemId`, …). `annotations` is a JSON object cell (e.g. `{"owner":"ops"}`).
+Config does not need a fixed `kind` / `version` (version defaults to `emeland.io/v1`). See
+[`config/sensor.yaml`](config/sensor.yaml).
+
+Under `files`, the most specific glob wins: a literal name (`landscape.csv`) is matched before a
+wildcard (`*.csv`), so overlapping patterns resolve the same way on every start. A `files` entry
+that cannot be understood (unknown `format` or `kind`) fails startup rather than being ignored.
+
+The format of a document is taken from the explicit `format` if given, otherwise from the file
+extension, otherwise from the HTTP `Content-Type` — so an extension-less endpoint such as
+`https://example.com/api/landscape` serving `application/json` needs no configuration.
+
+Supported URI schemes: `file://`, `http://` / `https://`, `s3://`. Local Sources use `watch: true`
+(fsnotify). HTTP and S3 Sources poll (`poll`) and re-apply when ETag / Last-Modified changes.
+S3 auth uses the default AWS credential chain (env, shared config, IAM role). File/object deletes
+do **not** remove landscape resources in v1.
 
 ### OpenTelemetry Collector integration
 
