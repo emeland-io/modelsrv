@@ -116,11 +116,17 @@ func registerResourceCmd(createCmd *cobra.Command, def resourceDef, outputDir, o
 }
 
 // writeResource marshals a Resource to YAML and writes it to the path
-// determined by outputFile or outputDir.
+// determined by outputFile or outputDir. If outputFile is "-", the YAML is
+// written to standard output.
 func writeResource(r Resource, id uuid.UUID, outputDir, outputFile string) error {
 	data, err := yaml.Marshal(r)
 	if err != nil {
 		return fmt.Errorf("marshalling YAML: %w", err)
+	}
+
+	if outputFile == "-" {
+		_, err := os.Stdout.Write(data)
+		return err
 	}
 
 	filename := outputFile

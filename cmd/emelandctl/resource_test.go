@@ -16,6 +16,7 @@ limitations under the License.
 package main
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -171,6 +172,33 @@ func TestCreateWithOutputFlag(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(data, &r))
 	assert.Equal(t, "System", r.Kind)
 	assert.Equal(t, "My System", r.Spec["displayName"])
+}
+
+func TestCreateWritesToStdout(t *testing.T) {
+	// Capture stdout by replacing os.Stdout with a pipe.
+	origStdout := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	execErr := executeCmd("create", "-o", "-", "system", "Stdout System")
+
+	_ = w.Close()
+	os.Stdout = origStdout
+
+	require.NoError(t, execErr)
+
+	output, err := io.ReadAll(r)
+	require.NoError(t, err)
+
+	var res Resource
+	require.NoError(t, yaml.Unmarshal(output, &res))
+	assert.Equal(t, "System", res.Kind)
+	assert.Equal(t, "Stdout System", res.Spec["displayName"])
+	assert.NotEmpty(t, res.Spec["systemId"])
+
+	// Ensure no "Created ..." message is mixed into the output.
+	assert.NotContains(t, string(output), "Created")
 }
 
 func TestCreateFailsWithInvalidResourceType(t *testing.T) {
