@@ -66,6 +66,29 @@ var primaryIDField = map[events.ResourceType]string{
 	events.CapacityResource:             "capacityId",
 }
 
+// ValidateCSVOptions reports config errors that do not require reading a file.
+// CSV needs ParseOptions.Kind and/or a column mapped to "kind"; empty Columns
+// uses [DefaultCSVColumns]. Call this at sensor Open so a columns block that
+// omits kind fails at startup instead of at first parse.
+func ValidateCSVOptions(opts ParseOptions) error {
+	if opts.Kind != events.UnknownResourceType {
+		if _, ok := documentKinds[opts.Kind]; !ok {
+			return fmt.Errorf("CSV unsupported kind %q", opts.Kind)
+		}
+		return nil
+	}
+	columns := opts.Columns
+	if len(columns) == 0 {
+		columns = DefaultCSVColumns
+	}
+	for _, path := range columns {
+		if strings.TrimSpace(path) == csvPathKind {
+			return nil
+		}
+	}
+	return fmt.Errorf("CSV requires ParseOptions.Kind or a column mapped to %q", csvPathKind)
+}
+
 // DecodeCSVDocuments turns CSV rows into [Document] values using opts for column mapping.
 //
 // Kind may come from ParseOptions.Kind and/or a column mapped to "kind" (e.g. resourcetype).
@@ -73,6 +96,10 @@ var primaryIDField = map[events.ResourceType]string{
 // Version defaults to [DefaultCSVVersion] when unset and no version column is present.
 // A column mapped to "id" is written to that kind's primary UUID field (see primaryIDField).
 func DecodeCSVDocuments(data []byte, opts ParseOptions) ([]Document, error) {
+	if err := ValidateCSVOptions(opts); err != nil {
+		return nil, err
+	}
+
 	columns := opts.Columns
 	if len(columns) == 0 {
 		columns = DefaultCSVColumns
@@ -133,12 +160,7 @@ func DecodeCSVDocuments(data []byte, opts ParseOptions) ([]Document, error) {
 	}
 
 	if opts.Kind == events.UnknownResourceType && kindCol < 0 {
-		return nil, fmt.Errorf("CSV requires ParseOptions.Kind or a column mapped to %q", csvPathKind)
-	}
-	if opts.Kind != events.UnknownResourceType {
-		if _, ok := documentKinds[opts.Kind]; !ok {
-			return nil, fmt.Errorf("CSV unsupported kind %q", opts.Kind)
-		}
+		return nil, fmt.Errorf("CSV file has no column mapped to %q", csvPathKind)
 	}
 
 	defaultVersion := strings.TrimSpace(opts.Version)

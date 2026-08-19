@@ -483,6 +483,23 @@ sources:
 		Expect(err).To(MatchError(ContainSubstring("unknown format")))
 	})
 
+	It("rejects a CSV column mapping with no kind at Open", func() {
+		cfg, err := filesensor.ParseConfig([]byte(`
+sources:
+  - uri: file:///tmp/data
+    files:
+      "*.csv":
+        format: csv
+        columns:
+          resource_type: displayName
+          uuid: id
+          displayname: displayName
+`))
+		Expect(err).NotTo(HaveOccurred())
+		_, _, err = cfg.Sources[0].Open(context.Background())
+		Expect(err).To(MatchError(ContainSubstring("column mapped to \"kind\"")))
+	})
+
 	It("opens a Source per URI scheme and rejects unknown schemes", func() {
 		dir := GinkgoT().TempDir()
 		local, _, err := filesensor.SourceConfig{URI: "file://" + dir}.Open(context.Background())

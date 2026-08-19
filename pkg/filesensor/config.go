@@ -182,5 +182,10 @@ func (fc FileParseCfg) toParseOptions() (ingress.ParseOptions, error) {
 		}
 		opts.Delimiter = r[0]
 	}
+	if opts.Format == ingress.FormatCSV {
+		if err := ingress.ValidateCSVOptions(opts); err != nil {
+			return opts, err
+		}
+	}
 	return opts, nil
 }

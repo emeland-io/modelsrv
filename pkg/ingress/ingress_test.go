@@ -82,10 +82,22 @@ var _ = Describe("Parse JSON", func() {
 
 var _ = Describe("Parse CSV", func() {
 	It("rejects CSV without Kind and without a kind column", func() {
-		_, err := ingress.DecodeCSVDocuments([]byte("a,b\n1,2\n"), ingress.ParseOptions{
+		err := ingress.ValidateCSVOptions(ingress.ParseOptions{
+			Columns: map[string]string{"a": "displayName", "b": "description"},
+		})
+		Expect(err).To(MatchError(ContainSubstring("column mapped to \"kind\"")))
+
+		_, err = ingress.DecodeCSVDocuments([]byte("a,b\n1,2\n"), ingress.ParseOptions{
 			Columns: map[string]string{"a": "displayName", "b": "description"},
 		})
 		Expect(err).To(MatchError(ContainSubstring("Kind")))
+	})
+
+	It("accepts a kind column mapping without ParseOptions.Kind", func() {
+		Expect(ingress.ValidateCSVOptions(ingress.ParseOptions{
+			Columns: map[string]string{"resource_type": "kind", "uuid": "id"},
+		})).To(Succeed())
+		Expect(ingress.ValidateCSVOptions(ingress.ParseOptions{})).To(Succeed())
 	})
 
 	It("detects kind per row from resourcetype and maps uuid to the primary id field", func() {
