@@ -105,22 +105,22 @@ func isSupportedFileName(name string) bool {
 }
 
 // ProcessBytes parses data and applies documents to m.
-func ProcessBytes(name string, data []byte, opts ingress.ParseOptions, m model.Model) (ProcessFileResult, error) {
+func ProcessBytes(name string, data []byte, opts ingress.ParseOptions, m model.Model) (ingress.ProcessResult, error) {
 	docs, err := ingress.Parse(name, data, opts)
 	if err != nil {
-		return ProcessFileResult{}, err
+		return ingress.ProcessResult{}, err
 	}
 	return ingress.ApplyAll(docs, m), nil
 }
 
 // ProcessFile reads a local YAML/JSON/CSV file and applies each document to m.
 // Kept for tests and callers that still pass a filesystem path.
-func ProcessFile(path string, m model.Model) (ProcessFileResult, error) {
+func ProcessFile(path string, m model.Model) (ingress.ProcessResult, error) {
 	src := NewLocalSource(filepath.Dir(path))
 	name := filepath.Base(path)
 	data, err := src.Read(context.Background(), name)
 	if err != nil {
-		return ProcessFileResult{}, err
+		return ingress.ProcessResult{}, err
 	}
 	return ProcessBytes(name, data, ingress.ParseOptions{}, m)
 }

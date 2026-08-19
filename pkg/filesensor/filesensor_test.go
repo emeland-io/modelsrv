@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/filesensor"
+	"go.emeland.io/modelsrv/pkg/ingress"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
@@ -31,13 +32,13 @@ spec:
   systemId: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
   displayName: "Order Service"
 `
-		docs, err := filesensor.DecodeDocuments([]byte(data))
+		docs, err := ingress.DecodeDocuments([]byte(data))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(docs).To(HaveLen(2))
 		Expect(docs[0].Kind.ResourceType()).To(Equal(events.ContextResource))
 		Expect(docs[1].Kind.ResourceType()).To(Equal(events.SystemResource))
-		Expect(filesensor.ValidVersion(docs[0].Version)).To(BeTrue())
-		Expect(filesensor.ValidVersion(docs[1].Version)).To(BeTrue())
+		Expect(ingress.ValidVersion(docs[0].Version)).To(BeTrue())
+		Expect(ingress.ValidVersion(docs[1].Version)).To(BeTrue())
 	})
 
 	It("rejects a document that omits kind", func() {
@@ -46,7 +47,7 @@ version: emeland.io/v1
 spec:
   contextId: "22222222-2222-2222-2222-222222222222"
 `
-		_, err := filesensor.DecodeDocuments([]byte(data))
+		_, err := ingress.DecodeDocuments([]byte(data))
 		Expect(err).To(MatchError(ContainSubstring("missing kind")))
 	})
 })
@@ -228,9 +229,9 @@ var _ = Describe("ApplyDocument", func() {
 
 	Context("when the API type is invalid", func() {
 		It("returns an error", func() {
-			doc := filesensor.Document{
+			doc := ingress.Document{
 				Version: "emeland.io/v1",
-				Kind:    filesensor.DocumentKind(events.APIResource),
+				Kind:    ingress.DocumentKind(events.APIResource),
 				Spec: map[string]any{
 					"apiId":       "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 					"displayName": "X",
@@ -238,38 +239,38 @@ var _ = Describe("ApplyDocument", func() {
 					"type":        "NotARealType",
 				},
 			}
-			Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("invalid API type")))
+			Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("invalid API type")))
 		})
 	})
 
 	Context("when the kind is not supported", func() {
 		It("returns an error", func() {
-			doc := filesensor.Document{
+			doc := ingress.Document{
 				Version: "emeland.io/v1",
-				Kind:    filesensor.DocumentKind(events.AnnotationsResource),
+				Kind:    ingress.DocumentKind(events.AnnotationsResource),
 				Spec: map[string]any{
 					"componentId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 					"displayName": "X",
 				},
 			}
-			Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("unsupported kind")))
+			Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("unsupported kind")))
 		})
 	})
 
 	Context("when systemId is used instead of system for an API", func() {
 		It("accepts the document after the system exists", func() {
-			Expect(filesensor.ApplyDocument(filesensor.Document{
+			Expect(ingress.ApplyDocument(ingress.Document{
 				Version: "emeland.io/v1",
-				Kind:    filesensor.DocumentKind(events.SystemResource),
+				Kind:    ingress.DocumentKind(events.SystemResource),
 				Spec: map[string]any{
 					"systemId":    "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 					"displayName": "S",
 				},
 			}, m)).To(Succeed())
 
-			Expect(filesensor.ApplyDocument(filesensor.Document{
+			Expect(ingress.ApplyDocument(ingress.Document{
 				Version: "emeland.io/v1",
-				Kind:    filesensor.DocumentKind(events.APIResource),
+				Kind:    ingress.DocumentKind(events.APIResource),
 				Spec: map[string]any{
 					"apiId":       "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 					"displayName": "A",
@@ -290,9 +291,9 @@ var _ = Describe("CapacityResourceType documents", func() {
 		m, err := model.NewModel(sink)
 		Expect(err).NotTo(HaveOccurred())
 
-		doc := filesensor.Document{
+		doc := ingress.Document{
 			Version: "emeland.io/v1",
-			Kind:    filesensor.DocumentKind(events.CapacityResourceTypeResource),
+			Kind:    ingress.DocumentKind(events.CapacityResourceTypeResource),
 			Spec: map[string]any{
 				"capacityResourceTypeId": crtID.String(),
 				"displayName":            "CPU cores",
@@ -300,7 +301,7 @@ var _ = Describe("CapacityResourceType documents", func() {
 				"unit":                   "cores",
 			},
 		}
-		Expect(filesensor.ApplyDocument(doc, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(doc, m)).To(Succeed())
 
 		got := m.GetCapacityResourceTypeById(crtID)
 		Expect(got).NotTo(BeNil())
@@ -325,9 +326,9 @@ var _ = Describe("Capacity documents", func() {
 		m, err = model.NewModel(sink)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(filesensor.ApplyDocument(filesensor.Document{
+		Expect(ingress.ApplyDocument(ingress.Document{
 			Version: "emeland.io/v1",
-			Kind:    filesensor.DocumentKind(events.CapacityResourceTypeResource),
+			Kind:    ingress.DocumentKind(events.CapacityResourceTypeResource),
 			Spec: map[string]any{
 				"capacityResourceTypeId": crtID.String(),
 				"displayName":            "CPU",
@@ -345,10 +346,10 @@ var _ = Describe("Capacity documents", func() {
 		Expect(m.AddContext(ctx)).To(Succeed())
 	})
 
-	validCapacityDoc := func() filesensor.Document {
-		return filesensor.Document{
+	validCapacityDoc := func() ingress.Document {
+		return ingress.Document{
 			Version: "emeland.io/v1",
-			Kind:    filesensor.DocumentKind(events.CapacityResource),
+			Kind:    ingress.DocumentKind(events.CapacityResource),
 			Spec: map[string]any{
 				"capacityId":  capID.String(),
 				"displayName": "Production CPU provided",
@@ -369,7 +370,7 @@ var _ = Describe("Capacity documents", func() {
 	}
 
 	It("applies a valid Capacity YAML document after dependencies exist", func() {
-		Expect(filesensor.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
+		Expect(ingress.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
 		got := m.GetCapacityById(capID)
 		Expect(got).NotTo(BeNil())
 		Expect(got.GetDisplayName()).To(Equal("Production CPU provided"))
@@ -382,21 +383,21 @@ var _ = Describe("Capacity documents", func() {
 	It("rejects invalid category", func() {
 		doc := validCapacityDoc()
 		doc.Spec["category"] = "unknown"
-		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("invalid capacity category")))
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("invalid capacity category")))
 	})
 
 	It("rejects negative amount", func() {
 		doc := validCapacityDoc()
 		doc.Spec["amount"] = "-1"
-		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("non-negative")))
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("non-negative")))
 	})
 
 	It("rejects tuple conflict when CapacityId differs", func() {
-		Expect(filesensor.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
+		Expect(ingress.ApplyDocument(validCapacityDoc(), m)).To(Succeed())
 
 		doc := validCapacityDoc()
 		doc.Spec["capacityId"] = uuid.New().String()
-		Expect(filesensor.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capacity tuple already exists")))
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capacity tuple already exists")))
 	})
 })
 
