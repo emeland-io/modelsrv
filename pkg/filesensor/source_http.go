@@ -119,6 +119,9 @@ func (s *HTTPSource) List(ctx context.Context) ([]FileMeta, error) {
 	} else {
 		closeResponseBody(resp, 0)
 	}
+	if resp == nil { // required by nilaway
+		return nil, fmt.Errorf("HTTP %s: empty response", s.URL)
+	}
 	if !httpStatusOK(resp.StatusCode) {
 		return nil, fmt.Errorf("HTTP %s: status %d", s.URL, resp.StatusCode)
 	}
