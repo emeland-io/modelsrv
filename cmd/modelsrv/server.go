@@ -47,141 +47,139 @@ var serverCmd = &cobra.Command{
 	Short: "minimal model server for the Emerging Enterprise Landscape (EmELand).",
 	Long:  `minimal model server instance that serves the model via REST API and provides a minimal web UI.`,
 
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg := zap.NewDevelopmentConfig()
-		cfg.DisableStacktrace = true
-		log, err := cfg.Build()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "logger: %v\n", err)
-			os.Exit(1)
+	RunE: runServer,
+}
+
+func runServer(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+
+	cfg := zap.NewDevelopmentConfig()
+	cfg.DisableStacktrace = true
+	log, err := cfg.Build()
+	if err != nil {
+		return fmt.Errorf("logger: %w", err)
+	}
+	defer log.Sync() //nolint:errcheck
+
+	logger := log.Sugar()
+
+	b, err := backend.New(backend.WithEventHistoryLimit(eventHistoryLimit))
+	if err != nil {
+		return fmt.Errorf("creating backend: %w", err)
+	}
+
+	dataPath := dataDir
+	if !filepath.IsAbs(dataPath) {
+		if abs, err := filepath.Abs(dataPath); err == nil {
+			dataPath = abs
 		}
-		defer log.Sync() //nolint:errcheck
+	}
+	logger.Infow("starting modelsrv",
+		"listen", serviceAddr,
+		"dataDir", dataPath,
+		"sensorConfig", sensorConfig,
+		"otelConfigOut", otelConfigOut,
+	)
+	logger.Infof("REST API: http://%s/api", serviceAddr)
+	logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
 
-		logger := log.Sugar()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		b, err := backend.New(backend.WithEventHistoryLimit(eventHistoryLimit))
-		if err != nil {
-			logger.Errorw("error creating backend", "error", err)
-			return
-		}
-
-		dataPath := dataDir
-		if !filepath.IsAbs(dataPath) {
-			if abs, err := filepath.Abs(dataPath); err == nil {
-				dataPath = abs
-			}
-		}
-		logger.Infow("starting modelsrv",
-			"listen", serviceAddr,
-			"dataDir", dataPath,
-			"sensorConfig", sensorConfig,
-			"otelConfigOut", otelConfigOut,
-		)
-		logger.Infof("REST API: http://%s/api", serviceAddr)
-		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
-
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		var configWriter *endpointprobe.ConfigWriter
-		var configSyncFilterID eventfilter.FilterID
-		if otelConfigOut != "" {
-			configWriter, err = endpointprobe.NewConfigWriter(endpointprobe.ConfigWriterConfig{
-				Path:     otelConfigOut,
-				Debounce: otelConfigDebounce,
-				Logger:   logger,
-				Opts: endpointprobe.CollectorConfigOptions{
-					CollectionInterval: otelCollectionInterval,
-					ListenAddr:         otelListenAddr,
-					ExpiryThreshold:    otelExpiryThreshold,
-					Subscribers:        otelSubscribers,
-				},
-			})
-			if err != nil {
-				logger.Errorw("invalid otel config writer configuration", "error", err)
-				return
-			}
-			go configWriter.Run(ctx)
-			configSyncFilterID = b.GetChain().RegisterFilter(endpointprobe.NewConfigSyncFilter(configWriter))
-			logger.Infow("otel config sync started",
-				"path", otelConfigOut,
-				"debounce", otelConfigDebounce,
-			)
-		}
-
-		if sensorConfig != "" {
-			cfg, err := filesensor.LoadConfigFile(sensorConfig)
-			if err != nil {
-				logger.Errorw("filesensor: could not load sensor config", "path", sensorConfig, "error", err.Error())
-				return
-			}
-			logger.Infow("file sensor: multi-source config", "path", sensorConfig, "sources", len(cfg.Sources))
-			sources, err := filesensor.OpenSources(ctx, cfg)
-			if err != nil {
-				logger.Errorw("filesensor: could not open sources", "path", sensorConfig, "error", err.Error())
-				return
-			}
-			filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
-			registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
-			filesensor.StartSources(ctx, sources, b.GetModel(), logger)
-		} else {
-			logger.Info("file sensor: watching for YAML/JSON/CSV in data directory")
-			filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
-			registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
-			filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
-		}
-
-		webOpts := endpoint.WebListenerOptions{
-			TrustAuthHeaders: trustAuthHeaders,
-			AuthzConfig: authz.Config{
-				AuditorIdentity: auditorIdentity,
-				AuditorGroup:    auditorGroup,
-				PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
+	var configWriter *endpointprobe.ConfigWriter
+	var configSyncFilterID eventfilter.FilterID
+	if otelConfigOut != "" {
+		configWriter, err = endpointprobe.NewConfigWriter(endpointprobe.ConfigWriterConfig{
+			Path:     otelConfigOut,
+			Debounce: otelConfigDebounce,
+			Logger:   logger,
+			Opts: endpointprobe.CollectorConfigOptions{
+				CollectionInterval: otelCollectionInterval,
+				ListenAddr:         otelListenAddr,
+				ExpiryThreshold:    otelExpiryThreshold,
+				Subscribers:        otelSubscribers,
 			},
+		})
+		if err != nil {
+			return fmt.Errorf("invalid otel config writer configuration: %w", err)
 		}
-		if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
-			logger.Errorw("error starting web listener", "error", err)
-			return
+		go configWriter.Run(ctx)
+		configSyncFilterID = b.GetChain().RegisterFilter(endpointprobe.NewConfigSyncFilter(configWriter))
+		logger.Infow("otel config sync started",
+			"path", otelConfigOut,
+			"debounce", otelConfigDebounce,
+		)
+	}
+
+	if sensorConfig != "" {
+		cfg, err := filesensor.LoadConfigFile(sensorConfig)
+		if err != nil {
+			return fmt.Errorf("filesensor: could not load sensor config %s: %w", sensorConfig, err)
 		}
-
-		if metricsAddr != "" {
-			if err := endpoint.StartMetricsListener(metricsAddr); err != nil {
-				logger.Errorw("error starting metrics listener", "error", err)
-				return
-			}
+		logger.Infow("file sensor: multi-source config", "path", sensorConfig, "sources", len(cfg.Sources))
+		sources, err := filesensor.OpenSources(ctx, cfg)
+		if err != nil {
+			return fmt.Errorf("filesensor: could not open sources from %s: %w", sensorConfig, err)
 		}
+		filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
+		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+		filesensor.StartSources(ctx, sources, b.GetModel(), logger)
+	} else {
+		logger.Info("file sensor: watching for YAML/JSON/CSV in data directory")
+		filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
+		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+		filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
+	}
 
-		logger.Info("server is running (Ctrl+C to stop)")
+	webOpts := endpoint.WebListenerOptions{
+		TrustAuthHeaders: trustAuthHeaders,
+		AuthzConfig: authz.Config{
+			AuditorIdentity: auditorIdentity,
+			AuditorGroup:    auditorGroup,
+			PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
+		},
+	}
+	if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
+		return fmt.Errorf("starting web listener: %w", err)
+	}
 
-		sigCh := make(chan os.Signal, 1)
-		notifyShutdownSignals(sigCh)
-		sig := <-sigCh
-		logger.Infow("shutdown signal received", "signal", sig.String())
-
-		cancel()
-
-		if configWriter != nil {
-			b.GetChain().Unregister(configSyncFilterID)
-
-			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), otelConfigShutdownTimeout)
-			done := make(chan struct{})
-			go func() {
-				configWriter.Wait()
-				close(done)
-			}()
-
-			select {
-			case <-done:
-				logger.Info("otel config sync stopped")
-			case <-shutdownCtx.Done():
-				logger.Warn("shutdown timeout waiting for otel config writer")
-			}
-			shutdownCancel()
+	if metricsAddr != "" {
+		if err := endpoint.StartMetricsListener(metricsAddr); err != nil {
+			return fmt.Errorf("starting metrics listener: %w", err)
 		}
+	}
 
-		endpoint.StopWebListener()
-		logger.Info("goodbye")
-	},
+	logger.Info("server is running (Ctrl+C to stop)")
+
+	sigCh := make(chan os.Signal, 1)
+	notifyShutdownSignals(sigCh)
+	sig := <-sigCh
+	logger.Infow("shutdown signal received", "signal", sig.String())
+
+	cancel()
+
+	if configWriter != nil {
+		b.GetChain().Unregister(configSyncFilterID)
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), otelConfigShutdownTimeout)
+		done := make(chan struct{})
+		go func() {
+			configWriter.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			logger.Info("otel config sync stopped")
+		case <-shutdownCtx.Done():
+			logger.Warn("shutdown timeout waiting for otel config writer")
+		}
+		shutdownCancel()
+	}
+
+	endpoint.StopWebListener()
+	logger.Info("goodbye")
+	return nil
 }
 
 func init() {
