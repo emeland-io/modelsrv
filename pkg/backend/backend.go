@@ -21,11 +21,13 @@ import (
 	"go.emeland.io/modelsrv/pkg/eventfilter/resolvefindings"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.uber.org/zap"
 )
 
 // config holds construction-time settings for New.
 type config struct {
 	eventHistoryLimit int
+	logger            *zap.SugaredLogger
 }
 
 // Option configures a Backend at construction time.
@@ -37,6 +39,12 @@ type Option func(*config)
 // is ignored (the event manager's own default applies).
 func WithEventHistoryLimit(n int) Option {
 	return func(c *config) { c.eventHistoryLimit = n }
+}
+
+// WithLogger forwards a logger to the event manager so subscriber notify
+// failures are recorded with zap instead of fmt.Printf.
+func WithLogger(log *zap.SugaredLogger) Option {
+	return func(c *config) { c.logger = log }
 }
 
 // Backend bundles the model, the filter chain, and the event manager.
@@ -76,6 +84,9 @@ func New(opts ...Option) (Backend, error) {
 	var mgrOpts []eventmgr.Option
 	if cfg.eventHistoryLimit > 0 {
 		mgrOpts = append(mgrOpts, eventmgr.WithHistoryLimit(cfg.eventHistoryLimit))
+	}
+	if cfg.logger != nil {
+		mgrOpts = append(mgrOpts, eventmgr.WithLogger(cfg.logger))
 	}
 	eventMgr, err := eventmgr.NewEventManager(mgrOpts...)
 	if err != nil {

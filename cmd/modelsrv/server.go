@@ -63,7 +63,10 @@ func runServer(cmd *cobra.Command, _ []string) error {
 
 	logger := log.Sugar()
 
-	b, err := backend.New(backend.WithEventHistoryLimit(eventHistoryLimit))
+	b, err := backend.New(
+		backend.WithEventHistoryLimit(eventHistoryLimit),
+		backend.WithLogger(logger),
+	)
 	if err != nil {
 		return fmt.Errorf("creating backend: %w", err)
 	}
