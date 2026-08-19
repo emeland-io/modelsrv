@@ -15,6 +15,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/component"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 	"go.emeland.io/modelsrv/pkg/model/finding"
+	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
 func newModel() model.Model {
@@ -258,6 +259,31 @@ var _ = Describe("MissingResourceReference resolution", func() {
 		updated.SetDisplayName("job")
 		updated.SetComponentRef(&component.ComponentRef{ComponentId: uuid.New()})
 		Expect(m.AddComponentInstance(updated)).To(Succeed())
+
+		Expect(findingsOfKind(m, finding.MissingResourceReference)).To(BeEmpty())
+	})
+
+	It("clears when SystemInstance later gains a SystemRef", func() {
+		m, _ := newModelWithResolveChain()
+		siID := uuid.New()
+
+		si := system.NewSystemInstance(siID)
+		si.SetDisplayName("helm-release")
+		Expect(m.AddSystemInstance(si)).To(Succeed())
+
+		f := finding.NewFinding(uuid.New())
+		f.SetFindingTypeById(finding.TypeIDForKind(finding.MissingResourceReference))
+		f.SetDisplayName(string(finding.MissingResourceReference))
+		f.SetResources([]*common.ResourceRef{
+			{ResourceId: siID, ResourceType: events.SystemInstanceResource},
+		})
+		Expect(m.AddFinding(f)).To(Succeed())
+		Expect(findingsOfKind(m, finding.MissingResourceReference)).To(HaveLen(1))
+
+		updated := system.NewSystemInstance(siID)
+		updated.SetDisplayName("helm-release")
+		updated.SetSystemRef(&system.SystemRef{SystemId: uuid.New()})
+		Expect(m.AddSystemInstance(updated)).To(Succeed())
 
 		Expect(findingsOfKind(m, finding.MissingResourceReference)).To(BeEmpty())
 	})
