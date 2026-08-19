@@ -2,9 +2,14 @@ package eventmgr_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,10 +20,26 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
+func newPushServer(h http.HandlerFunc) *httptest.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/events/push", h)
+	return httptest.NewServer(mux)
+}
+
+// pushedDisplayName reads the display name out of a POST /events/push body,
+// which tests use as an ordering marker.
+func pushedDisplayName(body []byte) string {
+	var wire struct {
+		Resource map[string]any `json:"resource"`
+	}
+	Expect(json.Unmarshal(body, &wire)).To(Succeed())
+	name, _ := wire.Resource["displayName"].(string)
+	return name
+}
+
 func newPushCountingServer() (*httptest.Server, *int32) {
 	var n int32
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/events/push", func(w http.ResponseWriter, r *http.Request) {
+	srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -26,12 +47,16 @@ func newPushCountingServer() (*httptest.Server, *int32) {
 		atomic.AddInt32(&n, 1)
 		w.WriteHeader(http.StatusOK)
 	})
-	return httptest.NewServer(mux), &n
+	return srv, &n
 }
 
 func emitSystemCreate(sink events.EventSink, id uuid.UUID) error {
+	return emitNamedSystemCreate(sink, id, "bdd-system")
+}
+
+func emitNamedSystemCreate(sink events.EventSink, id uuid.UUID, displayName string) error {
 	sys := system.NewSystem(id)
-	sys.SetDisplayName("bdd-system")
+	sys.SetDisplayName(displayName)
 	return sink.Receive(events.SystemResource, events.CreateOperation, id, sys)
 }
 
@@ -134,6 +159,150 @@ var _ = Describe("EventManager", func() {
 			Eventually(func() int32 {
 				return atomic.LoadInt32(count)
 			}, "2s", "10ms").Should(Equal(int32(1)))
+		})
+
+		It("delivers a burst one event at a time, in the order the model produced them", func() {
+			var mu sync.Mutex
+			var inFlight, maxInFlight int
+			var delivered []string
+
+			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				body, err := io.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
+
+				mu.Lock()
+				inFlight++
+				if inFlight > maxInFlight {
+					maxInFlight = inFlight
+				}
+				mu.Unlock()
+
+				time.Sleep(5 * time.Millisecond)
+
+				mu.Lock()
+				inFlight--
+				delivered = append(delivered, pushedDisplayName(body))
+				mu.Unlock()
+				w.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+
+			const burst = 24
+			emitted := make([]string, 0, burst)
+			for i := range burst {
+				name := fmt.Sprintf("system-%02d", i)
+				emitted = append(emitted, name)
+				Expect(emitNamedSystemCreate(sink, uuid.New(), name)).To(Succeed())
+			}
+
+			Eventually(func() int {
+				mu.Lock()
+				defer mu.Unlock()
+				return len(delivered)
+			}, "5s", "10ms").Should(Equal(burst))
+
+			mu.Lock()
+			defer mu.Unlock()
+			Expect(maxInFlight).To(Equal(1))
+			Expect(delivered).To(Equal(emitted))
+		})
+
+		It("resyncs a subscriber from current state when its queue overflows", func() {
+			release := make(chan struct{})
+			var mu sync.Mutex
+			seen := map[string]struct{}{}
+
+			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
+				<-release
+				body, err := io.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
+				mu.Lock()
+				seen[pushedDisplayName(body)] = struct{}{}
+				mu.Unlock()
+				w.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+
+			// More events than the delivery queue holds, while the
+			// subscriber is wedged: the excess cannot be queued.
+			const total = 320
+			for i := range total {
+				Expect(emitNamedSystemCreate(sink, uuid.New(), fmt.Sprintf("system-%03d", i))).To(Succeed())
+			}
+			close(release)
+
+			Eventually(func() int {
+				mu.Lock()
+				defer mu.Unlock()
+				return len(seen)
+			}, "20s", "50ms").Should(Equal(total))
+		})
+
+		It("does not stall model mutations while a subscriber is unreachable", func() {
+			release := make(chan struct{})
+			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
+				<-release
+				w.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+			defer close(release)
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				for range 50 {
+					Expect(emitSystemCreate(sink, uuid.New())).To(Succeed())
+				}
+			}()
+
+			Eventually(done, "2s").Should(BeClosed())
+			seq, err := em.GetCurrentSequenceId(ctx)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(seq).To(Equal(uint64(50)))
+		})
+
+		It("retries a failed subscriber notify until it succeeds", func() {
+			var attempts, successes int32
+			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				n := atomic.AddInt32(&attempts, 1)
+				if n < 3 {
+					http.Error(w, "unavailable", http.StatusServiceUnavailable)
+					return
+				}
+				atomic.AddInt32(&successes, 1)
+				w.WriteHeader(http.StatusOK)
+			})
+			defer srv.Close()
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emitSystemCreate(sink, uuid.New())).To(Succeed())
+
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&successes)
+			}, "5s", "10ms").Should(Equal(int32(1)))
+			Expect(atomic.LoadInt32(&attempts)).To(BeNumerically(">=", 3))
 		})
 
 		It("is idempotent when registering the same callback URL twice", func() {
