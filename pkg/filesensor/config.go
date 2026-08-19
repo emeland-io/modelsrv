@@ -74,7 +74,7 @@ func (sc SourceConfig) Open(ctx context.Context) (Source, ParserConfig, error) {
 		if dir == "" {
 			return nil, nil, fmt.Errorf("file URI missing path: %q", uri)
 		}
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := requireLocalDir(dir); err != nil {
 			return nil, nil, err
 		}
 		return NewLocalSource(dir), parser, nil
@@ -91,11 +91,25 @@ func (sc SourceConfig) Open(ctx context.Context) (Source, ParserConfig, error) {
 		if u, err := url.Parse(uri); err == nil && u.Scheme != "" && u.Scheme != "file" {
 			return nil, nil, fmt.Errorf("unsupported source scheme %q", u.Scheme)
 		}
-		if err := os.MkdirAll(uri, 0755); err != nil {
+		if err := requireLocalDir(uri); err != nil {
 			return nil, nil, err
 		}
 		return NewLocalSource(uri), parser, nil
 	}
+}
+
+func requireLocalDir(dir string) error {
+	info, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("local source directory %q does not exist", dir)
+		}
+		return fmt.Errorf("stat local source directory %q: %w", dir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("local source path %q is not a directory", dir)
+	}
+	return nil
 }
 
 func (sc SourceConfig) parserConfig() (ParserConfig, error) {

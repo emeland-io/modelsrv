@@ -356,4 +356,23 @@ sources:
 		_, _, err = filesensor.SourceConfig{URI: "  "}.Open(context.Background())
 		Expect(err).To(MatchError(ContainSubstring("uri is required")))
 	})
+
+	It("requires a local source directory to already exist", func() {
+		missing := filepath.Join(GinkgoT().TempDir(), "emealnd", "data")
+		_, _, err := filesensor.SourceConfig{URI: "file://" + missing}.Open(context.Background())
+		Expect(err).To(MatchError(ContainSubstring("does not exist")))
+		Expect(err.Error()).To(ContainSubstring(missing))
+		_, statErr := os.Stat(missing)
+		Expect(os.IsNotExist(statErr)).To(BeTrue())
+
+		_, _, err = filesensor.SourceConfig{URI: missing}.Open(context.Background())
+		Expect(err).To(MatchError(ContainSubstring("does not exist")))
+		_, statErr = os.Stat(missing)
+		Expect(os.IsNotExist(statErr)).To(BeTrue())
+
+		filePath := filepath.Join(GinkgoT().TempDir(), "not-a-dir")
+		Expect(os.WriteFile(filePath, []byte("x"), 0644)).To(Succeed())
+		_, _, err = filesensor.SourceConfig{URI: "file://" + filePath}.Open(context.Background())
+		Expect(err).To(MatchError(ContainSubstring("not a directory")))
+	})
 })
