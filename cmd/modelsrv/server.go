@@ -26,6 +26,7 @@ const otelConfigShutdownTimeout = 30 * time.Second
 
 var serviceAddr string
 var dataDir string
+var sensorConfig string
 var metricsAddr string
 var trustAuthHeaders bool
 var auditorIdentity string
@@ -46,130 +47,150 @@ var serverCmd = &cobra.Command{
 	Short: "minimal model server for the Emerging Enterprise Landscape (EmELand).",
 	Long:  `minimal model server instance that serves the model via REST API and provides a minimal web UI.`,
 
-	Run: func(cmd *cobra.Command, args []string) {
-		cfg := zap.NewDevelopmentConfig()
-		cfg.DisableStacktrace = true
-		log, err := cfg.Build()
+	RunE: runServer,
+}
+
+func runServer(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+
+	cfg := zap.NewDevelopmentConfig()
+	cfg.DisableStacktrace = true
+	log, err := cfg.Build()
+	if err != nil {
+		return fmt.Errorf("logger: %w", err)
+	}
+	defer log.Sync() //nolint:errcheck
+
+	logger := log.Sugar()
+
+	b, err := backend.New(backend.WithEventHistoryLimit(eventHistoryLimit))
+	if err != nil {
+		return fmt.Errorf("creating backend: %w", err)
+	}
+
+	dataPath := dataDir
+	if !filepath.IsAbs(dataPath) {
+		if abs, err := filepath.Abs(dataPath); err == nil {
+			dataPath = abs
+		}
+	}
+	logger.Infow("starting modelsrv",
+		"listen", serviceAddr,
+		"dataDir", dataPath,
+		"sensorConfig", sensorConfig,
+		"otelConfigOut", otelConfigOut,
+	)
+	logger.Infof("REST API: http://%s/api", serviceAddr)
+	logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var configWriter *endpointprobe.ConfigWriter
+	var configSyncFilterID eventfilter.FilterID
+	if otelConfigOut != "" {
+		configWriter, err = endpointprobe.NewConfigWriter(endpointprobe.ConfigWriterConfig{
+			Path:     otelConfigOut,
+			Debounce: otelConfigDebounce,
+			Logger:   logger,
+			Opts: endpointprobe.CollectorConfigOptions{
+				CollectionInterval: otelCollectionInterval,
+				ListenAddr:         otelListenAddr,
+				ExpiryThreshold:    otelExpiryThreshold,
+				Subscribers:        otelSubscribers,
+			},
+		})
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "logger: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("invalid otel config writer configuration: %w", err)
 		}
-		defer log.Sync() //nolint:errcheck
-
-		logger := log.Sugar()
-
-		b, err := backend.New(backend.WithEventHistoryLimit(eventHistoryLimit))
-		if err != nil {
-			logger.Errorw("error creating backend", "error", err)
-			return
-		}
-
-		dataPath := dataDir
-		if !filepath.IsAbs(dataPath) {
-			if abs, err := filepath.Abs(dataPath); err == nil {
-				dataPath = abs
-			}
-		}
-		logger.Infow("starting modelsrv",
-			"listen", serviceAddr,
-			"dataDir", dataPath,
-			"otelConfigOut", otelConfigOut,
+		go configWriter.Run(ctx)
+		configSyncFilterID = b.GetChain().RegisterFilter(endpointprobe.NewConfigSyncFilter(configWriter))
+		logger.Infow("otel config sync started",
+			"path", otelConfigOut,
+			"debounce", otelConfigDebounce,
 		)
-		logger.Infof("REST API: http://%s/api", serviceAddr)
-		logger.Infof("Swagger UI: http://%s/swagger/", serviceAddr)
-		logger.Info("file sensor: watching for YAML in data directory")
+	}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		var configWriter *endpointprobe.ConfigWriter
-		var configSyncFilterID eventfilter.FilterID
-		if otelConfigOut != "" {
-			configWriter, err = endpointprobe.NewConfigWriter(endpointprobe.ConfigWriterConfig{
-				Path:     otelConfigOut,
-				Debounce: otelConfigDebounce,
-				Logger:   logger,
-				Opts: endpointprobe.CollectorConfigOptions{
-					CollectionInterval: otelCollectionInterval,
-					ListenAddr:         otelListenAddr,
-					ExpiryThreshold:    otelExpiryThreshold,
-					Subscribers:        otelSubscribers,
-				},
-			})
-			if err != nil {
-				logger.Errorw("invalid otel config writer configuration", "error", err)
-				return
-			}
-			go configWriter.Run(ctx)
-			configSyncFilterID = b.GetChain().RegisterFilter(endpointprobe.NewConfigSyncFilter(configWriter))
-			logger.Infow("otel config sync started",
-				"path", otelConfigOut,
-				"debounce", otelConfigDebounce,
-			)
+	if sensorConfig != "" {
+		cfg, err := filesensor.LoadConfigFile(sensorConfig)
+		if err != nil {
+			return fmt.Errorf("filesensor: could not load sensor config %s: %w", sensorConfig, err)
 		}
-
+		logger.Infow("file sensor: multi-source config", "path", sensorConfig, "sources", len(cfg.Sources))
+		sources, err := filesensor.OpenSources(ctx, cfg)
+		if err != nil {
+			return fmt.Errorf("filesensor: could not open sources from %s: %w", sensorConfig, err)
+		}
+		summary := filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
+		if err := summary.Err(); err != nil {
+			return fmt.Errorf("filesensor: %w", err)
+		}
+		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
+		filesensor.StartSources(ctx, sources, b.GetModel(), logger)
+	} else {
+		logger.Info("file sensor: watching for YAML/JSON/CSV in data directory")
 		filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
 		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
 		filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
+	}
 
-		webOpts := endpoint.WebListenerOptions{
-			TrustAuthHeaders: trustAuthHeaders,
-			AuthzConfig: authz.Config{
-				AuditorIdentity: auditorIdentity,
-				AuditorGroup:    auditorGroup,
-				PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
-			},
+	webOpts := endpoint.WebListenerOptions{
+		TrustAuthHeaders: trustAuthHeaders,
+		AuthzConfig: authz.Config{
+			AuditorIdentity: auditorIdentity,
+			AuditorGroup:    auditorGroup,
+			PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
+		},
+	}
+	if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
+		return fmt.Errorf("starting web listener: %w", err)
+	}
+
+	if metricsAddr != "" {
+		if err := endpoint.StartMetricsListener(metricsAddr); err != nil {
+			return fmt.Errorf("starting metrics listener: %w", err)
 		}
-		if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
-			logger.Errorw("error starting web listener", "error", err)
-			return
+	}
+
+	logger.Info("server is running (Ctrl+C to stop)")
+
+	sigCh := make(chan os.Signal, 1)
+	notifyShutdownSignals(sigCh)
+	sig := <-sigCh
+	logger.Infow("shutdown signal received", "signal", sig.String())
+
+	cancel()
+
+	if configWriter != nil {
+		b.GetChain().Unregister(configSyncFilterID)
+
+		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), otelConfigShutdownTimeout)
+		done := make(chan struct{})
+		go func() {
+			configWriter.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			logger.Info("otel config sync stopped")
+		case <-shutdownCtx.Done():
+			logger.Warn("shutdown timeout waiting for otel config writer")
 		}
+		shutdownCancel()
+	}
 
-		if metricsAddr != "" {
-			if err := endpoint.StartMetricsListener(metricsAddr); err != nil {
-				logger.Errorw("error starting metrics listener", "error", err)
-				return
-			}
-		}
-
-		logger.Info("server is running (Ctrl+C to stop)")
-
-		sigCh := make(chan os.Signal, 1)
-		notifyShutdownSignals(sigCh)
-		sig := <-sigCh
-		logger.Infow("shutdown signal received", "signal", sig.String())
-
-		cancel()
-
-		if configWriter != nil {
-			b.GetChain().Unregister(configSyncFilterID)
-
-			shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), otelConfigShutdownTimeout)
-			done := make(chan struct{})
-			go func() {
-				configWriter.Wait()
-				close(done)
-			}()
-
-			select {
-			case <-done:
-				logger.Info("otel config sync stopped")
-			case <-shutdownCtx.Done():
-				logger.Warn("shutdown timeout waiting for otel config writer")
-			}
-			shutdownCancel()
-		}
-
-		endpoint.StopWebListener()
-		logger.Info("goodbye")
-	},
+	endpoint.StopWebListener()
+	logger.Info("goodbye")
+	return nil
 }
 
 func init() {
 	rootCmd.AddCommand(serverCmd)
 
 	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", envOrDefault("SERVICE_ADDR", ":8080"), "The address the service listens on")
-	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for YAML model definitions (.yaml/.yml); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for landscape documents (.yaml/.yml/.json/.csv); relative paths are resolved from the process working directory")
+	serverCmd.Flags().StringVar(&sensorConfig, "sensor-config", envOrDefault("SENSOR_CONFIG", ""), "Optional YAML file listing Sources (file://, https://, s3://) and per-glob parser options; when set, overrides --data-dir")
 	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", envOrDefault("METRICS_ADDR", ""), "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
 	serverCmd.Flags().BoolVar(&trustAuthHeaders, "trust-auth-headers", envOrDefault("TRUST_AUTH_HEADERS", "") == "true", "Trust X-Auth-* identity headers from the BFF and enforce ownership visibility")
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")

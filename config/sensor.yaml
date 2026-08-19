@@ -1,0 +1,46 @@
+# Sample file-sensor config for modelsrv server.
+#
+# Usage:
+#   modelsrv server --sensor-config config/sensor.yaml
+#   # or: SENSOR_CONFIG=config/sensor.yaml modelsrv server
+#
+# When --sensor-config is set, it overrides --data-dir.
+# S3/HTTP auth: default AWS credential chain / HTTP headers as applicable.
+# File/object deletes do not remove landscape resources (v1).
+
+sources:
+  # Local directory (fsnotify). Relative file:// paths are resolved from the process cwd.
+  - uri: file://./data
+    watch: true
+
+  # Single remote document (poll + ETag / Last-Modified). Without a file extension
+  # the format is taken from the response Content-Type.
+  # - uri: https://example.com/landscape.json
+  #   poll: 1m
+  #   timeout: 30s
+
+  # S3 prefix: lists flat objects under the prefix and applies supported formats.
+  # Under files, the most specific glob wins (a literal name beats a wildcard).
+  - uri: s3://landscapes/org/data/
+    poll: 1m
+    files:
+      "*.yaml":
+        format: yaml
+      "*.yml":
+        format: yaml
+      "*.json":
+        format: json
+      # Generic CSV: resourcetype selects the landscape kind per row; uuid is written
+      # to that kind's primary ID field (contextId, systemId, …). No kind/version
+      # needed in config — version defaults to emeland.io/v1.
+      # Example header: resourcetype,uuid,displayname,description,annotations
+      # annotations cell is a JSON object, e.g. {"owner":"ops"}
+      "*.csv":
+        format: csv
+        delimiter: ","
+        columns:
+          resourcetype: kind
+          uuid: id
+          displayname: displayName
+          description: description
+          annotations: annotations

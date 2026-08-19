@@ -1,0 +1,61 @@
+package ingress
+
+import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
+	"go.emeland.io/modelsrv/pkg/events"
+	"gopkg.in/yaml.v3"
+)
+
+// UnmarshalYAML accepts only resource kinds valid for a top-level document (or empty for blank placeholders).
+func (k *DocumentKind) UnmarshalYAML(node *yaml.Node) error {
+	var s string
+	if err := node.Decode(&s); err != nil {
+		return err
+	}
+	parsed, err := parseDocumentKind(s)
+	if err != nil {
+		return err
+	}
+	*k = parsed
+	return nil
+}
+
+// DecodeDocuments decodes a multi-document YAML stream into separate [Document] values.
+func DecodeDocuments(data []byte) ([]Document, error) {
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+
+	var docs []Document
+	for {
+		var doc Document
+		err := dec.Decode(&doc)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		// Ignore completely empty YAML documents (e.g. stray `---` separators).
+		if strings.TrimSpace(doc.Version) == "" && doc.Kind.ResourceType() == events.UnknownResourceType && doc.Spec == nil {
+			continue
+		}
+		if strings.TrimSpace(doc.Version) == "" {
+			return nil, fmt.Errorf("document %d: missing version", len(docs))
+		}
+		if doc.Kind.ResourceType() == events.UnknownResourceType {
+			return nil, fmt.Errorf("document %d: missing kind", len(docs))
+		}
+		if doc.Spec == nil {
+			return nil, fmt.Errorf("document %d: missing spec", len(docs))
+		}
+		docs = append(docs, doc)
+	}
+	if len(docs) == 0 {
+		return nil, fmt.Errorf("no YAML documents found")
+	}
+	return docs, nil
+}
