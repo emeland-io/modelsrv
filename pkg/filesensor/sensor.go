@@ -39,7 +39,7 @@ func StartWatch(ctx context.Context, dir string, m model.Model, log *zap.Sugared
 }
 
 // ApplySource lists all files from src and applies them once.
-func ApplySource(ctx context.Context, src Source, cfg ParserConfig, m model.Model, log *zap.SugaredLogger) {
+func ApplySource(ctx context.Context, src Source, cfg ParserConfig, m model.Model, log *zap.SugaredLogger) ApplySummary {
 	log = ensureLog(log)
 	if cfg == nil {
 		cfg = StaticParserConfig{}
@@ -47,11 +47,13 @@ func ApplySource(ctx context.Context, src Source, cfg ParserConfig, m model.Mode
 	metas, err := src.List(ctx)
 	if err != nil {
 		log.Errorw("filesensor: list failed", "error", err.Error())
-		return
+		return ApplySummary{Failed: 1}
 	}
+	var out ApplySummary
 	for _, meta := range metas {
-		applyOne(ctx, src, cfg, meta, m, log)
+		out.add(applyOne(ctx, src, cfg, meta, m, log))
 	}
+	return out
 }
 
 // StartSourceWatch starts an fsnotify-style watch when src implements [Watcher].
@@ -87,12 +89,12 @@ func ensureLog(log *zap.SugaredLogger) *zap.SugaredLogger {
 	return log
 }
 
-func applyOne(ctx context.Context, src Source, cfg ParserConfig, meta FileMeta, m model.Model, log *zap.SugaredLogger) {
+func applyOne(ctx context.Context, src Source, cfg ParserConfig, meta FileMeta, m model.Model, log *zap.SugaredLogger) ApplySummary {
 	name := meta.Name
 	opts, err := cfg.OptionsFor(name)
 	if err != nil {
 		log.Errorw("filesensor: parser config", "name", name, "error", err.Error())
-		return
+		return ApplySummary{Failed: 1}
 	}
 	if opts.ContentType == "" {
 		opts.ContentType = meta.ContentType
@@ -100,12 +102,12 @@ func applyOne(ctx context.Context, src Source, cfg ParserConfig, meta FileMeta, 
 	data, err := src.Read(ctx, name)
 	if err != nil {
 		log.Errorw("filesensor: could not read file", "name", name, "error", err.Error())
-		return
+		return ApplySummary{Failed: 1}
 	}
 	res, err := ProcessBytes(name, data, opts, m)
 	if err != nil {
 		log.Errorw("filesensor: could not parse file", "name", name, "error", err.Error())
-		return
+		return ApplySummary{Failed: 1}
 	}
 	for _, docErr := range res.Failed {
 		log.Errorw("filesensor: document skipped", "name", name, "document", docErr.Index, "error", docErr.Err.Error())
@@ -115,6 +117,7 @@ func applyOne(ctx context.Context, src Source, cfg ParserConfig, meta FileMeta, 
 	} else if len(res.Failed) > 0 {
 		log.Errorw("filesensor: no documents applied", "name", name, "skipped", len(res.Failed))
 	}
+	return ApplySummary{Applied: res.Applied, Failed: len(res.Failed)}
 }
 
 func runWatch(ctx context.Context, w Watcher, cfg ParserConfig, m model.Model, log *zap.SugaredLogger) {
@@ -213,16 +216,38 @@ func OpenSources(ctx context.Context, cfg *Config) ([]OpenSource, error) {
 	return out, nil
 }
 
+// ApplySummary is the aggregate outcome of applying one or more sources.
+type ApplySummary struct {
+	Applied int // documents successfully applied
+	Failed  int // documents that failed to apply, plus unreadable/unparseable files
+}
+
+func (s *ApplySummary) add(other ApplySummary) {
+	s.Applied += other.Applied
+	s.Failed += other.Failed
+}
+
+// Err reports a startup failure when nothing was applied and at least one
+// file or document failed. Sources with no files are not an error.
+func (s ApplySummary) Err() error {
+	if s.Applied == 0 && s.Failed > 0 {
+		return fmt.Errorf("no documents applied (%d failed)", s.Failed)
+	}
+	return nil
+}
+
 // ApplySources applies every opened source once, then reconciles.
-func ApplySources(ctx context.Context, sources []OpenSource, m model.Model, log *zap.SugaredLogger) {
+func ApplySources(ctx context.Context, sources []OpenSource, m model.Model, log *zap.SugaredLogger) ApplySummary {
 	log = ensureLog(log)
+	var out ApplySummary
 	if len(sources) == 0 {
-		return
+		return out
 	}
 	for _, s := range sources {
-		ApplySource(ctx, s.Source, s.Parser, m, log)
+		out.add(ApplySource(ctx, s.Source, s.Parser, m, log))
 	}
 	phase0.ReconcileAll(m)
+	return out
 }
 
 // StartSources starts a watch or poll loop per source. It assumes the sources were

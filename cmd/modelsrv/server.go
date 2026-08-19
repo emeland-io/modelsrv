@@ -121,7 +121,10 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		if err != nil {
 			return fmt.Errorf("filesensor: could not open sources from %s: %w", sensorConfig, err)
 		}
-		filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
+		summary := filesensor.ApplySources(ctx, sources, b.GetModel(), logger)
+		if err := summary.Err(); err != nil {
+			return fmt.Errorf("filesensor: %w", err)
+		}
 		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
 		filesensor.StartSources(ctx, sources, b.GetModel(), logger)
 	} else {

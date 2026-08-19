@@ -212,6 +212,87 @@ var _ = Describe("Polling", func() {
 	})
 })
 
+var _ = Describe("ApplySources", func() {
+	openLocal := func(dir string) []filesensor.OpenSource {
+		return []filesensor.OpenSource{{
+			Source: filesensor.NewLocalSource(dir),
+			Parser: filesensor.StaticParserConfig{},
+		}}
+	}
+
+	It("errors when every document fails to apply", func() {
+		dir := GinkgoT().TempDir()
+		Expect(os.WriteFile(filepath.Join(dir, "bad.yaml"), []byte(`
+version: emeland.io/v1
+kind: Context
+spec:
+  daf: "not-a-context"
+`), 0644)).To(Succeed())
+
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		summary := filesensor.ApplySources(context.Background(), openLocal(dir), m, nil)
+		Expect(summary.Applied).To(Equal(0))
+		Expect(summary.Failed).To(BeNumerically(">", 0))
+		Expect(summary.Err()).To(MatchError(ContainSubstring("no documents applied")))
+	})
+
+	It("errors when every file fails to parse", func() {
+		dir := GinkgoT().TempDir()
+		Expect(os.WriteFile(filepath.Join(dir, "broken.yaml"), []byte("{{{not yaml"), 0644)).To(Succeed())
+
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		summary := filesensor.ApplySources(context.Background(), openLocal(dir), m, nil)
+		Expect(summary.Applied).To(Equal(0))
+		Expect(summary.Failed).To(BeNumerically(">", 0))
+		Expect(summary.Err()).To(HaveOccurred())
+	})
+
+	It("does not error when at least one document applies", func() {
+		dir := GinkgoT().TempDir()
+		Expect(os.WriteFile(filepath.Join(dir, "good.yaml"), []byte(`
+version: emeland.io/v1
+kind: Context
+spec:
+  contextId: "22222222-2222-2222-2222-222222222222"
+  displayName: "Good"
+`), 0644)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(dir, "bad.yaml"), []byte(`
+version: emeland.io/v1
+kind: Context
+spec:
+  daf: "nope"
+`), 0644)).To(Succeed())
+
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		summary := filesensor.ApplySources(context.Background(), openLocal(dir), m, nil)
+		Expect(summary.Applied).To(Equal(1))
+		Expect(summary.Failed).To(Equal(1))
+		Expect(summary.Err()).NotTo(HaveOccurred())
+		Expect(m.GetContextById(uuid.MustParse("22222222-2222-2222-2222-222222222222"))).NotTo(BeNil())
+	})
+
+	It("does not error when sources contain no files", func() {
+		dir := GinkgoT().TempDir()
+		sink := events.NewListSink()
+		m, err := model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		summary := filesensor.ApplySources(context.Background(), openLocal(dir), m, nil)
+		Expect(summary.Applied).To(Equal(0))
+		Expect(summary.Failed).To(Equal(0))
+		Expect(summary.Err()).NotTo(HaveOccurred())
+	})
+})
+
 var _ = Describe("Config", func() {
 	It("parses multi-source YAML with CSV glob options", func() {
 		raw := []byte(`
