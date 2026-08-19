@@ -17,19 +17,11 @@ func (k *DocumentKind) UnmarshalYAML(node *yaml.Node) error {
 	if err := node.Decode(&s); err != nil {
 		return err
 	}
-	s = strings.TrimSpace(s)
-	if s == "" {
-		*k = DocumentKind(events.UnknownResourceType)
-		return nil
+	parsed, err := parseDocumentKind(s)
+	if err != nil {
+		return err
 	}
-	rt := events.ParseResourceType(s)
-	if rt == events.UnknownResourceType {
-		return fmt.Errorf("unsupported kind %q", s)
-	}
-	if _, ok := documentKinds[rt]; !ok {
-		return fmt.Errorf("unsupported kind %q", s)
-	}
-	*k = DocumentKind(rt)
+	*k = parsed
 	return nil
 }
 

@@ -1,6 +1,8 @@
 package ingress_test
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -39,6 +41,20 @@ var _ = Describe("Parse JSON", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(docs).To(HaveLen(1))
 		Expect(docs[0].Kind.ResourceType()).To(Equal(events.ContextResource))
+	})
+
+	It("unmarshals kind through encoding/json on Document", func() {
+		var doc ingress.Document
+		err := json.Unmarshal([]byte(`{
+  "version": "emeland.io/v1",
+  "kind": "Context",
+  "spec": {"displayName": "Production"}
+}`), &doc)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(doc.Kind.ResourceType()).To(Equal(events.ContextResource))
+
+		err = json.Unmarshal([]byte(`{"kind":"NotAKind"}`), &doc)
+		Expect(err).To(MatchError(ContainSubstring("unsupported kind")))
 	})
 
 	It("decodes a JSON array", func() {

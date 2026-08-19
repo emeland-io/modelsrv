@@ -1,6 +1,7 @@
 package ingress
 
 import (
+	"fmt"
 	"strings"
 
 	"go.emeland.io/modelsrv/pkg/events"
@@ -51,6 +52,21 @@ var documentKinds = map[events.ResourceType]struct{}{
 // ResourceType returns the underlying [events.ResourceType].
 func (k DocumentKind) ResourceType() events.ResourceType {
 	return events.ResourceType(k)
+}
+
+func parseDocumentKind(s string) (DocumentKind, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return DocumentKind(events.UnknownResourceType), nil
+	}
+	rt := events.ParseResourceType(s)
+	if rt == events.UnknownResourceType {
+		return 0, fmt.Errorf("unsupported kind %q", s)
+	}
+	if _, ok := documentKinds[rt]; !ok {
+		return 0, fmt.Errorf("unsupported kind %q", s)
+	}
+	return DocumentKind(rt), nil
 }
 
 // Document is one top-level landscape resource after format decode.

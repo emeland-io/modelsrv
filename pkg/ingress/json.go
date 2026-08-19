@@ -10,6 +10,20 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 )
 
+// UnmarshalJSON accepts the same resource-kind strings as [DocumentKind.UnmarshalYAML].
+func (k *DocumentKind) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	parsed, err := parseDocumentKind(s)
+	if err != nil {
+		return err
+	}
+	*k = parsed
+	return nil
+}
+
 // jsonDocument is the on-wire shape for JSON landscape documents.
 type jsonDocument struct {
 	Version string         `json:"version"`
