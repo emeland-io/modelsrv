@@ -1,6 +1,7 @@
 package filesensor_test
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -86,6 +87,71 @@ var _ = Describe("HTTPSource", func() {
 		Expect(err).NotTo(HaveOccurred())
 		filesensor.ApplySource(context.Background(), src, filesensor.StaticParserConfig{}, m, nil)
 		Expect(m.GetContextById(uuid.MustParse("33333333-3333-3333-3333-333333333333"))).NotTo(BeNil())
+	})
+
+	It("uses a client timeout so a hung upstream cannot block forever", func() {
+		src := filesensor.NewHTTPSource("https://example.com/landscape.json")
+		Expect(src.Client).NotTo(BeNil())
+		Expect(src.Client.Timeout).To(Equal(filesensor.DefaultHTTPTimeout))
+
+		hang := make(chan struct{})
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			<-hang
+		}))
+		defer func() {
+			close(hang)
+			srv.Close()
+		}()
+
+		src = filesensor.NewHTTPSource(srv.URL + "/landscape.json")
+		src.Client = &http.Client{Timeout: 50 * time.Millisecond}
+		_, err := src.List(context.Background())
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("falls back to a ranged GET when HEAD is rejected", func() {
+		var gotRange string
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodHead {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+			gotRange = r.Header.Get("Range")
+			w.Header().Set("ETag", `"abc"`)
+			w.Header().Set("Content-Type", "application/json")
+			if gotRange == "bytes=0-0" {
+				w.Header().Set("Content-Range", "bytes 0-0/1048576")
+				w.WriteHeader(http.StatusPartialContent)
+				_, _ = w.Write([]byte("{"))
+				return
+			}
+			_, _ = w.Write(bytes.Repeat([]byte("x"), 1<<20))
+		}))
+		defer srv.Close()
+
+		src := filesensor.NewHTTPSource(srv.URL + "/landscape.json")
+		metas, err := src.List(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gotRange).To(Equal("bytes=0-0"))
+		Expect(metas).To(HaveLen(1))
+		Expect(metas[0].ETag).To(Equal(`"abc"`))
+		Expect(metas[0].ContentType).To(HavePrefix("application/json"))
+	})
+
+	It("does not fall back to GET when HEAD returns 404", func() {
+		gets := 0
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				gets++
+			}
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer srv.Close()
+
+		src := filesensor.NewHTTPSource(srv.URL + "/missing.json")
+		_, err := src.List(context.Background())
+		Expect(err).To(MatchError(ContainSubstring("status 404")))
+		Expect(gets).To(Equal(0))
 	})
 })
 
@@ -430,6 +496,11 @@ sources:
 		remote, _, err := filesensor.SourceConfig{URI: "https://example.com/landscape.json"}.Open(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(remote).To(BeAssignableToTypeOf(&filesensor.HTTPSource{}))
+		Expect(remote.(*filesensor.HTTPSource).Client.Timeout).To(Equal(filesensor.DefaultHTTPTimeout))
+
+		custom, _, err := filesensor.SourceConfig{URI: "https://example.com/landscape.json", Timeout: 5 * time.Second}.Open(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(custom.(*filesensor.HTTPSource).Client.Timeout).To(Equal(5 * time.Second))
 
 		_, _, err = filesensor.SourceConfig{URI: "ftp://example.com/data"}.Open(context.Background())
 		Expect(err).To(MatchError(ContainSubstring("unsupported source scheme")))

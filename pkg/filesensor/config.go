@@ -21,10 +21,11 @@ type Config struct {
 
 // SourceConfig describes one origin (local, HTTP, or S3) and optional per-glob parser options.
 type SourceConfig struct {
-	URI   string                  `yaml:"uri"`
-	Watch bool                    `yaml:"watch"`
-	Poll  time.Duration           `yaml:"poll"`
-	Files map[string]FileParseCfg `yaml:"files"`
+	URI     string                  `yaml:"uri"`
+	Watch   bool                    `yaml:"watch"`
+	Poll    time.Duration           `yaml:"poll"`
+	Timeout time.Duration           `yaml:"timeout"` // HTTP client timeout; default [DefaultHTTPTimeout]
+	Files   map[string]FileParseCfg `yaml:"files"`
 }
 
 // FileParseCfg is YAML-friendly parser options for a glob.
@@ -79,7 +80,9 @@ func (sc SourceConfig) Open(ctx context.Context) (Source, ParserConfig, error) {
 		}
 		return NewLocalSource(dir), parser, nil
 	case strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://"):
-		return NewHTTPSource(uri), parser, nil
+		src := NewHTTPSource(uri)
+		src.Client = httpClientWithTimeout(sc.Timeout)
+		return src, parser, nil
 	case strings.HasPrefix(uri, "s3://"):
 		src, err := NewS3SourceFromURI(ctx, uri)
 		if err != nil {

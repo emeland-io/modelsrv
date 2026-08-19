@@ -17,6 +17,7 @@ sources:
   # the format is taken from the response Content-Type.
   # - uri: https://example.com/landscape.json
   #   poll: 1m
+  #   timeout: 30s
 
   # S3 prefix: lists flat objects under the prefix and applies supported formats.
   # Under files, the most specific glob wins (a literal name beats a wildcard).
