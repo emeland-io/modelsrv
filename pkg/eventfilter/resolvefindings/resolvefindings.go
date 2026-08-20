@@ -222,6 +222,13 @@ func subjectHasRequiredRef(m model.Model, subject *common.ResourceRef) bool {
 		}
 		ref := ci.GetComponentRef()
 		return ref != nil && ref.ComponentId != uuid.Nil
+	case events.SystemInstanceResource:
+		si := m.GetSystemInstanceById(subject.ResourceId)
+		if si == nil {
+			return false
+		}
+		ref := si.GetSystemRef()
+		return ref != nil && ref.SystemId != uuid.Nil
 	default:
 		return false
 	}
