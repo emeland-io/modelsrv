@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.uber.org/zap"
 )
 
 var _ events.EventManager = (*eventManager)(nil)
@@ -24,24 +25,37 @@ func WithHistoryLimit(n int) Option {
 	}
 }
 
+// WithLogger sets the logger used for subscriber notify failures. A nil
+// logger is ignored (tests keep the no-op default).
+func WithLogger(log *zap.SugaredLogger) Option {
+	return func(e *eventManager) {
+		if log != nil {
+			e.logger = log
+		}
+	}
+}
+
 type eventManager struct {
 	mu             sync.RWMutex
 	sequenceNumber uint64
-	subscribers    []events.Subscriber
+	notifiers      []*notifier
 	sinkFactory    func() (events.EventSink, error)
 
 	latestState  *latestStateStore
 	historyTail  *historyRing
 	historyLimit int
 	modelSink    events.EventSink
+
+	logger *zap.SugaredLogger
 }
 
 func NewEventManager(opts ...Option) (events.EventManager, error) {
 	e := &eventManager{
 		sequenceNumber: 0,
-		subscribers:    make([]events.Subscriber, 0),
+		notifiers:      make([]*notifier, 0),
 		latestState:    newLatestStateStore(),
 		historyLimit:   DefaultHistoryLimit,
+		logger:         zap.NewNop().Sugar(),
 	}
 	for _, opt := range opts {
 		opt(e)
@@ -87,8 +101,8 @@ func (e *eventManager) GetSink() (events.EventSink, error) {
 
 func (e *eventManager) AddSubscriber(subURL string) error {
 	e.mu.Lock()
-	for _, sub := range e.subscribers {
-		if sub.GetURL() == subURL {
+	for _, n := range e.notifiers {
+		if n.sub.GetURL() == subURL {
 			e.mu.Unlock()
 			return nil
 		}
@@ -98,38 +112,54 @@ func (e *eventManager) AddSubscriber(subURL string) error {
 		e.mu.Unlock()
 		return err
 	}
-	e.subscribers = append(e.subscribers, newSub)
+	n := newNotifier(newSub, e.stateSnapshot, e.logger)
+	e.notifiers = append(e.notifiers, n)
 	past := e.latestState.GetEvents()
 	e.mu.Unlock()
 
+	// Replay synchronously, before the delivery goroutine starts: events
+	// recorded in the meantime wait in the queue and go out afterwards, so
+	// the subscriber never sees a live event ahead of the state it builds on.
 	for i := range past {
-		ev := past[i]
-		evCopy := ev
-		if err := newSub.Notify(context.Background(), &evCopy); err != nil {
-			fmt.Printf("failed to notify subscriber %s during replay: %v\n", newSub.GetURL(), err) // TODO: handle errors in the middle of the replay
+		if !n.deliver(past[i]) {
+			n.resync.Store(true)
+			break
 		}
 	}
+	n.start()
 	return nil
 }
 
 func (e *eventManager) GetSubscribers() []events.Subscriber {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	out := make([]events.Subscriber, len(e.subscribers))
-	copy(out, e.subscribers)
+	out := make([]events.Subscriber, 0, len(e.notifiers))
+	for _, n := range e.notifiers {
+		out = append(out, n.sub)
+	}
 	return out
 }
 
 func (e *eventManager) RemoveSubscriber(url string) error {
 	e.mu.Lock()
-	defer e.mu.Unlock()
-	for i, sub := range e.subscribers {
-		if sub.GetURL() == url {
-			e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
+	for i, n := range e.notifiers {
+		if n.sub.GetURL() == url {
+			e.notifiers = append(e.notifiers[:i], e.notifiers[i+1:]...)
+			e.mu.Unlock()
+			n.stopDelivery()
 			return nil
 		}
 	}
+	e.mu.Unlock()
 	return fmt.Errorf("subscriber %s not found", url)
+}
+
+// stateSnapshot returns one event per live resource, for a notifier that
+// needs to rebuild a subscriber that fell behind.
+func (e *eventManager) stateSnapshot() []events.Event {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.latestState.GetEvents()
 }
 
 // tailResourceKey identifies a resource within a historyRing snapshot, using

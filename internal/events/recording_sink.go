@@ -1,8 +1,6 @@
 package eventmgr
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,19 +33,12 @@ func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation
 	r.mgr.historyTail.Add(events.NewStoredEvent(
 		r.mgr.sequenceNumber, time.Now(), resType, op, resourceId, objects,
 	))
-	subs := make([]events.Subscriber, len(r.mgr.subscribers))
-	copy(subs, r.mgr.subscribers)
+	notifiers := make([]*notifier, len(r.mgr.notifiers))
+	copy(notifiers, r.mgr.notifiers)
 	r.mgr.mu.Unlock()
 
-	for _, sub := range subs {
-		s := sub
-		evCopy := ev
-		go func() {
-			err := s.Notify(context.Background(), &evCopy)
-			if err != nil {
-				fmt.Printf("failed to notify subscriber %s: %v\n", s.GetURL(), err)
-			}
-		}()
+	for _, n := range notifiers {
+		n.enqueue(ev)
 	}
 	return nil
 }
