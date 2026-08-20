@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -27,6 +29,9 @@ import (
 type WebListenerOptions struct {
 	TrustAuthHeaders bool
 	AuthzConfig      authz.Config
+	// Logger is used for HTTP request logging and endpoint lifecycle messages.
+	// When nil, a no-op logger is used.
+	Logger *zap.SugaredLogger
 }
 
 var (
@@ -34,18 +39,29 @@ var (
 	webListener    net.Listener
 	metricsServer  *http.Server
 	metricsHandler http.Handler
-	setupLog       zap.SugaredLogger
 	metricsReg     *prometheus.Registry
+	endpointLog    *zap.SugaredLogger // set by StartWebListener; used by Stop/Metrics helpers
 )
+
+func ensureLogger(log *zap.SugaredLogger) *zap.SugaredLogger {
+	if log != nil {
+		return log
+	}
+	return zap.NewNop().Sugar()
+}
 
 // NewHandler builds the modelsrv HTTP handler (API + swagger + metrics) without
 // starting a listener. The caller is responsible for serving it on their own
 // http.Server. Use this when embedding modelsrv behind additional middleware
 // (e.g. an auth layer).
 //
+// The returned handler includes request logging middleware using opts.Logger.
+//
 // Note: StartMetricsListener is not compatible with NewHandler; it only works
 // with StartWebListener which manages its own server lifecycle.
 func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL string, opts WebListenerOptions) http.Handler {
+	log := ensureLogger(opts.Logger)
+
 	var authzEval *authz.Evaluator
 	if opts.TrustAuthHeaders {
 		authzEval = authz.NewEvaluator(opts.AuthzConfig)
@@ -60,11 +76,12 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
-	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
+	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
 	r.PathPrefix("/swagger").Handler(spa)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 
-	return oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
+	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
+	return requestLoggingMiddleware(log)(h)
 }
 
 // StartWebListener starts the web endpoint serving the Swagger-UI and API
@@ -72,7 +89,8 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 //
 // addr is the address and port to bind to, e.g. "localhost:24000"
 func StartWebListener(backend model.Model, eventMgr events.EventManager, addr string, opts WebListenerOptions) error {
-	setupLog = *zap.NewExample().Sugar()
+	log := ensureLogger(opts.Logger)
+	endpointLog = log
 
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -99,22 +117,22 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 		metricsHandler.ServeHTTP(w, req)
 	}))
 
-	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html"}
+	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
 	r.PathPrefix("/swagger").Handler(spa)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
-	setupLog.Info("Starting Web-Endpoint: ", "address: ", ln.Addr().String())
+	log.Infow("starting web endpoint", "address", ln.Addr().String())
 
 	webServer = &http.Server{
-		Handler: h,
+		Handler: requestLoggingMiddleware(log)(h),
 	}
 
 	srv := webServer
 	go func() {
 		if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
-			setupLog.Error(err, ". Ended server with error")
+			log.Errorw("web server ended with error", "error", err)
 		}
 	}()
 
@@ -122,16 +140,17 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 }
 
 func StopWebListener() {
+	log := ensureLogger(endpointLog)
 	if metricsServer != nil {
 		if err := metricsServer.Shutdown(context.Background()); err != nil {
-			setupLog.Error("Error shutting down metrics server: ", err)
+			log.Errorw("error shutting down metrics server", "error", err)
 		}
 	}
 	if webServer == nil {
 		return
 	}
 	if err := webServer.Shutdown(context.Background()); err != nil {
-		setupLog.Error("Error shutting down web server: ", err)
+		log.Errorw("error shutting down web server", "error", err)
 	}
 	webServer = nil
 	webListener = nil
@@ -150,6 +169,7 @@ func StartMetricsListener(addr string) error {
 	if metricsReg == nil {
 		return fmt.Errorf("metrics registry not initialized; call StartWebListener first")
 	}
+	log := ensureLogger(endpointLog)
 	metricsURL := fmt.Sprintf("http://%s/metrics", addr)
 	metricsHandler = http.RedirectHandler(metricsURL, http.StatusTemporaryRedirect)
 
@@ -158,10 +178,10 @@ func StartMetricsListener(addr string) error {
 	metricsServer = &http.Server{Handler: mux, Addr: addr}
 	go func() {
 		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			setupLog.Error("metrics server: ", err)
+			log.Errorw("metrics server error", "error", err)
 		}
 	}()
-	setupLog.Info("Metrics endpoint: ", metricsURL)
+	log.Infow("metrics endpoint started", "url", metricsURL)
 	return nil
 }
 
@@ -181,6 +201,7 @@ func WebListenerAddr() net.Addr {
 type spaHandler struct {
 	staticPath string
 	indexPath  string
+	log        *zap.SugaredLogger
 }
 
 // ServeHTTP inspects the URL path to locate a file within the static dir
@@ -191,13 +212,13 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Join internally call path.Clean to prevent directory traversal
 	path := filepath.Join(h.staticPath, r.URL.Path)
 
-	setupLog.Info("SPA Handler called to service file", "path", path, "staticPath", h.staticPath, "URL path", r.URL.Path)
+	h.log.Debugw("serving static file", "path", path, "url", r.URL.Path)
 
 	// check whether a file exists or is a directory at the given path
 	fi, err := os.Stat(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			setupLog.Error("SPA Handler stat error", "path", path, "error", err)
+			h.log.Errorw("static file stat error", "path", path, "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
@@ -207,11 +228,49 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// fi is only non-nil when err == nil, so IsDir() is safe here.
 	if err != nil || fi.IsDir() {
 		path = filepath.Join(h.staticPath, h.indexPath)
-		setupLog.Info("SPA Handler will serve index file", "path", path)
 		http.ServeFile(w, r, path)
 		return
 	}
 
 	// otherwise, use http.FileServer to serve the static file
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+}
+
+// requestLoggingMiddleware logs each HTTP request with method, path, status
+// code, and duration. API requests log at INFO (5xx at WARN). Infrastructure
+// paths (/metrics, /swagger) log at DEBUG to avoid noise.
+func requestLoggingMiddleware(log *zap.SugaredLogger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(sw, r)
+			path := r.URL.Path
+			fields := []any{
+				"method", r.Method,
+				"path", path,
+				"status", sw.status,
+				"duration", time.Since(start).String(),
+			}
+			switch {
+			case strings.HasPrefix(path, "/metrics") || strings.HasPrefix(path, "/swagger"):
+				log.Debugw("http request", fields...)
+			case sw.status >= 500:
+				log.Warnw("http request", fields...)
+			default:
+				log.Infow("http request", fields...)
+			}
+		})
+	}
+}
+
+// statusWriter wraps http.ResponseWriter to capture the status code.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
 }

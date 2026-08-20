@@ -27,6 +27,8 @@ const otelConfigShutdownTimeout = 30 * time.Second
 var serviceAddr string
 var dataDir string
 var sensorConfig string
+var logLevel string
+var logEncoding string
 var metricsAddr string
 var trustAuthHeaders bool
 var auditorIdentity string
@@ -55,6 +57,21 @@ func runServer(cmd *cobra.Command, _ []string) error {
 
 	cfg := zap.NewDevelopmentConfig()
 	cfg.DisableStacktrace = true
+	if logLevel != "" {
+		var level zap.AtomicLevel
+		if err := level.UnmarshalText([]byte(logLevel)); err != nil {
+			return fmt.Errorf("invalid log level %q: %w", logLevel, err)
+		}
+		cfg.Level = level
+	}
+	switch logEncoding {
+	case "", "console":
+		cfg.Encoding = "console"
+	case "json":
+		cfg.Encoding = "json"
+	default:
+		return fmt.Errorf("invalid log encoding %q: must be console or json", logEncoding)
+	}
 	log, err := cfg.Build()
 	if err != nil {
 		return fmt.Errorf("logger: %w", err)
@@ -144,6 +161,7 @@ func runServer(cmd *cobra.Command, _ []string) error {
 			AuditorGroup:    auditorGroup,
 			PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
 		},
+		Logger: logger,
 	}
 	if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
 		return fmt.Errorf("starting web listener: %w", err)
@@ -194,6 +212,8 @@ func init() {
 	serverCmd.Flags().StringVarP(&serviceAddr, "service-addr", "a", envOrDefault("SERVICE_ADDR", ":8080"), "The address the service listens on")
 	serverCmd.Flags().StringVar(&dataDir, "data-dir", envOrDefault("DATA_DIR", "data"), "Directory to watch for landscape documents (.yaml/.yml/.json/.csv); relative paths are resolved from the process working directory")
 	serverCmd.Flags().StringVar(&sensorConfig, "sensor-config", envOrDefault("SENSOR_CONFIG", ""), "Optional YAML file listing Sources (file://, https://, s3://) and per-glob parser options; when set, overrides --data-dir")
+	serverCmd.Flags().StringVar(&logLevel, "log-level", envOrDefault("LOG_LEVEL", ""), "Log level: debug, info, warn, error (default: debug in dev mode)")
+	serverCmd.Flags().StringVar(&logEncoding, "log-encoding", envOrDefault("LOG_ENCODING", ""), "Log encoding: console, json (default: console)")
 	serverCmd.Flags().StringVar(&metricsAddr, "metrics-addr", envOrDefault("METRICS_ADDR", ""), "If set, serve /metrics on a separate port (e.g. :9090); otherwise metrics are on the main port")
 	serverCmd.Flags().BoolVar(&trustAuthHeaders, "trust-auth-headers", envOrDefault("TRUST_AUTH_HEADERS", "") == "true", "Trust X-Auth-* identity headers from the BFF and enforce ownership visibility")
 	serverCmd.Flags().StringVar(&auditorIdentity, "auditor-identity", envOrDefault("AUDITOR_IDENTITY", ""), "OIDC subject treated as auditor when matching X-Auth-Subject")
