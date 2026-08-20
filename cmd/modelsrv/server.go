@@ -144,6 +144,7 @@ func runServer(cmd *cobra.Command, _ []string) error {
 			AuditorGroup:    auditorGroup,
 			PublicTypes:     authz.ParsePublicResourceTypes(publicResourceTypes),
 		},
+		Logger: logger,
 	}
 	if err := endpoint.StartWebListener(b.GetModel(), b.GetEventManager(), serviceAddr, webOpts); err != nil {
 		return fmt.Errorf("starting web listener: %w", err)
