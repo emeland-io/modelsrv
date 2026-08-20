@@ -1,6 +1,8 @@
 package endpoint
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 
 	eventmgr "go.emeland.io/modelsrv/internal/events"
@@ -83,10 +85,124 @@ func TestStartWebListener_NilLoggerNoOutput(t *testing.T) {
 		t.Fatalf("failed to create event manager: %v", err)
 	}
 
-	// nil logger should not panic and produce no output
 	err = StartWebListener(backend, eventMgr, "127.0.0.1:0", WebListenerOptions{})
 	if err != nil {
 		t.Fatalf("start failed: %v", err)
 	}
 	StopWebListener()
+}
+
+func TestRequestLogging_APICallEmitsInfoLog(t *testing.T) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core).Sugar()
+
+	sink := events.NewDummySink()
+	backend, err := model.NewModel(sink)
+	if err != nil {
+		t.Fatalf("failed to create model: %v", err)
+	}
+	eventMgr, err := eventmgr.NewEventManager()
+	if err != nil {
+		t.Fatalf("failed to create event manager: %v", err)
+	}
+
+	err = StartWebListener(backend, eventMgr, "127.0.0.1:0", WebListenerOptions{Logger: logger})
+	if err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	defer StopWebListener()
+
+	addr := WebListenerAddr()
+	url := fmt.Sprintf("http://%s/api/systems", addr.String())
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		t.Fatalf("GET failed: %v", err)
+	}
+	_ = resp.Body.Close()
+
+	found := false
+	for _, entry := range logs.All() {
+		if entry.Message == "http request" {
+			found = true
+			if entry.Level != zapcore.InfoLevel {
+				t.Errorf("expected INFO level, got %v", entry.Level)
+			}
+			ctx := entry.ContextMap()
+			if ctx["method"] != "GET" {
+				t.Errorf("expected method=GET, got %v", ctx["method"])
+			}
+			if ctx["path"] != "/api/systems" {
+				t.Errorf("expected path=/api/systems, got %v", ctx["path"])
+			}
+			break
+		}
+	}
+	if !found {
+		t.Error("no 'http request' log entry found")
+	}
+}
+
+func TestRequestLogging_NilLoggerDoesNotPanic(t *testing.T) {
+	sink := events.NewDummySink()
+	backend, err := model.NewModel(sink)
+	if err != nil {
+		t.Fatalf("failed to create model: %v", err)
+	}
+	eventMgr, err := eventmgr.NewEventManager()
+	if err != nil {
+		t.Fatalf("failed to create event manager: %v", err)
+	}
+
+	err = StartWebListener(backend, eventMgr, "127.0.0.1:0", WebListenerOptions{})
+	if err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	defer StopWebListener()
+
+	addr := WebListenerAddr()
+	url := fmt.Sprintf("http://%s/api/systems", addr.String())
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		t.Fatalf("GET failed: %v", err)
+	}
+	_ = resp.Body.Close()
+}
+
+func TestRequestLogging_SwaggerLogsAtDebug(t *testing.T) {
+	core, logs := observer.New(zapcore.DebugLevel)
+	logger := zap.New(core).Sugar()
+
+	sink := events.NewDummySink()
+	backend, err := model.NewModel(sink)
+	if err != nil {
+		t.Fatalf("failed to create model: %v", err)
+	}
+	eventMgr, err := eventmgr.NewEventManager()
+	if err != nil {
+		t.Fatalf("failed to create event manager: %v", err)
+	}
+
+	err = StartWebListener(backend, eventMgr, "127.0.0.1:0", WebListenerOptions{Logger: logger})
+	if err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	defer StopWebListener()
+
+	addr := WebListenerAddr()
+	url := fmt.Sprintf("http://%s/swagger/index.html", addr.String())
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		t.Fatalf("GET failed: %v", err)
+	}
+	_ = resp.Body.Close()
+
+	for _, entry := range logs.All() {
+		if entry.Message == "http request" {
+			if entry.Level != zapcore.DebugLevel {
+				t.Errorf("expected DEBUG for /swagger, got %v", entry.Level)
+			}
+			return
+		}
+	}
+	t.Error("no 'http request' log entry found for /swagger")
 }
