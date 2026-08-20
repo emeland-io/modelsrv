@@ -64,6 +64,56 @@ func executeServer(t *testing.T, args ...string) error {
 	rootCmd.SetArgs(append([]string{"server"}, args...))
 	rootCmd.SetOut(io.Discard)
 	rootCmd.SetErr(io.Discard)
-	t.Cleanup(func() { rootCmd.SetArgs(nil) })
+	t.Cleanup(func() {
+		rootCmd.SetArgs(nil)
+		logLevel = ""
+		logEncoding = ""
+	})
 	return rootCmd.Execute()
+}
+
+func TestServerCmd_InvalidLogLevelReturnsError(t *testing.T) {
+	err := executeServer(t, "--log-level", "nope")
+	if err == nil {
+		t.Fatal("expected error for invalid log level")
+	}
+	if !strings.Contains(err.Error(), "invalid log level") {
+		t.Fatalf("error %q does not mention invalid log level", err)
+	}
+}
+
+func TestServerCmd_InvalidLogEncodingReturnsError(t *testing.T) {
+	err := executeServer(t, "--log-encoding", "xml")
+	if err == nil {
+		t.Fatal("expected error for invalid log encoding")
+	}
+	if !strings.Contains(err.Error(), "invalid log encoding") {
+		t.Fatalf("error %q does not mention invalid log encoding", err)
+	}
+}
+
+func TestServerCmd_LogEncodingJsonAccepted(t *testing.T) {
+	// json encoding with an invalid sensor-config to force early exit after logger setup
+	path := filepath.Join(t.TempDir(), "missing.yaml")
+	err := executeServer(t, "--log-encoding", "json", "--sensor-config", path)
+	if err == nil {
+		t.Fatal("expected error (missing sensor config)")
+	}
+	// The error should be about sensor config, not about encoding
+	if strings.Contains(err.Error(), "log encoding") {
+		t.Fatalf("unexpected encoding error: %v", err)
+	}
+}
+
+func TestServerCmd_LogLevelErrorSuppressesInfo(t *testing.T) {
+	// error level with an invalid sensor-config to force early exit
+	path := filepath.Join(t.TempDir(), "missing.yaml")
+	err := executeServer(t, "--log-level", "error", "--sensor-config", path)
+	if err == nil {
+		t.Fatal("expected error (missing sensor config)")
+	}
+	// The error should be about sensor config, not about log level
+	if strings.Contains(err.Error(), "log level") {
+		t.Fatalf("unexpected log level error: %v", err)
+	}
 }
