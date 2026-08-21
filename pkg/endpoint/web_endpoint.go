@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -76,7 +78,7 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	r.PathPrefix("/swagger").Handler(spa)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 
-	return oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
+	return requestLoggingMiddleware(log)(oapi.HandlerFromMuxWithBaseURL(strict, r, "/api"))
 }
 
 // StartWebListener starts the web endpoint serving the Swagger-UI and API
@@ -121,7 +123,7 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	log.Infow("starting web endpoint", "address", ln.Addr().String())
 
 	webServer = &http.Server{
-		Handler: h,
+		Handler: requestLoggingMiddleware(log)(h),
 	}
 
 	srv := webServer
@@ -229,4 +231,43 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// otherwise, use http.FileServer to serve the static file
 	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+}
+
+// requestLoggingMiddleware logs each HTTP request with method, path, status
+// code, and duration. API requests log at INFO (5xx at WARN). Infrastructure
+// paths (/metrics, /swagger) log at DEBUG to avoid noise.
+func requestLoggingMiddleware(log *zap.SugaredLogger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+			next.ServeHTTP(sw, r)
+			path := r.URL.Path
+			fields := []any{
+				"method", r.Method,
+				"path", path,
+				"status", sw.status,
+				"duration", time.Since(start).String(),
+			}
+			switch {
+			case strings.HasPrefix(path, "/metrics") || strings.HasPrefix(path, "/swagger"):
+				log.Debugw("http request", fields...)
+			case sw.status >= 500:
+				log.Warnw("http request", fields...)
+			default:
+				log.Infow("http request", fields...)
+			}
+		})
+	}
+}
+
+// statusWriter wraps http.ResponseWriter to capture the status code.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(code int) {
+	w.status = code
+	w.ResponseWriter.WriteHeader(code)
 }
