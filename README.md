@@ -83,6 +83,20 @@ Supported URI schemes: `file://`, `http://` / `https://`, `s3://`. Local Sources
 S3 auth uses the default AWS credential chain (env, shared config, IAM role). File/object deletes
 do **not** remove landscape resources in v1.
 
+### Logging
+
+The server logs HTTP requests (method, path, status, duration) and lifecycle events using
+structured zap fields. API requests log at INFO; 5xx responses at WARN. Infrastructure
+paths (`/metrics`, `/swagger`) log at DEBUG.
+
+| Flag | Env | Default | Purpose |
+|------|-----|---------|---------| 
+| `--log-level` | `LOG_LEVEL` | *(debug)* | Log threshold: debug, info, warn, error |
+| `--log-encoding` | `LOG_ENCODING` | `console` | Log format: console or json |
+
+Library callers embedding modelsrv via `endpoint.NewHandler` or `endpoint.StartWebListener`
+pass their own logger through `WebListenerOptions.Logger`. When nil, no log output is emitted.
+
 ### OpenTelemetry Collector integration
 
 Keep an OpenTelemetry Collector

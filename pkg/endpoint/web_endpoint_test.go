@@ -113,6 +113,9 @@ func TestRequestLogging_APICallEmitsInfoLog(t *testing.T) {
 	defer StopWebListener()
 
 	addr := WebListenerAddr()
+	if addr == nil {
+		t.Fatal("expected non-nil listener address")
+	}
 	url := fmt.Sprintf("http://%s/api/systems", addr.String())
 	resp, err := http.Get(url) //nolint:noctx
 	if err != nil {
@@ -160,6 +163,9 @@ func TestRequestLogging_NilLoggerDoesNotPanic(t *testing.T) {
 	defer StopWebListener()
 
 	addr := WebListenerAddr()
+	if addr == nil {
+		t.Fatal("expected non-nil listener address")
+	}
 	url := fmt.Sprintf("http://%s/api/systems", addr.String())
 	resp, err := http.Get(url) //nolint:noctx
 	if err != nil {
@@ -189,6 +195,9 @@ func TestRequestLogging_SwaggerLogsAtDebug(t *testing.T) {
 	defer StopWebListener()
 
 	addr := WebListenerAddr()
+	if addr == nil {
+		t.Fatal("expected non-nil listener address")
+	}
 	url := fmt.Sprintf("http://%s/swagger/index.html", addr.String())
 	resp, err := http.Get(url) //nolint:noctx
 	if err != nil {
