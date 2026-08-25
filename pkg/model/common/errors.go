@@ -33,6 +33,9 @@ var (
 	ErrCapacityResourceTypeNotFound = fmt.Errorf("capacity resource type not found")
 	ErrCapacityNotFound             = fmt.Errorf("capacity not found")
 	ErrCapacityTupleConflict        = fmt.Errorf("capacity tuple already exists with a different capacityId")
+	ErrMetricNotFound               = fmt.Errorf("metric not found")
+	ErrThresholdNotFound            = fmt.Errorf("threshold not found")
+	ErrMetricValueNotFound          = fmt.Errorf("metric value not found")
 
 	ErrUUIDNotSet = fmt.Errorf("resource identifier UUID not set")
 )

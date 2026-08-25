@@ -106,6 +106,11 @@ const (
 	CapacityResourceTypeResource
 	CapacityResource
 
+	// Phase 6
+	MetricResource
+	ThresholdResource
+	MetricValueResource
+
 	// Value objects
 	AnnotationsResource
 )
@@ -158,6 +163,11 @@ var resourceTypeValues = map[ResourceType]string{
 	// Phase 7
 	CapacityResourceTypeResource: "CapacityResourceType",
 	CapacityResource:             "Capacity",
+
+	// Phase 6
+	MetricResource:      "Metric",
+	ThresholdResource:   "Threshold",
+	MetricValueResource: "MetricValue",
 
 	// Value objects
 	AnnotationsResource: "Annotations",

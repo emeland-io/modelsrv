@@ -23,8 +23,9 @@ var dirDomainMeta = map[string]struct {
 	"filterrule": {Import: "go.emeland.io/modelsrv/pkg/model/filterrule", Alias: "mdlfilterrule"},
 	"mergerule":  {Import: "go.emeland.io/modelsrv/pkg/model/mergerule", Alias: "mdlmergerule"},
 	"capability": {Import: "go.emeland.io/modelsrv/pkg/model/capability", Alias: "mdlcapability"},
-	"parameter":  {Import: "go.emeland.io/modelsrv/pkg/model/parameter", Alias: "mdlparameter"},
-	"capacity":   {Import: "go.emeland.io/modelsrv/pkg/model/capacity", Alias: "mdlcap"},
+	"parameter":     {Import: "go.emeland.io/modelsrv/pkg/model/parameter", Alias: "mdlparameter"},
+	"capacity":      {Import: "go.emeland.io/modelsrv/pkg/model/capacity", Alias: "mdlcap"},
+	"observability": {Import: "go.emeland.io/modelsrv/pkg/model/observability", Alias: "mdlobs"},
 }
 
 func enrichDomainMeta(spec *TypeSpec) {

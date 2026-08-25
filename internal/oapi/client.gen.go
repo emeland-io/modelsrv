@@ -219,6 +219,18 @@ type ClientInterface interface {
 	// GetLandscapeMergeRulesRuleId request
 	GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeMetricValues request
+	GetLandscapeMetricValues(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMetricValuesMetricValueId request
+	GetLandscapeMetricValuesMetricValueId(ctx context.Context, metricValueId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMetrics request
+	GetLandscapeMetrics(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMetricsMetricId request
+	GetLandscapeMetricsMetricId(ctx context.Context, metricId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeNodeTypes request
 	GetLandscapeNodeTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -284,6 +296,12 @@ type ClientInterface interface {
 
 	// GetLandscapeSystemsSystemId request
 	GetLandscapeSystemsSystemId(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeThresholds request
+	GetLandscapeThresholds(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeThresholdsThresholdId request
+	GetLandscapeThresholdsThresholdId(ctx context.Context, thresholdId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTest request
 	GetTest(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -817,6 +835,54 @@ func (c *Client) GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openap
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetLandscapeMetricValues(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricValuesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMetricValuesMetricValueId(ctx context.Context, metricValueId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricValuesMetricValueIdRequest(c.Server, metricValueId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMetrics(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMetricsMetricId(ctx context.Context, metricId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricsMetricIdRequest(c.Server, metricId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetLandscapeNodeTypes(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeNodeTypesRequest(c.Server)
 	if err != nil {
@@ -1071,6 +1137,30 @@ func (c *Client) GetLandscapeSystems(ctx context.Context, reqEditors ...RequestE
 
 func (c *Client) GetLandscapeSystemsSystemId(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeSystemsSystemIdRequest(c.Server, systemId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeThresholds(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeThresholdsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeThresholdsThresholdId(ctx context.Context, thresholdId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeThresholdsThresholdIdRequest(c.Server, thresholdId)
 	if err != nil {
 		return nil, err
 	}
@@ -2372,6 +2462,128 @@ func NewGetLandscapeMergeRulesRuleIdRequest(server string, ruleId openapi_types.
 	return req, nil
 }
 
+// NewGetLandscapeMetricValuesRequest generates requests for GetLandscapeMetricValues
+func NewGetLandscapeMetricValuesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metricValues")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMetricValuesMetricValueIdRequest generates requests for GetLandscapeMetricValuesMetricValueId
+func NewGetLandscapeMetricValuesMetricValueIdRequest(server string, metricValueId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "metricValueId", runtime.ParamLocationPath, metricValueId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metricValues/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMetricsRequest generates requests for GetLandscapeMetrics
+func NewGetLandscapeMetricsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metrics")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMetricsMetricIdRequest generates requests for GetLandscapeMetricsMetricId
+func NewGetLandscapeMetricsMetricIdRequest(server string, metricId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "metricId", runtime.ParamLocationPath, metricId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metrics/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeNodeTypesRequest generates requests for GetLandscapeNodeTypes
 func NewGetLandscapeNodeTypesRequest(server string) (*http.Request, error) {
 	var err error
@@ -3043,6 +3255,67 @@ func NewGetLandscapeSystemsSystemIdRequest(server string, systemId openapi_types
 	return req, nil
 }
 
+// NewGetLandscapeThresholdsRequest generates requests for GetLandscapeThresholds
+func NewGetLandscapeThresholdsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/thresholds")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeThresholdsThresholdIdRequest generates requests for GetLandscapeThresholdsThresholdId
+func NewGetLandscapeThresholdsThresholdIdRequest(server string, thresholdId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "thresholdId", runtime.ParamLocationPath, thresholdId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/thresholds/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetTestRequest generates requests for GetTest
 func NewGetTestRequest(server string) (*http.Request, error) {
 	var err error
@@ -3242,6 +3515,18 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeMergeRulesRuleIdWithResponse request
 	GetLandscapeMergeRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesRuleIdResponse, error)
 
+	// GetLandscapeMetricValuesWithResponse request
+	GetLandscapeMetricValuesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricValuesResponse, error)
+
+	// GetLandscapeMetricValuesMetricValueIdWithResponse request
+	GetLandscapeMetricValuesMetricValueIdWithResponse(ctx context.Context, metricValueId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricValuesMetricValueIdResponse, error)
+
+	// GetLandscapeMetricsWithResponse request
+	GetLandscapeMetricsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricsResponse, error)
+
+	// GetLandscapeMetricsMetricIdWithResponse request
+	GetLandscapeMetricsMetricIdWithResponse(ctx context.Context, metricId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricsMetricIdResponse, error)
+
 	// GetLandscapeNodeTypesWithResponse request
 	GetLandscapeNodeTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeNodeTypesResponse, error)
 
@@ -3307,6 +3592,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetLandscapeSystemsSystemIdWithResponse request
 	GetLandscapeSystemsSystemIdWithResponse(ctx context.Context, systemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeSystemsSystemIdResponse, error)
+
+	// GetLandscapeThresholdsWithResponse request
+	GetLandscapeThresholdsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeThresholdsResponse, error)
+
+	// GetLandscapeThresholdsThresholdIdWithResponse request
+	GetLandscapeThresholdsThresholdIdWithResponse(ctx context.Context, thresholdId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeThresholdsThresholdIdResponse, error)
 
 	// GetTestWithResponse request
 	GetTestWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTestResponse, error)
@@ -4230,6 +4521,96 @@ func (r GetLandscapeMergeRulesRuleIdResponse) StatusCode() int {
 	return 0
 }
 
+type GetLandscapeMetricValuesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricValuesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricValuesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMetricValuesMetricValueIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MetricValue
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricValuesMetricValueIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricValuesMetricValueIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMetricsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMetricsMetricIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Metric
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricsMetricIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricsMetricIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetLandscapeNodeTypesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4725,6 +5106,51 @@ func (r GetLandscapeSystemsSystemIdResponse) StatusCode() int {
 	return 0
 }
 
+type GetLandscapeThresholdsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeThresholdsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeThresholdsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeThresholdsThresholdIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Threshold
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeThresholdsThresholdIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeThresholdsThresholdIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetTestResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5139,6 +5565,42 @@ func (c *ClientWithResponses) GetLandscapeMergeRulesRuleIdWithResponse(ctx conte
 	return ParseGetLandscapeMergeRulesRuleIdResponse(rsp)
 }
 
+// GetLandscapeMetricValuesWithResponse request returning *GetLandscapeMetricValuesResponse
+func (c *ClientWithResponses) GetLandscapeMetricValuesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricValuesResponse, error) {
+	rsp, err := c.GetLandscapeMetricValues(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricValuesResponse(rsp)
+}
+
+// GetLandscapeMetricValuesMetricValueIdWithResponse request returning *GetLandscapeMetricValuesMetricValueIdResponse
+func (c *ClientWithResponses) GetLandscapeMetricValuesMetricValueIdWithResponse(ctx context.Context, metricValueId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricValuesMetricValueIdResponse, error) {
+	rsp, err := c.GetLandscapeMetricValuesMetricValueId(ctx, metricValueId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricValuesMetricValueIdResponse(rsp)
+}
+
+// GetLandscapeMetricsWithResponse request returning *GetLandscapeMetricsResponse
+func (c *ClientWithResponses) GetLandscapeMetricsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricsResponse, error) {
+	rsp, err := c.GetLandscapeMetrics(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricsResponse(rsp)
+}
+
+// GetLandscapeMetricsMetricIdWithResponse request returning *GetLandscapeMetricsMetricIdResponse
+func (c *ClientWithResponses) GetLandscapeMetricsMetricIdWithResponse(ctx context.Context, metricId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricsMetricIdResponse, error) {
+	rsp, err := c.GetLandscapeMetricsMetricId(ctx, metricId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricsMetricIdResponse(rsp)
+}
+
 // GetLandscapeNodeTypesWithResponse request returning *GetLandscapeNodeTypesResponse
 func (c *ClientWithResponses) GetLandscapeNodeTypesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeNodeTypesResponse, error) {
 	rsp, err := c.GetLandscapeNodeTypes(ctx, reqEditors...)
@@ -5335,6 +5797,24 @@ func (c *ClientWithResponses) GetLandscapeSystemsSystemIdWithResponse(ctx contex
 		return nil, err
 	}
 	return ParseGetLandscapeSystemsSystemIdResponse(rsp)
+}
+
+// GetLandscapeThresholdsWithResponse request returning *GetLandscapeThresholdsResponse
+func (c *ClientWithResponses) GetLandscapeThresholdsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeThresholdsResponse, error) {
+	rsp, err := c.GetLandscapeThresholds(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeThresholdsResponse(rsp)
+}
+
+// GetLandscapeThresholdsThresholdIdWithResponse request returning *GetLandscapeThresholdsThresholdIdResponse
+func (c *ClientWithResponses) GetLandscapeThresholdsThresholdIdWithResponse(ctx context.Context, thresholdId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeThresholdsThresholdIdResponse, error) {
+	rsp, err := c.GetLandscapeThresholdsThresholdId(ctx, thresholdId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeThresholdsThresholdIdResponse(rsp)
 }
 
 // GetTestWithResponse request returning *GetTestResponse
@@ -6518,6 +6998,124 @@ func ParseGetLandscapeMergeRulesRuleIdResponse(rsp *http.Response) (*GetLandscap
 	return response, nil
 }
 
+// ParseGetLandscapeMetricValuesResponse parses an HTTP response from a GetLandscapeMetricValuesWithResponse call
+func ParseGetLandscapeMetricValuesResponse(rsp *http.Response) (*GetLandscapeMetricValuesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricValuesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMetricValuesMetricValueIdResponse parses an HTTP response from a GetLandscapeMetricValuesMetricValueIdWithResponse call
+func ParseGetLandscapeMetricValuesMetricValueIdResponse(rsp *http.Response) (*GetLandscapeMetricValuesMetricValueIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricValuesMetricValueIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MetricValue
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMetricsResponse parses an HTTP response from a GetLandscapeMetricsWithResponse call
+func ParseGetLandscapeMetricsResponse(rsp *http.Response) (*GetLandscapeMetricsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMetricsMetricIdResponse parses an HTTP response from a GetLandscapeMetricsMetricIdWithResponse call
+func ParseGetLandscapeMetricsMetricIdResponse(rsp *http.Response) (*GetLandscapeMetricsMetricIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricsMetricIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Metric
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetLandscapeNodeTypesResponse parses an HTTP response from a GetLandscapeNodeTypesWithResponse call
 func ParseGetLandscapeNodeTypesResponse(rsp *http.Response) (*GetLandscapeNodeTypesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -7150,6 +7748,65 @@ func ParseGetLandscapeSystemsSystemIdResponse(rsp *http.Response) (*GetLandscape
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest System
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeThresholdsResponse parses an HTTP response from a GetLandscapeThresholdsWithResponse call
+func ParseGetLandscapeThresholdsResponse(rsp *http.Response) (*GetLandscapeThresholdsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeThresholdsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeThresholdsThresholdIdResponse parses an HTTP response from a GetLandscapeThresholdsThresholdIdWithResponse call
+func ParseGetLandscapeThresholdsThresholdIdResponse(rsp *http.Response) (*GetLandscapeThresholdsThresholdIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeThresholdsThresholdIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Threshold
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

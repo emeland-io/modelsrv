@@ -687,3 +687,76 @@ func (a *ApiServer) GetLandscapeCapacitiesCapacityId(ctx context.Context, reques
 	}
 	return GetLandscapeCapacitiesCapacityId200JSONResponse(CapacityToDto(item)), nil
 }
+
+// GetLandscapeMetrics implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMetrics(ctx context.Context, request GetLandscapeMetricsRequestObject) (GetLandscapeMetricsResponseObject, error) {
+	items, err := a.Backend.GetMetrics()
+	if err != nil {
+		return nil, err
+	}
+	return GetLandscapeMetrics200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/metrics", items)), nil
+}
+
+// GetLandscapeMetricsMetricId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMetricsMetricId(ctx context.Context, request GetLandscapeMetricsMetricIdRequestObject) (GetLandscapeMetricsMetricIdResponseObject, error) {
+	item := a.Backend.GetMetricById(request.MetricId)
+	if item == nil {
+		msg := fmt.Sprintf("metric %s not found", request.MetricId.String())
+		return GetLandscapeMetricsMetricId404JSONResponse(msg), nil
+	}
+	return GetLandscapeMetricsMetricId200JSONResponse(MetricToDto(item)), nil
+}
+
+// GetLandscapeThresholds implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeThresholds(ctx context.Context, request GetLandscapeThresholdsRequestObject) (GetLandscapeThresholdsResponseObject, error) {
+	items, err := a.Backend.GetThresholds()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ThresholdResource, items)
+	}
+	return GetLandscapeThresholds200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/thresholds", items)), nil
+}
+
+// GetLandscapeThresholdsThresholdId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeThresholdsThresholdId(ctx context.Context, request GetLandscapeThresholdsThresholdIdRequestObject) (GetLandscapeThresholdsThresholdIdResponseObject, error) {
+	item := a.Backend.GetThresholdById(request.ThresholdId)
+	if item == nil {
+		msg := fmt.Sprintf("threshold %s not found", request.ThresholdId.String())
+		return GetLandscapeThresholdsThresholdId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ThresholdResource, item) {
+		msg := fmt.Sprintf("threshold %s not found", request.ThresholdId.String())
+		return GetLandscapeThresholdsThresholdId404JSONResponse(msg), nil
+	}
+	return GetLandscapeThresholdsThresholdId200JSONResponse(ThresholdToDto(item)), nil
+}
+
+// GetLandscapeMetricValues implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMetricValues(ctx context.Context, request GetLandscapeMetricValuesRequestObject) (GetLandscapeMetricValuesResponseObject, error) {
+	items, err := a.Backend.GetMetricValues()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.MetricValueResource, items)
+	}
+	return GetLandscapeMetricValues200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/metricValues", items)), nil
+}
+
+// GetLandscapeMetricValuesMetricValueId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeMetricValuesMetricValueId(ctx context.Context, request GetLandscapeMetricValuesMetricValueIdRequestObject) (GetLandscapeMetricValuesMetricValueIdResponseObject, error) {
+	item := a.Backend.GetMetricValueById(request.MetricValueId)
+	if item == nil {
+		msg := fmt.Sprintf("metric value %s not found", request.MetricValueId.String())
+		return GetLandscapeMetricValuesMetricValueId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.MetricValueResource, item) {
+		msg := fmt.Sprintf("metric value %s not found", request.MetricValueId.String())
+		return GetLandscapeMetricValuesMetricValueId404JSONResponse(msg), nil
+	}
+	return GetLandscapeMetricValuesMetricValueId200JSONResponse(MetricValueToDto(item)), nil
+}

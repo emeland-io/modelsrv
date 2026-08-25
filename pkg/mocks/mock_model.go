@@ -25,6 +25,7 @@ import (
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
 	mergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	node "go.emeland.io/modelsrv/pkg/model/node"
+	observability "go.emeland.io/modelsrv/pkg/model/observability"
 	parameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	product "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -307,6 +308,34 @@ func (mr *MockModelMockRecorder) AddMergeRule(mergeRule any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMergeRule", reflect.TypeOf((*MockModel)(nil).AddMergeRule), mergeRule)
 }
 
+// AddMetric mocks base method.
+func (m *MockModel) AddMetric(metric observability.Metric) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddMetric", metric)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddMetric indicates an expected call of AddMetric.
+func (mr *MockModelMockRecorder) AddMetric(metric any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetric", reflect.TypeOf((*MockModel)(nil).AddMetric), metric)
+}
+
+// AddMetricValue mocks base method.
+func (m *MockModel) AddMetricValue(metricValue observability.MetricValue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddMetricValue", metricValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddMetricValue indicates an expected call of AddMetricValue.
+func (mr *MockModelMockRecorder) AddMetricValue(metricValue any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetricValue", reflect.TypeOf((*MockModel)(nil).AddMetricValue), metricValue)
+}
+
 // AddNode mocks base method.
 func (m *MockModel) AddNode(n node.Node) error {
 	m.ctrl.T.Helper()
@@ -459,6 +488,20 @@ func (m *MockModel) AddSystemInstance(instance system.SystemInstance) error {
 func (mr *MockModelMockRecorder) AddSystemInstance(instance any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSystemInstance", reflect.TypeOf((*MockModel)(nil).AddSystemInstance), instance)
+}
+
+// AddThreshold mocks base method.
+func (m *MockModel) AddThreshold(threshold observability.Threshold) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddThreshold", threshold)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddThreshold indicates an expected call of AddThreshold.
+func (mr *MockModelMockRecorder) AddThreshold(threshold any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddThreshold", reflect.TypeOf((*MockModel)(nil).AddThreshold), threshold)
 }
 
 // ApiRefByID mocks base method.
@@ -741,6 +784,34 @@ func (mr *MockModelMockRecorder) DeleteMergeRuleById(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMergeRuleById", reflect.TypeOf((*MockModel)(nil).DeleteMergeRuleById), id)
 }
 
+// DeleteMetricById mocks base method.
+func (m *MockModel) DeleteMetricById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMetricById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMetricById indicates an expected call of DeleteMetricById.
+func (mr *MockModelMockRecorder) DeleteMetricById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMetricById", reflect.TypeOf((*MockModel)(nil).DeleteMetricById), id)
+}
+
+// DeleteMetricValueById mocks base method.
+func (m *MockModel) DeleteMetricValueById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMetricValueById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMetricValueById indicates an expected call of DeleteMetricValueById.
+func (mr *MockModelMockRecorder) DeleteMetricValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMetricValueById", reflect.TypeOf((*MockModel)(nil).DeleteMetricValueById), id)
+}
+
 // DeleteNodeById mocks base method.
 func (m *MockModel) DeleteNodeById(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -893,6 +964,20 @@ func (m *MockModel) DeleteSystemInstanceById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteSystemInstanceById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSystemInstanceById", reflect.TypeOf((*MockModel)(nil).DeleteSystemInstanceById), id)
+}
+
+// DeleteThresholdById mocks base method.
+func (m *MockModel) DeleteThresholdById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteThresholdById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteThresholdById indicates an expected call of DeleteThresholdById.
+func (mr *MockModelMockRecorder) DeleteThresholdById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteThresholdById", reflect.TypeOf((*MockModel)(nil).DeleteThresholdById), id)
 }
 
 // GetApiById mocks base method.
@@ -1445,6 +1530,64 @@ func (mr *MockModelMockRecorder) GetMergeRules() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMergeRules", reflect.TypeOf((*MockModel)(nil).GetMergeRules))
 }
 
+// GetMetricById mocks base method.
+func (m *MockModel) GetMetricById(id uuid.UUID) observability.Metric {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricById", id)
+	ret0, _ := ret[0].(observability.Metric)
+	return ret0
+}
+
+// GetMetricById indicates an expected call of GetMetricById.
+func (mr *MockModelMockRecorder) GetMetricById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricById", reflect.TypeOf((*MockModel)(nil).GetMetricById), id)
+}
+
+// GetMetricValueById mocks base method.
+func (m *MockModel) GetMetricValueById(id uuid.UUID) observability.MetricValue {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricValueById", id)
+	ret0, _ := ret[0].(observability.MetricValue)
+	return ret0
+}
+
+// GetMetricValueById indicates an expected call of GetMetricValueById.
+func (mr *MockModelMockRecorder) GetMetricValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricValueById", reflect.TypeOf((*MockModel)(nil).GetMetricValueById), id)
+}
+
+// GetMetricValues mocks base method.
+func (m *MockModel) GetMetricValues() ([]observability.MetricValue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricValues")
+	ret0, _ := ret[0].([]observability.MetricValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetricValues indicates an expected call of GetMetricValues.
+func (mr *MockModelMockRecorder) GetMetricValues() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricValues", reflect.TypeOf((*MockModel)(nil).GetMetricValues))
+}
+
+// GetMetrics mocks base method.
+func (m *MockModel) GetMetrics() ([]observability.Metric, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetrics")
+	ret0, _ := ret[0].([]observability.Metric)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetrics indicates an expected call of GetMetrics.
+func (mr *MockModelMockRecorder) GetMetrics() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetrics", reflect.TypeOf((*MockModel)(nil).GetMetrics))
+}
+
 // GetNodeById mocks base method.
 func (m *MockModel) GetNodeById(id uuid.UUID) node.Node {
 	m.ctrl.T.Helper()
@@ -1776,6 +1919,35 @@ func (m *MockModel) GetSystems() ([]system.System, error) {
 func (mr *MockModelMockRecorder) GetSystems() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystems", reflect.TypeOf((*MockModel)(nil).GetSystems))
+}
+
+// GetThresholdById mocks base method.
+func (m *MockModel) GetThresholdById(id uuid.UUID) observability.Threshold {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThresholdById", id)
+	ret0, _ := ret[0].(observability.Threshold)
+	return ret0
+}
+
+// GetThresholdById indicates an expected call of GetThresholdById.
+func (mr *MockModelMockRecorder) GetThresholdById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThresholdById", reflect.TypeOf((*MockModel)(nil).GetThresholdById), id)
+}
+
+// GetThresholds mocks base method.
+func (m *MockModel) GetThresholds() ([]observability.Threshold, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThresholds")
+	ret0, _ := ret[0].([]observability.Threshold)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThresholds indicates an expected call of GetThresholds.
+func (mr *MockModelMockRecorder) GetThresholds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThresholds", reflect.TypeOf((*MockModel)(nil).GetThresholds))
 }
 
 // SystemInstanceRefByID mocks base method.

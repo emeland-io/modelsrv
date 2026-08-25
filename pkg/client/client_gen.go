@@ -21,6 +21,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -43,6 +44,7 @@ var (
 	_ iam.OrgUnit
 	_ mdlmergerule.MergeRule
 	_ mdlcap.Capacity
+	_ mdlobs.Metric
 	_ node.Node
 	_ mdlparameter.Parameter
 	_ mdlprod.Product
@@ -697,4 +699,79 @@ func (c *ModelSrvClient) GetCapacityById(id uuid.UUID) (mdlcap.Capacity, error) 
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.CapacityFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMetrics() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMetricById(id uuid.UUID) (mdlobs.Metric, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricsMetricIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrMetricNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.MetricFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetThresholds() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeThresholdsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetThresholdById(id uuid.UUID) (mdlobs.Threshold, error) {
+	resp, err := c.oapi_client.GetLandscapeThresholdsThresholdIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrThresholdNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ThresholdFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMetricValues() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricValuesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMetricValueById(id uuid.UUID) (mdlobs.MetricValue, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricValuesMetricValueIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrMetricValueNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.MetricValueFromDto(nil, resp.JSON200)
 }

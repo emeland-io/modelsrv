@@ -22,6 +22,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -40,6 +41,7 @@ var (
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = mdlcap.NewCapacity
+	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
@@ -76,6 +78,9 @@ var testIDs = map[string]uuid.UUID{
 	"Parameter":            uuid.New(),
 	"CapacityResourceType": uuid.New(),
 	"Capacity":             uuid.New(),
+	"Metric":               uuid.New(),
+	"Threshold":            uuid.New(),
+	"MetricValue":          uuid.New(),
 }
 
 func newStoreModel(t *testing.T) (model.Model, events.EventSink) {
@@ -294,6 +299,33 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		require.NoError(t, m.AddContextType(ct))
 		require.NoError(t, m.AddContext(ctx))
 		require.NoError(t, m.AddCapacity(cap))
+	}
+	// --- Metric ---
+	{
+		metric := mdlobs.NewMetric(testIDs["Metric"])
+		metric.SetDisplayName("p99 API latency")
+		require.NoError(t, m.AddMetric(metric))
+	}
+	// --- Threshold ---
+	{
+		th := mdlobs.NewThreshold(testIDs["Threshold"])
+		th.SetDisplayName("Latency SLO breach")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		th.SetMetricById(metric.GetMetricId())
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddThreshold(th))
+	}
+	// --- MetricValue ---
+	{
+		mv := mdlobs.NewMetricValue(testIDs["MetricValue"])
+		mv.SetDisplayName("Current p99 latency")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		mv.SetMetricById(metric.GetMetricId())
+		mv.SetValue("412")
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricValue(mv))
 	}
 }
 
@@ -1721,4 +1753,157 @@ func TestStoreCapacityApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetCapacityById(resourceID))
+}
+
+func TestStoreMetricCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Metric"]
+	got := m.GetMetricById(id)
+	require.NotNil(t, got, "expected Metric to be stored")
+	assert.Equal(t, id, got.GetMetricId())
+
+	list, err := m.GetMetrics()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteMetricById(testIDs["Metric"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricById(id))
+
+	err = m.DeleteMetricById(testIDs["Metric"])
+	assert.ErrorIs(t, err, common.ErrMetricNotFound)
+}
+
+func TestStoreMetricApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	metric := mdlobs.NewMetric(resourceID)
+	metric.SetDisplayName("p99 API latency")
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.MetricResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{metric},
+	}))
+
+	got := m.GetMetricById(resourceID)
+	require.NotNil(t, got, "expected replicated Metric")
+	assert.Equal(t, resourceID, got.GetMetricId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.MetricResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricById(resourceID))
+}
+
+func TestStoreThresholdCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Threshold"]
+	got := m.GetThresholdById(id)
+	require.NotNil(t, got, "expected Threshold to be stored")
+	assert.Equal(t, id, got.GetThresholdId())
+
+	list, err := m.GetThresholds()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteThresholdById(testIDs["Threshold"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetThresholdById(id))
+
+	err = m.DeleteThresholdById(testIDs["Threshold"])
+	assert.ErrorIs(t, err, common.ErrThresholdNotFound)
+}
+
+func TestStoreThresholdApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	th := mdlobs.NewThreshold(resourceID)
+	th.SetDisplayName("Latency SLO breach")
+	metric := mdlobs.NewMetric(uuid.New())
+	metric.SetDisplayName("p99 API latency")
+	th.SetMetricById(metric.GetMetricId())
+	require.NoError(t, m.AddMetric(metric))
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.ThresholdResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{th},
+	}))
+
+	got := m.GetThresholdById(resourceID)
+	require.NotNil(t, got, "expected replicated Threshold")
+	assert.Equal(t, resourceID, got.GetThresholdId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.ThresholdResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetThresholdById(resourceID))
+}
+
+func TestStoreMetricValueCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["MetricValue"]
+	got := m.GetMetricValueById(id)
+	require.NotNil(t, got, "expected MetricValue to be stored")
+	assert.Equal(t, id, got.GetMetricValueId())
+
+	list, err := m.GetMetricValues()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteMetricValueById(testIDs["MetricValue"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricValueById(id))
+
+	err = m.DeleteMetricValueById(testIDs["MetricValue"])
+	assert.ErrorIs(t, err, common.ErrMetricValueNotFound)
+}
+
+func TestStoreMetricValueApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	mv := mdlobs.NewMetricValue(resourceID)
+	mv.SetDisplayName("Current p99 latency")
+	metric := mdlobs.NewMetric(uuid.New())
+	metric.SetDisplayName("p99 API latency")
+	mv.SetMetricById(metric.GetMetricId())
+	mv.SetValue("412")
+	require.NoError(t, m.AddMetric(metric))
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.MetricValueResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{mv},
+	}))
+
+	got := m.GetMetricValueById(resourceID)
+	require.NotNil(t, got, "expected replicated MetricValue")
+	assert.Equal(t, resourceID, got.GetMetricValueId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.MetricValueResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricValueById(resourceID))
 }

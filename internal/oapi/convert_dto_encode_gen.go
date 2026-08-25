@@ -11,6 +11,8 @@ import (
 
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+
 	node "go.emeland.io/modelsrv/pkg/model/node"
 )
 
@@ -111,6 +113,21 @@ func CapacityResourceTypeToDto(v mdlcap.CapacityResourceType) CapacityResourceTy
 		DisplayName:            v.GetDisplayName(),
 		Annotations:            AnnotationsToDto(v.GetAnnotations()),
 		Unit:                   v.GetUnit(),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	return out
+}
+
+func MetricToDto(v mdlobs.Metric) Metric {
+	if v == nil {
+		return Metric{}
+	}
+	out := Metric{
+		MetricId:    uuidToOpenAPI(v.GetMetricId()),
+		DisplayName: v.GetDisplayName(),
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc

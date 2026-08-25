@@ -40,6 +40,9 @@ func ResourceTypes(m Model) []ResourceTypeInfo {
 		{"Parameter", countFunc(m.GetParameters)},
 		{"CapacityResourceType", countFunc(m.GetCapacityResourceTypes)},
 		{"Capacity", countFunc(m.GetCapacities)},
+		{"Metric", countFunc(m.GetMetrics)},
+		{"Threshold", countFunc(m.GetThresholds)},
+		{"MetricValue", countFunc(m.GetMetricValues)},
 	}
 }
 
