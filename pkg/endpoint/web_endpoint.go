@@ -70,8 +70,10 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(collectors.NewGoCollector())
 	reg.MustRegister(metrics.NewCollector(backend))
+	httpMetrics := metrics.NewHTTPMetrics(reg)
 
 	r := mux.NewRouter()
+	r.Use(httpMetrics.Middleware)
 	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
@@ -106,8 +108,10 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	metricsReg = prometheus.NewRegistry()
 	metricsReg.MustRegister(collectors.NewGoCollector())
 	metricsReg.MustRegister(metrics.NewCollector(backend))
+	httpMetrics := metrics.NewHTTPMetrics(metricsReg)
 
 	r := mux.NewRouter()
+	r.Use(httpMetrics.Middleware)
 	// Indirection: metricsHandler can be swapped to a redirect by StartMetricsListener.
 	metricsHandler = promhttp.HandlerFor(metricsReg, promhttp.HandlerOpts{})
 	r.Handle("/metrics", http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
