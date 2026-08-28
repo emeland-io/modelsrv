@@ -64,6 +64,9 @@ var primaryIDField = map[events.ResourceType]string{
 	events.ParameterResource:            "parameterId",
 	events.CapacityResourceTypeResource: "capacityResourceTypeId",
 	events.CapacityResource:             "capacityId",
+	events.MetricResource:               "metricId",
+	events.ThresholdResource:            "thresholdId",
+	events.MetricValueResource:          "metricValueId",
 }
 
 // ValidateCSVOptions reports config errors that do not require reading a file.

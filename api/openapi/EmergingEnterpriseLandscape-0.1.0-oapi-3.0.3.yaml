@@ -383,6 +383,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/metrics:
+    get:
+      description: Retrieve all metrics in the landscape.
+      tags: [landscape, p6_observability]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/metrics/{metricId}:
+    get:
+      description: Retrieve details of a specific metric by its UUID.
+      tags: [landscape, p6_observability]
+      parameters:
+        - name: metricId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metric'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/thresholds:
+    get:
+      description: Retrieve all thresholds in the landscape.
+      tags: [landscape, p6_observability]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/thresholds/{thresholdId}:
+    get:
+      description: Retrieve details of a specific threshold by its UUID.
+      tags: [landscape, p6_observability]
+      parameters:
+        - name: thresholdId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Threshold'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/metricValues:
+    get:
+      description: Retrieve all metric values in the landscape.
+      tags: [landscape, p6_observability]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/metricValues/{metricValueId}:
+    get:
+      description: Retrieve details of a specific metric value by its UUID.
+      tags: [landscape, p6_observability]
+      parameters:
+        - name: metricValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricValue'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/capacityResourceTypes:
     get:
       description: Retrieve all capacity resource types in the landscape.
@@ -1242,6 +1347,10 @@ components:
             # phase-7 capacity types
             - Capacity
             - CapacityResourceType
+            # phase-6 observability types
+            - Metric
+            - Threshold
+            - MetricValue
           description: The type of the resource referenced.
         displayName:
           type: string
@@ -1412,6 +1521,10 @@ components:
             # phase-7 capacity types
             - Capacity
             - CapacityResourceType
+            # phase-6 observability types
+            - Metric
+            - Threshold
+            - MetricValue
           description: The type of the resource referenced.
         reference:
           description: A URI reference to the resource.
@@ -2270,6 +2383,85 @@ components:
         - contextRef
         - category
         - amount
+    MetricRef:
+      type: object
+      description: Reference to a Metric vocabulary entry.
+      properties:
+        metricId:
+          type: string
+          format: uuid
+      required:
+        - metricId
+    Metric:
+      type: object
+      description: >
+        Abstract measurement with business value. Metrics are not time series;
+        they may also name a compound metric whose formula lives in annotations.
+      properties:
+        metricId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - metricId
+        - displayName
+    Threshold:
+      type: object
+      description: >
+        Condition of arbitrary complexity attached to a Metric. The condition itself
+        lives in annotations (emeland.io/threshold.expression), not as schema fields.
+      properties:
+        thresholdId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        metricRef:
+          $ref: '#/components/schemas/MetricRef'
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - thresholdId
+        - displayName
+        - metricRef
+    MetricValue:
+      type: object
+      description: >
+        Current reading of a Metric. The value field is the current value only,
+        not a timeline.
+      properties:
+        metricValueId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        metricRef:
+          $ref: '#/components/schemas/MetricRef'
+        value:
+          type: string
+          description: Current value of the metric (unvalidated string).
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - metricValueId
+        - displayName
+        - metricRef
+        - value
     Event:
       type: object
       description: Represents a change in the landscape model for event replication between servers.

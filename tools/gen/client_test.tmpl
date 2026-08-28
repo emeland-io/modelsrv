@@ -26,6 +26,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
@@ -46,6 +47,7 @@ var (
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = mdlcap.NewCapacity
+	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct

@@ -47,6 +47,10 @@ var documentKinds = map[events.ResourceType]struct{}{
 	events.ParameterResource:            {},
 	events.CapacityResourceTypeResource: {},
 	events.CapacityResource:             {},
+
+	events.MetricResource:      {},
+	events.ThresholdResource:   {},
+	events.MetricValueResource: {},
 }
 
 // ResourceType returns the underlying [events.ResourceType].

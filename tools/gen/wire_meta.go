@@ -25,12 +25,15 @@ var skipConvertByName = map[string]bool{
 	"Capability":        true,
 	"Parameter":         true,
 	"Capacity":          true,
+	"Threshold":         true,
+	"MetricValue":       true,
 }
 
 var skipAuthzByName = map[string]bool{
 	"FilterRule":           true,
 	"MergeRule":            true,
 	"CapacityResourceType": true,
+	"Metric":               true,
 }
 
 var skipClientMethodsByName = map[string]bool{
@@ -69,6 +72,9 @@ var wireKindToEventsResource = map[string]string{
 	"Parameter":            "ParameterResource",
 	"CapacityResourceType": "CapacityResourceTypeResource",
 	"Capacity":             "CapacityResource",
+	"Metric":               "MetricResource",
+	"Threshold":            "ThresholdResource",
+	"MetricValue":          "MetricValueResource",
 }
 
 var restListPathByName = map[string]string{
@@ -101,6 +107,9 @@ var restListPathByName = map[string]string{
 	"Parameter":            "/landscape/parameters",
 	"CapacityResourceType": "/landscape/capacityResourceTypes",
 	"Capacity":             "/landscape/capacities",
+	"Metric":               "/landscape/metrics",
+	"Threshold":            "/landscape/thresholds",
+	"MetricValue":          "/landscape/metricValues",
 }
 
 var serverRequestIDByName = map[string]string{
@@ -140,6 +149,9 @@ var serverResourceLabelByName = map[string]string{
 	"Parameter":            "parameter",
 	"CapacityResourceType": "capacity resource type",
 	"Capacity":             "capacity",
+	"Metric":               "metric",
+	"Threshold":            "threshold",
+	"MetricValue":          "metric value",
 }
 
 var server404UseErrorString = map[string]bool{

@@ -13,6 +13,8 @@ import (
 
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
 
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+
 	model "go.emeland.io/modelsrv/pkg/model"
 
 	node "go.emeland.io/modelsrv/pkg/model/node"
@@ -125,6 +127,21 @@ func CapacityResourceTypeFromDto(m model.Model, o *CapacityResourceType) (mdlcap
 		v.SetDescription(*o.Description)
 	}
 	v.SetUnit(o.Unit)
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+// MetricFromDto builds a domain Metric from a wire DTO.
+func MetricFromDto(m model.Model, o *Metric) (mdlobs.Metric, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil metric")
+	}
+	id := uuid.UUID(o.MetricId)
+	v := mdlobs.NewMetric(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 	return v, nil
 }

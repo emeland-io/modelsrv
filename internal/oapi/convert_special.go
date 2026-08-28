@@ -19,6 +19,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -1021,6 +1022,95 @@ func CapacityToDto(v mdlcap.Capacity) Capacity {
 		},
 		ContextRef: CapacityContextRef{
 			ContextId: uuidToOpenAPI(v.GetContextId()),
+		},
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	return out
+}
+
+// metricReferrer is the Metric-reference surface shared by [mdlobs.Threshold]
+// and [mdlobs.MetricValue].
+type metricReferrer interface {
+	SetMetricByRef(metric mdlobs.Metric)
+	SetMetricById(metricId uuid.UUID)
+}
+
+// setMetricRef attaches the resolved Metric when m can supply it, falling back
+// to an id-only reference when the model is absent or the Metric is unknown.
+func setMetricRef(m model.Model, target metricReferrer, metricID uuid.UUID) {
+	if m != nil {
+		if metric := m.GetMetricById(metricID); metric != nil {
+			target.SetMetricByRef(metric)
+			return
+		}
+	}
+	target.SetMetricById(metricID)
+}
+
+// ThresholdFromDto builds a domain Threshold from a wire DTO.
+func ThresholdFromDto(m model.Model, o *Threshold) (mdlobs.Threshold, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil threshold")
+	}
+	id := uuid.UUID(o.ThresholdId)
+	v := mdlobs.NewThreshold(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	setMetricRef(m, v, uuid.UUID(o.MetricRef.MetricId))
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+func ThresholdToDto(v mdlobs.Threshold) Threshold {
+	if v == nil {
+		return Threshold{}
+	}
+	out := Threshold{
+		ThresholdId: uuidToOpenAPI(v.GetThresholdId()),
+		DisplayName: v.GetDisplayName(),
+		MetricRef: MetricRef{
+			MetricId: uuidToOpenAPI(v.GetMetricId()),
+		},
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	return out
+}
+
+// MetricValueFromDto builds a domain MetricValue from a wire DTO.
+func MetricValueFromDto(m model.Model, o *MetricValue) (mdlobs.MetricValue, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil metric value")
+	}
+	id := uuid.UUID(o.MetricValueId)
+	v := mdlobs.NewMetricValue(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	setMetricRef(m, v, uuid.UUID(o.MetricRef.MetricId))
+	v.SetValue(o.Value)
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+func MetricValueToDto(v mdlobs.MetricValue) MetricValue {
+	if v == nil {
+		return MetricValue{}
+	}
+	out := MetricValue{
+		MetricValueId: uuidToOpenAPI(v.GetMetricValueId()),
+		DisplayName:   v.GetDisplayName(),
+		Value:         v.GetValue(),
+		MetricRef: MetricRef{
+			MetricId: uuidToOpenAPI(v.GetMetricId()),
 		},
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
 	}

@@ -25,6 +25,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -249,6 +250,30 @@ type CapacityModel interface {
 	GetCapacityById(id uuid.UUID) mdlcap.Capacity
 }
 
+// MetricModel provides CRUD operations for [observability.Metric] resources.
+type MetricModel interface {
+	AddMetric(metric mdlobs.Metric) error
+	DeleteMetricById(id uuid.UUID) error
+	GetMetrics() ([]mdlobs.Metric, error)
+	GetMetricById(id uuid.UUID) mdlobs.Metric
+}
+
+// ThresholdModel provides CRUD operations for [observability.Threshold] resources.
+type ThresholdModel interface {
+	AddThreshold(threshold mdlobs.Threshold) error
+	DeleteThresholdById(id uuid.UUID) error
+	GetThresholds() ([]mdlobs.Threshold, error)
+	GetThresholdById(id uuid.UUID) mdlobs.Threshold
+}
+
+// MetricValueModel provides CRUD operations for [observability.MetricValue] resources.
+type MetricValueModel interface {
+	AddMetricValue(metricValue mdlobs.MetricValue) error
+	DeleteMetricValueById(id uuid.UUID) error
+	GetMetricValues() ([]mdlobs.MetricValue, error)
+	GetMetricValueById(id uuid.UUID) mdlobs.MetricValue
+}
+
 // ArtifactModel provides CRUD operations for [artifact.Artifact] resources.
 type ArtifactModel interface {
 	// AddArtifact registers an Artifact in the model.
@@ -297,6 +322,9 @@ type Model interface {
 	ParameterModel
 	CapacityResourceTypeModel
 	CapacityModel
+	MetricModel
+	ThresholdModel
+	MetricValueModel
 	ArtifactModel
 	ArtifactInstanceModel
 	iam.OrgUnitModel
@@ -359,6 +387,10 @@ type modelData struct {
 	capacityResourceTypesByUUID map[uuid.UUID]mdlcap.CapacityResourceType
 	capacitiesByUUID            map[uuid.UUID]mdlcap.Capacity
 	capacitiesByTuple           map[capacityTupleKey]uuid.UUID
+
+	metricsByUUID      map[uuid.UUID]mdlobs.Metric
+	thresholdsByUUID   map[uuid.UUID]mdlobs.Threshold
+	metricValuesByUUID map[uuid.UUID]mdlobs.MetricValue
 }
 
 // ensure Model interface is implemented correctly
@@ -414,6 +446,10 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		capacityResourceTypesByUUID: make(map[uuid.UUID]mdlcap.CapacityResourceType),
 		capacitiesByUUID:            make(map[uuid.UUID]mdlcap.Capacity),
 		capacitiesByTuple:           make(map[capacityTupleKey]uuid.UUID),
+
+		metricsByUUID:      make(map[uuid.UUID]mdlobs.Metric),
+		thresholdsByUUID:   make(map[uuid.UUID]mdlobs.Threshold),
+		metricValuesByUUID: make(map[uuid.UUID]mdlobs.MetricValue),
 	}
 
 	return model, nil

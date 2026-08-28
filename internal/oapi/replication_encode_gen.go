@@ -18,6 +18,7 @@ import (
 	iam "go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	node "go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -202,6 +203,24 @@ func encodeReplicationResourceToWireMap(rt events.ResourceType, obj any) (map[st
 			return nil, fmt.Errorf("expected Capacity, got %T", obj)
 		}
 		return jsonMap(CapacityToDto(v))
+	case events.MetricResource:
+		v, ok := obj.(mdlobs.Metric)
+		if !ok {
+			return nil, fmt.Errorf("expected Metric, got %T", obj)
+		}
+		return jsonMap(MetricToDto(v))
+	case events.ThresholdResource:
+		v, ok := obj.(mdlobs.Threshold)
+		if !ok {
+			return nil, fmt.Errorf("expected Threshold, got %T", obj)
+		}
+		return jsonMap(ThresholdToDto(v))
+	case events.MetricValueResource:
+		v, ok := obj.(mdlobs.MetricValue)
+		if !ok {
+			return nil, fmt.Errorf("expected MetricValue, got %T", obj)
+		}
+		return jsonMap(MetricValueToDto(v))
 	default:
 		return nil, fmt.Errorf("unsupported resource type for encode: %s", rt)
 	}

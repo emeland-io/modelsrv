@@ -28,6 +28,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -46,6 +47,7 @@ var (
 	_ = iam.NewOrgUnit
 	_ = mdlmergerule.NewMergeRule
 	_ = mdlcap.NewCapacity
+	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
 	_ = mdlproduct.NewProduct
@@ -83,6 +85,9 @@ var testIDs = map[string]uuid.UUID{
 	"Parameter":            uuid.New(),
 	"CapacityResourceType": uuid.New(),
 	"Capacity":             uuid.New(),
+	"Metric":               uuid.New(),
+	"Threshold":            uuid.New(),
+	"MetricValue":          uuid.New(),
 }
 
 func setupTestServer(t *testing.T) (*client.ModelSrvClient, model.Model) {
@@ -345,6 +350,36 @@ func loadTestModel(t *testing.T, m model.Model) {
 		require.NoError(t, m.AddContextType(ct))
 		require.NoError(t, m.AddContext(ctx))
 		require.NoError(t, m.AddCapacity(cap))
+	}
+
+	// --- Metric ---
+	{
+		metric := mdlobs.NewMetric(testIDs["Metric"])
+		metric.SetDisplayName("p99 API latency")
+		require.NoError(t, m.AddMetric(metric))
+	}
+
+	// --- Threshold ---
+	{
+		th := mdlobs.NewThreshold(testIDs["Threshold"])
+		th.SetDisplayName("Latency SLO breach")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		th.SetMetricById(metric.GetMetricId())
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddThreshold(th))
+	}
+
+	// --- MetricValue ---
+	{
+		mv := mdlobs.NewMetricValue(testIDs["MetricValue"])
+		mv.SetDisplayName("Current p99 latency")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		mv.SetMetricById(metric.GetMetricId())
+		mv.SetValue("412")
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricValue(mv))
 	}
 
 }
@@ -1025,6 +1060,84 @@ func TestGetByIdCapacity(t *testing.T) {
 	assert.Equal(t, "Production CPU provided", got.GetDisplayName())
 }
 
+func TestListMetric(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetMetrics()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Metric list should not be empty")
+}
+
+func TestGetByIdMetric(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetMetricById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrMetricNotFound)
+
+	// known id → success
+	got, err := c.GetMetricById(testIDs["Metric"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Metric"], got.GetMetricId())
+	assert.Equal(t, "p99 API latency", got.GetDisplayName())
+}
+
+func TestListThreshold(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetThresholds()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Threshold list should not be empty")
+}
+
+func TestGetByIdThreshold(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetThresholdById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrThresholdNotFound)
+
+	// known id → success
+	got, err := c.GetThresholdById(testIDs["Threshold"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Threshold"], got.GetThresholdId())
+	assert.Equal(t, "Latency SLO breach", got.GetDisplayName())
+}
+
+func TestListMetricValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetMetricValues()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "MetricValue list should not be empty")
+}
+
+func TestGetByIdMetricValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetMetricValueById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrMetricValueNotFound)
+
+	// known id → success
+	got, err := c.GetMetricValueById(testIDs["MetricValue"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["MetricValue"], got.GetMetricValueId())
+	assert.Equal(t, "Current p99 latency", got.GetDisplayName())
+}
+
 // TestResourceRefEnumCompleteness verifies that the OpenAPI spec's ResourceRef.resourceType
 // enum contains an entry for every resource type that has a wire kind.
 func TestResourceRefEnumCompleteness(t *testing.T) {
@@ -1063,6 +1176,9 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"Parameter",
 		"CapacityResourceType",
 		"Capacity",
+		"Metric",
+		"Threshold",
+		"MetricValue",
 	}
 
 	for _, kind := range wireKinds {

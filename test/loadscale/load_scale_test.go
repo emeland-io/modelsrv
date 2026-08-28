@@ -33,6 +33,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -111,6 +112,7 @@ type fixtureIDs struct {
 	api                  uuid.UUID
 	component            uuid.UUID
 	capacityResourceType uuid.UUID
+	metric               uuid.UUID
 }
 
 // setupFixtures creates one instance of every resource kind that other
@@ -133,6 +135,7 @@ func setupFixtures(t *testing.T, m model.Model) fixtureIDs {
 		api:                  uuid.New(),
 		component:            uuid.New(),
 		capacityResourceType: uuid.New(),
+		metric:               uuid.New(),
 	}
 
 	ct := mdlctx.NewContextType(f.contextType)
@@ -199,6 +202,10 @@ func setupFixtures(t *testing.T, m model.Model) fixtureIDs {
 	crt.SetDisplayName("fixture CapacityResourceType")
 	crt.SetUnit("cores")
 	require.NoError(t, m.AddCapacityResourceType(crt))
+
+	metric := mdlobs.NewMetric(f.metric)
+	metric.SetDisplayName("fixture Metric")
+	require.NoError(t, m.AddMetric(metric))
 
 	return f
 }
@@ -386,6 +393,24 @@ func resourceKinds(f fixtureIDs) []resourceKind {
 			cap.SetCategory(mdlcap.CategoryProvided)
 			cap.SetAmount(mdlcap.Amount("64"))
 			return m.AddCapacity(cap)
+		}},
+		{"Metric", func(m model.Model, id uuid.UUID, dn string) error {
+			metric := mdlobs.NewMetric(id)
+			metric.SetDisplayName(dn)
+			return m.AddMetric(metric)
+		}},
+		{"Threshold", func(m model.Model, id uuid.UUID, dn string) error {
+			th := mdlobs.NewThreshold(id)
+			th.SetDisplayName(dn)
+			th.SetMetricById(f.metric)
+			return m.AddThreshold(th)
+		}},
+		{"MetricValue", func(m model.Model, id uuid.UUID, dn string) error {
+			mv := mdlobs.NewMetricValue(id)
+			mv.SetDisplayName(dn)
+			mv.SetMetricById(f.metric)
+			mv.SetValue("412")
+			return m.AddMetricValue(mv)
 		}},
 	}
 }
