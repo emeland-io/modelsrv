@@ -118,15 +118,14 @@ distinct types. Depth becomes data, so a fourth or fifth tier never requires a n
 resource type — which is precisely the problem this ADR is trying to stop recurring.
 
 The cost is the largest migration in the model's history: it removes two resource types that are
-externally visible, and it gives up per-type foreign-key validation, the eight System Structure
-finding kinds that are written against specific types, and the type-level authz surface. It also
-weakens the schema's ability to state that only level 2 may own APIs.
+externally visible, and it gives up per-type foreign-key validation and the type-level authz
+surface. It also weakens the schema's ability to state that only level 2 may own APIs.
 
 ### Option B — a third distinct type with a neutral noun (chosen)
 
 `System` and `Component` stay exactly as they are; one new type and its instance are added below
 `Component` following the 18-step checklist in [adding-resource-types.md](../adding-resource-types.md).
-Nothing breaks, findings and validation keep working per type, and the "only level 2 owns APIs" rule
+Nothing breaks, validation stays per type, and the "only level 2 owns APIs" rule
 stays expressible in the schema. The cost is that `Component` permanently denotes the deployable
 tier, so the C4 reader still has to hold a translation in their head — mitigated, but not removed, by
 the configurable labels in decision 2.
@@ -156,8 +155,9 @@ labels and an untyped `DependsOn` all survive a move to a recursive type.
 - `Part` is a leaf by construction, so the model keeps three structural tiers and cannot express a
   fourth without another ADR. That is deliberate: level 4 is code, and code structure changes on
   every commit.
-- New finding kinds will be wanted for `Part`, mirroring the existing System Structure set: missing
-  description, a `Part` with no `Component`, and a `DependsOn` cycle.
+- The C4 injector only depicts landscape state and does not raise Findings. Any future validation
+  for `Part` (missing description, `Part` with no `Component`, `DependsOn` cycle) would be a
+  separate concern, not part of diagram rendering.
 - `Technology` on `Component` supersedes the synthesised API-type string that level 2 renders today,
   so existing diagrams change text once the field is populated.
 

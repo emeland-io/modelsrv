@@ -39,45 +39,6 @@ const (
 	// MissingResourceReference is raised when a subject lacks a required EmELand
 	// reference (e.g. ApiInstance without an API ref). Resources layout: [subject].
 	MissingResourceReference FindingKind = "MissingResourceReference"
-
-	// DescriptionMissing is raised when a System, API, or Component has an empty
-	// description (documentation needed for C4 System Structure diagrams).
-	DescriptionMissing FindingKind = "DescriptionMissing"
-
-	// ConcreteSystemHasNoComponents is raised when a non-abstract System has no
-	// Components (its C4 Container diagram boundary would be empty).
-	ConcreteSystemHasNoComponents FindingKind = "ConcreteSystemHasNoComponents"
-
-	// AbstractSystemHasComponents is raised when an abstract System has Components
-	// (contradicts the black-box rule and pollutes Container diagrams).
-	AbstractSystemHasComponents FindingKind = "AbstractSystemHasComponents"
-
-	// APIHasNoProvider is raised when a non-abstract System's API is not listed in
-	// any Component.provides (book: exactly one provider).
-	APIHasNoProvider FindingKind = "APIHasNoProvider"
-
-	// APIHasMultipleProviders is raised when more than one Component lists the same
-	// API in provides. Resources layout: [API, provider Components...].
-	APIHasMultipleProviders FindingKind = "APIHasMultipleProviders"
-
-	// ProvidedAPISystemMismatch is raised when a Component provides an API whose
-	// owning System is not the Component's System. Resources: [Component, API].
-	ProvidedAPISystemMismatch FindingKind = "ProvidedAPISystemMismatch"
-
-	// SystemInstanceContextMissing is raised when a SystemInstance has no Context
-	// ref and therefore cannot be placed on C4 Context or deployment diagrams.
-	SystemInstanceContextMissing FindingKind = "SystemInstanceContextMissing"
-
-	// ApiInstanceMissingForComponentInstance is raised when a ComponentInstance's
-	// type provides or consumes an API that has no ApiInstance in the same
-	// SystemInstance, so no deployment edge can be drawn.
-	// Resources: [ComponentInstance, API...].
-	ApiInstanceMissingForComponentInstance FindingKind = "ApiInstanceMissingForComponentInstance"
-
-	// ApiInstanceSystemInstanceMissing is raised when an ApiInstance has no
-	// SystemInstance ref, so it has no boundary to be drawn inside on the
-	// deployment diagram. Mirrors SystemInstanceContextMissing one level down.
-	ApiInstanceSystemInstanceMissing FindingKind = "ApiInstanceSystemInstanceMissing"
 )
 
 // findingTypeNamespace is the UUID v5 namespace used to derive stable
@@ -112,24 +73,6 @@ func DescriptionForKind(kind FindingKind) string {
 		return "A resource references another resource by UUID that is not registered in the local model."
 	case MissingResourceReference:
 		return "A resource lacks a required EmELand reference to another resource."
-	case DescriptionMissing:
-		return "A System, API, or Component has an empty description required for System Structure documentation."
-	case ConcreteSystemHasNoComponents:
-		return "A non-abstract System has no Components, so its C4 Container diagram boundary would be empty."
-	case AbstractSystemHasComponents:
-		return "An abstract System has Components; abstract systems are black boxes with APIs only."
-	case APIHasNoProvider:
-		return "An API belonging to a non-abstract System is not provided by any Component."
-	case APIHasMultipleProviders:
-		return "More than one Component provides the same API; each API must have exactly one provider."
-	case ProvidedAPISystemMismatch:
-		return "A Component provides an API that belongs to a different System than the Component."
-	case SystemInstanceContextMissing:
-		return "A SystemInstance has no Context reference and cannot be placed on C4 Context or deployment diagrams."
-	case ApiInstanceMissingForComponentInstance:
-		return "A ComponentInstance's type provides or consumes an API that has no ApiInstance in the same SystemInstance."
-	case ApiInstanceSystemInstanceMissing:
-		return "An ApiInstance has no SystemInstance reference, so it has no boundary to be placed in on the C4 deployment diagram."
 	default:
 		return ""
 	}

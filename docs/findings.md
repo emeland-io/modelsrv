@@ -225,102 +225,6 @@ External Sensors that emit findings intended for this filter SHOULD:
 Findings that do not match any resolution rule are retained — including
 unknown kinds with only a subject ref and no missing target.
 
-## System Structure documentation findings
-
-The `pkg/c4injector` package (wired into `modelsrv server` when `--c4-doc` is
-enabled) raises findings when landscape data is insufficient for C4-PlantUML
-diagrams (levels 1–2 and deployment). Findings use display name
-`System Structure documentation` and the deterministic UUID scheme shared with
-phase 0. They are created and cleared by the c4injector filter (not by
-`resolvefindings`).
-
-### DescriptionMissing
-
-**Trigger:** A System, API, or Component Create/Update where `description` is
-empty or whitespace-only.
-
-**Resolved by:** A subsequent Update that sets a non-empty description.
-
-**Resources:** subject resource only.
-
-### ConcreteSystemHasNoComponents
-
-**Trigger:** A non-abstract System has no Components that reference it, so its
-C4 Container diagram boundary would be empty.
-
-**Resolved by:** Adding at least one Component for that System.
-
-**Resources:** the System.
-
-### AbstractSystemHasComponents
-
-**Trigger:** An abstract System has one or more Components (contradicts the
-black-box / APIs-only rule).
-
-**Resolved by:** Removing the Components or clearing `abstract`.
-
-**Resources:** the System.
-
-### APIHasNoProvider
-
-**Trigger:** An API whose System is not abstract is not listed in any
-Component `provides`.
-
-**Resolved by:** A Component that provides the API (exactly one).
-
-**Resources:** the API.
-
-### APIHasMultipleProviders
-
-**Trigger:** More than one Component lists the same API in `provides`.
-
-**Resolved by:** Leaving exactly one provider.
-
-**Resources:** the API first, then each providing Component.
-
-### ProvidedAPISystemMismatch
-
-**Trigger:** A Component provides an API whose owning System differs from the
-Component's System.
-
-**Resolved by:** Aligning Component.system and API.system, or removing the
-provides link.
-
-**Resources:** the Component, then the API.
-
-### SystemInstanceContextMissing
-
-**Trigger:** A SystemInstance has no Context reference (`GetContextRef()` nil
-or `uuid.Nil`), so it cannot be placed on the C4 deployment diagram.
-
-**Resolved by:** Setting a Context on the SystemInstance.
-
-**Resources:** the SystemInstance.
-
-### ApiInstanceMissingForComponentInstance
-
-**Trigger:** A ComponentInstance whose type provides or consumes an API that
-has no ApiInstance in the same SystemInstance, so no deployment edge can be drawn.
-
-**Resolved by:** Adding matching ApiInstance(s) under the same SystemInstance.
-
-**Resources:** the ComponentInstance, then each missing API type.
-
-### ApiInstanceSystemInstanceMissing
-
-**Trigger:** An ApiInstance has no SystemInstance reference, so it has no
-boundary to be drawn inside on the deployment diagram. This mirrors
-`SystemInstanceContextMissing` one level down.
-
-**Resolved by:** Setting a SystemInstance on the ApiInstance.
-
-**Resources:** the ApiInstance.
-
-Note that the ApiInstance is still drawn — it appears under the synthetic
-`(no Context)` boundary as a loose endpoint (see
-[adr/c4-abstraction-mapping.md](adr/c4-abstraction-mapping.md)). The finding
-records that its placement is unknown, not that it is invisible.
-
 ## Registering FindingTypes for well-known kinds
 
 To give the built-in findings a human-readable `DisplayName` and `Description`,
@@ -336,15 +240,6 @@ The stable UUIDs for the built-in kinds are:
 | `NodeTypeMissing` | `808c222c-3e02-5d38-9a82-4b16c792b075` |
 | `ReferencedResourceNotFound` | `26a693f2-996d-5310-9e5b-a357722dcda5` |
 | `MissingResourceReference` | `904c4012-fa93-5bbf-a8fe-7907eccce5d5` |
-| `DescriptionMissing` | `a9e4c72d-0df6-5923-8d6b-0e08cf209c35` |
-| `ConcreteSystemHasNoComponents` | `9bc3cad7-7442-55a7-9f4c-8d55590814ca` |
-| `AbstractSystemHasComponents` | `98f41f99-af35-5f48-9508-685dd35d5ad3` |
-| `APIHasNoProvider` | `aea1a5c0-1c85-5a1e-9cb2-f4fbbd5e5a00` |
-| `APIHasMultipleProviders` | `3b5b23a7-af12-52bc-a8df-6045e8b2d5fc` |
-| `ProvidedAPISystemMismatch` | `2991e0fa-5a6d-567f-955e-4bc256e35c5c` |
-| `SystemInstanceContextMissing` | `4c79df7e-138b-5459-99fe-3115f0f98d79` |
-| `ApiInstanceMissingForComponentInstance` | `93533fc4-476a-51a2-829c-da55c70a1ba4` |
-| `ApiInstanceSystemInstanceMissing` | `4f8ae925-b828-5213-a054-19c1fdef951d` |
 
 Example YAML:
 
