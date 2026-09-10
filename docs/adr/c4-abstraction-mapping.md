@@ -88,8 +88,9 @@ Type-level diagrams stay free of instances, since mixing them defeats the abstra
 instead annotates each `Container` description with its `ComponentInstance` count, stating
 `[no instances]` explicitly so an undeployed Component is visible as such.
 
-Placement gaps are recorded as Findings rather than by omission — `SystemInstanceContextMissing`
-and `ApiInstanceSystemInstanceMissing` are the inventory of instances whose position is unknown.
+Placement gaps are depicted, not flagged: instances whose `SystemInstance` (or Context)
+cannot be resolved are grouped under the synthetic `(no Context)` boundary rather than
+omitted or recorded as Findings.
 
 ## Consequences
 

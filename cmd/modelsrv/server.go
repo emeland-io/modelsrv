@@ -136,7 +136,6 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		)
 	}
 
-	var c4FilterID eventfilter.FilterID
 	var c4Landscape c4injector.Landscape
 	if c4Doc {
 		c4Landscape = c4injector.Landscape{
@@ -146,11 +145,9 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		if c4Landscape.Name == "" {
 			c4Landscape = c4injector.DefaultLandscape()
 		}
-		c4injector.EnsureWellKnownFindingTypes(b.GetModel())
 		if err := c4injector.RegisterNode(b.GetModel(), uuid.New(), "c4-doc-injector"); err != nil {
 			return fmt.Errorf("register c4-doc-injector node: %w", err)
 		}
-		c4FilterID = b.GetChain().RegisterFilter(c4injector.NewFilter())
 		logger.Infow("c4 plantuml injector started",
 			"context", c4injector.PathContext,
 			"container", c4injector.PathContainer,
@@ -180,10 +177,6 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		filesensor.ApplyExisting(dataPath, b.GetModel(), logger)
 		registerStartupSubscribers(b.GetEventManager(), parseCommaSeparatedList(subscribersFlag), logger)
 		filesensor.StartWatch(ctx, dataPath, b.GetModel(), logger)
-	}
-
-	if c4Doc {
-		c4injector.Reconcile(b.GetModel())
 	}
 
 	webOpts := endpoint.WebListenerOptions{
@@ -228,10 +221,6 @@ func runServer(cmd *cobra.Command, _ []string) error {
 	logger.Infow("shutdown signal received", "signal", sig.String())
 
 	cancel()
-
-	if c4Doc {
-		b.GetChain().Unregister(c4FilterID)
-	}
 
 	if configWriter != nil {
 		b.GetChain().Unregister(configSyncFilterID)

@@ -12,5 +12,6 @@
 //     are grouped under a synthetic "(no Context)" boundary rather than dropped.
 //   - Code (level 4): not implemented (HTTP 404)
 //
-// Documentation gaps are recorded as Findings.
+// Documentation gaps are not recorded as Findings; the injector only depicts
+// what is present in the landscape.
 package c4injector
