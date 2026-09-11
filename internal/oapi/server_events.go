@@ -2,7 +2,9 @@ package oapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -64,6 +66,10 @@ func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRe
 	}
 	ev, err := ReplicationEventFromWire(a.Backend, request.Body)
 	if err != nil {
+		if errors.Is(err, ErrSkipReplication) {
+			log.Printf("WARNING: skipping unreplicable event: %v", err)
+			return PostEventsPush200Response{}, nil
+		}
 		return nil, fmt.Errorf("replication decode: %w", err)
 	}
 	if err := a.Backend.Apply(ev); err != nil {

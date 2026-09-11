@@ -2,6 +2,8 @@ package eventmgr
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -122,15 +124,23 @@ func (n *notifier) drainQueue() {
 	}
 }
 
-// deliver reports whether ev reached the subscriber, retrying transient
-// failures with exponential backoff. Giving up is not data loss: the caller
-// schedules a resync, which re-sends current state.
+// deliver reports whether ev was handled for this subscriber. Transient
+// failures are retried with exponential backoff; a permanent rejection is
+// skipped so a snapshot can continue with later resources. Exhausting retries
+// is not data loss: the caller schedules a resync of current state.
 func (n *notifier) deliver(ev events.Event) bool {
 	for attempt := 1; ; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), notifyAttemptTimeout)
 		err := n.sub.Notify(ctx, &ev)
 		cancel()
 		if err == nil {
+			return true
+		}
+		if !notifyRetryable(err) {
+			n.logger.Warnw("subscriber rejected event permanently; skipping",
+				"url", n.sub.GetURL(),
+				"error", err,
+			)
 			return true
 		}
 		if attempt >= notifyMaxAttempts {
@@ -152,6 +162,22 @@ func (n *notifier) deliver(ev events.Event) bool {
 			return false
 		}
 	}
+}
+
+type permanentError interface {
+	Permanent() bool
+}
+
+func notifyRetryable(err error) bool {
+	if err == nil {
+		return false
+	}
+	var perm permanentError
+	if errors.As(err, &perm) && perm.Permanent() {
+		return false
+	}
+	msg := err.Error()
+	return !strings.Contains(msg, "replication decode:") && !strings.Contains(msg, "replication apply:")
 }
 
 func notifyBackoff(attempt int) time.Duration {
