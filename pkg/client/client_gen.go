@@ -751,6 +751,31 @@ func (c *ModelSrvClient) GetThresholdById(id uuid.UUID) (mdlobs.Threshold, error
 	return oapi.ThresholdFromDto(nil, resp.JSON200)
 }
 
+func (c *ModelSrvClient) GetMetricInstances() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricInstancesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetMetricInstanceById(id uuid.UUID) (mdlobs.MetricInstance, error) {
+	resp, err := c.oapi_client.GetLandscapeMetricInstancesMetricInstanceIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrMetricInstanceNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.MetricInstanceFromDto(nil, resp.JSON200)
+}
+
 func (c *ModelSrvClient) GetMetricValues() ([]common.InstanceListItem, error) {
 	resp, err := c.oapi_client.GetLandscapeMetricValuesWithResponse(context.TODO())
 	if err != nil {

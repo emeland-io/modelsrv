@@ -66,6 +66,7 @@ var primaryIDField = map[events.ResourceType]string{
 	events.CapacityResource:             "capacityId",
 	events.MetricResource:               "metricId",
 	events.ThresholdResource:            "thresholdId",
+	events.MetricInstanceResource:       "metricInstanceId",
 	events.MetricValueResource:          "metricValueId",
 }
 

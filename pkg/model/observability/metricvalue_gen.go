@@ -33,11 +33,11 @@ type MetricValue interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	GetMetric() (Metric, error)
-	GetMetricId() uuid.UUID
-	SetMetricRef(*MetricRef)
-	SetMetricByRef(metric Metric)
-	SetMetricById(metricId uuid.UUID)
+	GetMetricInstance() (MetricInstance, error)
+	GetMetricInstanceId() uuid.UUID
+	SetMetricInstanceRef(*MetricInstanceRef)
+	SetMetricInstanceByRef(mi MetricInstance)
+	SetMetricInstanceById(id uuid.UUID)
 
 	Register(sink events.EventSink)
 }
@@ -46,12 +46,12 @@ type metricvalueData struct {
 	sink         events.EventSink
 	isRegistered bool
 
-	MetricValueId uuid.UUID
-	DisplayName   string
-	Description   string
-	MetricRef     *MetricRef
-	Value         string
-	Annotations   annotations.Annotations
+	MetricValueId     uuid.UUID
+	DisplayName       string
+	Description       string
+	MetricInstanceRef *MetricInstanceRef
+	Value             string
+	Annotations       annotations.Annotations
 }
 
 // NewMetricValue constructs an unregistered resource; call [MetricValue.Register] after adding to the model.
@@ -137,50 +137,50 @@ func (o *metricvalueData) SetAnnotations(val annotations.Annotations) {
 	}
 }
 
-// GetMetric returns the embedded [Metric] when present (otherwise nil). Resolve by id via [Model.GetMetricById].
-func (o *metricvalueData) GetMetric() (Metric, error) {
-	if o.MetricRef == nil {
+// GetMetricInstance returns the embedded [MetricInstance] when present (otherwise nil). Resolve by id via [Model.GetMetricInstanceById].
+func (o *metricvalueData) GetMetricInstance() (MetricInstance, error) {
+	if o.MetricInstanceRef == nil {
 		return nil, nil
 	}
-	return o.MetricRef.ResolvedMetric(), nil
+	return o.MetricInstanceRef.ResolvedMetricInstance(), nil
 }
 
-// SetMetricRef sets the low-level type reference and emits when registered.
-func (o *metricvalueData) SetMetricRef(val *MetricRef) {
-	o.MetricRef = val
+// SetMetricInstanceRef sets the low-level type reference and emits when registered.
+func (o *metricvalueData) SetMetricInstanceRef(val *MetricInstanceRef) {
+	o.MetricInstanceRef = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.MetricValueResource, events.UpdateOperation, o.MetricValueId, o)
 	}
 }
 
-// SetMetricByRef sets the type from a [Metric] by building a [MetricRef].
-func (o *metricvalueData) SetMetricByRef(res Metric) {
+// SetMetricInstanceByRef sets the type from a [MetricInstance] by building a [MetricInstanceRef].
+func (o *metricvalueData) SetMetricInstanceByRef(res MetricInstance) {
 	if res == nil {
-		o.SetMetricRef(nil)
+		o.SetMetricInstanceRef(nil)
 		return
 	}
-	o.SetMetricRef(&MetricRef{
-		Metric:   res,
-		MetricId: res.GetMetricId(),
+	o.SetMetricInstanceRef(&MetricInstanceRef{
+		MetricInstance:   res,
+		MetricInstanceId: res.GetMetricInstanceId(),
 	})
 }
 
-// GetMetricId returns the type id when set.
-func (o *metricvalueData) GetMetricId() uuid.UUID {
-	if o.MetricRef == nil {
+// GetMetricInstanceId returns the type id when set.
+func (o *metricvalueData) GetMetricInstanceId() uuid.UUID {
+	if o.MetricInstanceRef == nil {
 		return uuid.Nil
 	}
-	return o.MetricRef.EffectiveMetricID()
+	return o.MetricInstanceRef.EffectiveMetricInstanceID()
 }
 
-// SetMetricById records only the type id (resolved object may be nil).
-func (o *metricvalueData) SetMetricById(metricId uuid.UUID) {
-	if metricId == uuid.Nil {
-		o.SetMetricRef(nil)
+// SetMetricInstanceById records only the type id (resolved object may be nil).
+func (o *metricvalueData) SetMetricInstanceById(id uuid.UUID) {
+	if id == uuid.Nil {
+		o.SetMetricInstanceRef(nil)
 		return
 	}
-	o.SetMetricRef(&MetricRef{MetricId: metricId})
+	o.SetMetricInstanceRef(&MetricInstanceRef{MetricInstanceId: id})
 }
 
 // Register implements [MetricValue].

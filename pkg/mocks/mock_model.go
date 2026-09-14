@@ -322,6 +322,20 @@ func (mr *MockModelMockRecorder) AddMetric(metric any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetric", reflect.TypeOf((*MockModel)(nil).AddMetric), metric)
 }
 
+// AddMetricInstance mocks base method.
+func (m *MockModel) AddMetricInstance(metricInstance observability.MetricInstance) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddMetricInstance", metricInstance)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddMetricInstance indicates an expected call of AddMetricInstance.
+func (mr *MockModelMockRecorder) AddMetricInstance(metricInstance any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddMetricInstance", reflect.TypeOf((*MockModel)(nil).AddMetricInstance), metricInstance)
+}
+
 // AddMetricValue mocks base method.
 func (m *MockModel) AddMetricValue(metricValue observability.MetricValue) error {
 	m.ctrl.T.Helper()
@@ -796,6 +810,20 @@ func (m *MockModel) DeleteMetricById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteMetricById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMetricById", reflect.TypeOf((*MockModel)(nil).DeleteMetricById), id)
+}
+
+// DeleteMetricInstanceById mocks base method.
+func (m *MockModel) DeleteMetricInstanceById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteMetricInstanceById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteMetricInstanceById indicates an expected call of DeleteMetricInstanceById.
+func (mr *MockModelMockRecorder) DeleteMetricInstanceById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteMetricInstanceById", reflect.TypeOf((*MockModel)(nil).DeleteMetricInstanceById), id)
 }
 
 // DeleteMetricValueById mocks base method.
@@ -1542,6 +1570,35 @@ func (m *MockModel) GetMetricById(id uuid.UUID) observability.Metric {
 func (mr *MockModelMockRecorder) GetMetricById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricById", reflect.TypeOf((*MockModel)(nil).GetMetricById), id)
+}
+
+// GetMetricInstanceById mocks base method.
+func (m *MockModel) GetMetricInstanceById(id uuid.UUID) observability.MetricInstance {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricInstanceById", id)
+	ret0, _ := ret[0].(observability.MetricInstance)
+	return ret0
+}
+
+// GetMetricInstanceById indicates an expected call of GetMetricInstanceById.
+func (mr *MockModelMockRecorder) GetMetricInstanceById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricInstanceById", reflect.TypeOf((*MockModel)(nil).GetMetricInstanceById), id)
+}
+
+// GetMetricInstances mocks base method.
+func (m *MockModel) GetMetricInstances() ([]observability.MetricInstance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricInstances")
+	ret0, _ := ret[0].([]observability.MetricInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetricInstances indicates an expected call of GetMetricInstances.
+func (mr *MockModelMockRecorder) GetMetricInstances() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricInstances", reflect.TypeOf((*MockModel)(nil).GetMetricInstances))
 }
 
 // GetMetricValueById mocks base method.

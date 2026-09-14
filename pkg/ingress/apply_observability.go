@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 )
 
@@ -36,7 +37,7 @@ func applyThreshold(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	metricID, err := uuidRefFromMap(spec, "metricRef", "metricId")
+	metricInstanceID, err := uuidRefFromMap(spec, "metricInstanceRef", "metricInstanceId")
 	if err != nil {
 		return err
 	}
@@ -46,11 +47,70 @@ func applyThreshold(spec map[string]any, m model.Model) error {
 	if desc, ok := stringField(spec, "description"); ok {
 		th.SetDescription(desc)
 	}
-	th.SetMetricById(metricID)
+	th.SetMetricInstanceById(metricInstanceID)
 	if err := applyAnnotations(th.GetAnnotations(), spec); err != nil {
 		return err
 	}
 	return m.AddThreshold(th)
+}
+
+func applyMetricInstance(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "metricInstanceId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	metricID, err := uuidRefFromMap(spec, "metricRef", "metricId")
+	if err != nil {
+		return err
+	}
+
+	mi := mdlobs.NewMetricInstance(id)
+	mi.SetDisplayName(name)
+	if desc, ok := stringField(spec, "description"); ok {
+		mi.SetDescription(desc)
+	}
+	mi.SetMetricById(metricID)
+	subject, err := parseMetricInstanceSubject(spec)
+	if err != nil {
+		return err
+	}
+	if subject != nil {
+		mi.SetSubject(subject)
+	}
+	if err := applyAnnotations(mi.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddMetricInstance(mi)
+}
+
+// parseMetricInstanceSubject parses the optional MetricInstance.subject
+// ResourceRef ({resourceId, resourceType}). Returns nil when absent.
+func parseMetricInstanceSubject(spec map[string]any) (*common.ResourceRef, error) {
+	raw, ok := spec["subject"]
+	if !ok || raw == nil {
+		return nil, nil
+	}
+	sm, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("subject must be an object with resourceId and resourceType")
+	}
+	id, err := parseUUIDField(sm, "resourceId")
+	if err != nil {
+		return nil, fmt.Errorf("subject: %w", err)
+	}
+	rtStr, ok := stringField(sm, "resourceType")
+	if !ok {
+		return nil, fmt.Errorf("subject: resourceType is required")
+	}
+	rt, err := parseResourceTypeForRef(rtStr)
+	if err != nil {
+		return nil, fmt.Errorf("subject: %w", err)
+	}
+	return &common.ResourceRef{ResourceId: id, ResourceType: rt}, nil
 }
 
 func applyMetricValue(spec map[string]any, m model.Model) error {
@@ -62,7 +122,7 @@ func applyMetricValue(spec map[string]any, m model.Model) error {
 	if err != nil {
 		return err
 	}
-	metricID, err := uuidRefFromMap(spec, "metricRef", "metricId")
+	metricInstanceID, err := uuidRefFromMap(spec, "metricInstanceRef", "metricInstanceId")
 	if err != nil {
 		return err
 	}
@@ -82,7 +142,7 @@ func applyMetricValue(spec map[string]any, m model.Model) error {
 	if desc, ok := stringField(spec, "description"); ok {
 		mv.SetDescription(desc)
 	}
-	mv.SetMetricById(metricID)
+	mv.SetMetricInstanceById(metricInstanceID)
 	mv.SetValue(valueRaw)
 	if err := applyAnnotations(mv.GetAnnotations(), spec); err != nil {
 		return err
