@@ -1,46 +1,18 @@
 package model
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model/common"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 )
 
-// validateMetricRef enforces the mandatory Metric reference shared by
-// [mdlobs.Threshold] and [mdlobs.MetricValue]: the id must be set and must
-// resolve to a Metric already in the model.
-func validateMetricRef(metricID uuid.UUID, m *modelData) error {
-	if metricID == uuid.Nil {
-		return fmt.Errorf("metricRef is required")
-	}
-	if m.GetMetricById(metricID) == nil {
-		return common.ErrMetricNotFound
-	}
-	return nil
-}
-
-func validateThreshold(t mdlobs.Threshold, m *modelData) error {
-	if t == nil {
-		return fmt.Errorf("threshold is nil")
-	}
-	if t.GetThresholdId() == uuid.Nil {
-		return common.ErrUUIDNotSet
-	}
-	return validateMetricRef(t.GetMetricId(), m)
-}
-
-func validateMetricValue(v mdlobs.MetricValue, m *modelData) error {
-	if v == nil {
-		return fmt.Errorf("metric value is nil")
-	}
-	if v.GetMetricValueId() == uuid.Nil {
-		return common.ErrUUIDNotSet
-	}
-	return validateMetricRef(v.GetMetricId(), m)
-}
+// Observability resources follow the same Add posture as the other instance
+// types (ApiInstance/SystemInstance): no Add-time reference validation. A
+// MetricValue or Threshold may reference a MetricInstance that is not yet
+// present (e.g. delivered earlier in a replication or snapshot stream), and a
+// MetricInstance may reference an absent Metric. This keeps event apply
+// order-tolerant; dangling references can be surfaced later via findings.
 
 // AddMetric implements [Model].
 func (m *modelData) AddMetric(metric mdlobs.Metric) error {
@@ -66,9 +38,6 @@ func (m *modelData) GetMetrics() ([]mdlobs.Metric, error) {
 
 // AddThreshold implements [Model].
 func (m *modelData) AddThreshold(threshold mdlobs.Threshold) error {
-	if err := validateThreshold(threshold, m); err != nil {
-		return err
-	}
 	return addEventEnabled(m, threshold, mdlobs.Threshold.GetThresholdId,
 		func(x mdlobs.Threshold, s events.EventSink) { x.Register(s) },
 		m.thresholdsByUUID, events.ThresholdResource)
@@ -89,11 +58,30 @@ func (m *modelData) GetThresholds() ([]mdlobs.Threshold, error) {
 	return getAllEventEnabled(m, m.thresholdsByUUID)
 }
 
+// AddMetricInstance implements [Model].
+func (m *modelData) AddMetricInstance(metricInstance mdlobs.MetricInstance) error {
+	return addEventEnabled(m, metricInstance, mdlobs.MetricInstance.GetMetricInstanceId,
+		func(x mdlobs.MetricInstance, s events.EventSink) { x.Register(s) },
+		m.metricInstancesByUUID, events.MetricInstanceResource)
+}
+
+// DeleteMetricInstanceById implements [Model].
+func (m *modelData) DeleteMetricInstanceById(id uuid.UUID) error {
+	return deleteEventEnabled(m, id, m.metricInstancesByUUID, events.MetricInstanceResource, common.ErrMetricInstanceNotFound)
+}
+
+// GetMetricInstanceById implements [Model].
+func (m *modelData) GetMetricInstanceById(id uuid.UUID) mdlobs.MetricInstance {
+	return getEventEnabled(m, id, m.metricInstancesByUUID)
+}
+
+// GetMetricInstances implements [Model].
+func (m *modelData) GetMetricInstances() ([]mdlobs.MetricInstance, error) {
+	return getAllEventEnabled(m, m.metricInstancesByUUID)
+}
+
 // AddMetricValue implements [Model].
 func (m *modelData) AddMetricValue(metricValue mdlobs.MetricValue) error {
-	if err := validateMetricValue(metricValue, m); err != nil {
-		return err
-	}
 	return addEventEnabled(m, metricValue, mdlobs.MetricValue.GetMetricValueId,
 		func(x mdlobs.MetricValue, s events.EventSink) { x.Register(s) },
 		m.metricValuesByUUID, events.MetricValueResource)

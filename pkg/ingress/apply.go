@@ -323,6 +323,8 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyMetric(doc.Spec, m)
 	case events.ThresholdResource:
 		return applyThreshold(doc.Spec, m)
+	case events.MetricInstanceResource:
+		return applyMetricInstance(doc.Spec, m)
 	case events.MetricValueResource:
 		return applyMetricValue(doc.Spec, m)
 	case events.UnknownResourceType:

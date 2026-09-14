@@ -1412,7 +1412,72 @@ var allTypes = []TypeSpec{
 		Fields: []Field{
 			{Name: "DisplayName", Type: "string"},
 			{Name: "Description", Type: "string"},
+			{Name: "MetricInstanceRef", Type: "*MetricInstanceRef", SkipAccessor: true},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		CustomMethods: []string{
+			"GetMetricInstance() (MetricInstance, error)",
+			"GetMetricInstanceId() uuid.UUID",
+			"SetMetricInstanceRef(*MetricInstanceRef)",
+			"SetMetricInstanceByRef(mi MetricInstance)",
+			"SetMetricInstanceById(id uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "MetricInstanceRef",
+			RefTypeName:       "MetricInstanceRef",
+			ResourceTypeName:  "MetricInstance",
+			ResolvedMethod:    "ResolvedMetricInstance",
+			EmbedFieldName:    "MetricInstance",
+			RefIDFieldName:    "MetricInstanceId",
+			ResourceIDGetter:  "GetMetricInstanceId",
+			ModelLookupByID:   "GetMetricInstanceById",
+			EffectiveIDMethod: "EffectiveMetricInstanceID",
+			SetByID:           true,
+			SetByIDParamName:  "id",
+		},
+		HasClientTest:           true,
+		GenClientMethods:        true,
+		ClientListMethod:        "GetThresholds",
+		ClientGetByIdMethod:     "GetThresholdById",
+		ClientListOapiMethod:    "GetLandscapeThresholds",
+		ClientGetByIdOapiMethod: "GetLandscapeThresholdsThresholdId",
+		OapiTypeName:            "Threshold",
+		TestDisplayName:         "Latency SLO breach",
+		TestIDAssertExpr:        "uuid.UUID(got.ThresholdId)",
+		TestNameAssertExpr:      "got.DisplayName",
+		WireKind:                "Threshold",
+		TestDeps:                []string{"Metric", "MetricInstance"},
+		TestSetup: `th := mdlobs.NewThreshold(testIDs["Threshold"])
+			th.SetDisplayName("Latency SLO breach")
+			metric := mdlobs.NewMetric(uuid.New())
+			metric.SetDisplayName("p99 API latency")
+			mi := mdlobs.NewMetricInstance(uuid.New())
+			mi.SetDisplayName("p99 API latency for orders-api")
+			mi.SetMetricById(metric.GetMetricId())
+			th.SetMetricInstanceById(mi.GetMetricInstanceId())
+			require.NoError(t, m.AddMetric(metric))
+			require.NoError(t, m.AddMetricInstance(mi))
+			require.NoError(t, m.AddThreshold(th))`,
+	},
+	{
+		Name:             "MetricInstance",
+		Dir:              "observability",
+		EventType:        "MetricInstance",
+		IDField:          "MetricInstanceId",
+		NameField:        "DisplayName",
+		HasHandler:       true,
+		NotFoundErr:      "ErrMetricInstanceNotFound",
+		NotFoundSentinel: "common.ErrMetricInstanceNotFound",
+		HandlerPkgAlias:  "mdlobs",
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/common",
+		},
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "Description", Type: "string"},
 			{Name: "MetricRef", Type: "*MetricRef", SkipAccessor: true},
+			{Name: "Subject", Type: "*common.ResourceRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
 		CustomMethods: []string{
@@ -1437,23 +1502,23 @@ var allTypes = []TypeSpec{
 		},
 		HasClientTest:           true,
 		GenClientMethods:        true,
-		ClientListMethod:        "GetThresholds",
-		ClientGetByIdMethod:     "GetThresholdById",
-		ClientListOapiMethod:    "GetLandscapeThresholds",
-		ClientGetByIdOapiMethod: "GetLandscapeThresholdsThresholdId",
-		OapiTypeName:            "Threshold",
-		TestDisplayName:         "Latency SLO breach",
-		TestIDAssertExpr:        "uuid.UUID(got.ThresholdId)",
+		ClientListMethod:        "GetMetricInstances",
+		ClientGetByIdMethod:     "GetMetricInstanceById",
+		ClientListOapiMethod:    "GetLandscapeMetricInstances",
+		ClientGetByIdOapiMethod: "GetLandscapeMetricInstancesMetricInstanceId",
+		OapiTypeName:            "MetricInstance",
+		TestDisplayName:         "p99 API latency for orders-api",
+		TestIDAssertExpr:        "uuid.UUID(got.MetricInstanceId)",
 		TestNameAssertExpr:      "got.DisplayName",
-		WireKind:                "Threshold",
+		WireKind:                "MetricInstance",
 		TestDeps:                []string{"Metric"},
-		TestSetup: `th := mdlobs.NewThreshold(testIDs["Threshold"])
-			th.SetDisplayName("Latency SLO breach")
+		TestSetup: `mi := mdlobs.NewMetricInstance(testIDs["MetricInstance"])
+			mi.SetDisplayName("p99 API latency for orders-api")
 			metric := mdlobs.NewMetric(uuid.New())
 			metric.SetDisplayName("p99 API latency")
-			th.SetMetricById(metric.GetMetricId())
+			mi.SetMetricById(metric.GetMetricId())
 			require.NoError(t, m.AddMetric(metric))
-			require.NoError(t, m.AddThreshold(th))`,
+			require.NoError(t, m.AddMetricInstance(mi))`,
 	},
 	{
 		Name:             "MetricValue",
@@ -1471,29 +1536,29 @@ var allTypes = []TypeSpec{
 		Fields: []Field{
 			{Name: "DisplayName", Type: "string"},
 			{Name: "Description", Type: "string"},
-			{Name: "MetricRef", Type: "*MetricRef", SkipAccessor: true},
+			{Name: "MetricInstanceRef", Type: "*MetricInstanceRef", SkipAccessor: true},
 			{Name: "Value", Type: "string"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
 		CustomMethods: []string{
-			"GetMetric() (Metric, error)",
-			"GetMetricId() uuid.UUID",
-			"SetMetricRef(*MetricRef)",
-			"SetMetricByRef(metric Metric)",
-			"SetMetricById(metricId uuid.UUID)",
+			"GetMetricInstance() (MetricInstance, error)",
+			"GetMetricInstanceId() uuid.UUID",
+			"SetMetricInstanceRef(*MetricInstanceRef)",
+			"SetMetricInstanceByRef(mi MetricInstance)",
+			"SetMetricInstanceById(id uuid.UUID)",
 		},
 		TypeRefLink: &TypeRefLinkSpec{
-			FieldName:         "MetricRef",
-			RefTypeName:       "MetricRef",
-			ResourceTypeName:  "Metric",
-			ResolvedMethod:    "ResolvedMetric",
-			EmbedFieldName:    "Metric",
-			RefIDFieldName:    "MetricId",
-			ResourceIDGetter:  "GetMetricId",
-			ModelLookupByID:   "GetMetricById",
-			EffectiveIDMethod: "EffectiveMetricID",
+			FieldName:         "MetricInstanceRef",
+			RefTypeName:       "MetricInstanceRef",
+			ResourceTypeName:  "MetricInstance",
+			ResolvedMethod:    "ResolvedMetricInstance",
+			EmbedFieldName:    "MetricInstance",
+			RefIDFieldName:    "MetricInstanceId",
+			ResourceIDGetter:  "GetMetricInstanceId",
+			ModelLookupByID:   "GetMetricInstanceById",
+			EffectiveIDMethod: "EffectiveMetricInstanceID",
 			SetByID:           true,
-			SetByIDParamName:  "metricId",
+			SetByIDParamName:  "id",
 		},
 		HasClientTest:           true,
 		GenClientMethods:        true,
@@ -1506,14 +1571,18 @@ var allTypes = []TypeSpec{
 		TestIDAssertExpr:        "uuid.UUID(got.MetricValueId)",
 		TestNameAssertExpr:      "got.DisplayName",
 		WireKind:                "MetricValue",
-		TestDeps:                []string{"Metric"},
+		TestDeps:                []string{"Metric", "MetricInstance"},
 		TestSetup: `mv := mdlobs.NewMetricValue(testIDs["MetricValue"])
 			mv.SetDisplayName("Current p99 latency")
 			metric := mdlobs.NewMetric(uuid.New())
 			metric.SetDisplayName("p99 API latency")
-			mv.SetMetricById(metric.GetMetricId())
+			mi := mdlobs.NewMetricInstance(uuid.New())
+			mi.SetDisplayName("p99 API latency for orders-api")
+			mi.SetMetricById(metric.GetMetricId())
+			mv.SetMetricInstanceById(mi.GetMetricInstanceId())
 			mv.SetValue("412")
 			require.NoError(t, m.AddMetric(metric))
+			require.NoError(t, m.AddMetricInstance(mi))
 			require.NoError(t, m.AddMetricValue(mv))`,
 	},
 }

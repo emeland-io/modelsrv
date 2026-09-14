@@ -453,6 +453,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorString'
+  /landscape/metricInstances:
+    get:
+      description: Retrieve all metric instances in the landscape.
+      tags: [landscape, p6_observability]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/metricInstances/{metricInstanceId}:
+    get:
+      description: Retrieve details of a specific metric instance by its UUID.
+      tags: [landscape, p6_observability]
+      parameters:
+        - name: metricInstanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricInstance'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
   /landscape/metricValues:
     get:
       description: Retrieve all metric values in the landscape.
@@ -1350,6 +1385,7 @@ components:
             # phase-6 observability types
             - Metric
             - Threshold
+            - MetricInstance
             - MetricValue
           description: The type of the resource referenced.
         displayName:
@@ -1524,6 +1560,7 @@ components:
             # phase-6 observability types
             - Metric
             - Threshold
+            - MetricInstance
             - MetricValue
           description: The type of the resource referenced.
         reference:
@@ -2415,8 +2452,8 @@ components:
     Threshold:
       type: object
       description: >
-        Condition of arbitrary complexity attached to a Metric. The condition itself
-        lives in annotations (emeland.io/threshold.expression), not as schema fields.
+        Condition of arbitrary complexity attached to a MetricInstance. The condition
+        itself lives in annotations (emeland.io/threshold.expression), not as schema fields.
       properties:
         thresholdId:
           type: string
@@ -2425,8 +2462,8 @@ components:
           type: string
         description:
           type: string
-        metricRef:
-          $ref: '#/components/schemas/MetricRef'
+        metricInstanceRef:
+          $ref: '#/components/schemas/MetricInstanceRef'
         annotations:
           type: array
           items:
@@ -2434,14 +2471,25 @@ components:
       required:
         - thresholdId
         - displayName
-        - metricRef
-    MetricValue:
+        - metricInstanceRef
+    MetricInstanceRef:
+      type: object
+      description: Reference to a MetricInstance.
+      properties:
+        metricInstanceId:
+          type: string
+          format: uuid
+      required:
+        - metricInstanceId
+    MetricInstance:
       type: object
       description: >
-        Current reading of a Metric. The value field is the current value only,
-        not a timeline.
+        A concrete instantiation of a Metric bound to an optional subject
+        (the resource the metric is measured for). MetricInstances are not
+        time series; they name the measured thing, while MetricValue carries
+        the current reading.
       properties:
-        metricValueId:
+        metricInstanceId:
           type: string
           format: uuid
         displayName:
@@ -2450,6 +2498,30 @@ components:
           type: string
         metricRef:
           $ref: '#/components/schemas/MetricRef'
+        subject:
+          $ref: '#/components/schemas/ResourceRef'
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - metricInstanceId
+        - displayName
+    MetricValue:
+      type: object
+      description: >
+        Current reading of a MetricInstance. The value field is the current
+        value only, not a timeline.
+      properties:
+        metricValueId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        description:
+          type: string
+        metricInstanceRef:
+          $ref: '#/components/schemas/MetricInstanceRef'
         value:
           type: string
           description: Current value of the metric (unvalidated string).
@@ -2460,7 +2532,7 @@ components:
       required:
         - metricValueId
         - displayName
-        - metricRef
+        - metricInstanceRef
         - value
     Event:
       type: object

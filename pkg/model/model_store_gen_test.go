@@ -80,6 +80,7 @@ var testIDs = map[string]uuid.UUID{
 	"Capacity":             uuid.New(),
 	"Metric":               uuid.New(),
 	"Threshold":            uuid.New(),
+	"MetricInstance":       uuid.New(),
 	"MetricValue":          uuid.New(),
 }
 
@@ -312,9 +313,23 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		th.SetDisplayName("Latency SLO breach")
 		metric := mdlobs.NewMetric(uuid.New())
 		metric.SetDisplayName("p99 API latency")
-		th.SetMetricById(metric.GetMetricId())
+		mi := mdlobs.NewMetricInstance(uuid.New())
+		mi.SetDisplayName("p99 API latency for orders-api")
+		mi.SetMetricById(metric.GetMetricId())
+		th.SetMetricInstanceById(mi.GetMetricInstanceId())
 		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 		require.NoError(t, m.AddThreshold(th))
+	}
+	// --- MetricInstance ---
+	{
+		mi := mdlobs.NewMetricInstance(testIDs["MetricInstance"])
+		mi.SetDisplayName("p99 API latency for orders-api")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		mi.SetMetricById(metric.GetMetricId())
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 	}
 	// --- MetricValue ---
 	{
@@ -322,9 +337,13 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 		mv.SetDisplayName("Current p99 latency")
 		metric := mdlobs.NewMetric(uuid.New())
 		metric.SetDisplayName("p99 API latency")
-		mv.SetMetricById(metric.GetMetricId())
+		mi := mdlobs.NewMetricInstance(uuid.New())
+		mi.SetDisplayName("p99 API latency for orders-api")
+		mi.SetMetricById(metric.GetMetricId())
+		mv.SetMetricInstanceById(mi.GetMetricInstanceId())
 		mv.SetValue("412")
 		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 		require.NoError(t, m.AddMetricValue(mv))
 	}
 }
@@ -1833,8 +1852,12 @@ func TestStoreThresholdApplyReplication(t *testing.T) {
 	th.SetDisplayName("Latency SLO breach")
 	metric := mdlobs.NewMetric(uuid.New())
 	metric.SetDisplayName("p99 API latency")
-	th.SetMetricById(metric.GetMetricId())
+	mi := mdlobs.NewMetricInstance(uuid.New())
+	mi.SetDisplayName("p99 API latency for orders-api")
+	mi.SetMetricById(metric.GetMetricId())
+	th.SetMetricInstanceById(mi.GetMetricInstanceId())
 	require.NoError(t, m.AddMetric(metric))
+	require.NoError(t, m.AddMetricInstance(mi))
 	require.NoError(t, m.Apply(events.Event{
 		ResourceType: events.ThresholdResource,
 		Operation:    events.CreateOperation,
@@ -1853,6 +1876,58 @@ func TestStoreThresholdApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetThresholdById(resourceID))
+}
+
+func TestStoreMetricInstanceCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["MetricInstance"]
+	got := m.GetMetricInstanceById(id)
+	require.NotNil(t, got, "expected MetricInstance to be stored")
+	assert.Equal(t, id, got.GetMetricInstanceId())
+
+	list, err := m.GetMetricInstances()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteMetricInstanceById(testIDs["MetricInstance"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricInstanceById(id))
+
+	err = m.DeleteMetricInstanceById(testIDs["MetricInstance"])
+	assert.ErrorIs(t, err, common.ErrMetricInstanceNotFound)
+}
+
+func TestStoreMetricInstanceApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	mi := mdlobs.NewMetricInstance(resourceID)
+	mi.SetDisplayName("p99 API latency for orders-api")
+	metric := mdlobs.NewMetric(uuid.New())
+	metric.SetDisplayName("p99 API latency")
+	mi.SetMetricById(metric.GetMetricId())
+	require.NoError(t, m.AddMetric(metric))
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.MetricInstanceResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{mi},
+	}))
+
+	got := m.GetMetricInstanceById(resourceID)
+	require.NotNil(t, got, "expected replicated MetricInstance")
+	assert.Equal(t, resourceID, got.GetMetricInstanceId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.MetricInstanceResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetMetricInstanceById(resourceID))
 }
 
 func TestStoreMetricValueCRUD(t *testing.T) {
@@ -1885,9 +1960,13 @@ func TestStoreMetricValueApplyReplication(t *testing.T) {
 	mv.SetDisplayName("Current p99 latency")
 	metric := mdlobs.NewMetric(uuid.New())
 	metric.SetDisplayName("p99 API latency")
-	mv.SetMetricById(metric.GetMetricId())
+	mi := mdlobs.NewMetricInstance(uuid.New())
+	mi.SetDisplayName("p99 API latency for orders-api")
+	mi.SetMetricById(metric.GetMetricId())
+	mv.SetMetricInstanceById(mi.GetMetricInstanceId())
 	mv.SetValue("412")
 	require.NoError(t, m.AddMetric(metric))
+	require.NoError(t, m.AddMetricInstance(mi))
 	require.NoError(t, m.Apply(events.Event{
 		ResourceType: events.MetricValueResource,
 		Operation:    events.CreateOperation,

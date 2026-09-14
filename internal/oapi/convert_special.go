@@ -1065,7 +1065,7 @@ func ThresholdFromDto(m model.Model, o *Threshold) (mdlobs.Threshold, error) {
 	if o.Description != nil {
 		v.SetDescription(*o.Description)
 	}
-	setMetricRef(m, v, uuid.UUID(o.MetricRef.MetricId))
+	setMetricInstanceRef(m, v, uuid.UUID(o.MetricInstanceRef.MetricInstanceId))
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 	return v, nil
 }
@@ -1077,8 +1077,8 @@ func ThresholdToDto(v mdlobs.Threshold) Threshold {
 	out := Threshold{
 		ThresholdId: uuidToOpenAPI(v.GetThresholdId()),
 		DisplayName: v.GetDisplayName(),
-		MetricRef: MetricRef{
-			MetricId: uuidToOpenAPI(v.GetMetricId()),
+		MetricInstanceRef: MetricInstanceRef{
+			MetricInstanceId: uuidToOpenAPI(v.GetMetricInstanceId()),
 		},
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
 	}
@@ -1099,7 +1099,7 @@ func MetricValueFromDto(m model.Model, o *MetricValue) (mdlobs.MetricValue, erro
 	if o.Description != nil {
 		v.SetDescription(*o.Description)
 	}
-	setMetricRef(m, v, uuid.UUID(o.MetricRef.MetricId))
+	setMetricInstanceRef(m, v, uuid.UUID(o.MetricInstanceRef.MetricInstanceId))
 	v.SetValue(o.Value)
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 	return v, nil
@@ -1113,13 +1113,79 @@ func MetricValueToDto(v mdlobs.MetricValue) MetricValue {
 		MetricValueId: uuidToOpenAPI(v.GetMetricValueId()),
 		DisplayName:   v.GetDisplayName(),
 		Value:         v.GetValue(),
-		MetricRef: MetricRef{
-			MetricId: uuidToOpenAPI(v.GetMetricId()),
+		MetricInstanceRef: MetricInstanceRef{
+			MetricInstanceId: uuidToOpenAPI(v.GetMetricInstanceId()),
 		},
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc
+	}
+	return out
+}
+
+type metricInstanceReferrer interface {
+	SetMetricInstanceByRef(mi mdlobs.MetricInstance)
+	SetMetricInstanceById(id uuid.UUID)
+}
+
+// setMetricInstanceRef attaches the resolved MetricInstance when m can supply it,
+// falling back to an id-only reference when the model is absent or the
+// MetricInstance is unknown.
+func setMetricInstanceRef(m model.Model, target metricInstanceReferrer, metricInstanceID uuid.UUID) {
+	if m != nil {
+		if mi := m.GetMetricInstanceById(metricInstanceID); mi != nil {
+			target.SetMetricInstanceByRef(mi)
+			return
+		}
+	}
+	target.SetMetricInstanceById(metricInstanceID)
+}
+
+// MetricInstanceFromDto builds a domain MetricInstance from a wire DTO.
+func MetricInstanceFromDto(m model.Model, o *MetricInstance) (mdlobs.MetricInstance, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil metric instance")
+	}
+	id := uuid.UUID(o.MetricInstanceId)
+	v := mdlobs.NewMetricInstance(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	if o.MetricRef != nil {
+		setMetricRef(m, v, uuid.UUID(o.MetricRef.MetricId))
+	}
+	if o.Subject != nil {
+		v.SetSubject(&common.ResourceRef{
+			ResourceId:   uuid.UUID(o.Subject.ResourceId),
+			ResourceType: ResourceTypeFromWireField(o.Subject.ResourceType),
+		})
+	}
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+func MetricInstanceToDto(v mdlobs.MetricInstance) MetricInstance {
+	if v == nil {
+		return MetricInstance{}
+	}
+	out := MetricInstance{
+		MetricInstanceId: uuidToOpenAPI(v.GetMetricInstanceId()),
+		DisplayName:      v.GetDisplayName(),
+		Annotations:      AnnotationsToDto(v.GetAnnotations()),
+	}
+	if metricID := v.GetMetricId(); metricID != uuid.Nil {
+		out.MetricRef = &MetricRef{MetricId: uuidToOpenAPI(metricID)}
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	if subj := v.GetSubject(); subj != nil {
+		out.Subject = &ResourceRef{
+			ResourceId:   openapi_types.UUID(subj.ResourceId),
+			ResourceType: subj.ResourceType.String(),
+		}
 	}
 	return out
 }
