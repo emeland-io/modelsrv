@@ -277,6 +277,40 @@ var _ = Describe("EventManager", func() {
 			Expect(seq).To(Equal(uint64(50)))
 		})
 
+		It("skips a permanent replication decode 500 and keeps delivering later events", func() {
+			var poisonAttempts, laterDelivered int32
+			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPost {
+					http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				body, err := io.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
+				switch pushedDisplayName(body) {
+				case "poison":
+					atomic.AddInt32(&poisonAttempts, 1)
+					http.Error(w, "replication decode: binding 9d252028-0000-0000-0000-000000000000: subject must set exactly one of groupId or identityId", http.StatusInternalServerError)
+					return
+				default:
+					atomic.AddInt32(&laterDelivered, 1)
+					w.WriteHeader(http.StatusOK)
+				}
+			})
+			defer srv.Close()
+
+			sink, err := em.GetSink()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(emitNamedSystemCreate(sink, uuid.New(), "poison")).To(Succeed())
+			Expect(emitNamedSystemCreate(sink, uuid.New(), "after")).To(Succeed())
+
+			Expect(em.AddSubscriber(srv.URL + "/api")).To(Succeed())
+
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&laterDelivered)
+			}, "2s", "10ms").Should(Equal(int32(1)))
+			Expect(atomic.LoadInt32(&poisonAttempts)).To(Equal(int32(1)))
+		})
+
 		It("retries a failed subscriber notify until it succeeds", func() {
 			var attempts, successes int32
 			srv := newPushServer(func(w http.ResponseWriter, r *http.Request) {

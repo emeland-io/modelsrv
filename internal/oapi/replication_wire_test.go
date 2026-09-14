@@ -573,6 +573,43 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(b.GetSubject().EffectiveGroupID()).To(Equal(gid))
 	})
 
+	It("returns a skippable error for a Binding whose subject sets neither groupId nor identityId", func() {
+		m := replicationTestModel()
+		bindID := uuid.New()
+		rid := uuid.New()
+		res := map[string]interface{}{
+			"bindingId":   bindID.String(),
+			"displayName": "empty-subject",
+			"role":        map[string]interface{}{"roleId": rid.String()},
+			"subject":     map[string]interface{}{},
+		}
+		ev := oapi.Event{
+			Kind:      "Binding",
+			Operation: "Create",
+			Resource:  &res,
+		}
+		_, err := oapi.ReplicationEventFromWire(m, &ev)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("subject must set exactly one of groupId or identityId"))
+		Expect(err).To(MatchError(oapi.ErrSkipReplication))
+	})
+
+	It("does not encode a Binding with an empty subject for replication", func() {
+		bindID := uuid.New()
+		b := iam.NewBinding(bindID)
+		b.SetDisplayName("empty-subject")
+		b.SetRole(&iam.RoleRef{RoleId: uuid.New()})
+
+		_, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.BindingResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   bindID,
+			Objects:      []any{b},
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError(oapi.ErrSkipReplication))
+	})
+
 	// Full push→normalize→decode roundtrip tests: these use PushWireEventFromDomain so they catch
 	// normalization bugs caused by the domain's unexported JSON keys (no struct tags on generated
 	// types, so encoding/json uses capitalized field names).

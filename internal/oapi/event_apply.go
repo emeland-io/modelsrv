@@ -1,6 +1,7 @@
 package oapi
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,6 +9,11 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 )
+
+// ErrSkipReplication is returned when a resource cannot be replicated as-is
+// (for example a Binding with no group or identity subject) but the stream
+// should continue. POST /events/push acknowledges these with HTTP 200.
+var ErrSkipReplication = errors.New("skip replication resource")
 
 // ReplicationEventFromWire converts an OpenAPI push body into a domain [events.Event] for [model.EventApplier.Apply].
 func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {

@@ -50,7 +50,7 @@ func resourceViewFromRef(m model.Model, ref *common.ResourceRef) ResourceView {
 	displayName := model.ResourceDisplayName(m, ref)
 	out := ResourceView{
 		Id:           uuidToOpenAPI(ref.ResourceId),
-		ResourceType: ref.ResourceType.String(),
+		ResourceType: ref.ResourceType.WireKind(),
 	}
 	if displayName != "" {
 		out.DisplayName = &displayName

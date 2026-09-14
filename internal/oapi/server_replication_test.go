@@ -17,6 +17,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
 
@@ -164,5 +165,72 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 			}
 			return string(got.GetAmount())
 		}, "2s", "20ms").Should(Equal("64"))
+	})
+
+	It("acknowledges a Binding with an empty subject and does not store it", func() {
+		m, _, srv := newServer()
+		defer srv.Close()
+
+		bindID := uuid.New()
+		body := fmt.Sprintf(`{
+			"kind":"Binding",
+			"operation":"Create",
+			"resource":{
+				"bindingId":%q,
+				"displayName":"empty-subject",
+				"role":%q,
+				"subject":{}
+			}
+		}`, bindID.String(), uuid.New().String())
+		resp, err := http.Post(srv.URL+"/api/events/push", "application/json", bytes.NewReader([]byte(body)))
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close() //nolint:errcheck
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(m.GetBindingById(bindID)).To(BeNil())
+	})
+
+	It("still returns 500 for an unreplicable event that is not skippable", func() {
+		_, _, srv := newServer()
+		defer srv.Close()
+
+		body := `{"kind":"System","operation":"Create"}`
+		resp, err := http.Post(srv.URL+"/api/events/push", "application/json", bytes.NewReader([]byte(body)))
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close() //nolint:errcheck
+		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+	})
+
+	It("replicates resources after a Binding with an empty subject", func() {
+		mA, _, srvA := newServer()
+		defer srvA.Close()
+		mB, _, srvB := newServer()
+		defer srvB.Close()
+
+		bindID := uuid.New()
+		b := iam.NewBinding(bindID)
+		b.SetDisplayName("empty-subject")
+		b.SetRole(&iam.RoleRef{RoleId: uuid.New()})
+		Expect(mA.AddBinding(b)).To(Succeed())
+
+		ct := mdlctx.NewContextType(uuid.New())
+		ct.SetDisplayName("Namespace")
+		Expect(mA.AddContextType(ct)).To(Succeed())
+
+		ctxID := uuid.New()
+		c := mdlctx.NewContext(ctxID)
+		c.SetDisplayName("kube-system")
+		c.SetContextTypeById(ct.GetContextTypeId())
+		Expect(mA.AddContext(c)).To(Succeed())
+
+		postEventsRegister(srvA.URL+"/api", srvB.URL+"/api")
+
+		Eventually(func() string {
+			got := mB.GetContextById(ctxID)
+			if got == nil {
+				return ""
+			}
+			return got.GetDisplayName()
+		}, "2s", "20ms").Should(Equal("kube-system"))
+		Expect(mB.GetBindingById(bindID)).To(BeNil())
 	})
 })

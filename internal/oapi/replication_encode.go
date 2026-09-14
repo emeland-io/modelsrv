@@ -6,6 +6,7 @@ import (
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/events"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 )
 
 // PushWireEventFromDomain builds an OpenAPI [Event] for POST /events/push from a domain [events.Event].
@@ -33,6 +34,9 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 	if !ok {
 		return Event{}, fmt.Errorf("create/update event missing resource object for kind %s", kind)
 	}
+	if err := skipUnreplicableResource(ev.ResourceType, obj); err != nil {
+		return Event{}, err
+	}
 	m, err := encodeReplicationResourceToWireMap(ev.ResourceType, obj)
 	if err != nil {
 		return Event{}, err
@@ -42,6 +46,20 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 		Operation: op,
 		Resource:  &m,
 	}, nil
+}
+
+func skipUnreplicableResource(rt events.ResourceType, obj any) error {
+	if rt != events.BindingResource {
+		return nil
+	}
+	b, ok := obj.(iam.Binding)
+	if !ok || b == nil {
+		return nil
+	}
+	if b.GetSubject().EffectiveKind() != iam.SubjectNone {
+		return nil
+	}
+	return unreplicableBindingSubject(b.GetBindingId())
 }
 
 func firstEventObject(ev *events.Event) (any, bool) {

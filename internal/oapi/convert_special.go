@@ -760,6 +760,10 @@ func RoleToDto(v iam.Role) Role {
 	return out
 }
 
+func unreplicableBindingSubject(id uuid.UUID) error {
+	return fmt.Errorf("binding %s: subject must set exactly one of groupId or identityId: %w", id, ErrSkipReplication)
+}
+
 // BindingFromDto builds a domain Binding from a wire DTO.
 func BindingFromDto(m model.Model, o *Binding) (iam.Binding, error) {
 	if o == nil {
@@ -783,7 +787,7 @@ func BindingFromDto(m model.Model, o *Binding) (iam.Binding, error) {
 		sub.Identity = &iam.IdentityRef{IdentityId: iid, Identity: nilsafeGetIdentity(m, iid)}
 	}
 	if sub.EffectiveKind() == iam.SubjectNone {
-		return nil, fmt.Errorf("binding %s: subject must set exactly one of groupId or identityId", id)
+		return nil, unreplicableBindingSubject(id)
 	}
 	v.SetSubject(sub)
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
