@@ -55,6 +55,11 @@ func FilterVisible[T Ownable](e *Evaluator, p Principal, rt events.ResourceType,
 	return out
 }
 
+// IsAuditor reports whether principal p is treated as an auditor.
+func (e *Evaluator) IsAuditor(p Principal) bool {
+	return e.isAuditor(p)
+}
+
 func (e *Evaluator) isAuditor(p Principal) bool {
 	if p.AuditorHeader {
 		return true
