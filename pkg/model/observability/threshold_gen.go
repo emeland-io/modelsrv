@@ -30,11 +30,11 @@ type Threshold interface {
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
-	GetMetric() (Metric, error)
-	GetMetricId() uuid.UUID
-	SetMetricRef(*MetricRef)
-	SetMetricByRef(metric Metric)
-	SetMetricById(metricId uuid.UUID)
+	GetMetricInstance() (MetricInstance, error)
+	GetMetricInstanceId() uuid.UUID
+	SetMetricInstanceRef(*MetricInstanceRef)
+	SetMetricInstanceByRef(mi MetricInstance)
+	SetMetricInstanceById(id uuid.UUID)
 
 	Register(sink events.EventSink)
 }
@@ -43,11 +43,11 @@ type thresholdData struct {
 	sink         events.EventSink
 	isRegistered bool
 
-	ThresholdId uuid.UUID
-	DisplayName string
-	Description string
-	MetricRef   *MetricRef
-	Annotations annotations.Annotations
+	ThresholdId       uuid.UUID
+	DisplayName       string
+	Description       string
+	MetricInstanceRef *MetricInstanceRef
+	Annotations       annotations.Annotations
 }
 
 // NewThreshold constructs an unregistered resource; call [Threshold.Register] after adding to the model.
@@ -119,50 +119,50 @@ func (o *thresholdData) SetAnnotations(val annotations.Annotations) {
 	}
 }
 
-// GetMetric returns the embedded [Metric] when present (otherwise nil). Resolve by id via [Model.GetMetricById].
-func (o *thresholdData) GetMetric() (Metric, error) {
-	if o.MetricRef == nil {
+// GetMetricInstance returns the embedded [MetricInstance] when present (otherwise nil). Resolve by id via [Model.GetMetricInstanceById].
+func (o *thresholdData) GetMetricInstance() (MetricInstance, error) {
+	if o.MetricInstanceRef == nil {
 		return nil, nil
 	}
-	return o.MetricRef.ResolvedMetric(), nil
+	return o.MetricInstanceRef.ResolvedMetricInstance(), nil
 }
 
-// SetMetricRef sets the low-level type reference and emits when registered.
-func (o *thresholdData) SetMetricRef(val *MetricRef) {
-	o.MetricRef = val
+// SetMetricInstanceRef sets the low-level type reference and emits when registered.
+func (o *thresholdData) SetMetricInstanceRef(val *MetricInstanceRef) {
+	o.MetricInstanceRef = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.ThresholdResource, events.UpdateOperation, o.ThresholdId, o)
 	}
 }
 
-// SetMetricByRef sets the type from a [Metric] by building a [MetricRef].
-func (o *thresholdData) SetMetricByRef(res Metric) {
+// SetMetricInstanceByRef sets the type from a [MetricInstance] by building a [MetricInstanceRef].
+func (o *thresholdData) SetMetricInstanceByRef(res MetricInstance) {
 	if res == nil {
-		o.SetMetricRef(nil)
+		o.SetMetricInstanceRef(nil)
 		return
 	}
-	o.SetMetricRef(&MetricRef{
-		Metric:   res,
-		MetricId: res.GetMetricId(),
+	o.SetMetricInstanceRef(&MetricInstanceRef{
+		MetricInstance:   res,
+		MetricInstanceId: res.GetMetricInstanceId(),
 	})
 }
 
-// GetMetricId returns the type id when set.
-func (o *thresholdData) GetMetricId() uuid.UUID {
-	if o.MetricRef == nil {
+// GetMetricInstanceId returns the type id when set.
+func (o *thresholdData) GetMetricInstanceId() uuid.UUID {
+	if o.MetricInstanceRef == nil {
 		return uuid.Nil
 	}
-	return o.MetricRef.EffectiveMetricID()
+	return o.MetricInstanceRef.EffectiveMetricInstanceID()
 }
 
-// SetMetricById records only the type id (resolved object may be nil).
-func (o *thresholdData) SetMetricById(metricId uuid.UUID) {
-	if metricId == uuid.Nil {
-		o.SetMetricRef(nil)
+// SetMetricInstanceById records only the type id (resolved object may be nil).
+func (o *thresholdData) SetMetricInstanceById(id uuid.UUID) {
+	if id == uuid.Nil {
+		o.SetMetricInstanceRef(nil)
 		return
 	}
-	o.SetMetricRef(&MetricRef{MetricId: metricId})
+	o.SetMetricInstanceRef(&MetricInstanceRef{MetricInstanceId: id})
 }
 
 // Register implements [Threshold].

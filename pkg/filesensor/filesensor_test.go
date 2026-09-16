@@ -434,6 +434,7 @@ var _ = Describe("Threshold documents", func() {
 	var (
 		m        model.Model
 		metricID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		miID     = uuid.MustParse("44444444-4444-4444-4444-444444444444")
 		thID     = uuid.MustParse("22222222-2222-2222-2222-222222222222")
 	)
 
@@ -451,6 +452,18 @@ var _ = Describe("Threshold documents", func() {
 				"displayName": "p99 API latency",
 			},
 		}, m)).To(Succeed())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.MetricInstanceResource),
+			Spec: map[string]any{
+				"metricInstanceId": miID.String(),
+				"displayName":      "p99 API latency for orders-api",
+				"metricRef": map[string]any{
+					"metricId": metricID.String(),
+				},
+			},
+		}, m)).To(Succeed())
 	})
 
 	validThresholdDoc := func() ingress.Document {
@@ -461,8 +474,8 @@ var _ = Describe("Threshold documents", func() {
 				"thresholdId": thID.String(),
 				"displayName": "Latency SLO breach",
 				"description": "p99 must stay under 500ms",
-				"metricRef": map[string]any{
-					"metricId": metricID.String(),
+				"metricInstanceRef": map[string]any{
+					"metricInstanceId": miID.String(),
 				},
 				"annotations": map[string]any{
 					"emeland.io/threshold.expression": "histogram_quantile(0.99, ...) > 0.5",
@@ -472,29 +485,29 @@ var _ = Describe("Threshold documents", func() {
 		}
 	}
 
-	It("applies a valid Threshold YAML document after Metric exists", func() {
+	It("applies a valid Threshold YAML document after MetricInstance exists", func() {
 		Expect(ingress.ApplyDocument(validThresholdDoc(), m)).To(Succeed())
 		got := m.GetThresholdById(thID)
 		Expect(got).NotTo(BeNil())
 		Expect(got.GetDisplayName()).To(Equal("Latency SLO breach"))
-		Expect(got.GetMetricId()).To(Equal(metricID))
+		Expect(got.GetMetricInstanceId()).To(Equal(miID))
 		Expect(got.GetAnnotations().GetValue("emeland.io/threshold.language")).To(Equal("promql"))
 	})
 
-	It("rejects Threshold when Metric is missing", func() {
+	It("accepts Threshold with an unresolved MetricInstance reference", func() {
 		doc := validThresholdDoc()
-		doc.Spec["metricRef"] = map[string]any{
-			"metricId": uuid.New().String(),
+		doc.Spec["metricInstanceRef"] = map[string]any{
+			"metricInstanceId": uuid.New().String(),
 		}
-		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("metric not found")))
+		Expect(ingress.ApplyDocument(doc, m)).To(Succeed())
 	})
 })
 
-var _ = Describe("MetricValue documents", func() {
+var _ = Describe("MetricInstance documents", func() {
 	var (
 		m        model.Model
 		metricID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
-		mvID     = uuid.MustParse("33333333-3333-3333-3333-333333333333")
+		miID     = uuid.MustParse("44444444-4444-4444-4444-444444444444")
 	)
 
 	BeforeEach(func() {
@@ -513,6 +526,89 @@ var _ = Describe("MetricValue documents", func() {
 		}, m)).To(Succeed())
 	})
 
+	validMetricInstanceDoc := func() ingress.Document {
+		return ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.MetricInstanceResource),
+			Spec: map[string]any{
+				"metricInstanceId": miID.String(),
+				"displayName":      "p99 API latency for orders-api",
+				"metricRef": map[string]any{
+					"metricId": metricID.String(),
+				},
+			},
+		}
+	}
+
+	It("applies a valid MetricInstance YAML document after Metric exists", func() {
+		Expect(ingress.ApplyDocument(validMetricInstanceDoc(), m)).To(Succeed())
+		got := m.GetMetricInstanceById(miID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetDisplayName()).To(Equal("p99 API latency for orders-api"))
+		Expect(got.GetMetricId()).To(Equal(metricID))
+	})
+
+	It("applies a MetricInstance with an optional subject", func() {
+		doc := validMetricInstanceDoc()
+		subjID := uuid.New()
+		doc.Spec["subject"] = map[string]any{
+			"resourceId":   subjID.String(),
+			"resourceType": "Node",
+		}
+		Expect(ingress.ApplyDocument(doc, m)).To(Succeed())
+		got := m.GetMetricInstanceById(miID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetSubject()).NotTo(BeNil())
+		Expect(got.GetSubject().ResourceId).To(Equal(subjID))
+		Expect(got.GetSubject().ResourceType).To(Equal(events.NodeResource))
+	})
+
+	It("accepts MetricInstance with an unresolved Metric reference", func() {
+		// The Metric reference is optional and not existence-checked.
+		doc := validMetricInstanceDoc()
+		doc.Spec["metricRef"] = map[string]any{
+			"metricId": uuid.New().String(),
+		}
+		Expect(ingress.ApplyDocument(doc, m)).To(Succeed())
+	})
+})
+
+var _ = Describe("MetricValue documents", func() {
+	var (
+		m        model.Model
+		metricID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
+		miID     = uuid.MustParse("44444444-4444-4444-4444-444444444444")
+		mvID     = uuid.MustParse("33333333-3333-3333-3333-333333333333")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.MetricResource),
+			Spec: map[string]any{
+				"metricId":    metricID.String(),
+				"displayName": "p99 API latency",
+			},
+		}, m)).To(Succeed())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.MetricInstanceResource),
+			Spec: map[string]any{
+				"metricInstanceId": miID.String(),
+				"displayName":      "p99 API latency for orders-api",
+				"metricRef": map[string]any{
+					"metricId": metricID.String(),
+				},
+			},
+		}, m)).To(Succeed())
+	})
+
 	validMetricValueDoc := func() ingress.Document {
 		return ingress.Document{
 			Version: "emeland.io/v1",
@@ -520,20 +616,20 @@ var _ = Describe("MetricValue documents", func() {
 			Spec: map[string]any{
 				"metricValueId": mvID.String(),
 				"displayName":   "Current p99 latency",
-				"metricRef": map[string]any{
-					"metricId": metricID.String(),
+				"metricInstanceRef": map[string]any{
+					"metricInstanceId": miID.String(),
 				},
 				"value": "412",
 			},
 		}
 	}
 
-	It("applies a valid MetricValue YAML document after Metric exists", func() {
+	It("applies a valid MetricValue YAML document after MetricInstance exists", func() {
 		Expect(ingress.ApplyDocument(validMetricValueDoc(), m)).To(Succeed())
 		got := m.GetMetricValueById(mvID)
 		Expect(got).NotTo(BeNil())
 		Expect(got.GetDisplayName()).To(Equal("Current p99 latency"))
-		Expect(got.GetMetricId()).To(Equal(metricID))
+		Expect(got.GetMetricInstanceId()).To(Equal(miID))
 		Expect(got.GetValue()).To(Equal("412"))
 	})
 
@@ -543,12 +639,12 @@ var _ = Describe("MetricValue documents", func() {
 		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("value is required")))
 	})
 
-	It("rejects MetricValue when Metric is missing", func() {
+	It("accepts MetricValue with an unresolved MetricInstance reference", func() {
 		doc := validMetricValueDoc()
-		doc.Spec["metricRef"] = map[string]any{
-			"metricId": uuid.New().String(),
+		doc.Spec["metricInstanceRef"] = map[string]any{
+			"metricInstanceId": uuid.New().String(),
 		}
-		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("metric not found")))
+		Expect(ingress.ApplyDocument(doc, m)).To(Succeed())
 	})
 })
 

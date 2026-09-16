@@ -219,6 +219,12 @@ type ClientInterface interface {
 	// GetLandscapeMergeRulesRuleId request
 	GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetLandscapeMetricInstances request
+	GetLandscapeMetricInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetLandscapeMetricInstancesMetricInstanceId request
+	GetLandscapeMetricInstancesMetricInstanceId(ctx context.Context, metricInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLandscapeMetricValues request
 	GetLandscapeMetricValues(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -825,6 +831,30 @@ func (c *Client) GetLandscapeMergeRules(ctx context.Context, reqEditors ...Reque
 
 func (c *Client) GetLandscapeMergeRulesRuleId(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetLandscapeMergeRulesRuleIdRequest(c.Server, ruleId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMetricInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricInstancesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetLandscapeMetricInstancesMetricInstanceId(ctx context.Context, metricInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetLandscapeMetricInstancesMetricInstanceIdRequest(c.Server, metricInstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -2462,6 +2492,67 @@ func NewGetLandscapeMergeRulesRuleIdRequest(server string, ruleId openapi_types.
 	return req, nil
 }
 
+// NewGetLandscapeMetricInstancesRequest generates requests for GetLandscapeMetricInstances
+func NewGetLandscapeMetricInstancesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metricInstances")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetLandscapeMetricInstancesMetricInstanceIdRequest generates requests for GetLandscapeMetricInstancesMetricInstanceId
+func NewGetLandscapeMetricInstancesMetricInstanceIdRequest(server string, metricInstanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "metricInstanceId", runtime.ParamLocationPath, metricInstanceId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/landscape/metricInstances/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetLandscapeMetricValuesRequest generates requests for GetLandscapeMetricValues
 func NewGetLandscapeMetricValuesRequest(server string) (*http.Request, error) {
 	var err error
@@ -3515,6 +3606,12 @@ type ClientWithResponsesInterface interface {
 	// GetLandscapeMergeRulesRuleIdWithResponse request
 	GetLandscapeMergeRulesRuleIdWithResponse(ctx context.Context, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMergeRulesRuleIdResponse, error)
 
+	// GetLandscapeMetricInstancesWithResponse request
+	GetLandscapeMetricInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricInstancesResponse, error)
+
+	// GetLandscapeMetricInstancesMetricInstanceIdWithResponse request
+	GetLandscapeMetricInstancesMetricInstanceIdWithResponse(ctx context.Context, metricInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricInstancesMetricInstanceIdResponse, error)
+
 	// GetLandscapeMetricValuesWithResponse request
 	GetLandscapeMetricValuesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricValuesResponse, error)
 
@@ -4515,6 +4612,51 @@ func (r GetLandscapeMergeRulesRuleIdResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetLandscapeMergeRulesRuleIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMetricInstancesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *InstanceList
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricInstancesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricInstancesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetLandscapeMetricInstancesMetricInstanceIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MetricInstance
+	JSON404      *ErrorString
+}
+
+// Status returns HTTPResponse.Status
+func (r GetLandscapeMetricInstancesMetricInstanceIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetLandscapeMetricInstancesMetricInstanceIdResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -5563,6 +5705,24 @@ func (c *ClientWithResponses) GetLandscapeMergeRulesRuleIdWithResponse(ctx conte
 		return nil, err
 	}
 	return ParseGetLandscapeMergeRulesRuleIdResponse(rsp)
+}
+
+// GetLandscapeMetricInstancesWithResponse request returning *GetLandscapeMetricInstancesResponse
+func (c *ClientWithResponses) GetLandscapeMetricInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLandscapeMetricInstancesResponse, error) {
+	rsp, err := c.GetLandscapeMetricInstances(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricInstancesResponse(rsp)
+}
+
+// GetLandscapeMetricInstancesMetricInstanceIdWithResponse request returning *GetLandscapeMetricInstancesMetricInstanceIdResponse
+func (c *ClientWithResponses) GetLandscapeMetricInstancesMetricInstanceIdWithResponse(ctx context.Context, metricInstanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetLandscapeMetricInstancesMetricInstanceIdResponse, error) {
+	rsp, err := c.GetLandscapeMetricInstancesMetricInstanceId(ctx, metricInstanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetLandscapeMetricInstancesMetricInstanceIdResponse(rsp)
 }
 
 // GetLandscapeMetricValuesWithResponse request returning *GetLandscapeMetricValuesResponse
@@ -6981,6 +7141,65 @@ func ParseGetLandscapeMergeRulesRuleIdResponse(rsp *http.Response) (*GetLandscap
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest MergeRule
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorString
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMetricInstancesResponse parses an HTTP response from a GetLandscapeMetricInstancesWithResponse call
+func ParseGetLandscapeMetricInstancesResponse(rsp *http.Response) (*GetLandscapeMetricInstancesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricInstancesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetLandscapeMetricInstancesMetricInstanceIdResponse parses an HTTP response from a GetLandscapeMetricInstancesMetricInstanceIdWithResponse call
+func ParseGetLandscapeMetricInstancesMetricInstanceIdResponse(rsp *http.Response) (*GetLandscapeMetricInstancesMetricInstanceIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetLandscapeMetricInstancesMetricInstanceIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MetricInstance
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

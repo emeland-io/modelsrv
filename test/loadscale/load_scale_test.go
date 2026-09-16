@@ -113,6 +113,7 @@ type fixtureIDs struct {
 	component            uuid.UUID
 	capacityResourceType uuid.UUID
 	metric               uuid.UUID
+	metricInstance       uuid.UUID
 }
 
 // setupFixtures creates one instance of every resource kind that other
@@ -136,6 +137,7 @@ func setupFixtures(t *testing.T, m model.Model) fixtureIDs {
 		component:            uuid.New(),
 		capacityResourceType: uuid.New(),
 		metric:               uuid.New(),
+		metricInstance:       uuid.New(),
 	}
 
 	ct := mdlctx.NewContextType(f.contextType)
@@ -206,6 +208,11 @@ func setupFixtures(t *testing.T, m model.Model) fixtureIDs {
 	metric := mdlobs.NewMetric(f.metric)
 	metric.SetDisplayName("fixture Metric")
 	require.NoError(t, m.AddMetric(metric))
+
+	metricInstance := mdlobs.NewMetricInstance(f.metricInstance)
+	metricInstance.SetDisplayName("fixture MetricInstance")
+	metricInstance.SetMetricById(f.metric)
+	require.NoError(t, m.AddMetricInstance(metricInstance))
 
 	return f
 }
@@ -405,10 +412,16 @@ func resourceKinds(f fixtureIDs) []resourceKind {
 			th.SetMetricById(f.metric)
 			return m.AddThreshold(th)
 		}},
+		{"MetricInstance", func(m model.Model, id uuid.UUID, dn string) error {
+			mi := mdlobs.NewMetricInstance(id)
+			mi.SetDisplayName(dn)
+			mi.SetMetricById(f.metric)
+			return m.AddMetricInstance(mi)
+		}},
 		{"MetricValue", func(m model.Model, id uuid.UUID, dn string) error {
 			mv := mdlobs.NewMetricValue(id)
 			mv.SetDisplayName(dn)
-			mv.SetMetricById(f.metric)
+			mv.SetMetricInstanceById(f.metricInstance)
 			mv.SetValue("412")
 			return m.AddMetricValue(mv)
 		}},

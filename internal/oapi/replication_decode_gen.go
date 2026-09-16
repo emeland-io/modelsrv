@@ -331,6 +331,16 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 			return uuid.Nil, nil, err
 		}
 		return v.GetThresholdId(), v, nil
+	case events.MetricInstanceResource:
+		var o MetricInstance
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := MetricInstanceFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetMetricInstanceId(), v, nil
 	case events.MetricValueResource:
 		var o MetricValue
 		if err := json.Unmarshal(raw, &o); err != nil {

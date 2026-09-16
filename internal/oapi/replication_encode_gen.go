@@ -215,6 +215,12 @@ func encodeReplicationResourceToWireMap(rt events.ResourceType, obj any) (map[st
 			return nil, fmt.Errorf("expected Threshold, got %T", obj)
 		}
 		return jsonMap(ThresholdToDto(v))
+	case events.MetricInstanceResource:
+		v, ok := obj.(mdlobs.MetricInstance)
+		if !ok {
+			return nil, fmt.Errorf("expected MetricInstance, got %T", obj)
+		}
+		return jsonMap(MetricInstanceToDto(v))
 	case events.MetricValueResource:
 		v, ok := obj.(mdlobs.MetricValue)
 		if !ok {

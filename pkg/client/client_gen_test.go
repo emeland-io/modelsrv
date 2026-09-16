@@ -87,6 +87,7 @@ var testIDs = map[string]uuid.UUID{
 	"Capacity":             uuid.New(),
 	"Metric":               uuid.New(),
 	"Threshold":            uuid.New(),
+	"MetricInstance":       uuid.New(),
 	"MetricValue":          uuid.New(),
 }
 
@@ -365,9 +366,24 @@ func loadTestModel(t *testing.T, m model.Model) {
 		th.SetDisplayName("Latency SLO breach")
 		metric := mdlobs.NewMetric(uuid.New())
 		metric.SetDisplayName("p99 API latency")
-		th.SetMetricById(metric.GetMetricId())
+		mi := mdlobs.NewMetricInstance(uuid.New())
+		mi.SetDisplayName("p99 API latency for orders-api")
+		mi.SetMetricById(metric.GetMetricId())
+		th.SetMetricInstanceById(mi.GetMetricInstanceId())
 		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 		require.NoError(t, m.AddThreshold(th))
+	}
+
+	// --- MetricInstance ---
+	{
+		mi := mdlobs.NewMetricInstance(testIDs["MetricInstance"])
+		mi.SetDisplayName("p99 API latency for orders-api")
+		metric := mdlobs.NewMetric(uuid.New())
+		metric.SetDisplayName("p99 API latency")
+		mi.SetMetricById(metric.GetMetricId())
+		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 	}
 
 	// --- MetricValue ---
@@ -376,9 +392,13 @@ func loadTestModel(t *testing.T, m model.Model) {
 		mv.SetDisplayName("Current p99 latency")
 		metric := mdlobs.NewMetric(uuid.New())
 		metric.SetDisplayName("p99 API latency")
-		mv.SetMetricById(metric.GetMetricId())
+		mi := mdlobs.NewMetricInstance(uuid.New())
+		mi.SetDisplayName("p99 API latency for orders-api")
+		mi.SetMetricById(metric.GetMetricId())
+		mv.SetMetricInstanceById(mi.GetMetricInstanceId())
 		mv.SetValue("412")
 		require.NoError(t, m.AddMetric(metric))
+		require.NoError(t, m.AddMetricInstance(mi))
 		require.NoError(t, m.AddMetricValue(mv))
 	}
 
@@ -1112,6 +1132,32 @@ func TestGetByIdThreshold(t *testing.T) {
 	assert.Equal(t, "Latency SLO breach", got.GetDisplayName())
 }
 
+func TestListMetricInstance(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetMetricInstances()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "MetricInstance list should not be empty")
+}
+
+func TestGetByIdMetricInstance(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetMetricInstanceById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrMetricInstanceNotFound)
+
+	// known id → success
+	got, err := c.GetMetricInstanceById(testIDs["MetricInstance"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["MetricInstance"], got.GetMetricInstanceId())
+	assert.Equal(t, "p99 API latency for orders-api", got.GetDisplayName())
+}
+
 func TestListMetricValue(t *testing.T) {
 	c, m := setupTestServer(t)
 	loadTestModel(t, m)
@@ -1178,6 +1224,7 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"Capacity",
 		"Metric",
 		"Threshold",
+		"MetricInstance",
 		"MetricValue",
 	}
 

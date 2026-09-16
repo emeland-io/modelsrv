@@ -26,6 +26,7 @@ var skipConvertByName = map[string]bool{
 	"Parameter":         true,
 	"Capacity":          true,
 	"Threshold":         true,
+	"MetricInstance":    true,
 	"MetricValue":       true,
 }
 
@@ -74,6 +75,7 @@ var wireKindToEventsResource = map[string]string{
 	"Capacity":             "CapacityResource",
 	"Metric":               "MetricResource",
 	"Threshold":            "ThresholdResource",
+	"MetricInstance":       "MetricInstanceResource",
 	"MetricValue":          "MetricValueResource",
 }
 
@@ -109,6 +111,7 @@ var restListPathByName = map[string]string{
 	"Capacity":             "/landscape/capacities",
 	"Metric":               "/landscape/metrics",
 	"Threshold":            "/landscape/thresholds",
+	"MetricInstance":       "/landscape/metricInstances",
 	"MetricValue":          "/landscape/metricValues",
 }
 
@@ -151,6 +154,7 @@ var serverResourceLabelByName = map[string]string{
 	"Capacity":             "capacity",
 	"Metric":               "metric",
 	"Threshold":            "threshold",
+	"MetricInstance":       "metric instance",
 	"MetricValue":          "metric value",
 }
 

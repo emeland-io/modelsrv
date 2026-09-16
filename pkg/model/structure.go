@@ -266,6 +266,14 @@ type ThresholdModel interface {
 	GetThresholdById(id uuid.UUID) mdlobs.Threshold
 }
 
+// MetricInstanceModel provides CRUD operations for [observability.MetricInstance] resources.
+type MetricInstanceModel interface {
+	AddMetricInstance(metricInstance mdlobs.MetricInstance) error
+	DeleteMetricInstanceById(id uuid.UUID) error
+	GetMetricInstances() ([]mdlobs.MetricInstance, error)
+	GetMetricInstanceById(id uuid.UUID) mdlobs.MetricInstance
+}
+
 // MetricValueModel provides CRUD operations for [observability.MetricValue] resources.
 type MetricValueModel interface {
 	AddMetricValue(metricValue mdlobs.MetricValue) error
@@ -324,6 +332,7 @@ type Model interface {
 	CapacityModel
 	MetricModel
 	ThresholdModel
+	MetricInstanceModel
 	MetricValueModel
 	ArtifactModel
 	ArtifactInstanceModel
@@ -388,9 +397,10 @@ type modelData struct {
 	capacitiesByUUID            map[uuid.UUID]mdlcap.Capacity
 	capacitiesByTuple           map[capacityTupleKey]uuid.UUID
 
-	metricsByUUID      map[uuid.UUID]mdlobs.Metric
-	thresholdsByUUID   map[uuid.UUID]mdlobs.Threshold
-	metricValuesByUUID map[uuid.UUID]mdlobs.MetricValue
+	metricsByUUID         map[uuid.UUID]mdlobs.Metric
+	thresholdsByUUID      map[uuid.UUID]mdlobs.Threshold
+	metricInstancesByUUID map[uuid.UUID]mdlobs.MetricInstance
+	metricValuesByUUID    map[uuid.UUID]mdlobs.MetricValue
 }
 
 // ensure Model interface is implemented correctly
@@ -447,9 +457,10 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 		capacitiesByUUID:            make(map[uuid.UUID]mdlcap.Capacity),
 		capacitiesByTuple:           make(map[capacityTupleKey]uuid.UUID),
 
-		metricsByUUID:      make(map[uuid.UUID]mdlobs.Metric),
-		thresholdsByUUID:   make(map[uuid.UUID]mdlobs.Threshold),
-		metricValuesByUUID: make(map[uuid.UUID]mdlobs.MetricValue),
+		metricsByUUID:         make(map[uuid.UUID]mdlobs.Metric),
+		thresholdsByUUID:      make(map[uuid.UUID]mdlobs.Threshold),
+		metricInstancesByUUID: make(map[uuid.UUID]mdlobs.MetricInstance),
+		metricValuesByUUID:    make(map[uuid.UUID]mdlobs.MetricValue),
 	}
 
 	return model, nil
