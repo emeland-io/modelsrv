@@ -39,7 +39,9 @@ const (
 
 // HandlerOptions configures PlantUML HTTP handlers.
 type HandlerOptions struct {
-	// Authz, when non-nil, requires an auditor principal (trusted auth headers).
+	// Authz, when non-nil, requires an auditor principal. The server only
+	// supplies this when --trust-auth-headers is set; nil means open access
+	// (dev/test, matching the rest of the API).
 	Authz *authz.Evaluator
 }
 

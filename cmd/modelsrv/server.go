@@ -189,9 +189,15 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		Logger: logger,
 	}
 	if c4Doc {
+		// These routes dump the full landscape topology. Auditor is required
+		// when identity headers are trusted; without --trust-auth-headers the
+		// rest of the API is also open (dev/test default). --c4-doc is off by
+		// default so a default process does not expose that dump.
 		var pumlAuthz *authz.Evaluator
 		if trustAuthHeaders {
 			pumlAuthz = authz.NewEvaluator(webOpts.AuthzConfig)
+		} else {
+			logger.Warn("C4 PlantUML endpoints are unauthenticated because --trust-auth-headers is not set")
 		}
 		opts := c4injector.HandlerOptions{Authz: pumlAuthz}
 		webOpts.ExtraHandlers = []endpoint.ExtraHandler{
@@ -267,7 +273,7 @@ func init() {
 	serverCmd.Flags().StringVar(&otelListenAddr, "otel-listen-addr", "0.0.0.0:24200", "listen_addr for the emeland exporter in --otel-config-out")
 	serverCmd.Flags().DurationVar(&otelExpiryThreshold, "otel-expiry-threshold", 30*24*time.Hour, "Expiry threshold for the emeland exporter in --otel-config-out")
 	serverCmd.Flags().StringArrayVar(&otelSubscribers, "otel-subscriber", nil, "Downstream modelsrv URL for the emeland exporter in --otel-config-out (repeatable)")
-	serverCmd.Flags().BoolVar(&c4Doc, "c4-doc", envOrDefault("C4_DOC", "true") != "false", "Serve C4-PlantUML diagrams at /documents/c4/{context,container,deployment}.puml")
+	serverCmd.Flags().BoolVar(&c4Doc, "c4-doc", envOrDefault("C4_DOC", "") == "true", "Serve C4-PlantUML diagrams at /documents/c4/{context,container,deployment}.puml (opt-in; auditor required when --trust-auth-headers is set)")
 	def := c4injector.DefaultLandscape()
 	serverCmd.Flags().StringVar(&c4LandscapeName, "c4-landscape-name", envOrDefault("C4_LANDSCAPE_NAME", def.Name), "Hardcoded landscape name used as the level-1 System Context centre")
 	serverCmd.Flags().StringVar(&c4LandscapeDescription, "c4-landscape-description", envOrDefault("C4_LANDSCAPE_DESCRIPTION", def.Description), "Hardcoded landscape summary shown on the level-1 System Context diagram")

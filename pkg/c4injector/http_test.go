@@ -13,7 +13,7 @@ import (
 func TestHTTP_Levels(t *testing.T) {
 	m := newTestModel(t)
 	l := DefaultLandscape()
-	opts := HandlerOptions{}
+	opts := HandlerOptions{} // nil Authz: open, matching --c4-doc without --trust-auth-headers
 
 	for _, tc := range []struct {
 		level Level

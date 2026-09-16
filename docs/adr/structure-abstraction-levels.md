@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Accepted (not implemented)
+
+The decisions below are locked. None of them are in the tree yet: level-indexed paths, configurable labels, `Part` / `PartInstance`, and `Technology` remain unbuilt. The C4 injector currently implements only [adr/c4-abstraction-mapping.md](c4-abstraction-mapping.md) (context / container / deployment; component and code return 404). Treat this document as a design lock, not as shipped work.
 
 ## Context
 
@@ -162,6 +164,8 @@ labels and an untyped `DependsOn` all survive a move to a recursive type.
   so existing diagrams change text once the field is populated.
 
 ## Follow-on work not covered here
+
+Implementation of this ADR (`Part` / `PartInstance`, `Technology`, level-indexed paths, annotation-borne labels) is a separate issue from the #173 spike that shipped the mapping injector.
 
 The data-store gap from [adr/c4-abstraction-mapping.md](c4-abstraction-mapping.md) is untouched: an
 owned database still cannot be modelled, because `System.Abstract` means external and `ApiType` has
