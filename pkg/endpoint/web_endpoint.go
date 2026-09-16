@@ -32,6 +32,17 @@ type WebListenerOptions struct {
 	// Logger is used for endpoint lifecycle messages and HTTP request logging.
 	// When nil, a no-op logger is used (no output).
 	Logger *zap.SugaredLogger
+	// ExtraHandlers are mounted on the mux before the OpenAPI handler.
+	// Use for derived documents and other non-landscape routes.
+	ExtraHandlers []ExtraHandler
+}
+
+// ExtraHandler mounts an additional HTTP route on the web listener.
+type ExtraHandler struct {
+	Path    string
+	Handler http.Handler
+	// Methods limits the handler to these HTTP methods. Empty means all methods.
+	Methods []string
 }
 
 var (
@@ -48,6 +59,19 @@ func ensureLogger(log *zap.SugaredLogger) *zap.SugaredLogger {
 		return log
 	}
 	return zap.NewNop().Sugar()
+}
+
+func mountExtraHandlers(r *mux.Router, handlers []ExtraHandler) {
+	for _, eh := range handlers {
+		if eh.Path == "" || eh.Handler == nil {
+			continue
+		}
+		if len(eh.Methods) == 0 {
+			r.Handle(eh.Path, eh.Handler)
+			continue
+		}
+		r.Handle(eh.Path, eh.Handler).Methods(eh.Methods...)
+	}
 }
 
 // NewHandler builds the modelsrv HTTP handler (API + swagger + metrics) without
@@ -79,6 +103,7 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
 	r.PathPrefix("/swagger").Handler(spa)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
+	mountExtraHandlers(r, opts.ExtraHandlers)
 
 	return requestLoggingMiddleware(log)(oapi.HandlerFromMuxWithBaseURL(strict, r, "/api"))
 }
@@ -121,6 +146,7 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
 	r.PathPrefix("/swagger").Handler(spa)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
+	mountExtraHandlers(r, opts.ExtraHandlers)
 
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 

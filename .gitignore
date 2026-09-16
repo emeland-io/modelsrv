@@ -10,3 +10,4 @@ bin/
 .cursor/
 .idea/
 .superpowers/
+collector.yaml
