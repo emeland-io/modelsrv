@@ -32,6 +32,13 @@ generate: $(MOCKGEN)
 gen: ## Regenerate OpenAPI server, client, and pkg/client models (same packages as go:generate directives).
 	GOTOOLCHAIN=$(GOVERSION) go generate ./internal/oapi/... ./pkg/client/...
 
+OPENAPI_SPEC ?= api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml
+API_DOCS_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo dev)
+
+.PHONY: api-docs
+api-docs: ## Render the OpenAPI spec to Markdown under dist/apidocs.
+	go run ./tools/oapidoc -spec $(OPENAPI_SPEC) -out dist/apidocs -version $(API_DOCS_VERSION)
+
 .PHONY: test
 test: generate fmt vet ## Run tests.
 	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
