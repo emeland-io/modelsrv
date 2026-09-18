@@ -197,6 +197,21 @@ Merge requests to expand and improve the service are greatly appreciated.
 
 Please make sure that all tests are running before you create a merge request.
 
+## Publishing OpenAPI docs
+
+On every plain semver tag (`vX.Y.Z`), the
+[Publish OpenAPI spec and docs](.github/workflows/openapi-publish.yml) workflow renders the
+spec under `api/openapi/` to Markdown (`make api-docs`) and pushes it to
+[emeland-io/openapi](https://github.com/emeland-io/openapi) at `modelsrv/<tag>/`, mirrored to
+`modelsrv/latest/` when the tag is the newest published version.
+
+**One-time setup:** create a fine-grained personal access token scoped to `emeland-io/openapi`
+with **Contents: Read and write**, then store it as the repository secret `OPENAPI_REPO_TOKEN`
+on this repo (Settings → Secrets and variables → Actions).
+
+**Backfill** existing tags (run oldest first so `latest/` ends on the newest): Actions →
+*Publish OpenAPI spec and docs* → *Run workflow* → enter the tag (e.g. `v0.10.0`).
+
 ## License
 
 Copyright 2025 Lutz Behnke <lutz.behnke@gmx.de>.

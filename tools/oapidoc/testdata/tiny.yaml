@@ -1,0 +1,101 @@
+openapi: "3.0.3"
+info:
+  title: Tiny Demo API
+  description: A minimal OpenAPI document used as golden-file input for oapidoc.
+  version: "1.2.3"
+tags:
+  - name: pets
+    description: Pet endpoints.
+  - name: shared
+    description: Shared across resources.
+servers:
+  - url: https://example.local/v1
+    description: Local demo
+paths:
+  /pets:
+    get:
+      summary: List pets
+      description: Retrieve all pets.
+      tags: [pets, shared]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PetList"
+    post:
+      description: Create a pet.
+      tags: [pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Pet"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+  /pets/{petId}:
+    get:
+      description: Get a pet by id.
+      tags: [pets]
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          description: Pet UUID.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Pet:
+      type: object
+      description: A pet in the demo catalog (e.g. a dog).
+      properties:
+        petId:
+          type: string
+          format: uuid
+          description: Unique id.
+        name:
+          type: string
+          description: Display name.
+        kind:
+          type: string
+          description: Species kind.
+          enum: [dog, cat, other]
+      required: [petId, name]
+    PetList:
+      type: object
+      description: A list of pets.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Pet"
+      required: [items]
+    Error:
+      type: object
+      description: An error payload.
+      properties:
+        message:
+          type: string
+      required: [message]
