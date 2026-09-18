@@ -1,0 +1,156 @@
+# Publish the OpenAPI spec and rendered Markdown docs to emeland-io/openapi
+# on every plain semver tag (vX.Y.Z). Prerelease tags such as v0.9.3-rc3 are ignored.
+#
+# Required secret (modelsrv repository):
+#   OPENAPI_REPO_TOKEN — fine-grained PAT scoped to emeland-io/openapi with
+#   Contents: Read and write. Create under GitHub → Settings → Developer settings
+#   → Personal access tokens → Fine-grained tokens, then store the value as a
+#   repository secret named OPENAPI_REPO_TOKEN.
+#
+# Backfill an existing release (oldest first so latest/ lands on the newest):
+#   Actions → "Publish OpenAPI spec and docs" → Run workflow → set tag (e.g. v0.10.0).
+name: Publish OpenAPI spec and docs
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to (re)publish (e.g. v0.11.0)
+        required: true
+        type: string
+
+env:
+  OPENAPI_SPEC: api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml
+  OPENAPI_REPO: emeland-io/openapi
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag }}"
+          else
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *)
+              echo "Refusing non-semver tag: $TAG" >&2
+              exit 1
+              ;;
+          esac
+          # Reject prerelease suffixes that slipped through workflow_dispatch.
+          if [[ "$TAG" =~ - ]]; then
+            echo "Refusing prerelease tag: $TAG" >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout modelsrv at tag
+        uses: actions/checkout@v6.0.2
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
+
+      - name: Render API docs
+        run: |
+          go run ./tools/oapidoc \
+            -spec "${{ env.OPENAPI_SPEC }}" \
+            -out dist/apidocs \
+            -version "${{ steps.tag.outputs.tag }}"
+          cp "${{ env.OPENAPI_SPEC }}" dist/apidocs/openapi.yaml
+
+      - name: Checkout openapi repository
+        uses: actions/checkout@v6.0.2
+        with:
+          repository: ${{ env.OPENAPI_REPO }}
+          token: ${{ secrets.OPENAPI_REPO_TOKEN }}
+          path: openapi-repo
+
+      - name: Sync versioned docs into openapi repo
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          DEST="openapi-repo/modelsrv/${TAG}"
+
+          if [ -d "$DEST" ]; then
+            if diff -rq dist/apidocs "$DEST" >/dev/null; then
+              echo "modelsrv/${TAG} already published with identical content; nothing to push."
+              echo "skip=true" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            echo "ERROR: modelsrv/${TAG} already exists with different content (releases are immutable)." >&2
+            diff -rq dist/apidocs "$DEST" >&2 || true
+            exit 1
+          fi
+
+          mkdir -p "openapi-repo/modelsrv"
+          cp -a dist/apidocs "$DEST"
+
+          # Update latest/ only when this tag is the highest published version.
+          HIGHEST="$(find openapi-repo/modelsrv -maxdepth 1 -type d -name 'v*' -printf '%f\n' | sort -V | tail -1)"
+          if [ "$HIGHEST" = "$TAG" ]; then
+            rm -rf openapi-repo/modelsrv/latest
+            cp -a dist/apidocs openapi-repo/modelsrv/latest
+            echo "Updated modelsrv/latest to ${TAG}"
+          else
+            echo "Skipping latest/ update (${TAG} is not highest; highest is ${HIGHEST})"
+          fi
+
+          # Regenerate modelsrv/README.md (newest first).
+          {
+            echo "# modelsrv"
+            echo
+            echo "Published OpenAPI specs and rendered Markdown docs for [emeland-io/modelsrv](https://github.com/emeland-io/modelsrv)."
+            echo
+            echo "- [latest](latest/) — mirror of the newest release"
+            echo
+            echo "## Versions"
+            echo
+            find openapi-repo/modelsrv -maxdepth 1 -type d -name 'v*' -printf '%f\n' | sort -Vr | while read -r v; do
+              echo "- [${v}](${v}/)"
+            done
+          } > openapi-repo/modelsrv/README.md
+
+          # Regenerate root README.md.
+          {
+            echo "# EmELand OpenAPI"
+            echo
+            echo "Versioned OpenAPI specifications and browsable Markdown docs published from EmELand services."
+            echo
+            echo "## APIs"
+            echo
+            echo "- [modelsrv](modelsrv/) — Emerging Enterprise Landscape API"
+          } > openapi-repo/README.md
+
+          echo "skip=false" >> "$GITHUB_ENV"
+
+      - name: Commit and push
+        if: env.skip != 'true'
+        working-directory: openapi-repo
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "modelsrv ${TAG}: publish OpenAPI spec and docs"
+          git push origin HEAD:main

@@ -41,5 +41,8 @@ jobs:
     - name: Nilaway
       run: make nilaway
 
+    - name: Render OpenAPI docs
+      run: make api-docs API_DOCS_VERSION=ci
+
     - name: Test
       run: go test -v ./...
