@@ -209,6 +209,7 @@ var resourceTypes = []resourceDef{
 	{
 		use: "capability", short: "Create a Capability resource",
 		kind: "Capability", idField: "capabilityId", listPath: "/landscape/capabilities",
+		customCmd: newCapabilityCmd,
 	},
 	{
 		use: "parameter", short: "Create a Parameter resource",

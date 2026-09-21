@@ -53,6 +53,11 @@ type resourceDef struct {
 	nameField string // spec key for the display name (default "displayName")
 	flags     []flagDef
 	listPath  string // API path for listing resources (e.g. "/landscape/findings")
+
+	// customCmd, when set, fully builds the subcommand instead of the generic
+	// flag/RunE machinery. Used by resource types (e.g. Capability) that need
+	// bespoke argument handling such as repeatable, scoped --version flags.
+	customCmd func(def resourceDef, outputDir, outputFile *string) *cobra.Command
 }
 
 // registerResourceCmd creates and registers a cobra subcommand from a resourceDef.
@@ -60,6 +65,12 @@ type resourceDef struct {
 func registerResourceCmd(createCmd *cobra.Command, def resourceDef, outputDir, outputFile *string) {
 	if def.nameField == "" {
 		def.nameField = "displayName"
+	}
+
+	// Resource types with bespoke argument handling build their own command.
+	if def.customCmd != nil {
+		createCmd.AddCommand(def.customCmd(def, outputDir, outputFile))
+		return
 	}
 
 	cmd := &cobra.Command{
