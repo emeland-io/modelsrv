@@ -24,6 +24,7 @@ var dirDomainMeta = map[string]struct {
 	"mergerule":     {Import: "go.emeland.io/modelsrv/pkg/model/mergerule", Alias: "mdlmergerule"},
 	"capability":    {Import: "go.emeland.io/modelsrv/pkg/model/capability", Alias: "mdlcapability"},
 	"parameter":     {Import: "go.emeland.io/modelsrv/pkg/model/parameter", Alias: "mdlparameter"},
+	"order":         {Import: "go.emeland.io/modelsrv/pkg/model/order", Alias: "mdlorder"},
 	"capacity":      {Import: "go.emeland.io/modelsrv/pkg/model/capacity", Alias: "mdlcap"},
 	"observability": {Import: "go.emeland.io/modelsrv/pkg/model/observability", Alias: "mdlobs"},
 }

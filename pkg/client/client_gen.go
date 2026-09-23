@@ -22,6 +22,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -47,6 +48,7 @@ var (
 	_ mdlobs.Metric
 	_ node.Node
 	_ mdlparameter.Parameter
+	_ mdlorder.Order
 	_ mdlprod.Product
 	_ system.System
 )
@@ -649,6 +651,156 @@ func (c *ModelSrvClient) GetParameterById(id uuid.UUID) (mdlparameter.Parameter,
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.ParameterFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetValidValues() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeValidValuesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetValidValueById(id uuid.UUID) (mdlparameter.ValidValue, error) {
+	resp, err := c.oapi_client.GetLandscapeValidValuesValidValueIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrValidValueNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ValidValueFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapabilityVersions() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilityVersionsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapabilityVersionById(id uuid.UUID) (mdlcapability.CapabilityVersion, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilityVersionsCapabilityVersionIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrCapabilityVersionNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.CapabilityVersionFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetVariants() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeVariantsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetVariantById(id uuid.UUID) (mdlcapability.Variant, error) {
+	resp, err := c.oapi_client.GetLandscapeVariantsVariantIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrVariantNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.VariantFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrders() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeOrdersWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrderById(id uuid.UUID) (mdlorder.Order, error) {
+	resp, err := c.oapi_client.GetLandscapeOrdersOrderIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrOrderNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.OrderFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrderItems() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeOrderItemsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrderItemById(id uuid.UUID) (mdlorder.OrderItem, error) {
+	resp, err := c.oapi_client.GetLandscapeOrderItemsOrderItemIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrOrderItemNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.OrderItemFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetBoundValues() ([]common.InstanceListItem, error) {
+	resp, err := c.oapi_client.GetLandscapeBoundValuesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.InstanceListFromDto(resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetBoundValueById(id uuid.UUID) (mdlorder.BoundValue, error) {
+	resp, err := c.oapi_client.GetLandscapeBoundValuesBoundValueIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrBoundValueNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.BoundValueFromDto(nil, resp.JSON200)
 }
 
 func (c *ModelSrvClient) GetCapacityResourceTypes() ([]common.InstanceListItem, error) {

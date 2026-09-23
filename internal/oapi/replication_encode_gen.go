@@ -19,6 +19,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	node "go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -191,6 +192,42 @@ func encodeReplicationResourceToWireMap(rt events.ResourceType, obj any) (map[st
 			return nil, fmt.Errorf("expected Parameter, got %T", obj)
 		}
 		return jsonMap(ParameterToDto(v))
+	case events.ValidValueResource:
+		v, ok := obj.(mdlparameter.ValidValue)
+		if !ok {
+			return nil, fmt.Errorf("expected ValidValue, got %T", obj)
+		}
+		return jsonMap(ValidValueToDto(v))
+	case events.CapabilityVersionResource:
+		v, ok := obj.(mdlcapability.CapabilityVersion)
+		if !ok {
+			return nil, fmt.Errorf("expected CapabilityVersion, got %T", obj)
+		}
+		return jsonMap(CapabilityVersionToDto(v))
+	case events.VariantResource:
+		v, ok := obj.(mdlcapability.Variant)
+		if !ok {
+			return nil, fmt.Errorf("expected Variant, got %T", obj)
+		}
+		return jsonMap(VariantToDto(v))
+	case events.OrderResource:
+		v, ok := obj.(mdlorder.Order)
+		if !ok {
+			return nil, fmt.Errorf("expected Order, got %T", obj)
+		}
+		return jsonMap(OrderToDto(v))
+	case events.OrderItemResource:
+		v, ok := obj.(mdlorder.OrderItem)
+		if !ok {
+			return nil, fmt.Errorf("expected OrderItem, got %T", obj)
+		}
+		return jsonMap(OrderItemToDto(v))
+	case events.BoundValueResource:
+		v, ok := obj.(mdlorder.BoundValue)
+		if !ok {
+			return nil, fmt.Errorf("expected BoundValue, got %T", obj)
+		}
+		return jsonMap(BoundValueToDto(v))
 	case events.CapacityResourceTypeResource:
 		v, ok := obj.(mdlcap.CapacityResourceType)
 		if !ok {

@@ -23,6 +23,7 @@ import (
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -47,6 +48,7 @@ var (
 	_ mdlobs.Metric
 	_ node.Node
 	_ mdlparameter.Parameter
+	_ mdlorder.Order
 	_ mdlprod.Product
 	_ system.System
 )

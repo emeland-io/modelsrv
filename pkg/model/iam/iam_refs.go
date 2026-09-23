@@ -20,6 +20,11 @@ func (r *OrgUnitRef) ResolvedOrgUnit() OrgUnit {
 
 // EffectiveParentOrgUnitID returns the parent id from the embedded object or from [OrgUnitRef.OrgUnitId].
 func (r *OrgUnitRef) EffectiveParentOrgUnitID() uuid.UUID {
+	return r.EffectiveOrgUnitID()
+}
+
+// EffectiveOrgUnitID returns the org unit id from the embedded object or from [OrgUnitRef.OrgUnitId].
+func (r *OrgUnitRef) EffectiveOrgUnitID() uuid.UUID {
 	if r == nil {
 		return uuid.Nil
 	}

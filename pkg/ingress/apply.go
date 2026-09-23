@@ -315,6 +315,18 @@ func ApplyDocument(doc Document, m model.Model) error {
 		return applyCapability(doc.Spec, m)
 	case events.ParameterResource:
 		return applyParameter(doc.Spec, m)
+	case events.ValidValueResource:
+		return applyValidValue(doc.Spec, m)
+	case events.CapabilityVersionResource:
+		return applyCapabilityVersion(doc.Spec, m)
+	case events.VariantResource:
+		return applyVariant(doc.Spec, m)
+	case events.OrderResource:
+		return applyOrder(doc.Spec, m)
+	case events.OrderItemResource:
+		return applyOrderItem(doc.Spec, m)
+	case events.BoundValueResource:
+		return applyBoundValue(doc.Spec, m)
 	case events.CapacityResourceTypeResource:
 		return applyCapacityResourceType(doc.Spec, m)
 	case events.CapacityResource:

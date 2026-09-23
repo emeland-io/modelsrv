@@ -98,9 +98,15 @@ const (
 	FilterRuleResource
 	MergeRuleResource
 
-	// Phase 3 capabilities
+	// Phase 3 capabilities / ordering
 	CapabilityResource
 	ParameterResource
+	ValidValueResource
+	CapabilityVersionResource
+	VariantResource
+	OrderResource
+	OrderItemResource
+	BoundValueResource
 
 	// Phase 7
 	CapacityResourceTypeResource
@@ -157,9 +163,15 @@ var resourceTypeValues = map[ResourceType]string{
 	FilterRuleResource: "FilterRule",
 	MergeRuleResource:  "MergeRule",
 
-	// Phase 3 capabilities
-	CapabilityResource: "Capability",
-	ParameterResource:  "Parameter",
+	// Phase 3 capabilities / ordering
+	CapabilityResource:        "Capability",
+	ParameterResource:         "Parameter",
+	ValidValueResource:        "ValidValue",
+	CapabilityVersionResource: "CapabilityVersion",
+	VariantResource:           "Variant",
+	OrderResource:             "Order",
+	OrderItemResource:         "OrderItem",
+	BoundValueResource:        "BoundValue",
 
 	// Phase 7
 	CapacityResourceTypeResource: "CapacityResourceType",

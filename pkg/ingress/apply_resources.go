@@ -467,11 +467,7 @@ func applyCapability(spec map[string]any, m model.Model) error {
 					if err != nil {
 						return err
 					}
-					ver, err := parseVersionSpec(vMap["version"])
-					if err != nil {
-						return err
-					}
-					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid, Version: ver})
+					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid})
 				}
 			}
 			c.SetVersions(refs)
@@ -496,17 +492,45 @@ func applyParameter(spec map[string]any, m model.Model) error {
 	param.SetDisplayName(name)
 	if values, ok := spec["values"]; ok {
 		if vList, ok := values.([]any); ok {
-			strs := make([]string, 0, len(vList))
+			ids := make([]uuid.UUID, 0, len(vList))
 			for _, v := range vList {
-				if s, ok := v.(string); ok {
-					strs = append(strs, s)
+				s, ok := v.(string)
+				if !ok {
+					return fmt.Errorf("values entries must be UUID strings")
 				}
+				vid, err := uuid.Parse(s)
+				if err != nil {
+					return fmt.Errorf("invalid values UUID %q: %w", s, err)
+				}
+				ids = append(ids, vid)
 			}
-			param.SetValues(strs)
+			param.SetValues(ids)
 		}
 	}
 	if err := applyAnnotations(param.GetAnnotations(), spec); err != nil {
 		return err
 	}
 	return m.AddParameter(param)
+}
+
+func applyValidValue(spec map[string]any, m model.Model) error {
+	id, err := parseUUIDField(spec, "validValueId")
+	if err != nil {
+		return err
+	}
+	name, err := displayName(spec)
+	if err != nil {
+		return err
+	}
+	paramID, err := uuidRefFromMap(spec, "parameterRef", "parameterId")
+	if err != nil {
+		return err
+	}
+	vv := mdlparameter.NewValidValue(id)
+	vv.SetDisplayName(name)
+	vv.SetParameterById(paramID)
+	if err := applyAnnotations(vv.GetAnnotations(), spec); err != nil {
+		return err
+	}
+	return m.AddValidValue(vv)
 }
