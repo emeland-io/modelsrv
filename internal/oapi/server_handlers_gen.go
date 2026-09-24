@@ -642,6 +642,168 @@ func (a *ApiServer) GetLandscapeParametersParameterId(ctx context.Context, reque
 	return GetLandscapeParametersParameterId200JSONResponse(ParameterToDto(item)), nil
 }
 
+// GetLandscapeValidValues implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeValidValues(ctx context.Context, request GetLandscapeValidValuesRequestObject) (GetLandscapeValidValuesResponseObject, error) {
+	items, err := a.Backend.GetValidValues()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.ValidValueResource, items)
+	}
+	return GetLandscapeValidValues200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/validValues", items)), nil
+}
+
+// GetLandscapeValidValuesValidValueId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeValidValuesValidValueId(ctx context.Context, request GetLandscapeValidValuesValidValueIdRequestObject) (GetLandscapeValidValuesValidValueIdResponseObject, error) {
+	item := a.Backend.GetValidValueById(request.ValidValueId)
+	if item == nil {
+		msg := fmt.Sprintf("valid value %s not found", request.ValidValueId.String())
+		return GetLandscapeValidValuesValidValueId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.ValidValueResource, item) {
+		msg := fmt.Sprintf("valid value %s not found", request.ValidValueId.String())
+		return GetLandscapeValidValuesValidValueId404JSONResponse(msg), nil
+	}
+	return GetLandscapeValidValuesValidValueId200JSONResponse(ValidValueToDto(item)), nil
+}
+
+// GetLandscapeCapabilityVersions implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapabilityVersions(ctx context.Context, request GetLandscapeCapabilityVersionsRequestObject) (GetLandscapeCapabilityVersionsResponseObject, error) {
+	items, err := a.Backend.GetCapabilityVersions()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.CapabilityVersionResource, items)
+	}
+	return GetLandscapeCapabilityVersions200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capabilityVersions", items)), nil
+}
+
+// GetLandscapeCapabilityVersionsCapabilityVersionId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeCapabilityVersionsCapabilityVersionId(ctx context.Context, request GetLandscapeCapabilityVersionsCapabilityVersionIdRequestObject) (GetLandscapeCapabilityVersionsCapabilityVersionIdResponseObject, error) {
+	item := a.Backend.GetCapabilityVersionById(request.CapabilityVersionId)
+	if item == nil {
+		msg := fmt.Sprintf("capability version %s not found", request.CapabilityVersionId.String())
+		return GetLandscapeCapabilityVersionsCapabilityVersionId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.CapabilityVersionResource, item) {
+		msg := fmt.Sprintf("capability version %s not found", request.CapabilityVersionId.String())
+		return GetLandscapeCapabilityVersionsCapabilityVersionId404JSONResponse(msg), nil
+	}
+	return GetLandscapeCapabilityVersionsCapabilityVersionId200JSONResponse(CapabilityVersionToDto(item)), nil
+}
+
+// GetLandscapeVariants implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeVariants(ctx context.Context, request GetLandscapeVariantsRequestObject) (GetLandscapeVariantsResponseObject, error) {
+	items, err := a.Backend.GetVariants()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.VariantResource, items)
+	}
+	return GetLandscapeVariants200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/variants", items)), nil
+}
+
+// GetLandscapeVariantsVariantId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeVariantsVariantId(ctx context.Context, request GetLandscapeVariantsVariantIdRequestObject) (GetLandscapeVariantsVariantIdResponseObject, error) {
+	item := a.Backend.GetVariantById(request.VariantId)
+	if item == nil {
+		msg := fmt.Sprintf("variant %s not found", request.VariantId.String())
+		return GetLandscapeVariantsVariantId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.VariantResource, item) {
+		msg := fmt.Sprintf("variant %s not found", request.VariantId.String())
+		return GetLandscapeVariantsVariantId404JSONResponse(msg), nil
+	}
+	return GetLandscapeVariantsVariantId200JSONResponse(VariantToDto(item)), nil
+}
+
+// GetLandscapeOrders implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrders(ctx context.Context, request GetLandscapeOrdersRequestObject) (GetLandscapeOrdersResponseObject, error) {
+	items, err := a.Backend.GetOrders()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.OrderResource, items)
+	}
+	return GetLandscapeOrders200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orders", items)), nil
+}
+
+// GetLandscapeOrdersOrderId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrdersOrderId(ctx context.Context, request GetLandscapeOrdersOrderIdRequestObject) (GetLandscapeOrdersOrderIdResponseObject, error) {
+	item := a.Backend.GetOrderById(request.OrderId)
+	if item == nil {
+		msg := fmt.Sprintf("order %s not found", request.OrderId.String())
+		return GetLandscapeOrdersOrderId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.OrderResource, item) {
+		msg := fmt.Sprintf("order %s not found", request.OrderId.String())
+		return GetLandscapeOrdersOrderId404JSONResponse(msg), nil
+	}
+	return GetLandscapeOrdersOrderId200JSONResponse(OrderToDto(item)), nil
+}
+
+// GetLandscapeOrderItems implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrderItems(ctx context.Context, request GetLandscapeOrderItemsRequestObject) (GetLandscapeOrderItemsResponseObject, error) {
+	items, err := a.Backend.GetOrderItems()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.OrderItemResource, items)
+	}
+	return GetLandscapeOrderItems200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orderItems", items)), nil
+}
+
+// GetLandscapeOrderItemsOrderItemId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeOrderItemsOrderItemId(ctx context.Context, request GetLandscapeOrderItemsOrderItemIdRequestObject) (GetLandscapeOrderItemsOrderItemIdResponseObject, error) {
+	item := a.Backend.GetOrderItemById(request.OrderItemId)
+	if item == nil {
+		msg := fmt.Sprintf("order item %s not found", request.OrderItemId.String())
+		return GetLandscapeOrderItemsOrderItemId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.OrderItemResource, item) {
+		msg := fmt.Sprintf("order item %s not found", request.OrderItemId.String())
+		return GetLandscapeOrderItemsOrderItemId404JSONResponse(msg), nil
+	}
+	return GetLandscapeOrderItemsOrderItemId200JSONResponse(OrderItemToDto(item)), nil
+}
+
+// GetLandscapeBoundValues implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeBoundValues(ctx context.Context, request GetLandscapeBoundValuesRequestObject) (GetLandscapeBoundValuesResponseObject, error) {
+	items, err := a.Backend.GetBoundValues()
+	if err != nil {
+		return nil, err
+	}
+	if a.Authz != nil {
+		principal := authz.PrincipalFromCtx(ctx)
+		items = authz.FilterVisible(a.Authz, principal, events.BoundValueResource, items)
+	}
+	return GetLandscapeBoundValues200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/boundValues", items)), nil
+}
+
+// GetLandscapeBoundValuesBoundValueId implements [StrictServerInterface].
+func (a *ApiServer) GetLandscapeBoundValuesBoundValueId(ctx context.Context, request GetLandscapeBoundValuesBoundValueIdRequestObject) (GetLandscapeBoundValuesBoundValueIdResponseObject, error) {
+	item := a.Backend.GetBoundValueById(request.BoundValueId)
+	if item == nil {
+		msg := fmt.Sprintf("bound value %s not found", request.BoundValueId.String())
+		return GetLandscapeBoundValuesBoundValueId404JSONResponse(msg), nil
+	}
+	if a.Authz != nil && !a.Authz.CanSee(authz.PrincipalFromCtx(ctx), events.BoundValueResource, item) {
+		msg := fmt.Sprintf("bound value %s not found", request.BoundValueId.String())
+		return GetLandscapeBoundValuesBoundValueId404JSONResponse(msg), nil
+	}
+	return GetLandscapeBoundValuesBoundValueId200JSONResponse(BoundValueToDto(item)), nil
+}
+
 // GetLandscapeCapacityResourceTypes implements [StrictServerInterface].
 func (a *ApiServer) GetLandscapeCapacityResourceTypes(ctx context.Context, request GetLandscapeCapacityResourceTypesRequestObject) (GetLandscapeCapacityResourceTypesResponseObject, error) {
 	items, err := a.Backend.GetCapacityResourceTypes()

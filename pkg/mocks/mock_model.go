@@ -26,6 +26,7 @@ import (
 	mergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	node "go.emeland.io/modelsrv/pkg/model/node"
 	observability "go.emeland.io/modelsrv/pkg/model/observability"
+	order "go.emeland.io/modelsrv/pkg/model/order"
 	parameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	product "go.emeland.io/modelsrv/pkg/model/product"
 	system "go.emeland.io/modelsrv/pkg/model/system"
@@ -126,6 +127,20 @@ func (mr *MockModelMockRecorder) AddBinding(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBinding", reflect.TypeOf((*MockModel)(nil).AddBinding), arg0)
 }
 
+// AddBoundValue mocks base method.
+func (m *MockModel) AddBoundValue(boundValue order.BoundValue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddBoundValue", boundValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddBoundValue indicates an expected call of AddBoundValue.
+func (mr *MockModelMockRecorder) AddBoundValue(boundValue any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBoundValue", reflect.TypeOf((*MockModel)(nil).AddBoundValue), boundValue)
+}
+
 // AddCapability mocks base method.
 func (m *MockModel) AddCapability(arg0 capability.Capability) error {
 	m.ctrl.T.Helper()
@@ -138,6 +153,20 @@ func (m *MockModel) AddCapability(arg0 capability.Capability) error {
 func (mr *MockModelMockRecorder) AddCapability(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCapability", reflect.TypeOf((*MockModel)(nil).AddCapability), arg0)
+}
+
+// AddCapabilityVersion mocks base method.
+func (m *MockModel) AddCapabilityVersion(capabilityVersion capability.CapabilityVersion) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddCapabilityVersion", capabilityVersion)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddCapabilityVersion indicates an expected call of AddCapabilityVersion.
+func (mr *MockModelMockRecorder) AddCapabilityVersion(capabilityVersion any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddCapabilityVersion", reflect.TypeOf((*MockModel)(nil).AddCapabilityVersion), capabilityVersion)
 }
 
 // AddCapacity mocks base method.
@@ -378,6 +407,34 @@ func (mr *MockModelMockRecorder) AddNodeType(nodeType any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodeType", reflect.TypeOf((*MockModel)(nil).AddNodeType), nodeType)
 }
 
+// AddOrder mocks base method.
+func (m *MockModel) AddOrder(arg0 order.Order) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrder", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddOrder indicates an expected call of AddOrder.
+func (mr *MockModelMockRecorder) AddOrder(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrder", reflect.TypeOf((*MockModel)(nil).AddOrder), arg0)
+}
+
+// AddOrderItem mocks base method.
+func (m *MockModel) AddOrderItem(orderItem order.OrderItem) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddOrderItem", orderItem)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddOrderItem indicates an expected call of AddOrderItem.
+func (mr *MockModelMockRecorder) AddOrderItem(orderItem any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddOrderItem", reflect.TypeOf((*MockModel)(nil).AddOrderItem), orderItem)
+}
+
 // AddOrgUnit mocks base method.
 func (m *MockModel) AddOrgUnit(arg0 iam.OrgUnit) error {
 	m.ctrl.T.Helper()
@@ -518,6 +575,34 @@ func (mr *MockModelMockRecorder) AddThreshold(threshold any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddThreshold", reflect.TypeOf((*MockModel)(nil).AddThreshold), threshold)
 }
 
+// AddValidValue mocks base method.
+func (m *MockModel) AddValidValue(validValue parameter.ValidValue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddValidValue", validValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddValidValue indicates an expected call of AddValidValue.
+func (mr *MockModelMockRecorder) AddValidValue(validValue any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddValidValue", reflect.TypeOf((*MockModel)(nil).AddValidValue), validValue)
+}
+
+// AddVariant mocks base method.
+func (m *MockModel) AddVariant(variant capability.Variant) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddVariant", variant)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddVariant indicates an expected call of AddVariant.
+func (mr *MockModelMockRecorder) AddVariant(variant any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVariant", reflect.TypeOf((*MockModel)(nil).AddVariant), variant)
+}
+
 // ApiRefByID mocks base method.
 func (m *MockModel) ApiRefByID(apiId uuid.UUID) *api.ApiRef {
 	m.ctrl.T.Helper()
@@ -616,6 +701,20 @@ func (mr *MockModelMockRecorder) DeleteBinding(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBinding", reflect.TypeOf((*MockModel)(nil).DeleteBinding), arg0)
 }
 
+// DeleteBoundValueById mocks base method.
+func (m *MockModel) DeleteBoundValueById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBoundValueById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteBoundValueById indicates an expected call of DeleteBoundValueById.
+func (mr *MockModelMockRecorder) DeleteBoundValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBoundValueById", reflect.TypeOf((*MockModel)(nil).DeleteBoundValueById), id)
+}
+
 // DeleteCapabilityById mocks base method.
 func (m *MockModel) DeleteCapabilityById(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -628,6 +727,20 @@ func (m *MockModel) DeleteCapabilityById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteCapabilityById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCapabilityById", reflect.TypeOf((*MockModel)(nil).DeleteCapabilityById), id)
+}
+
+// DeleteCapabilityVersionById mocks base method.
+func (m *MockModel) DeleteCapabilityVersionById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCapabilityVersionById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCapabilityVersionById indicates an expected call of DeleteCapabilityVersionById.
+func (mr *MockModelMockRecorder) DeleteCapabilityVersionById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCapabilityVersionById", reflect.TypeOf((*MockModel)(nil).DeleteCapabilityVersionById), id)
 }
 
 // DeleteCapacityById mocks base method.
@@ -868,6 +981,34 @@ func (mr *MockModelMockRecorder) DeleteNodeTypeById(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNodeTypeById", reflect.TypeOf((*MockModel)(nil).DeleteNodeTypeById), id)
 }
 
+// DeleteOrderById mocks base method.
+func (m *MockModel) DeleteOrderById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrderById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrderById indicates an expected call of DeleteOrderById.
+func (mr *MockModelMockRecorder) DeleteOrderById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrderById", reflect.TypeOf((*MockModel)(nil).DeleteOrderById), id)
+}
+
+// DeleteOrderItemById mocks base method.
+func (m *MockModel) DeleteOrderItemById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteOrderItemById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrderItemById indicates an expected call of DeleteOrderItemById.
+func (mr *MockModelMockRecorder) DeleteOrderItemById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrderItemById", reflect.TypeOf((*MockModel)(nil).DeleteOrderItemById), id)
+}
+
 // DeleteOrgUnit mocks base method.
 func (m *MockModel) DeleteOrgUnit(arg0 uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -1006,6 +1147,34 @@ func (m *MockModel) DeleteThresholdById(id uuid.UUID) error {
 func (mr *MockModelMockRecorder) DeleteThresholdById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteThresholdById", reflect.TypeOf((*MockModel)(nil).DeleteThresholdById), id)
+}
+
+// DeleteValidValueById mocks base method.
+func (m *MockModel) DeleteValidValueById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteValidValueById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteValidValueById indicates an expected call of DeleteValidValueById.
+func (mr *MockModelMockRecorder) DeleteValidValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteValidValueById", reflect.TypeOf((*MockModel)(nil).DeleteValidValueById), id)
+}
+
+// DeleteVariantById mocks base method.
+func (m *MockModel) DeleteVariantById(id uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVariantById", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteVariantById indicates an expected call of DeleteVariantById.
+func (mr *MockModelMockRecorder) DeleteVariantById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVariantById", reflect.TypeOf((*MockModel)(nil).DeleteVariantById), id)
 }
 
 // GetApiById mocks base method.
@@ -1153,6 +1322,35 @@ func (mr *MockModelMockRecorder) GetBindings() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBindings", reflect.TypeOf((*MockModel)(nil).GetBindings))
 }
 
+// GetBoundValueById mocks base method.
+func (m *MockModel) GetBoundValueById(id uuid.UUID) order.BoundValue {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBoundValueById", id)
+	ret0, _ := ret[0].(order.BoundValue)
+	return ret0
+}
+
+// GetBoundValueById indicates an expected call of GetBoundValueById.
+func (mr *MockModelMockRecorder) GetBoundValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoundValueById", reflect.TypeOf((*MockModel)(nil).GetBoundValueById), id)
+}
+
+// GetBoundValues mocks base method.
+func (m *MockModel) GetBoundValues() ([]order.BoundValue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBoundValues")
+	ret0, _ := ret[0].([]order.BoundValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBoundValues indicates an expected call of GetBoundValues.
+func (mr *MockModelMockRecorder) GetBoundValues() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoundValues", reflect.TypeOf((*MockModel)(nil).GetBoundValues))
+}
+
 // GetCapabilities mocks base method.
 func (m *MockModel) GetCapabilities() ([]capability.Capability, error) {
 	m.ctrl.T.Helper()
@@ -1180,6 +1378,35 @@ func (m *MockModel) GetCapabilityById(id uuid.UUID) capability.Capability {
 func (mr *MockModelMockRecorder) GetCapabilityById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilityById", reflect.TypeOf((*MockModel)(nil).GetCapabilityById), id)
+}
+
+// GetCapabilityVersionById mocks base method.
+func (m *MockModel) GetCapabilityVersionById(id uuid.UUID) capability.CapabilityVersion {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapabilityVersionById", id)
+	ret0, _ := ret[0].(capability.CapabilityVersion)
+	return ret0
+}
+
+// GetCapabilityVersionById indicates an expected call of GetCapabilityVersionById.
+func (mr *MockModelMockRecorder) GetCapabilityVersionById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilityVersionById", reflect.TypeOf((*MockModel)(nil).GetCapabilityVersionById), id)
+}
+
+// GetCapabilityVersions mocks base method.
+func (m *MockModel) GetCapabilityVersions() ([]capability.CapabilityVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCapabilityVersions")
+	ret0, _ := ret[0].([]capability.CapabilityVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCapabilityVersions indicates an expected call of GetCapabilityVersions.
+func (mr *MockModelMockRecorder) GetCapabilityVersions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCapabilityVersions", reflect.TypeOf((*MockModel)(nil).GetCapabilityVersions))
 }
 
 // GetCapacities mocks base method.
@@ -1703,6 +1930,64 @@ func (mr *MockModelMockRecorder) GetNodes() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodes", reflect.TypeOf((*MockModel)(nil).GetNodes))
 }
 
+// GetOrderById mocks base method.
+func (m *MockModel) GetOrderById(id uuid.UUID) order.Order {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderById", id)
+	ret0, _ := ret[0].(order.Order)
+	return ret0
+}
+
+// GetOrderById indicates an expected call of GetOrderById.
+func (mr *MockModelMockRecorder) GetOrderById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderById", reflect.TypeOf((*MockModel)(nil).GetOrderById), id)
+}
+
+// GetOrderItemById mocks base method.
+func (m *MockModel) GetOrderItemById(id uuid.UUID) order.OrderItem {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderItemById", id)
+	ret0, _ := ret[0].(order.OrderItem)
+	return ret0
+}
+
+// GetOrderItemById indicates an expected call of GetOrderItemById.
+func (mr *MockModelMockRecorder) GetOrderItemById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItemById", reflect.TypeOf((*MockModel)(nil).GetOrderItemById), id)
+}
+
+// GetOrderItems mocks base method.
+func (m *MockModel) GetOrderItems() ([]order.OrderItem, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrderItems")
+	ret0, _ := ret[0].([]order.OrderItem)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrderItems indicates an expected call of GetOrderItems.
+func (mr *MockModelMockRecorder) GetOrderItems() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderItems", reflect.TypeOf((*MockModel)(nil).GetOrderItems))
+}
+
+// GetOrders mocks base method.
+func (m *MockModel) GetOrders() ([]order.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrders")
+	ret0, _ := ret[0].([]order.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrders indicates an expected call of GetOrders.
+func (mr *MockModelMockRecorder) GetOrders() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrders", reflect.TypeOf((*MockModel)(nil).GetOrders))
+}
+
 // GetOrgUnitById mocks base method.
 func (m *MockModel) GetOrgUnitById(arg0 uuid.UUID) iam.OrgUnit {
 	m.ctrl.T.Helper()
@@ -2005,6 +2290,64 @@ func (m *MockModel) GetThresholds() ([]observability.Threshold, error) {
 func (mr *MockModelMockRecorder) GetThresholds() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThresholds", reflect.TypeOf((*MockModel)(nil).GetThresholds))
+}
+
+// GetValidValueById mocks base method.
+func (m *MockModel) GetValidValueById(id uuid.UUID) parameter.ValidValue {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidValueById", id)
+	ret0, _ := ret[0].(parameter.ValidValue)
+	return ret0
+}
+
+// GetValidValueById indicates an expected call of GetValidValueById.
+func (mr *MockModelMockRecorder) GetValidValueById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidValueById", reflect.TypeOf((*MockModel)(nil).GetValidValueById), id)
+}
+
+// GetValidValues mocks base method.
+func (m *MockModel) GetValidValues() ([]parameter.ValidValue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidValues")
+	ret0, _ := ret[0].([]parameter.ValidValue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidValues indicates an expected call of GetValidValues.
+func (mr *MockModelMockRecorder) GetValidValues() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidValues", reflect.TypeOf((*MockModel)(nil).GetValidValues))
+}
+
+// GetVariantById mocks base method.
+func (m *MockModel) GetVariantById(id uuid.UUID) capability.Variant {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVariantById", id)
+	ret0, _ := ret[0].(capability.Variant)
+	return ret0
+}
+
+// GetVariantById indicates an expected call of GetVariantById.
+func (mr *MockModelMockRecorder) GetVariantById(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVariantById", reflect.TypeOf((*MockModel)(nil).GetVariantById), id)
+}
+
+// GetVariants mocks base method.
+func (m *MockModel) GetVariants() ([]capability.Variant, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVariants")
+	ret0, _ := ret[0].([]capability.Variant)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVariants indicates an expected call of GetVariants.
+func (mr *MockModelMockRecorder) GetVariants() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVariants", reflect.TypeOf((*MockModel)(nil).GetVariants))
 }
 
 // SystemInstanceRefByID mocks base method.

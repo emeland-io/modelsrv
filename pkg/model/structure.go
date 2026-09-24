@@ -26,6 +26,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -234,6 +235,58 @@ type ParameterModel interface {
 	GetParameterById(id uuid.UUID) mdlparameter.Parameter
 }
 
+// ValidValueModel provides CRUD operations for [parameter.ValidValue] resources.
+type ValidValueModel interface {
+	// AddValidValue registers a ValidValue in the model.
+	AddValidValue(validValue mdlparameter.ValidValue) error
+	// DeleteValidValueById removes the ValidValue with the given id.
+	DeleteValidValueById(id uuid.UUID) error
+	// GetValidValues returns all registered ValidValues.
+	GetValidValues() ([]mdlparameter.ValidValue, error)
+	// GetValidValueById returns the ValidValue with the given id, or nil if not found.
+	GetValidValueById(id uuid.UUID) mdlparameter.ValidValue
+}
+
+// CapabilityVersionModel provides CRUD operations for [capability.CapabilityVersion] resources.
+type CapabilityVersionModel interface {
+	AddCapabilityVersion(capabilityVersion mdlcapability.CapabilityVersion) error
+	DeleteCapabilityVersionById(id uuid.UUID) error
+	GetCapabilityVersions() ([]mdlcapability.CapabilityVersion, error)
+	GetCapabilityVersionById(id uuid.UUID) mdlcapability.CapabilityVersion
+}
+
+// VariantModel provides CRUD operations for [capability.Variant] resources.
+type VariantModel interface {
+	AddVariant(variant mdlcapability.Variant) error
+	DeleteVariantById(id uuid.UUID) error
+	GetVariants() ([]mdlcapability.Variant, error)
+	GetVariantById(id uuid.UUID) mdlcapability.Variant
+}
+
+// OrderModel provides CRUD operations for [order.Order] resources.
+type OrderModel interface {
+	AddOrder(order mdlorder.Order) error
+	DeleteOrderById(id uuid.UUID) error
+	GetOrders() ([]mdlorder.Order, error)
+	GetOrderById(id uuid.UUID) mdlorder.Order
+}
+
+// OrderItemModel provides CRUD operations for [order.OrderItem] resources.
+type OrderItemModel interface {
+	AddOrderItem(orderItem mdlorder.OrderItem) error
+	DeleteOrderItemById(id uuid.UUID) error
+	GetOrderItems() ([]mdlorder.OrderItem, error)
+	GetOrderItemById(id uuid.UUID) mdlorder.OrderItem
+}
+
+// BoundValueModel provides CRUD operations for [order.BoundValue] resources.
+type BoundValueModel interface {
+	AddBoundValue(boundValue mdlorder.BoundValue) error
+	DeleteBoundValueById(id uuid.UUID) error
+	GetBoundValues() ([]mdlorder.BoundValue, error)
+	GetBoundValueById(id uuid.UUID) mdlorder.BoundValue
+}
+
 // CapacityResourceTypeModel provides CRUD operations for [capacity.CapacityResourceType] resources.
 type CapacityResourceTypeModel interface {
 	AddCapacityResourceType(capacityResourceType mdlcap.CapacityResourceType) error
@@ -328,6 +381,12 @@ type Model interface {
 	MergeRuleModel
 	CapabilityModel
 	ParameterModel
+	ValidValueModel
+	CapabilityVersionModel
+	VariantModel
+	OrderModel
+	OrderItemModel
+	BoundValueModel
 	CapacityResourceTypeModel
 	CapacityModel
 	MetricModel
@@ -393,6 +452,14 @@ type modelData struct {
 
 	capabilitiesByUUID          map[uuid.UUID]mdlcapability.Capability
 	parametersByUUID            map[uuid.UUID]mdlparameter.Parameter
+	validValuesByUUID           map[uuid.UUID]mdlparameter.ValidValue
+	validValuesByTuple          map[validValueTupleKey]uuid.UUID
+	capabilityVersionsByUUID    map[uuid.UUID]mdlcapability.CapabilityVersion
+	variantsByUUID              map[uuid.UUID]mdlcapability.Variant
+	ordersByUUID                map[uuid.UUID]mdlorder.Order
+	orderItemsByUUID            map[uuid.UUID]mdlorder.OrderItem
+	boundValuesByUUID           map[uuid.UUID]mdlorder.BoundValue
+	boundValuesByTuple          map[boundValueTupleKey]uuid.UUID
 	capacityResourceTypesByUUID map[uuid.UUID]mdlcap.CapacityResourceType
 	capacitiesByUUID            map[uuid.UUID]mdlcap.Capacity
 	capacitiesByTuple           map[capacityTupleKey]uuid.UUID
@@ -453,6 +520,14 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 		capabilitiesByUUID:          make(map[uuid.UUID]mdlcapability.Capability),
 		parametersByUUID:            make(map[uuid.UUID]mdlparameter.Parameter),
+		validValuesByUUID:           make(map[uuid.UUID]mdlparameter.ValidValue),
+		validValuesByTuple:          make(map[validValueTupleKey]uuid.UUID),
+		capabilityVersionsByUUID:    make(map[uuid.UUID]mdlcapability.CapabilityVersion),
+		variantsByUUID:              make(map[uuid.UUID]mdlcapability.Variant),
+		ordersByUUID:                make(map[uuid.UUID]mdlorder.Order),
+		orderItemsByUUID:            make(map[uuid.UUID]mdlorder.OrderItem),
+		boundValuesByUUID:           make(map[uuid.UUID]mdlorder.BoundValue),
+		boundValuesByTuple:          make(map[boundValueTupleKey]uuid.UUID),
 		capacityResourceTypesByUUID: make(map[uuid.UUID]mdlcap.CapacityResourceType),
 		capacitiesByUUID:            make(map[uuid.UUID]mdlcap.Capacity),
 		capacitiesByTuple:           make(map[capacityTupleKey]uuid.UUID),
@@ -1334,44 +1409,4 @@ func (m *modelData) GetMergeRuleById(id uuid.UUID) mdlmergerule.MergeRule {
 // GetMergeRules implements [Model].
 func (m *modelData) GetMergeRules() ([]mdlmergerule.MergeRule, error) {
 	return getAllEventEnabled(m, m.mergeRulesByUUID)
-}
-
-// AddCapability implements [Model].
-func (m *modelData) AddCapability(capability mdlcapability.Capability) error {
-	return addEventEnabled(m, capability, mdlcapability.Capability.GetCapabilityId, func(x mdlcapability.Capability, s events.EventSink) { x.Register(s) }, m.capabilitiesByUUID, events.CapabilityResource)
-}
-
-// DeleteCapabilityById implements [Model].
-func (m *modelData) DeleteCapabilityById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.capabilitiesByUUID, events.CapabilityResource, common.ErrCapabilityNotFound)
-}
-
-// GetCapabilityById implements [Model].
-func (m *modelData) GetCapabilityById(id uuid.UUID) mdlcapability.Capability {
-	return getEventEnabled(m, id, m.capabilitiesByUUID)
-}
-
-// GetCapabilities implements [Model].
-func (m *modelData) GetCapabilities() ([]mdlcapability.Capability, error) {
-	return getAllEventEnabled(m, m.capabilitiesByUUID)
-}
-
-// AddParameter implements [Model].
-func (m *modelData) AddParameter(parameter mdlparameter.Parameter) error {
-	return addEventEnabled(m, parameter, mdlparameter.Parameter.GetParameterId, func(x mdlparameter.Parameter, s events.EventSink) { x.Register(s) }, m.parametersByUUID, events.ParameterResource)
-}
-
-// DeleteParameterById implements [Model].
-func (m *modelData) DeleteParameterById(id uuid.UUID) error {
-	return deleteEventEnabled(m, id, m.parametersByUUID, events.ParameterResource, common.ErrParameterNotFound)
-}
-
-// GetParameterById implements [Model].
-func (m *modelData) GetParameterById(id uuid.UUID) mdlparameter.Parameter {
-	return getEventEnabled(m, id, m.parametersByUUID)
-}
-
-// GetParameters implements [Model].
-func (m *modelData) GetParameters() ([]mdlparameter.Parameter, error) {
-	return getAllEventEnabled(m, m.parametersByUUID)
 }

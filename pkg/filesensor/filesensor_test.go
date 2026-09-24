@@ -15,6 +15,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlapi "go.emeland.io/modelsrv/pkg/model/api"
 	mdlctx "go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/iam"
 )
 
 var _ = Describe("DecodeDocuments", func() {
@@ -398,6 +399,445 @@ var _ = Describe("Capacity documents", func() {
 		doc := validCapacityDoc()
 		doc.Spec["capacityId"] = uuid.New().String()
 		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capacity tuple already exists")))
+	})
+})
+
+var _ = Describe("ValidValue documents", func() {
+	var (
+		m       model.Model
+		paramID = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		vvID    = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ParameterResource),
+			Spec: map[string]any{
+				"parameterId": paramID.String(),
+				"displayName": "Region",
+			},
+		}, m)).To(Succeed())
+	})
+
+	validValidValueDoc := func() ingress.Document {
+		return ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ValidValueResource),
+			Spec: map[string]any{
+				"validValueId": vvID.String(),
+				"displayName":  "eu-west-1",
+				"parameterRef": map[string]any{
+					"parameterId": paramID.String(),
+				},
+			},
+		}
+	}
+
+	It("applies a valid ValidValue YAML document after Parameter exists", func() {
+		Expect(ingress.ApplyDocument(validValidValueDoc(), m)).To(Succeed())
+		got := m.GetValidValueById(vvID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetDisplayName()).To(Equal("eu-west-1"))
+		Expect(got.GetParameterId()).To(Equal(paramID))
+	})
+
+	It("rejects missing Parameter FK", func() {
+		doc := validValidValueDoc()
+		doc.Spec["parameterRef"] = map[string]any{
+			"parameterId": uuid.New().String(),
+		}
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("parameter not found")))
+	})
+
+	It("rejects displayName uniqueness conflict", func() {
+		Expect(ingress.ApplyDocument(validValidValueDoc(), m)).To(Succeed())
+		doc := validValidValueDoc()
+		doc.Spec["validValueId"] = uuid.New().String()
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("valid value already exists")))
+	})
+
+	It("applies Parameter values as ValidValue UUIDs", func() {
+		Expect(ingress.ApplyDocument(validValidValueDoc(), m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ParameterResource),
+			Spec: map[string]any{
+				"parameterId": paramID.String(),
+				"displayName": "Region",
+				"values":      []any{vvID.String()},
+			},
+		}, m)).To(Succeed())
+		got := m.GetParameterById(paramID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetValues()).To(Equal([]uuid.UUID{vvID}))
+	})
+})
+
+var _ = Describe("CapabilityVersion documents", func() {
+	var (
+		m     model.Model
+		capID = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		cvID  = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityResource),
+			Spec: map[string]any{
+				"capabilityId": capID.String(),
+				"displayName":  "Compute",
+			},
+		}, m)).To(Succeed())
+	})
+
+	validDoc := func() ingress.Document {
+		return ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityVersionResource),
+			Spec: map[string]any{
+				"capabilityVersionId": cvID.String(),
+				"displayName":         "Compute 1.0",
+				"version": map[string]any{
+					"version": "1.0.0",
+				},
+				"capabilityRef": map[string]any{
+					"capabilityId": capID.String(),
+				},
+			},
+		}
+	}
+
+	It("applies a valid CapabilityVersion after Capability exists", func() {
+		Expect(ingress.ApplyDocument(validDoc(), m)).To(Succeed())
+		got := m.GetCapabilityVersionById(cvID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetDisplayName()).To(Equal("Compute 1.0"))
+		Expect(got.GetCapabilityId()).To(Equal(capID))
+	})
+
+	It("rejects missing Capability FK", func() {
+		doc := validDoc()
+		doc.Spec["capabilityRef"] = map[string]any{
+			"capabilityId": uuid.New().String(),
+		}
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("capability not found")))
+	})
+})
+
+var _ = Describe("Order documents", func() {
+	var (
+		m     model.Model
+		ouID  = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		ordID = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		ou := iam.NewOrgUnit(ouID)
+		ou.SetDisplayName("Platform")
+		Expect(m.AddOrgUnit(ou)).To(Succeed())
+	})
+
+	It("applies a valid Order after OrgUnit exists", func() {
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderResource),
+			Spec: map[string]any{
+				"orderId":     ordID.String(),
+				"displayName": "Q1 order",
+				"orgUnitRef": map[string]any{
+					"orgUnitId": ouID.String(),
+				},
+			},
+		}, m)).To(Succeed())
+		got := m.GetOrderById(ordID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetOrgUnitId()).To(Equal(ouID))
+	})
+
+	It("rejects missing OrgUnit FK", func() {
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderResource),
+			Spec: map[string]any{
+				"orderId":     ordID.String(),
+				"displayName": "Q1 order",
+				"orgUnitRef": map[string]any{
+					"orgUnitId": uuid.New().String(),
+				},
+			},
+		}, m)).To(MatchError(ContainSubstring("organizational unit not found")))
+	})
+})
+
+var _ = Describe("Variant documents", func() {
+	var (
+		m       model.Model
+		capID   = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		cvID    = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+		paramID = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+		vvID    = uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+		varID   = uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ParameterResource),
+			Spec: map[string]any{
+				"parameterId": paramID.String(),
+				"displayName": "region",
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ValidValueResource),
+			Spec: map[string]any{
+				"validValueId": vvID.String(),
+				"displayName":  "eu",
+				"parameterRef": map[string]any{"parameterId": paramID.String()},
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityResource),
+			Spec: map[string]any{
+				"capabilityId": capID.String(),
+				"displayName":  "Compute",
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityVersionResource),
+			Spec: map[string]any{
+				"capabilityVersionId": cvID.String(),
+				"displayName":         "Compute 1.0",
+				"version":             map[string]any{"version": "1.0.0"},
+				"capabilityRef":       map[string]any{"capabilityId": capID.String()},
+			},
+		}, m)).To(Succeed())
+	})
+
+	It("applies a Variant after its CapabilityVersion exists", func() {
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.VariantResource),
+			Spec: map[string]any{
+				"variantId":   varID.String(),
+				"displayName": "eu",
+				"capabilityVersionRef": map[string]any{
+					"capabilityVersionId": cvID.String(),
+				},
+				"provides": []any{
+					map[string]any{
+						"parameterId":   paramID.String(),
+						"validValueIds": []any{vvID.String()},
+					},
+				},
+			},
+		}, m)).To(Succeed())
+		got := m.GetVariantById(varID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetCapabilityVersionId()).To(Equal(cvID))
+		Expect(got.GetProvides()).To(HaveLen(1))
+	})
+
+	It("rejects a Variant with an unknown CapabilityVersion", func() {
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.VariantResource),
+			Spec: map[string]any{
+				"variantId":   varID.String(),
+				"displayName": "eu",
+				"capabilityVersionRef": map[string]any{
+					"capabilityVersionId": uuid.New().String(),
+				},
+			},
+		}, m)).To(MatchError(ContainSubstring("capability version not found")))
+	})
+})
+
+var _ = Describe("OrderItem documents", func() {
+	var (
+		m     model.Model
+		ouID  = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		ordID = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+		capID = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+		oiID  = uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		ou := iam.NewOrgUnit(ouID)
+		ou.SetDisplayName("Platform")
+		Expect(m.AddOrgUnit(ou)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderResource),
+			Spec: map[string]any{
+				"orderId":     ordID.String(),
+				"displayName": "Q1 order",
+				"orgUnitRef":  map[string]any{"orgUnitId": ouID.String()},
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityResource),
+			Spec: map[string]any{
+				"capabilityId": capID.String(),
+				"displayName":  "Compute",
+			},
+		}, m)).To(Succeed())
+	})
+
+	validItem := func() ingress.Document {
+		return ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderItemResource),
+			Spec: map[string]any{
+				"orderItemId":   oiID.String(),
+				"displayName":   "Compute line",
+				"orderRef":      map[string]any{"orderId": ordID.String()},
+				"capabilityRef": map[string]any{"capabilityId": capID.String()},
+			},
+		}
+	}
+
+	It("applies an OrderItem after Order and Capability exist", func() {
+		Expect(ingress.ApplyDocument(validItem(), m)).To(Succeed())
+		got := m.GetOrderItemById(oiID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetOrderId()).To(Equal(ordID))
+		Expect(got.GetCapabilityRef().EffectiveCapabilityID()).To(Equal(capID))
+	})
+
+	It("rejects an OrderItem with an unknown Order", func() {
+		doc := validItem()
+		doc.Spec["orderRef"] = map[string]any{"orderId": uuid.New().String()}
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("order not found")))
+	})
+})
+
+var _ = Describe("BoundValue documents", func() {
+	var (
+		m       model.Model
+		ouID    = uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+		ordID   = uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+		capID   = uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+		oiID    = uuid.MustParse("dddddddd-dddd-dddd-dddd-dddddddddddd")
+		paramID = uuid.MustParse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+		vvID    = uuid.MustParse("ffffffff-ffff-ffff-ffff-ffffffffffff")
+		bvID    = uuid.MustParse("11111111-1111-1111-1111-111111111111")
+	)
+
+	BeforeEach(func() {
+		sink := events.NewListSink()
+		var err error
+		m, err = model.NewModel(sink)
+		Expect(err).NotTo(HaveOccurred())
+
+		ou := iam.NewOrgUnit(ouID)
+		ou.SetDisplayName("Platform")
+		Expect(m.AddOrgUnit(ou)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderResource),
+			Spec: map[string]any{
+				"orderId":     ordID.String(),
+				"displayName": "Q1 order",
+				"orgUnitRef":  map[string]any{"orgUnitId": ouID.String()},
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.CapabilityResource),
+			Spec: map[string]any{
+				"capabilityId": capID.String(),
+				"displayName":  "Compute",
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.OrderItemResource),
+			Spec: map[string]any{
+				"orderItemId":   oiID.String(),
+				"displayName":   "Compute line",
+				"orderRef":      map[string]any{"orderId": ordID.String()},
+				"capabilityRef": map[string]any{"capabilityId": capID.String()},
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ParameterResource),
+			Spec: map[string]any{
+				"parameterId": paramID.String(),
+				"displayName": "region",
+			},
+		}, m)).To(Succeed())
+		Expect(ingress.ApplyDocument(ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.ValidValueResource),
+			Spec: map[string]any{
+				"validValueId": vvID.String(),
+				"displayName":  "eu",
+				"parameterRef": map[string]any{"parameterId": paramID.String()},
+			},
+		}, m)).To(Succeed())
+	})
+
+	validBound := func() ingress.Document {
+		return ingress.Document{
+			Version: "emeland.io/v1",
+			Kind:    ingress.DocumentKind(events.BoundValueResource),
+			Spec: map[string]any{
+				"boundValueId": bvID.String(),
+				"displayName":  "eu",
+				"orderItemRef": map[string]any{"orderItemId": oiID.String()},
+				"parameterRef": map[string]any{"parameterId": paramID.String()},
+				"validValueRef": map[string]any{
+					"validValueId": vvID.String(),
+				},
+			},
+		}
+	}
+
+	It("applies a BoundValue after its OrderItem and ValidValue exist", func() {
+		Expect(ingress.ApplyDocument(validBound(), m)).To(Succeed())
+		got := m.GetBoundValueById(bvID)
+		Expect(got).NotTo(BeNil())
+		Expect(got.GetOrderItemId()).To(Equal(oiID))
+		Expect(got.GetValidValueRef().EffectiveValidValueID()).To(Equal(vvID))
+	})
+
+	It("rejects a BoundValue with an unknown OrderItem", func() {
+		doc := validBound()
+		doc.Spec["orderItemRef"] = map[string]any{"orderItemId": uuid.New().String()}
+		Expect(ingress.ApplyDocument(doc, m)).To(MatchError(ContainSubstring("order item not found")))
 	})
 })
 

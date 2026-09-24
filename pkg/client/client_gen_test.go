@@ -29,6 +29,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -50,6 +51,7 @@ var (
 	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
+	_ = mdlorder.NewOrder
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -83,6 +85,12 @@ var testIDs = map[string]uuid.UUID{
 	"MergeRule":            uuid.New(),
 	"Capability":           uuid.New(),
 	"Parameter":            uuid.New(),
+	"ValidValue":           uuid.New(),
+	"CapabilityVersion":    uuid.New(),
+	"Variant":              uuid.New(),
+	"Order":                uuid.New(),
+	"OrderItem":            uuid.New(),
+	"BoundValue":           uuid.New(),
 	"CapacityResourceType": uuid.New(),
 	"Capacity":             uuid.New(),
 	"Metric":               uuid.New(),
@@ -319,8 +327,69 @@ func loadTestModel(t *testing.T, m model.Model) {
 	{
 		param := mdlparameter.NewParameter(testIDs["Parameter"])
 		param.SetDisplayName("Test Parameter")
-		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+
+	// --- ValidValue ---
+	{
+		vv := mdlparameter.NewValidValue(testIDs["ValidValue"])
+		vv.SetDisplayName("Test ValidValue")
+		param := mdlparameter.NewParameter(uuid.New())
+		param.SetDisplayName("Parent Parameter")
+		require.NoError(t, m.AddParameter(param))
+		vv.SetParameterById(param.GetParameterId())
+		require.NoError(t, m.AddValidValue(vv))
+	}
+
+	// --- CapabilityVersion ---
+	{
+		cv := mdlcapability.NewCapabilityVersion(testIDs["CapabilityVersion"])
+		cv.SetDisplayName("Test CapabilityVersion")
+		cv.SetVersion(common.Version{Version: "1.0.0"})
+		cv.SetCapabilityById(testIDs["Capability"])
+		require.NoError(t, m.AddCapabilityVersion(cv))
+	}
+
+	// --- Variant ---
+	{
+		v := mdlcapability.NewVariant(testIDs["Variant"])
+		v.SetDisplayName("Test Variant")
+		v.SetCapabilityVersionById(testIDs["CapabilityVersion"])
+		require.NoError(t, m.AddVariant(v))
+	}
+
+	// --- Order ---
+	{
+		o := mdlorder.NewOrder(testIDs["Order"])
+		o.SetDisplayName("Test Order")
+		o.SetOrgUnitById(testIDs["OrgUnit"])
+		require.NoError(t, m.AddOrder(o))
+	}
+
+	// --- OrderItem ---
+	{
+		oi := mdlorder.NewOrderItem(testIDs["OrderItem"])
+		oi.SetDisplayName("Test OrderItem")
+		oi.SetOrderById(testIDs["Order"])
+		oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: testIDs["Capability"]})
+		require.NoError(t, m.AddOrderItem(oi))
+	}
+
+	// --- BoundValue ---
+	{
+		bv := mdlorder.NewBoundValue(testIDs["BoundValue"])
+		bv.SetDisplayName("Test BoundValue")
+		bv.SetOrderItemById(testIDs["OrderItem"])
+		param := mdlparameter.NewParameter(uuid.New())
+		param.SetDisplayName("BoundValue Parameter")
+		require.NoError(t, m.AddParameter(param))
+		vv := mdlparameter.NewValidValue(uuid.New())
+		vv.SetDisplayName("BoundValue ValidValue")
+		vv.SetParameterById(param.GetParameterId())
+		require.NoError(t, m.AddValidValue(vv))
+		bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: param.GetParameterId()})
+		bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: vv.GetValidValueId()})
+		require.NoError(t, m.AddBoundValue(bv))
 	}
 
 	// --- CapacityResourceType ---
@@ -1028,6 +1097,162 @@ func TestGetByIdParameter(t *testing.T) {
 	assert.Equal(t, "Test Parameter", got.GetDisplayName())
 }
 
+func TestListValidValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetValidValues()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "ValidValue list should not be empty")
+}
+
+func TestGetByIdValidValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetValidValueById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrValidValueNotFound)
+
+	// known id → success
+	got, err := c.GetValidValueById(testIDs["ValidValue"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["ValidValue"], got.GetValidValueId())
+	assert.Equal(t, "Test ValidValue", got.GetDisplayName())
+}
+
+func TestListCapabilityVersion(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetCapabilityVersions()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "CapabilityVersion list should not be empty")
+}
+
+func TestGetByIdCapabilityVersion(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetCapabilityVersionById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrCapabilityVersionNotFound)
+
+	// known id → success
+	got, err := c.GetCapabilityVersionById(testIDs["CapabilityVersion"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["CapabilityVersion"], got.GetCapabilityVersionId())
+	assert.Equal(t, "Test CapabilityVersion", got.GetDisplayName())
+}
+
+func TestListVariant(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetVariants()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Variant list should not be empty")
+}
+
+func TestGetByIdVariant(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetVariantById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrVariantNotFound)
+
+	// known id → success
+	got, err := c.GetVariantById(testIDs["Variant"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Variant"], got.GetVariantId())
+	assert.Equal(t, "Test Variant", got.GetDisplayName())
+}
+
+func TestListOrder(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetOrders()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Order list should not be empty")
+}
+
+func TestGetByIdOrder(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetOrderById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrOrderNotFound)
+
+	// known id → success
+	got, err := c.GetOrderById(testIDs["Order"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Order"], got.GetOrderId())
+	assert.Equal(t, "Test Order", got.GetDisplayName())
+}
+
+func TestListOrderItem(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetOrderItems()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "OrderItem list should not be empty")
+}
+
+func TestGetByIdOrderItem(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetOrderItemById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrOrderItemNotFound)
+
+	// known id → success
+	got, err := c.GetOrderItemById(testIDs["OrderItem"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["OrderItem"], got.GetOrderItemId())
+	assert.Equal(t, "Test OrderItem", got.GetDisplayName())
+}
+
+func TestListBoundValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetBoundValues()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "BoundValue list should not be empty")
+}
+
+func TestGetByIdBoundValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetBoundValueById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrBoundValueNotFound)
+
+	// known id → success
+	got, err := c.GetBoundValueById(testIDs["BoundValue"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["BoundValue"], got.GetBoundValueId())
+	assert.Equal(t, "Test BoundValue", got.GetDisplayName())
+}
+
 func TestListCapacityResourceType(t *testing.T) {
 	c, m := setupTestServer(t)
 	loadTestModel(t, m)
@@ -1220,6 +1445,12 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"MergeRule",
 		"Capability",
 		"Parameter",
+		"ValidValue",
+		"CapabilityVersion",
+		"Variant",
+		"Order",
+		"OrderItem",
+		"BoundValue",
 		"CapacityResourceType",
 		"Capacity",
 		"Metric",

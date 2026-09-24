@@ -1123,7 +1123,7 @@ paths:
   /landscape/capabilities:
     get:
       description: Retrieve all capabilities registered in the landscape.
-      tags: [landscape]
+      tags: [landscape, p3_capabilities]
       responses:
         '200':
           description: OK
@@ -1134,7 +1134,7 @@ paths:
   /landscape/capabilities/{capabilityId}:
     get:
       description: Retrieve a capability by its UUID.
-      tags: [landscape]
+      tags: [landscape, p3_capabilities]
       parameters:
         - name: capabilityId
           in: path
@@ -1158,7 +1158,7 @@ paths:
   /landscape/parameters:
     get:
       description: Retrieve all parameters registered in the landscape.
-      tags: [landscape]
+      tags: [landscape, p3_capabilities]
       responses:
         '200':
           description: OK
@@ -1169,7 +1169,7 @@ paths:
   /landscape/parameters/{parameterId}:
     get:
       description: Retrieve a parameter by its UUID.
-      tags: [landscape]
+      tags: [landscape, p3_capabilities]
       parameters:
         - name: parameterId
           in: path
@@ -1184,6 +1184,216 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Parameter'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/validValues:
+    get:
+      description: Retrieve all valid values registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/validValues/{validValueId}:
+    get:
+      description: Retrieve a valid value by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: validValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidValue'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/capabilityVersions:
+    get:
+      description: Retrieve all capability versions registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/capabilityVersions/{capabilityVersionId}:
+    get:
+      description: Retrieve a capability version by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: capabilityVersionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapabilityVersion'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/variants:
+    get:
+      description: Retrieve all variants registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/variants/{variantId}:
+    get:
+      description: Retrieve a variant by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: variantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variant'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/orders:
+    get:
+      description: Retrieve all orders registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/orders/{orderId}:
+    get:
+      description: Retrieve an order by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/orderItems:
+    get:
+      description: Retrieve all order items registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/orderItems/{orderItemId}:
+    get:
+      description: Retrieve an order item by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: orderItemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItem'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+  /landscape/boundValues:
+    get:
+      description: Retrieve all bound values registered in the landscape.
+      tags: [landscape, p3_capabilities]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstanceList'
+  /landscape/boundValues/{boundValueId}:
+    get:
+      description: Retrieve a bound value by its UUID.
+      tags: [landscape, p3_capabilities]
+      parameters:
+        - name: boundValueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoundValue'
         '404':
           description: Not Found
           content:
@@ -1379,6 +1589,15 @@ components:
             # event pipeline visibility
             - FilterRule
             - MergeRule
+            # phase-3 capabilities
+            - Capability
+            - Parameter
+            - ValidValue
+            - CapabilityVersion
+            - Variant
+            - Order
+            - OrderItem
+            - BoundValue
             # phase-7 capacity types
             - Capacity
             - CapacityResourceType
@@ -1554,6 +1773,12 @@ components:
             # phase-3 capabilities
             - Capability
             - Parameter
+            - ValidValue
+            - CapabilityVersion
+            - Variant
+            - Order
+            - OrderItem
+            - BoundValue
             # phase-7 capacity types
             - Capacity
             - CapacityResourceType
@@ -1908,8 +2133,6 @@ components:
           type: string
           description: The UUID of the referenced capability version.
           format: uuid
-        version:
-          $ref: '#/components/schemas/Version'
       required:
         - capabilityVersionId
     Parameter:
@@ -1925,9 +2148,11 @@ components:
           description: The human-readable name of the parameter.
         values:
           type: array
-          description: The discrete values this parameter can take.
+          description: UUIDs of ValidValue resources this parameter can take.
           items:
             type: string
+            format: uuid
+            description: The UUID of a ValidValue.
         annotations:
           type: array
           description: A set of key-value pairs for storing additional metadata about the parameter.
@@ -1936,6 +2161,298 @@ components:
       required:
         - parameterId
         - displayName
+    ValidValueParameterRef:
+      type: object
+      description: Reference to a Parameter.
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+      required:
+        - parameterId
+    ValidValue:
+      type: object
+      description: A discrete value that a Parameter can take.
+      properties:
+        validValueId:
+          type: string
+          description: An UUID that uniquely identifies the valid value.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the valid value.
+        parameterRef:
+          $ref: '#/components/schemas/ValidValueParameterRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the valid value.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - validValueId
+        - displayName
+        - parameterRef
+    CapabilityVersionCapabilityRef:
+      type: object
+      description: Reference to a Capability.
+      properties:
+        capabilityId:
+          type: string
+          format: uuid
+      required:
+        - capabilityId
+    CapabilityVersion:
+      type: object
+      description: A versioned offering of a Capability.
+      properties:
+        capabilityVersionId:
+          type: string
+          description: An UUID that uniquely identifies the capability version.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the capability version.
+        version:
+          $ref: '#/components/schemas/Version'
+        capabilityRef:
+          $ref: '#/components/schemas/CapabilityVersionCapabilityRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the capability version.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - capabilityVersionId
+        - displayName
+        - version
+        - capabilityRef
+    ParameterValueSet:
+      type: object
+      description: A set of valid values bound to a parameter.
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+        validValueIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - parameterId
+        - validValueIds
+    VariantDependency:
+      type: object
+      description: A dependency of a Variant on parameter value sets of another Capability.
+      properties:
+        capabilityId:
+          type: string
+          format: uuid
+        required:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValueSet'
+      required:
+        - capabilityId
+        - required
+    Variant:
+      type: object
+      description: A selectable configuration of a CapabilityVersion with provided values and dependencies.
+      properties:
+        variantId:
+          type: string
+          description: An UUID that uniquely identifies the variant.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the variant.
+        capabilityVersionRef:
+          $ref: '#/components/schemas/CapabilityVersionRef'
+        provides:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValueSet'
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantDependency'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the variant.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - variantId
+        - displayName
+        - capabilityVersionRef
+    OrderOrgUnitRef:
+      type: object
+      description: Reference to an OrgUnit.
+      properties:
+        orgUnitId:
+          type: string
+          format: uuid
+      required:
+        - orgUnitId
+    OrderItemRef:
+      type: object
+      description: Reference to an OrderItem.
+      properties:
+        orderItemId:
+          type: string
+          format: uuid
+      required:
+        - orderItemId
+    Order:
+      type: object
+      description: An order placed by an organizational unit for capabilities.
+      properties:
+        orderId:
+          type: string
+          description: An UUID that uniquely identifies the order.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the order.
+        orgUnitRef:
+          $ref: '#/components/schemas/OrderOrgUnitRef'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the order.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - orderId
+        - displayName
+        - orgUnitRef
+    OrderRef:
+      type: object
+      description: Reference to an Order.
+      properties:
+        orderId:
+          type: string
+          format: uuid
+      required:
+        - orderId
+    CapabilityRef:
+      type: object
+      description: Reference to a Capability.
+      properties:
+        capabilityId:
+          type: string
+          format: uuid
+      required:
+        - capabilityId
+    VariantRef:
+      type: object
+      description: Reference to a Variant.
+      properties:
+        variantId:
+          type: string
+          format: uuid
+      required:
+        - variantId
+    BoundValueRef:
+      type: object
+      description: Reference to a BoundValue.
+      properties:
+        boundValueId:
+          type: string
+          format: uuid
+      required:
+        - boundValueId
+    OrderItem:
+      type: object
+      description: A line item within an Order requesting a Capability, optionally with version, variant, and bound values.
+      properties:
+        orderItemId:
+          type: string
+          description: An UUID that uniquely identifies the order item.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the order item.
+        orderRef:
+          $ref: '#/components/schemas/OrderRef'
+        capabilityRef:
+          $ref: '#/components/schemas/CapabilityRef'
+        capabilityVersionRef:
+          $ref: '#/components/schemas/CapabilityVersionRef'
+        variantRef:
+          $ref: '#/components/schemas/VariantRef'
+        boundValues:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoundValueRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the order item.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - orderItemId
+        - displayName
+        - orderRef
+        - capabilityRef
+    BoundValueOrderItemRef:
+      type: object
+      description: Reference to an OrderItem.
+      properties:
+        orderItemId:
+          type: string
+          format: uuid
+      required:
+        - orderItemId
+    BoundValueParameterRef:
+      type: object
+      description: Reference to a Parameter.
+      properties:
+        parameterId:
+          type: string
+          format: uuid
+      required:
+        - parameterId
+    BoundValueValidValueRef:
+      type: object
+      description: Reference to a ValidValue.
+      properties:
+        validValueId:
+          type: string
+          format: uuid
+      required:
+        - validValueId
+    BoundValue:
+      type: object
+      description: A value bound to a Parameter on an OrderItem, referencing a ValidValue.
+      properties:
+        boundValueId:
+          type: string
+          description: An UUID that uniquely identifies the bound value.
+          format: uuid
+        displayName:
+          type: string
+          description: The human-readable name of the bound value.
+        orderItemRef:
+          $ref: '#/components/schemas/BoundValueOrderItemRef'
+        parameterRef:
+          $ref: '#/components/schemas/BoundValueParameterRef'
+        validValueRef:
+          $ref: '#/components/schemas/BoundValueValidValueRef'
+        annotations:
+          type: array
+          description: A set of key-value pairs for storing additional metadata about the bound value.
+          items:
+            $ref: '#/components/schemas/Annotation'
+      required:
+        - boundValueId
+        - displayName
+        - orderItemRef
+        - parameterRef
+        - validValueRef
     ContextType:
       type: object
       description: Represents a type of context in the EmELand model. A context type defines the characteristics and categorization of contexts.

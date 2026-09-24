@@ -23,6 +23,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -44,6 +45,7 @@ var (
 	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
+	_ = mdlorder.NewOrder
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -76,6 +78,12 @@ var testIDs = map[string]uuid.UUID{
 	"MergeRule":            uuid.New(),
 	"Capability":           uuid.New(),
 	"Parameter":            uuid.New(),
+	"ValidValue":           uuid.New(),
+	"CapabilityVersion":    uuid.New(),
+	"Variant":              uuid.New(),
+	"Order":                uuid.New(),
+	"OrderItem":            uuid.New(),
+	"BoundValue":           uuid.New(),
 	"CapacityResourceType": uuid.New(),
 	"Capacity":             uuid.New(),
 	"Metric":               uuid.New(),
@@ -270,8 +278,63 @@ func loadStoreTestModel(t *testing.T, m model.Model) {
 	{
 		param := mdlparameter.NewParameter(testIDs["Parameter"])
 		param.SetDisplayName("Test Parameter")
-		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+	// --- ValidValue ---
+	{
+		vv := mdlparameter.NewValidValue(testIDs["ValidValue"])
+		vv.SetDisplayName("Test ValidValue")
+		param := mdlparameter.NewParameter(uuid.New())
+		param.SetDisplayName("Parent Parameter")
+		require.NoError(t, m.AddParameter(param))
+		vv.SetParameterById(param.GetParameterId())
+		require.NoError(t, m.AddValidValue(vv))
+	}
+	// --- CapabilityVersion ---
+	{
+		cv := mdlcapability.NewCapabilityVersion(testIDs["CapabilityVersion"])
+		cv.SetDisplayName("Test CapabilityVersion")
+		cv.SetVersion(common.Version{Version: "1.0.0"})
+		cv.SetCapabilityById(testIDs["Capability"])
+		require.NoError(t, m.AddCapabilityVersion(cv))
+	}
+	// --- Variant ---
+	{
+		v := mdlcapability.NewVariant(testIDs["Variant"])
+		v.SetDisplayName("Test Variant")
+		v.SetCapabilityVersionById(testIDs["CapabilityVersion"])
+		require.NoError(t, m.AddVariant(v))
+	}
+	// --- Order ---
+	{
+		o := mdlorder.NewOrder(testIDs["Order"])
+		o.SetDisplayName("Test Order")
+		o.SetOrgUnitById(testIDs["OrgUnit"])
+		require.NoError(t, m.AddOrder(o))
+	}
+	// --- OrderItem ---
+	{
+		oi := mdlorder.NewOrderItem(testIDs["OrderItem"])
+		oi.SetDisplayName("Test OrderItem")
+		oi.SetOrderById(testIDs["Order"])
+		oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: testIDs["Capability"]})
+		require.NoError(t, m.AddOrderItem(oi))
+	}
+	// --- BoundValue ---
+	{
+		bv := mdlorder.NewBoundValue(testIDs["BoundValue"])
+		bv.SetDisplayName("Test BoundValue")
+		bv.SetOrderItemById(testIDs["OrderItem"])
+		param := mdlparameter.NewParameter(uuid.New())
+		param.SetDisplayName("BoundValue Parameter")
+		require.NoError(t, m.AddParameter(param))
+		vv := mdlparameter.NewValidValue(uuid.New())
+		vv.SetDisplayName("BoundValue ValidValue")
+		vv.SetParameterById(param.GetParameterId())
+		require.NoError(t, m.AddValidValue(vv))
+		bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: param.GetParameterId()})
+		bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: vv.GetValidValueId()})
+		require.NoError(t, m.AddBoundValue(bv))
 	}
 	// --- CapacityResourceType ---
 	{
@@ -1641,7 +1704,6 @@ func TestStoreParameterApplyReplication(t *testing.T) {
 	resourceID := uuid.New()
 	param := mdlparameter.NewParameter(resourceID)
 	param.SetDisplayName("Test Parameter")
-	param.SetValues([]string{"val1", "val2"})
 	require.NoError(t, m.Apply(events.Event{
 		ResourceType: events.ParameterResource,
 		Operation:    events.CreateOperation,
@@ -1660,6 +1722,314 @@ func TestStoreParameterApplyReplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Nil(t, m.GetParameterById(resourceID))
+}
+
+func TestStoreValidValueCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["ValidValue"]
+	got := m.GetValidValueById(id)
+	require.NotNil(t, got, "expected ValidValue to be stored")
+	assert.Equal(t, id, got.GetValidValueId())
+
+	list, err := m.GetValidValues()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteValidValueById(testIDs["ValidValue"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetValidValueById(id))
+
+	err = m.DeleteValidValueById(testIDs["ValidValue"])
+	assert.ErrorIs(t, err, common.ErrValidValueNotFound)
+}
+
+func TestStoreValidValueApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	vv := mdlparameter.NewValidValue(resourceID)
+	vv.SetDisplayName("Test ValidValue")
+	param := mdlparameter.NewParameter(uuid.New())
+	param.SetDisplayName("Parent Parameter")
+	require.NoError(t, m.AddParameter(param))
+	vv.SetParameterById(param.GetParameterId())
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.ValidValueResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{vv},
+	}))
+
+	got := m.GetValidValueById(resourceID)
+	require.NotNil(t, got, "expected replicated ValidValue")
+	assert.Equal(t, resourceID, got.GetValidValueId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.ValidValueResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetValidValueById(resourceID))
+}
+
+func TestStoreCapabilityVersionCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["CapabilityVersion"]
+	got := m.GetCapabilityVersionById(id)
+	require.NotNil(t, got, "expected CapabilityVersion to be stored")
+	assert.Equal(t, id, got.GetCapabilityVersionId())
+
+	list, err := m.GetCapabilityVersions()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteCapabilityVersionById(testIDs["CapabilityVersion"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapabilityVersionById(id))
+
+	err = m.DeleteCapabilityVersionById(testIDs["CapabilityVersion"])
+	assert.ErrorIs(t, err, common.ErrCapabilityVersionNotFound)
+}
+
+func TestStoreCapabilityVersionApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	cv := mdlcapability.NewCapabilityVersion(resourceID)
+	cv.SetDisplayName("Test CapabilityVersion")
+	cv.SetVersion(common.Version{Version: "1.0.0"})
+	cv.SetCapabilityById(testIDs["Capability"])
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.CapabilityVersionResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{cv},
+	}))
+
+	got := m.GetCapabilityVersionById(resourceID)
+	require.NotNil(t, got, "expected replicated CapabilityVersion")
+	assert.Equal(t, resourceID, got.GetCapabilityVersionId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.CapabilityVersionResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetCapabilityVersionById(resourceID))
+}
+
+func TestStoreVariantCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Variant"]
+	got := m.GetVariantById(id)
+	require.NotNil(t, got, "expected Variant to be stored")
+	assert.Equal(t, id, got.GetVariantId())
+
+	list, err := m.GetVariants()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteVariantById(testIDs["Variant"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetVariantById(id))
+
+	err = m.DeleteVariantById(testIDs["Variant"])
+	assert.ErrorIs(t, err, common.ErrVariantNotFound)
+}
+
+func TestStoreVariantApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	v := mdlcapability.NewVariant(resourceID)
+	v.SetDisplayName("Test Variant")
+	v.SetCapabilityVersionById(testIDs["CapabilityVersion"])
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.VariantResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{v},
+	}))
+
+	got := m.GetVariantById(resourceID)
+	require.NotNil(t, got, "expected replicated Variant")
+	assert.Equal(t, resourceID, got.GetVariantId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.VariantResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetVariantById(resourceID))
+}
+
+func TestStoreOrderCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["Order"]
+	got := m.GetOrderById(id)
+	require.NotNil(t, got, "expected Order to be stored")
+	assert.Equal(t, id, got.GetOrderId())
+
+	list, err := m.GetOrders()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteOrderById(testIDs["Order"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetOrderById(id))
+
+	err = m.DeleteOrderById(testIDs["Order"])
+	assert.ErrorIs(t, err, common.ErrOrderNotFound)
+}
+
+func TestStoreOrderApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	o := mdlorder.NewOrder(resourceID)
+	o.SetDisplayName("Test Order")
+	o.SetOrgUnitById(testIDs["OrgUnit"])
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.OrderResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{o},
+	}))
+
+	got := m.GetOrderById(resourceID)
+	require.NotNil(t, got, "expected replicated Order")
+	assert.Equal(t, resourceID, got.GetOrderId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.OrderResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetOrderById(resourceID))
+}
+
+func TestStoreOrderItemCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["OrderItem"]
+	got := m.GetOrderItemById(id)
+	require.NotNil(t, got, "expected OrderItem to be stored")
+	assert.Equal(t, id, got.GetOrderItemId())
+
+	list, err := m.GetOrderItems()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteOrderItemById(testIDs["OrderItem"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetOrderItemById(id))
+
+	err = m.DeleteOrderItemById(testIDs["OrderItem"])
+	assert.ErrorIs(t, err, common.ErrOrderItemNotFound)
+}
+
+func TestStoreOrderItemApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	oi := mdlorder.NewOrderItem(resourceID)
+	oi.SetDisplayName("Test OrderItem")
+	oi.SetOrderById(testIDs["Order"])
+	oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: testIDs["Capability"]})
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.OrderItemResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{oi},
+	}))
+
+	got := m.GetOrderItemById(resourceID)
+	require.NotNil(t, got, "expected replicated OrderItem")
+	assert.Equal(t, resourceID, got.GetOrderItemId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.OrderItemResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetOrderItemById(resourceID))
+}
+
+func TestStoreBoundValueCRUD(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	id := testIDs["BoundValue"]
+	got := m.GetBoundValueById(id)
+	require.NotNil(t, got, "expected BoundValue to be stored")
+	assert.Equal(t, id, got.GetBoundValueId())
+
+	list, err := m.GetBoundValues()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+
+	err = m.DeleteBoundValueById(testIDs["BoundValue"])
+	require.NoError(t, err)
+	assert.Nil(t, m.GetBoundValueById(id))
+
+	err = m.DeleteBoundValueById(testIDs["BoundValue"])
+	assert.ErrorIs(t, err, common.ErrBoundValueNotFound)
+}
+
+func TestStoreBoundValueApplyReplication(t *testing.T) {
+	m, _ := newStoreModel(t)
+	loadStoreTestModel(t, m)
+
+	resourceID := uuid.New()
+	bv := mdlorder.NewBoundValue(resourceID)
+	bv.SetDisplayName("Test BoundValue")
+	bv.SetOrderItemById(testIDs["OrderItem"])
+	param := mdlparameter.NewParameter(uuid.New())
+	param.SetDisplayName("BoundValue Parameter")
+	require.NoError(t, m.AddParameter(param))
+	vv := mdlparameter.NewValidValue(uuid.New())
+	vv.SetDisplayName("BoundValue ValidValue")
+	vv.SetParameterById(param.GetParameterId())
+	require.NoError(t, m.AddValidValue(vv))
+	bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: param.GetParameterId()})
+	bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: vv.GetValidValueId()})
+	require.NoError(t, m.Apply(events.Event{
+		ResourceType: events.BoundValueResource,
+		Operation:    events.CreateOperation,
+		ResourceId:   resourceID,
+		Objects:      []any{bv},
+	}))
+
+	got := m.GetBoundValueById(resourceID)
+	require.NotNil(t, got, "expected replicated BoundValue")
+	assert.Equal(t, resourceID, got.GetBoundValueId())
+
+	err := m.Apply(events.Event{
+		ResourceType: events.BoundValueResource,
+		Operation:    events.DeleteOperation,
+		ResourceId:   resourceID,
+	})
+	require.NoError(t, err)
+	assert.Nil(t, m.GetBoundValueById(resourceID))
 }
 
 func TestStoreCapacityResourceTypeCRUD(t *testing.T) {

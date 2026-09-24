@@ -291,6 +291,66 @@ func decodeReplicationResourceFromMap(m model.Model, rt events.ResourceType, res
 			return uuid.Nil, nil, err
 		}
 		return v.GetParameterId(), v, nil
+	case events.ValidValueResource:
+		var o ValidValue
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := ValidValueFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetValidValueId(), v, nil
+	case events.CapabilityVersionResource:
+		var o CapabilityVersion
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := CapabilityVersionFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetCapabilityVersionId(), v, nil
+	case events.VariantResource:
+		var o Variant
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := VariantFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetVariantId(), v, nil
+	case events.OrderResource:
+		var o Order
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := OrderFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetOrderId(), v, nil
+	case events.OrderItemResource:
+		var o OrderItem
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := OrderItemFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetOrderItemId(), v, nil
+	case events.BoundValueResource:
+		var o BoundValue
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return uuid.Nil, nil, err
+		}
+		v, err := BoundValueFromDto(m, &o)
+		if err != nil {
+			return uuid.Nil, nil, err
+		}
+		return v.GetBoundValueId(), v, nil
 	case events.CapacityResourceTypeResource:
 		var o CapacityResourceType
 		if err := json.Unmarshal(raw, &o); err != nil {
