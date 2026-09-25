@@ -30,6 +30,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
+	"go.uber.org/zap"
 )
 
 type HeaderLabel string
@@ -52,6 +53,16 @@ type ApiServer struct {
 	Events  events.EventManager
 	BaseURL string
 	Authz   *authz.Evaluator
+	// Logger is the process logger. Nil uses a no-op logger so handlers can
+	// always call Debugw/Infow/Warnw/Errorw.
+	Logger *zap.SugaredLogger
+}
+
+func (a *ApiServer) logger() *zap.SugaredLogger {
+	if a == nil || a.Logger == nil {
+		return zap.NewNop().Sugar()
+	}
+	return a.Logger
 }
 
 var _ StrictServerInterface = (*ApiServer)(nil)

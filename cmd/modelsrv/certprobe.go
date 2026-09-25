@@ -77,6 +77,7 @@ func runCertprobe(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("create modelsrv client: %w", err)
 	}
+	c.SetLogger(logger)
 
 	if err := c.GetTest(); err != nil {
 		return fmt.Errorf("connect to modelsrv at %s: %w", baseURL, err)

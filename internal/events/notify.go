@@ -62,10 +62,23 @@ func (n *notifier) stopDelivery() { close(n.stop) }
 func (n *notifier) enqueue(ev events.Event) {
 	select {
 	case n.queue <- ev:
+		n.logger.Debugw("queued event for subscriber",
+			"url", n.sub.GetURL(),
+			"subscriberId", n.sub.GetId().String(),
+			"kind", ev.ResourceType.WireKind(),
+			"operation", ev.Operation.WireOperation(),
+			"resourceId", ev.ResourceId.String(),
+			"queued", len(n.queue),
+			"queueDepth", notifyQueueDepth,
+		)
 	default:
 		n.resync.Store(true)
 		n.logger.Warnw("subscriber fell behind; scheduling state resync",
 			"url", n.sub.GetURL(),
+			"subscriberId", n.sub.GetId().String(),
+			"kind", ev.ResourceType.WireKind(),
+			"operation", ev.Operation.WireOperation(),
+			"resourceId", ev.ResourceId.String(),
 			"queueDepth", notifyQueueDepth,
 		)
 	}
@@ -104,13 +117,31 @@ func (n *notifier) deliverSnapshot() bool {
 	snapshot := n.snapshot()
 	n.logger.Infow("resyncing subscriber from current state",
 		"url", n.sub.GetURL(),
+		"subscriberId", n.sub.GetId().String(),
 		"resources", len(snapshot),
 	)
 	for i := range snapshot {
+		n.logger.Debugw("resync pushing resource",
+			"url", n.sub.GetURL(),
+			"index", i,
+			"of", len(snapshot),
+			"kind", snapshot[i].ResourceType.WireKind(),
+			"operation", snapshot[i].Operation.WireOperation(),
+			"resourceId", snapshot[i].ResourceId.String(),
+		)
 		if !n.deliver(snapshot[i]) {
+			n.logger.Warnw("resync aborted; will retry",
+				"url", n.sub.GetURL(),
+				"delivered", i,
+				"resources", len(snapshot),
+			)
 			return false
 		}
 	}
+	n.logger.Debugw("resync finished",
+		"url", n.sub.GetURL(),
+		"resources", len(snapshot),
+	)
 	return true
 }
 
@@ -130,15 +161,43 @@ func (n *notifier) drainQueue() {
 // is not data loss: the caller schedules a resync of current state.
 func (n *notifier) deliver(ev events.Event) bool {
 	for attempt := 1; ; attempt++ {
+		n.logger.Debugw("pushing event to subscriber",
+			"url", n.sub.GetURL(),
+			"subscriberId", n.sub.GetId().String(),
+			"attempt", attempt,
+			"maxAttempts", notifyMaxAttempts,
+			"timeout", notifyAttemptTimeout.String(),
+			"kind", ev.ResourceType.WireKind(),
+			"operation", ev.Operation.WireOperation(),
+			"resourceId", ev.ResourceId.String(),
+			"objects", len(ev.Objects),
+		)
+		started := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), notifyAttemptTimeout)
 		err := n.sub.Notify(ctx, &ev)
 		cancel()
+		elapsed := time.Since(started)
 		if err == nil {
+			n.logger.Debugw("subscriber accepted event",
+				"url", n.sub.GetURL(),
+				"subscriberId", n.sub.GetId().String(),
+				"attempt", attempt,
+				"elapsed", elapsed.String(),
+				"kind", ev.ResourceType.WireKind(),
+				"operation", ev.Operation.WireOperation(),
+				"resourceId", ev.ResourceId.String(),
+			)
 			return true
 		}
 		if !notifyRetryable(err) {
 			n.logger.Warnw("subscriber rejected event permanently; skipping",
 				"url", n.sub.GetURL(),
+				"subscriberId", n.sub.GetId().String(),
+				"attempt", attempt,
+				"elapsed", elapsed.String(),
+				"kind", ev.ResourceType.WireKind(),
+				"operation", ev.Operation.WireOperation(),
+				"resourceId", ev.ResourceId.String(),
 				"error", err,
 			)
 			return true
@@ -146,14 +205,25 @@ func (n *notifier) deliver(ev events.Event) bool {
 		if attempt >= notifyMaxAttempts {
 			n.logger.Errorw("subscriber notify exhausted retries",
 				"url", n.sub.GetURL(),
+				"subscriberId", n.sub.GetId().String(),
 				"attempts", attempt,
+				"elapsed", elapsed.String(),
+				"kind", ev.ResourceType.WireKind(),
+				"operation", ev.Operation.WireOperation(),
+				"resourceId", ev.ResourceId.String(),
 				"error", err,
 			)
 			return false
 		}
 		n.logger.Warnw("subscriber notify failed; retrying",
 			"url", n.sub.GetURL(),
+			"subscriberId", n.sub.GetId().String(),
 			"attempt", attempt,
+			"elapsed", elapsed.String(),
+			"backoff", notifyBackoff(attempt).String(),
+			"kind", ev.ResourceType.WireKind(),
+			"operation", ev.Operation.WireOperation(),
+			"resourceId", ev.ResourceId.String(),
 			"error", err,
 		)
 		select {
