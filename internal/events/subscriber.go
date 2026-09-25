@@ -79,14 +79,16 @@ func (s *subscriber) Notify(ctx context.Context, event *events.Event) error {
 		)
 		return err
 	}
-	s.log.Debugw("subscriber push accepted",
+	// PostEvent returns nil for both HTTP 200 and a skipped unreplicable
+	// event, and it does not return the status code. The client log records
+	// the real status.
+	s.log.Debugw("subscriber push completed",
 		"url", s.url,
 		"subscriberId", s.id.String(),
 		"kind", event.ResourceType.WireKind(),
 		"operation", event.Operation.WireOperation(),
 		"resourceId", event.ResourceId.String(),
 		"elapsed", elapsed,
-		"status", 200,
 	)
 	return nil
 }
