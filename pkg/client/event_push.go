@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -43,13 +42,17 @@ func (e *PushError) Permanent() bool {
 
 // Register registers this server's API base URL as a callback for upstream event pushes.
 func (c *ModelSrvClient) Register(callbackURL string) error {
+	c.logger().Debugw("POST /events/register", "callbackUrl", callbackURL)
 	resp, err := c.oapi_client.PostEventsRegisterWithResponse(context.TODO(), oapi.PostEventsRegisterJSONRequestBody{
 		CallbackUrl: callbackURL,
 	})
 	if err != nil {
+		c.logger().Errorw("POST /events/register failed", "callbackUrl", callbackURL, "error", err)
 		return err
 	}
+	c.logger().Debugw("POST /events/register response", "callbackUrl", callbackURL, "status", resp.StatusCode())
 	if resp.StatusCode() != http.StatusCreated {
+		c.logger().Warnw("POST /events/register rejected", "callbackUrl", callbackURL, "status", resp.StatusCode())
 		return fmt.Errorf("expected HTTP 201 but received %d", resp.StatusCode())
 	}
 	return nil
@@ -60,23 +63,61 @@ func (c *ModelSrvClient) PostEvent(ctx context.Context, ev *events.Event) error 
 	if ev == nil {
 		return fmt.Errorf("nil event")
 	}
+	log := c.logger()
+	log.Debugw("POST /events/push",
+		"kind", ev.ResourceType.WireKind(),
+		"operation", ev.Operation.WireOperation(),
+		"resourceId", ev.ResourceId.String(),
+	)
 	body, err := oapi.PushWireEventFromDomain(ev)
 	if err != nil {
 		if errors.Is(err, oapi.ErrSkipReplication) {
-			log.Printf("WARNING: skipping unreplicable event: %v", err)
+			log.Warnw("skipping unreplicable event",
+				"kind", ev.ResourceType.WireKind(),
+				"operation", ev.Operation.WireOperation(),
+				"resourceId", ev.ResourceId.String(),
+				"error", err,
+			)
 			return nil
 		}
+		log.Errorw("POST /events/push encode failed",
+			"kind", ev.ResourceType.WireKind(),
+			"operation", ev.Operation.WireOperation(),
+			"resourceId", ev.ResourceId.String(),
+			"error", err,
+		)
 		return err
 	}
+	log.Debugw("POST /events/push wire",
+		"kind", body.Kind,
+		"operation", body.Operation,
+		"resourceId", body.ResourceId,
+	)
 	resp, err := c.oapi_client.PostEventsPushWithResponse(ctx, body)
 	if err != nil {
+		log.Errorw("POST /events/push transport error",
+			"kind", body.Kind,
+			"resourceId", ev.ResourceId.String(),
+			"error", err,
+		)
 		return err
 	}
 	if resp.StatusCode() != http.StatusOK {
+		log.Warnw("POST /events/push rejected",
+			"kind", body.Kind,
+			"resourceId", ev.ResourceId.String(),
+			"status", resp.StatusCode(),
+			"body", strings.TrimSpace(string(resp.Body)),
+		)
 		return &PushError{
 			StatusCode: resp.StatusCode(),
 			Body:       strings.TrimSpace(string(resp.Body)),
 		}
 	}
+	log.Debugw("POST /events/push accepted",
+		"kind", body.Kind,
+		"resourceId", ev.ResourceId.String(),
+		"status", resp.StatusCode(),
+	)
 	return nil
 }

@@ -89,6 +89,7 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 		authzEval = authz.NewEvaluator(opts.AuthzConfig)
 	}
 	server := oapi.NewApiServer(backend, eventMgr, baseURL, authzEval)
+	server.Logger = log
 	strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{TrustAuthHeaders: opts.TrustAuthHeaders})
 
 	reg := prometheus.NewRegistry()
@@ -128,6 +129,7 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 		authzEval = authz.NewEvaluator(opts.AuthzConfig)
 	}
 	server := oapi.NewApiServer(backend, eventMgr, baseURL, authzEval)
+	server.Logger = log
 	strict := oapi.NewApiHandler(server, oapi.ApiHandlerOptions{TrustAuthHeaders: opts.TrustAuthHeaders})
 
 	metricsReg = prometheus.NewRegistry()

@@ -33,9 +33,19 @@ func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation
 	r.mgr.historyTail.Add(events.NewStoredEvent(
 		r.mgr.sequenceNumber, time.Now(), resType, op, resourceId, objects,
 	))
+	seq := r.mgr.sequenceNumber
 	notifiers := make([]*notifier, len(r.mgr.notifiers))
 	copy(notifiers, r.mgr.notifiers)
 	r.mgr.mu.Unlock()
+
+	r.mgr.logger.Debugw("recorded event; fanning out to subscribers",
+		"sequence", seq,
+		"kind", resType.WireKind(),
+		"operation", op.WireOperation(),
+		"resourceId", resourceId.String(),
+		"objects", len(objects),
+		"subscribers", len(notifiers),
+	)
 
 	for _, n := range notifiers {
 		n.enqueue(ev)

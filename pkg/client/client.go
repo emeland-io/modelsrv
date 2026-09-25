@@ -7,11 +7,30 @@ import (
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/internal/oapi"
+	"go.uber.org/zap"
 )
 
 type ModelSrvClient struct {
 	oapi_client *oapi.ClientWithResponses
 	hc          *http.Client
+	log         *zap.SugaredLogger
+}
+
+// SetLogger sets the logger used for replication HTTP calls. A nil logger
+// is ignored; the client keeps a no-op logger so debug lines stay quiet
+// unless the process log level includes them.
+func (c *ModelSrvClient) SetLogger(log *zap.SugaredLogger) {
+	if c == nil || log == nil {
+		return
+	}
+	c.log = log
+}
+
+func (c *ModelSrvClient) logger() *zap.SugaredLogger {
+	if c == nil || c.log == nil {
+		return zap.NewNop().Sugar()
+	}
+	return c.log
 }
 
 func NewModelSrvClient(url string) (*ModelSrvClient, error) {

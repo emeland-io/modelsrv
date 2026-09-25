@@ -104,12 +104,18 @@ func (e *eventManager) AddSubscriber(subURL string) error {
 	for _, n := range e.notifiers {
 		if n.sub.GetURL() == subURL {
 			e.mu.Unlock()
+			e.logger.Debugw("subscriber already registered",
+				"url", subURL,
+				"subscriberId", n.sub.GetId().String(),
+			)
 			return nil
 		}
 	}
-	newSub, err := NewSubscriber(subURL)
+	e.logger.Debugw("registering subscriber", "url", subURL)
+	newSub, err := NewSubscriber(subURL, e.logger)
 	if err != nil {
 		e.mu.Unlock()
+		e.logger.Errorw("failed to create subscriber client", "url", subURL, "error", err)
 		return err
 	}
 	n := newNotifier(newSub, e.stateSnapshot, e.logger)
@@ -117,17 +123,47 @@ func (e *eventManager) AddSubscriber(subURL string) error {
 	past := e.latestState.GetEvents()
 	e.mu.Unlock()
 
+	e.logger.Infow("registered subscriber; replaying current state",
+		"url", subURL,
+		"subscriberId", newSub.GetId().String(),
+		"resources", len(past),
+		"subscribers", e.subscriberCount(),
+	)
+
 	// Replay synchronously, before the delivery goroutine starts: events
 	// recorded in the meantime wait in the queue and go out afterwards, so
 	// the subscriber never sees a live event ahead of the state it builds on.
 	for i := range past {
+		e.logger.Debugw("replaying resource to new subscriber",
+			"url", subURL,
+			"index", i,
+			"of", len(past),
+			"kind", past[i].ResourceType.WireKind(),
+			"operation", past[i].Operation.WireOperation(),
+			"resourceId", past[i].ResourceId.String(),
+		)
 		if !n.deliver(past[i]) {
+			e.logger.Warnw("initial replay failed; scheduling resync",
+				"url", subURL,
+				"delivered", i,
+				"resources", len(past),
+			)
 			n.resync.Store(true)
 			break
 		}
 	}
 	n.start()
+	e.logger.Debugw("subscriber delivery loop started",
+		"url", subURL,
+		"subscriberId", newSub.GetId().String(),
+	)
 	return nil
+}
+
+func (e *eventManager) subscriberCount() int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return len(e.notifiers)
 }
 
 func (e *eventManager) GetSubscribers() []events.Subscriber {
@@ -145,7 +181,13 @@ func (e *eventManager) RemoveSubscriber(url string) error {
 	for i, n := range e.notifiers {
 		if n.sub.GetURL() == url {
 			e.notifiers = append(e.notifiers[:i], e.notifiers[i+1:]...)
+			remaining := len(e.notifiers)
 			e.mu.Unlock()
+			e.logger.Infow("unregistered subscriber",
+				"url", url,
+				"subscriberId", n.sub.GetId().String(),
+				"subscribers", remaining,
+			)
 			n.stopDelivery()
 			return nil
 		}
