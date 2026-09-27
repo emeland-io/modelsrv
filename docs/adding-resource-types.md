@@ -6,6 +6,22 @@ This document should help you when adding an additional resource type.
 
 **Ordering constraint:** regenerate OpenAPI (`go generate ./internal/oapi/...` or `make gen`) **before** running `tools/gen` (`make generate` / `go generate ./pkg/model/...`). The `tools/gen` templates reference oapi-codegen DTO type names that must already exist.
 
+## Adding a scalar field to an existing type
+
+Adding a plain scalar field (`string`, `bool`, or a numeric type like `int`/`int64`/`float64`) to a resource type that is **not** in `skipConvertByName` needs only two edits:
+
+1. Add the property to that type's schema in `api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml`. Whether you list it under `required` decides the DTO shape:
+   - listed in `required` → oapi-codegen emits a value field (e.g. `Owner string`).
+   - not required → oapi-codegen emits a pointer field (e.g. `Owner *string`).
+1. Add one line to the type's `Fields` in `tools/gen/specs.go`, for example `{Name: "Owner", Type: "string"}` for a required property, or `{Name: "Owner", Type: "string", Optional: true}` for an optional one. Set `Optional: true` **iff** the YAML property is not required, so the generated converters match the pointer/value shape of the DTO.
+
+Then regenerate in the usual order (`make gen` then `make generate`). The domain interface/impl accessors, mocks, and the `FromDto`/`ToDto` converters are all generated. Optional fields get nil-safe conversion automatically (dereferenced on the way in; emitted only when non-zero on the way out).
+
+Caveats:
+- Types in `skipConvertByName` (e.g. `Node`, `System`, `Finding`) keep hand-written converters in `internal/oapi/convert_special.go`; a new scalar field on those must be mapped there by hand as well.
+- If the field should be settable from YAML/CSV/JSON ingress, wire it into the relevant `pkg/ingress/apply_*.go` path (and the CSV column mapping in `pkg/ingress/csv.go`).
+- Reference fields (pointing at another resource) are not scalars; they need `TypeRefLink`/`RefByRef` wiring as described in the resource-type checklist below.
+
 ## Checklist
 
 1. Update the resource type enum in **both** `ResourceRef` schemas of the OpenAPI spec in `api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml`.
