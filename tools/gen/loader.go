@@ -234,7 +234,7 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 		spec.GenClientMethods = true
 		// Client wrapper method names use the domain type name with an irregular-aware
 		// plural (e.g. API -> GetAPIs, Identity -> GetIdentities).
-		spec.ClientListMethod = "Get" + clientPlural(name)
+		spec.ClientListMethod = "Get" + pluralize(name)
 		spec.ClientGetByIdMethod = "Get" + name + "ById"
 		// oapi-codegen method names derive from the REST path's last segment (e.g.
 		// /landscape/apis -> GetLandscapeApis). Requires the list= marker.
@@ -313,12 +313,6 @@ func pluralize(name string) string {
 		return strings.TrimSuffix(name, "y") + "ies"
 	}
 	return name + "s"
-}
-
-// clientPlural pluralizes a domain type name for client wrapper method names, preserving
-// acronym casing (API -> APIs, not Apis).
-func clientPlural(name string) string {
-	return pluralize(name)
 }
 
 // pascalFromPath converts the last segment of a REST list path into the PascalCase token

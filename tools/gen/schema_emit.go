@@ -58,7 +58,7 @@ func buildResourceSchema(name, typeDoc string, st *ast.StructType, markers map[s
 		switch {
 		case roles["annotations"]:
 			prop.IsArray = true
-			prop.ItemsRef = annotationsItemRef(goType)
+			prop.ItemsRef = "Annotation"
 		case arrayRefTarget(roles) != "":
 			// Array of $ref, e.g. Product.versions -> ProductionVersion.
 			prop.IsArray = true
@@ -213,12 +213,6 @@ func openapiFormat(goType string) string {
 		return "uuid"
 	}
 	return ""
-}
-
-// annotationsItemRef returns the schema name an annotations array references.
-func annotationsItemRef(goType string) string {
-	// annotations.Annotations -> items $ref Annotation.
-	return "Annotation"
 }
 
 // openapiScalarType maps a scalar Go type name to its OpenAPI `type`. Returns "" for

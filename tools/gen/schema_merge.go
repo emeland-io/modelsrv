@@ -15,7 +15,7 @@ const specSchemaBaseIndent = 4
 // modelDefsDir is the directory (relative to this file) holding annotated resource
 // definition structs parsed by the loader. During the migration it points at the pilot
 // definitions; it becomes the canonical location as types are migrated.
-const modelDefsDir = "testdata"
+const modelDefsDir = "modeldefs"
 
 // openAPISpecRelPath is the OpenAPI file path relative to this source file.
 const openAPISpecRelPath = "../../api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml"

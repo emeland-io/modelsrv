@@ -32,7 +32,7 @@ func readCommittedSpec(t *testing.T) string {
 
 func loadSchemaByName(t *testing.T, name string) resourceSchema {
 	t.Helper()
-	schemas, err := loadResourceSchemas("testdata")
+	schemas, err := loadResourceSchemas("modeldefs")
 	if err != nil {
 		t.Fatalf("loadResourceSchemas: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestSchemaEmitter_Semantic(t *testing.T) {
 func TestMergeSchemas_Semantic(t *testing.T) {
 	specText := readCommittedSpec(t)
 
-	schemas, err := loadResourceSchemas("testdata")
+	schemas, err := loadResourceSchemas("modeldefs")
 	if err != nil {
 		t.Fatalf("loadResourceSchemas: %v", err)
 	}
@@ -114,6 +114,47 @@ func TestMergeSchemas_Semantic(t *testing.T) {
 	if !reflect.DeepEqual(mergedDoc, committedDoc) {
 		t.Error("merged spec is not semantically equal to the committed spec")
 	}
+}
+
+// TestSchemaEmitter_KnownValues pins a couple of hand-verified property shapes so a future
+// change that silently alters them is caught (folded in from the removed fidelity harness).
+func TestSchemaEmitter_KnownValues(t *testing.T) {
+	sys := parseSchemaBlock(t, emitSchema(loadSchemaByName(t, "System"), 4))["System"].(map[string]any)
+	props := sys["properties"].(map[string]any)
+	abstract := props["abstract"].(map[string]any)
+	if abstract["type"] != "boolean" {
+		t.Errorf("System.abstract type = %v, want boolean", abstract["type"])
+	}
+	if !containsStr(toStrs(sys["required"]), "abstract") {
+		t.Error("System.abstract expected in required list")
+	}
+
+	nt := parseSchemaBlock(t, emitSchema(loadSchemaByName(t, "NodeType"), 4))["NodeType"].(map[string]any)
+	ntProps := nt["properties"].(map[string]any)
+	dn := ntProps["displayName"].(map[string]any)
+	if dn["type"] != "string" {
+		t.Errorf("NodeType.displayName type = %v, want string", dn["type"])
+	}
+}
+
+func toStrs(v any) []string {
+	arr, _ := v.([]any)
+	out := make([]string, 0, len(arr))
+	for _, e := range arr {
+		if s, ok := e.(string); ok {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func containsStr(ss []string, want string) bool {
+	for _, s := range ss {
+		if s == want {
+			return true
+		}
+	}
+	return false
 }
 
 // TestSchemaBlock_Boundaries sanity-checks the block extractor on a known schema.
