@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -18,6 +19,7 @@ type resourceStruct struct {
 	Doc     string
 	Struct  *ast.StructType
 	Markers map[string]string
+	Pos     token.Pos // source position, used to preserve declaration order
 }
 
 // forEachResourceStruct parses all Go source files in dir and returns the annotated
@@ -61,9 +63,12 @@ func forEachResourceStruct(dir string) ([]resourceStruct, error) {
 			if _, isResource := markers["resource"]; !isResource {
 				continue
 			}
-			out = append(out, resourceStruct{Name: dt.Name, Doc: dt.Doc, Struct: st, Markers: markers})
+			out = append(out, resourceStruct{Name: dt.Name, Doc: dt.Doc, Struct: st, Markers: markers, Pos: st.Pos()})
 		}
 	}
+	// go/doc returns types alphabetically; restore source declaration order so generated
+	// output (which iterates allTypes) has a stable, author-controlled order.
+	sort.Slice(out, func(i, j int) bool { return out[i].Pos < out[j].Pos })
 	return out, nil
 }
 

@@ -79,41 +79,6 @@ var wireKindToEventsResource = map[string]string{
 	"MetricValue":          "MetricValueResource",
 }
 
-var restListPathByName = map[string]string{
-	"ContextType":          "/landscape/contextTypes",
-	"Context":              "/landscape/contexts",
-	"System":               "/landscape/systems",
-	"SystemInstance":       "/landscape/system-instances",
-	"API":                  "/landscape/apis",
-	"ApiInstance":          "/landscape/api-instances",
-	"Component":            "/landscape/components",
-	"ComponentInstance":    "/landscape/component-instances",
-	"NodeType":             "/landscape/nodeTypes",
-	"Node":                 "/landscape/nodes",
-	"FindingType":          "/landscape/findingTypes",
-	"Finding":              "/landscape/findings",
-	"OrgUnit":              "/landscape/orgUnits",
-	"Group":                "/landscape/groups",
-	"Identity":             "/landscape/identities",
-	"Product":              "/landscape/products",
-	"Artifact":             "/landscape/artifacts",
-	"ArtifactInstance":     "/landscape/artifactInstances",
-	"PermissionSpec":       "/landscape/permissionSpecs",
-	"RoleSpec":             "/landscape/roleSpecs",
-	"Permission":           "/landscape/permissions",
-	"Role":                 "/landscape/roles",
-	"Binding":              "/landscape/bindings",
-	"FilterRule":           "/landscape/filter-rules",
-	"MergeRule":            "/landscape/merge-rules",
-	"Capability":           "/landscape/capabilities",
-	"Parameter":            "/landscape/parameters",
-	"CapacityResourceType": "/landscape/capacityResourceTypes",
-	"Capacity":             "/landscape/capacities",
-	"Metric":               "/landscape/metrics",
-	"Threshold":            "/landscape/thresholds",
-	"MetricInstance":       "/landscape/metricInstances",
-	"MetricValue":          "/landscape/metricValues",
-}
 
 var serverRequestIDByName = map[string]string{
 	"SystemInstance":    "SystemInstanceId",
@@ -264,9 +229,7 @@ func enrichWireMeta(spec *TypeSpec) {
 		}
 	}
 
-	if v, ok := restListPathByName[spec.Name]; ok {
-		spec.RestListPath = v
-	}
+	// RestListPath is set by the loader from the +emeland:list= marker.
 	if v, ok := serverRequestIDByName[spec.Name]; ok {
 		spec.ServerRequestIDField = v
 	} else {

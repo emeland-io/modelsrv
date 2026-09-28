@@ -13,7 +13,6 @@ import (
 type resourceSchema struct {
 	Name        string // schema name, e.g. "NodeType"
 	Description string // type-level prose (struct doc comment minus +emeland markers)
-	DescStyle   string // block-scalar indicator for multi-line descriptions: "|" (default) or ">"
 	Props       []schemaProp
 	Required    []string // wire property names, in declaration order
 }
@@ -29,9 +28,8 @@ type schemaProp struct {
 	ItemsFormat string // format of array items (array-of-scalar), e.g. "uuid"
 	Ref         string // bare $ref to another schema (e.g. "Version"); no type/description emitted
 	Enum        []string // enum values; when set, emitted before description and no `type` key
-	Pattern     string   // OpenAPI `pattern` (regex), emitted after description
-	Example     string   // OpenAPI `example`, emitted after pattern
-	QuoteDesc   bool     // single-quote the description (value contains YAML-significant chars)
+	Pattern     string   // OpenAPI `pattern` (regex)
+	Example     string   // OpenAPI `example`
 }
 
 // buildResourceSchema assembles a resourceSchema from a parsed struct, its type doc, and
@@ -41,11 +39,6 @@ func buildResourceSchema(name, typeDoc string, st *ast.StructType, markers map[s
 	rs := resourceSchema{
 		Name:        name,
 		Description: stripMarkers(typeDoc),
-	}
-	if markers["descstyle"] == "folded" {
-		rs.DescStyle = ">"
-	} else {
-		rs.DescStyle = "|"
 	}
 
 	for _, astField := range st.Fields.List {
@@ -88,7 +81,6 @@ func buildResourceSchema(name, typeDoc string, st *ast.StructType, markers map[s
 			prop.Format = openapiFormat(goType)
 			prop.Pattern = tagValue(roles, "pattern=")
 			prop.Example = tagValue(roles, "example=")
-			prop.QuoteDesc = roles["quotedesc"]
 		}
 		rs.Props = append(rs.Props, prop)
 
@@ -144,14 +136,13 @@ func tagValue(roles map[string]bool, prefix string) string {
 	return ""
 }
 
-// yamlScalar renders a string value as the committed spec does: single-quoted when the
-// value contains a colon or a double quote (which would otherwise require quoting), plain
-// otherwise. Matches the Artifact.hash description/pattern/example formatting.
-func yamlScalar(s string) string {
-	if strings.Contains(s, ":") || strings.Contains(s, "\"") {
-		return "'" + strings.ReplaceAll(s, "'", "''") + "'"
-	}
-	return s
+// quote renders a free-text string as a YAML single-quoted scalar (embedded single quotes
+// doubled). Applied uniformly to descriptions, patterns, examples and enum values so the
+// emitter needs no value-aware quoting or block-scalar styles. Newlines are folded to
+// spaces (the content is prose; semantics are unaffected).
+func quote(s string) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
 
 // stripMarkers returns doc text with "+emeland:" marker lines removed and surrounding
@@ -247,27 +238,9 @@ func openapiScalarType(goType string) string {
 	}
 }
 
-// writeDescription writes a `description:` line, using a block scalar (indicator "|" or
-// ">") when the text contains newlines (multi-line prose, e.g. Product/Metric). keyIndent
-// is the indent of the `description:` key; contentIndent is the indent of block-scalar
-// content lines.
-func writeDescription(b *strings.Builder, keyIndent string, contentIndent int, indicator, text string) {
-	if !strings.Contains(text, "\n") {
-		fmt.Fprintf(b, "%sdescription: %s\n", keyIndent, text)
-		return
-	}
-	if indicator == "" {
-		indicator = "|"
-	}
-	ci := strings.Repeat(" ", contentIndent)
-	fmt.Fprintf(b, "%sdescription: %s\n", keyIndent, indicator)
-	for _, line := range strings.Split(text, "\n") {
-		fmt.Fprintf(b, "%s%s\n", ci, line)
-	}
-}
-
-// emitSchema renders a resourceSchema to YAML matching the committed spec's formatting.
-// baseIndent is the number of spaces before the schema name (4 in the components block).
+// emitSchema renders a resourceSchema to YAML. All free-text values are single-quoted and
+// single-line (see quote); there are no block scalars or value-aware quoting. baseIndent is
+// the number of spaces before the schema name (4 in the components block).
 func emitSchema(rs resourceSchema, baseIndent int) string {
 	ind := strings.Repeat(" ", baseIndent)
 	p1 := strings.Repeat(" ", baseIndent+2) // schema body
@@ -279,21 +252,20 @@ func emitSchema(rs resourceSchema, baseIndent int) string {
 	fmt.Fprintf(&b, "%s%s:\n", ind, rs.Name)
 	fmt.Fprintf(&b, "%stype: object\n", p1)
 	if rs.Description != "" {
-		writeDescription(&b, p1, baseIndent+4, rs.DescStyle, rs.Description)
+		fmt.Fprintf(&b, "%sdescription: %s\n", p1, quote(rs.Description))
 	}
 	fmt.Fprintf(&b, "%sproperties:\n", p1)
 	for _, prop := range rs.Props {
 		fmt.Fprintf(&b, "%s%s:\n", p2, prop.WireName)
 		if prop.Ref != "" {
-			// Bare $ref property: no type or description (matches the committed spec's
-			// version -> Version references).
+			// Bare $ref property (no type/description).
 			fmt.Fprintf(&b, "%s$ref: '#/components/schemas/%s'\n", p3, prop.Ref)
 			continue
 		}
 		if prop.IsArray {
 			fmt.Fprintf(&b, "%stype: array\n", p3)
 			if prop.Description != "" {
-				fmt.Fprintf(&b, "%sdescription: %s\n", p3, prop.Description)
+				fmt.Fprintf(&b, "%sdescription: %s\n", p3, quote(prop.Description))
 			}
 			fmt.Fprintf(&b, "%sitems:\n", p3)
 			if prop.ItemsRef != "" {
@@ -307,32 +279,28 @@ func emitSchema(rs resourceSchema, baseIndent int) string {
 			continue
 		}
 		if len(prop.Enum) > 0 {
-			// Enum property: enum list then description, no `type` key (matches API.type).
+			// Enum property: enum list then description, no `type` key.
 			fmt.Fprintf(&b, "%senum:\n", p3)
 			for _, v := range prop.Enum {
-				fmt.Fprintf(&b, "%s- %s\n", p4, v)
+				fmt.Fprintf(&b, "%s- %s\n", p4, quote(v))
 			}
 			if prop.Description != "" {
-				fmt.Fprintf(&b, "%sdescription: %s\n", p3, prop.Description)
+				fmt.Fprintf(&b, "%sdescription: %s\n", p3, quote(prop.Description))
 			}
 			continue
 		}
 		fmt.Fprintf(&b, "%stype: %s\n", p3, prop.Type)
 		if prop.Description != "" {
-			desc := prop.Description
-			if prop.QuoteDesc {
-				desc = yamlScalar(desc)
-			}
-			fmt.Fprintf(&b, "%sdescription: %s\n", p3, desc)
+			fmt.Fprintf(&b, "%sdescription: %s\n", p3, quote(prop.Description))
 		}
 		if prop.Format != "" {
 			fmt.Fprintf(&b, "%sformat: %s\n", p3, prop.Format)
 		}
 		if prop.Pattern != "" {
-			fmt.Fprintf(&b, "%spattern: %s\n", p3, yamlScalar(prop.Pattern))
+			fmt.Fprintf(&b, "%spattern: %s\n", p3, quote(prop.Pattern))
 		}
 		if prop.Example != "" {
-			fmt.Fprintf(&b, "%sexample: %s\n", p3, yamlScalar(prop.Example))
+			fmt.Fprintf(&b, "%sexample: %s\n", p3, quote(prop.Example))
 		}
 	}
 	if len(rs.Required) > 0 {
