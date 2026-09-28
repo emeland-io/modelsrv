@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // dirDomainMeta maps a resource's model sub-package directory to its Go import path and
 // alias, used to qualify domain types in generated code. Extend when adding a new model
 // sub-package.
@@ -24,15 +26,17 @@ var dirDomainMeta = map[string]struct {
 	"observability": {Import: "go.emeland.io/modelsrv/pkg/model/observability", Alias: "mdlobs"},
 }
 
-// enrichDomainMeta fills the domain-package fields of a TypeSpec from its Dir.
-func enrichDomainMeta(spec *TypeSpec) {
+// enrichDomainMeta fills the domain-package fields of a TypeSpec from its Dir. Every
+// resource type must map to a known sub-package; a missing entry fails loud.
+func enrichDomainMeta(spec *TypeSpec) error {
 	meta, ok := dirDomainMeta[spec.Dir]
 	if !ok {
-		return
+		return fmt.Errorf("enrichDomainMeta: %s has dir %q missing from dirDomainMeta", spec.Name, spec.Dir)
 	}
 	spec.DomainPkgImport = meta.Import
 	spec.DomainPkgAlias = meta.Alias
 	spec.DomainTypeName = spec.Name
 	spec.DomainIDGetter = "got.Get" + spec.IDField + "()"
 	spec.DomainNameGetter = "got.GetDisplayName()"
+	return nil
 }

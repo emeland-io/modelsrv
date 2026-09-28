@@ -56,16 +56,20 @@ func parseSchemaBlock(t *testing.T, block string) map[string]any {
 	return m
 }
 
-// migratedTypes are all resource types generated from annotated structs.
-var migratedTypes = []string{
-	"NodeType", "System", "API", "Component",
-	"ContextType", "Node", "SystemInstance", "ApiInstance",
-	"OrgUnit", "Group", "Identity", "Parameter",
-	"FindingType", "FilterRule", "MergeRule", "Product",
-	"ArtifactInstance", "Capability", "ComponentInstance", "CapacityResourceType",
-	"Finding", "PermissionSpec", "RoleSpec", "Permission", "Role", "Binding", "Capacity",
-	"Metric", "Threshold", "MetricInstance", "MetricValue",
-	"Artifact", "Context",
+// migratedTypeNames returns the resource type names as declared by the annotated structs
+// in modeldefs — the authoritative set — so the schema tests cover exactly what exists,
+// with no separate hand-maintained list to drift.
+func migratedTypeNames(t *testing.T) []string {
+	t.Helper()
+	schemas, err := loadResourceSchemas("modeldefs")
+	if err != nil {
+		t.Fatalf("loadResourceSchemas: %v", err)
+	}
+	names := make([]string, 0, len(schemas))
+	for _, s := range schemas {
+		names = append(names, s.Name)
+	}
+	return names
 }
 
 // TestSchemaEmitter_Semantic proves each migrated type's emitted schema is *semantically*
@@ -74,7 +78,7 @@ var migratedTypes = []string{
 // content is, which is what oapi-codegen consumes.
 func TestSchemaEmitter_Semantic(t *testing.T) {
 	spec := readCommittedSpec(t)
-	for _, name := range migratedTypes {
+	for _, name := range migratedTypeNames(t) {
 		t.Run(name, func(t *testing.T) {
 			emitted := emitSchema(loadSchemaByName(t, name), 4)
 			committed, ok := schemaBlock(spec, name, 4)
@@ -88,6 +92,44 @@ func TestSchemaEmitter_Semantic(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestTypeSetCoverage guards against the three representations of the resource-type set
+// drifting apart: the annotated structs in modeldefs, canonicalTypeOrder (which drives
+// generated output order), and the enriched allTypes that generation consumes. A new
+// struct added without updating canonicalTypeOrder — or vice versa — fails here.
+func TestTypeSetCoverage(t *testing.T) {
+	structNames := map[string]bool{}
+	for _, n := range migratedTypeNames(t) {
+		structNames[n] = true
+	}
+	orderNames := map[string]bool{}
+	for _, n := range canonicalTypeOrder {
+		orderNames[n] = true
+	}
+	allTypesNames := map[string]bool{}
+	for _, s := range allTypes {
+		allTypesNames[s.Name] = true
+	}
+
+	if !reflect.DeepEqual(structNames, orderNames) {
+		t.Errorf("modeldefs structs != canonicalTypeOrder:\n  only in structs: %v\n  only in order:   %v",
+			setDiff(structNames, orderNames), setDiff(orderNames, structNames))
+	}
+	if !reflect.DeepEqual(structNames, allTypesNames) {
+		t.Errorf("modeldefs structs != allTypes:\n  only in structs:  %v\n  only in allTypes: %v",
+			setDiff(structNames, allTypesNames), setDiff(allTypesNames, structNames))
+	}
+}
+
+func setDiff(a, b map[string]bool) []string {
+	var out []string
+	for k := range a {
+		if !b[k] {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 // TestMergeSchemas_Semantic proves the in-place merge produces a spec that parses to the

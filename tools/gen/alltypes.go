@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 )
@@ -10,30 +9,52 @@ import (
 // allTypes is the resource metadata that drives all generation. It is built at package init
 // from the annotated structs in tools/gen/modeldefs (parsed by the loader) plus the
 // typeWiring supplement, then ordered and enriched.
-var allTypes = buildAllTypes()
+var allTypes = mustBuildAllTypes()
 
-// buildAllTypes loads the annotated resource structs, applies wiring, orders them, and
-// enriches them (domain + wire metadata).
-func buildAllTypes() []TypeSpec {
+// mustBuildAllTypes builds allTypes or panics with the underlying error. Used only by the
+// package-level initializer; tests call buildAllTypes directly to assert on errors.
+func mustBuildAllTypes() []TypeSpec {
+	specs, err := buildAllTypes()
+	if err != nil {
+		panic(fmt.Sprintf("building resource types: %v", err))
+	}
+	return specs
+}
+
+// modelDefsPath returns the absolute path to the model-definitions directory, resolved
+// relative to this source file (so it works under `go run`/`go generate`).
+func modelDefsPath() (string, error) {
 	_, thisFile, _, ok := runtime.Caller(0)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "buildAllTypes: runtime.Caller failed")
-		os.Exit(1)
+		return "", fmt.Errorf("runtime.Caller failed")
 	}
-	defsDir := filepath.Join(filepath.Dir(thisFile), modelDefsDir)
+	return filepath.Join(filepath.Dir(thisFile), modelDefsDir), nil
+}
+
+// buildAllTypes loads the annotated resource structs, applies wiring, orders them, and
+// enriches them (domain + wire metadata). It returns an error rather than exiting so the
+// load/enrich path is testable.
+func buildAllTypes() ([]TypeSpec, error) {
+	defsDir, err := modelDefsPath()
+	if err != nil {
+		return nil, err
+	}
 	specs, err := loadTypeSpecs(defsDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "buildAllTypes: loading resource structs from %s: %v\n", defsDir, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("loading resource structs from %s: %w", defsDir, err)
 	}
 	// Order generated output by an explicit, author-controlled sequence (independent of the
 	// loader's declaration/dir order) so the generated files have a stable layout.
 	specs = orderTypes(specs, canonicalTypeOrder)
 	for i := range specs {
-		enrichDomainMeta(&specs[i])
-		enrichWireMeta(&specs[i])
+		if err := enrichDomainMeta(&specs[i]); err != nil {
+			return nil, err
+		}
+		if err := enrichWireMeta(&specs[i]); err != nil {
+			return nil, err
+		}
 	}
-	return specs
+	return specs, nil
 }
 
 // canonicalTypeOrder is the order in which resource types appear in generated output.

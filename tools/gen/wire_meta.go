@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 var skipConvertByName = map[string]bool{
 	"Context":           true,
@@ -170,7 +173,7 @@ var convertMissingIDByName = map[string]string{
 	"FindingType": "finding type event missing findingTypeId",
 }
 
-func enrichWireMeta(spec *TypeSpec) {
+func enrichWireMeta(spec *TypeSpec) error {
 	spec.SkipConvert = skipConvertByName[spec.Name]
 	spec.SkipAuthz = skipAuthzByName[spec.Name]
 
@@ -187,9 +190,16 @@ func enrichWireMeta(spec *TypeSpec) {
 		spec.ToDtoFuncName = "APIToDto"
 	}
 
-	if spec.WireKind != "" {
-		spec.EventsResource = wireKindToEventsResource[spec.WireKind]
+	// Every resource type must have an events resource mapping; a missing entry would
+	// silently drop the type from replication, so fail loud instead.
+	if spec.WireKind == "" {
+		return fmt.Errorf("enrichWireMeta: %s has no WireKind", spec.Name)
 	}
+	ev, ok := wireKindToEventsResource[spec.WireKind]
+	if !ok {
+		return fmt.Errorf("enrichWireMeta: %s (wireKind %q) missing from wireKindToEventsResource", spec.Name, spec.WireKind)
+	}
+	spec.EventsResource = ev
 
 	if v, ok := wireIDFieldByName[spec.Name]; ok {
 		spec.WireIDField = v
@@ -251,4 +261,5 @@ func enrichWireMeta(spec *TypeSpec) {
 	if v, ok := convertMissingIDByName[spec.Name]; ok {
 		spec.ConvertMissingIDMsg = v
 	}
+	return nil
 }
