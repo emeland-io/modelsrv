@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"flag"
 	"fmt"
 	"go/format"
 	"os"
@@ -83,6 +84,17 @@ func (s scalarField) Zero() string {
 }
 
 func main() {
+	mode := flag.String("mode", "code", "generation mode: \"code\" (Go domain/DTO/convert code, default) or \"spec\" (regenerate the OpenAPI spec's migrated schema blocks in place, run before oapi-codegen)")
+	flag.Parse()
+
+	if *mode == "spec" {
+		if err := runSpecMerge(); err != nil {
+			fmt.Fprintf(os.Stderr, "spec merge: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	funcMap := buildTemplateFuncMap()
 
 	tmpl := template.Must(template.New("type").Funcs(funcMap).Parse(typeTemplate))

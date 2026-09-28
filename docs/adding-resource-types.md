@@ -6,6 +6,8 @@ This document should help you when adding an additional resource type.
 
 **Ordering constraint:** regenerate OpenAPI (`go generate ./internal/oapi/...` or `make gen`) **before** running `tools/gen` (`make generate` / `go generate ./pkg/model/...`). The `tools/gen` templates reference oapi-codegen DTO type names that must already exist.
 
+**Spec generation (in progress):** for resource types migrated to annotated Go structs (see [adr/single-source-resource-fields.md](adr/single-source-resource-fields.md)), their OpenAPI schema block is generated from the struct by `make gen-spec` (run automatically at the start of `make gen`, before oapi-codegen). Today only migrated types are regenerated in place and the output is byte-identical to the committed spec; other types are still hand-authored in the YAML as described below.
+
 ## Adding a scalar field to an existing type
 
 Adding a plain scalar field (`string`, `bool`, or a numeric type like `int`/`int64`/`float64`) to a resource type that is **not** in `skipConvertByName` needs only two edits:

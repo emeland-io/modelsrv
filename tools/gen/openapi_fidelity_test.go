@@ -97,21 +97,6 @@ func wireProperty(fieldName string) string {
 	return string(append([]rune{first}, r[1:]...))
 }
 
-func openapiScalarType(goType string) string {
-	switch goType {
-	case "string":
-		return "string"
-	case "bool":
-		return "boolean"
-	case "int", "int32", "int64", "uint", "uint32", "uint64":
-		return "integer"
-	case "float32", "float64":
-		return "number"
-	default:
-		return ""
-	}
-}
-
 func TestOpenAPIFidelity_ScalarFieldsPresent(t *testing.T) {
 	schemas := loadOpenAPISchemas(t)
 

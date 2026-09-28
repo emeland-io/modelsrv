@@ -112,15 +112,22 @@ Risks and mitigations:
 1. **Fidelity harness (done).** `tools/gen/openapi_fidelity_test.go` asserts specs.go scalar
    fields match the committed OpenAPI schemas (name/type/optionality). Guards drift during
    migration.
-2. **Struct loader.** Add the `go/ast`-based loader and marker vocabulary; parse a pilot
-   type into a `TypeSpec` and assert it equals the current hand-written `TypeSpec` for that
-   type. No deletion yet.
-3. **Schema emitter + base split.** Extract `base.yaml`; generate resource schema fragments;
-   merge to a file byte-identical to today's committed YAML (golden test). No field moves.
-4. **Flip the pipeline.** Point oapi-codegen at the generated file; rework Makefile /
-   `go:generate` ordering; update `docs/adding-resource-types.md`.
-5. **Migrate all types** to structs, remove the `[]TypeSpec` literal and the metadata maps,
-   under the golden tests.
+2. **Struct loader (done).** `tools/gen/loader.go` parses annotated structs into
+   pre-enrichment `TypeSpec` values; `loader_test.go` proves the loaded+enriched pilot
+   (NodeType) equals the hand-written `allTypes` entry.
+3. **Schema emitter (done).** `tools/gen/schema_emit.go` renders a resource's OpenAPI schema
+   from its struct; golden tests prove the emitted NodeType block matches the committed spec
+   byte-for-byte.
+4. **Flip the pipeline (done, incremental).** Instead of a big-bang `base.yaml` extraction,
+   `tools/gen -mode=spec` (`schema_merge.go`) rewrites *only* the migrated types' schema
+   blocks in the OpenAPI file in place and passes everything else through verbatim, then
+   oapi-codegen runs on the result. `make gen` runs `gen-spec` first. While migrated schemas
+   are byte-identical to the committed ones this is a no-op diff; a test asserts the merge
+   reproduces the committed spec exactly. The full `base.yaml` split is unnecessary under
+   this pass-through merge and is dropped.
+5. **Migrate all types** to annotated structs (moving `tools/gen/testdata/model_defs.go`
+   content into a canonical package as each type is migrated), then remove the `[]TypeSpec`
+   literal and the metadata maps, under the golden/fidelity tests.
 
 ## Alternatives considered
 
