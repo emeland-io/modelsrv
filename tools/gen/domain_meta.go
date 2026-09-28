@@ -1,10 +1,68 @@
 package main
 
-func init() {
-	for i := range allTypes {
-		enrichDomainMeta(&allTypes[i])
-		enrichWireMeta(&allTypes[i])
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+)
+
+// allTypes is the resource metadata that drives all generation. It is built at package init
+// from the annotated structs in testdata/model_defs.go (parsed by the loader) plus the
+// typeWiring supplement, then enriched. TestLoaderMatchesHandWritten asserts this equals the
+// retained handwrittenTypes oracle.
+var allTypes = buildAllTypes()
+
+// buildAllTypes loads the annotated resource structs, applies wiring, and enriches them.
+func buildAllTypes() []TypeSpec {
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		fmt.Fprintln(os.Stderr, "buildAllTypes: runtime.Caller failed")
+		os.Exit(1)
 	}
+	defsDir := filepath.Join(filepath.Dir(thisFile), modelDefsDir)
+	specs, err := loadTypeSpecs(defsDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "buildAllTypes: loading resource structs from %s: %v\n", defsDir, err)
+		os.Exit(1)
+	}
+	// Preserve the hand-written declaration order (loader order is map/dir dependent).
+	specs = sortTypesByHandwrittenOrder(specs)
+	for i := range specs {
+		enrichDomainMeta(&specs[i])
+		enrichWireMeta(&specs[i])
+	}
+	return specs
+}
+
+// sortTypesByHandwrittenOrder orders loaded specs to match the handwrittenTypes order so
+// generated output (which iterates allTypes) is byte-identical to the pre-refactor output.
+func sortTypesByHandwrittenOrder(specs []TypeSpec) []TypeSpec {
+	order := map[string]int{}
+	for i, s := range handwrittenTypes {
+		order[s.Name] = i
+	}
+	byName := map[string]TypeSpec{}
+	for _, s := range specs {
+		byName[s.Name] = s
+	}
+	out := make([]TypeSpec, 0, len(specs))
+	// First, emit in hand-written order.
+	for _, s := range handwrittenTypes {
+		if v, ok := byName[s.Name]; ok {
+			out = append(out, v)
+			delete(byName, s.Name)
+		}
+	}
+	// Append any loaded types not present in the oracle (should be none during migration).
+	for _, s := range specs {
+		if _, ok := byName[s.Name]; ok {
+			out = append(out, s)
+			delete(byName, s.Name)
+		}
+	}
+	_ = order
+	return out
 }
 
 var dirDomainMeta = map[string]struct {

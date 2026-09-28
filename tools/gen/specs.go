@@ -1,6 +1,9 @@
 package main
-
-var allTypes = []TypeSpec{
+// handwrittenTypes is the original hand-authored resource metadata. It is retained ONLY as
+// the oracle for TestLoaderMatchesHandWritten: the generator itself now builds allTypes from
+// the annotated structs (see loader.go / wiring.go). Once the loader has proven stable this
+// literal can be deleted. Do not consume handwrittenTypes in generation.
+var handwrittenTypes = []TypeSpec{
 	{
 		Name:            "ContextType",
 		Dir:             "context",

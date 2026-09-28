@@ -85,6 +85,7 @@ func loadTypeSpecs(dir string) ([]TypeSpec, error) {
 		if err != nil {
 			return nil, fmt.Errorf("type %s: %w", rsr.Name, err)
 		}
+		applyWiring(&spec)
 		specs = append(specs, spec)
 	}
 	return specs, nil
@@ -152,21 +153,25 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 
 	// Convention-derived identity fields (match the hand-written entries).
 	spec.EventType = name
+	if et := markers["event"]; et != "" {
+		spec.EventType = et // e.g. ApiInstance -> APIInstance
+	}
 	spec.WireKind = name
 	spec.OapiTypeName = name
 	spec.NotFoundErr = "Err" + name + "NotFound"
 	spec.NotFoundSentinel = "common.Err" + name + "NotFound"
 
+	if a := markers["handleralias"]; a != "" {
+		spec.HandlerPkgAlias = a
+	}
+	if d := markers["handlerdelete"]; d != "" {
+		spec.HandlerDeleteName = d
+	}
+
 	_, spec.HasHandler = markers["handler"]
 
-	if _, ok := markers["clientTest"]; ok {
-		spec.HasClientTest = true
-		spec.GenClientMethods = true
-		plural := pluralize(name)
-		spec.ClientListMethod = "Get" + plural
-		spec.ClientGetByIdMethod = "Get" + name + "ById"
-		spec.ClientListOapiMethod = "GetLandscape" + plural
-		spec.ClientGetByIdOapiMethod = "GetLandscape" + plural + name + "Id"
+	if listPath := markers["list"]; listPath != "" {
+		spec.RestListPath = listPath
 	}
 
 	// Fields, id and name.
@@ -187,9 +192,15 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 			roleSet[strings.TrimSpace(r)] = true
 		}
 
-		// The id field sets IDField and is not emitted as a Field accessor.
+		// The id field sets IDField and is not emitted as a Field accessor. When a wire
+		// name override is present (e.g. acronym ids like APIID -> apiId), the IDField
+		// spelling is the PascalCase of that wire name (ApiId).
 		if roleSet["id"] {
-			spec.IDField = normalizeIDName(fieldName)
+			if wire := roleValue(roleSet, "wire="); wire != "" {
+				spec.IDField = upperFirst(wire)
+			} else {
+				spec.IDField = normalizeIDName(fieldName)
+			}
 			continue
 		}
 
@@ -212,6 +223,20 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 		}
 	}
 	spec.ExtraImports = extraImports
+
+	if _, ok := markers["client"]; ok {
+		spec.HasClientTest = true
+		spec.GenClientMethods = true
+		// Client wrapper method names use the domain type name with an irregular-aware
+		// plural (e.g. API -> GetAPIs, Identity -> GetIdentities).
+		spec.ClientListMethod = "Get" + clientPlural(name)
+		spec.ClientGetByIdMethod = "Get" + name + "ById"
+		// oapi-codegen method names derive from the REST path's last segment (e.g.
+		// /landscape/apis -> GetLandscapeApis). Requires the list= marker.
+		seg := pascalFromPath(spec.RestListPath)
+		spec.ClientListOapiMethod = "GetLandscape" + seg
+		spec.ClientGetByIdOapiMethod = "GetLandscape" + seg + spec.IDField
+	}
 
 	if spec.NameField == "" {
 		spec.NameField = "DisplayName"
@@ -242,6 +267,29 @@ func buildVocabTestSetup(name, dir string) string {
 		varName, dir, name, name, varName, name, name, varName)
 }
 
+// roleValue returns the value of the first role in the set with the given prefix
+// (e.g. "wire="), or "".
+func roleValue(roles map[string]bool, prefix string) string {
+	for r := range roles {
+		if strings.HasPrefix(r, prefix) {
+			return strings.TrimPrefix(r, prefix)
+		}
+	}
+	return ""
+}
+
+// upperFirst upper-cases the first rune (apiId -> ApiId).
+func upperFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	if r[0] >= 'a' && r[0] <= 'z' {
+		r[0] = r[0] - 'a' + 'A'
+	}
+	return string(r)
+}
+
 // normalizeIDName maps a Go id field name to the TypeSpec IDField spelling: a trailing
 // "ID" acronym becomes "Id" (NodeTypeID -> NodeTypeId), matching oapi/domain naming.
 func normalizeIDName(fieldName string) string {
@@ -260,6 +308,40 @@ func pluralize(name string) string {
 		return strings.TrimSuffix(name, "y") + "ies"
 	}
 	return name + "s"
+}
+
+// clientPlural pluralizes a domain type name for client wrapper method names, preserving
+// acronym casing (API -> APIs, not Apis).
+func clientPlural(name string) string {
+	return pluralize(name)
+}
+
+// pascalFromPath converts the last segment of a REST list path into the PascalCase token
+// oapi-codegen uses in its method names, e.g. "/landscape/apis" -> "Apis",
+// "/landscape/system-instances" -> "SystemInstances", "/landscape/nodeTypes" -> "NodeTypes".
+func pascalFromPath(path string) string {
+	if path == "" {
+		return ""
+	}
+	seg := path
+	if i := strings.LastIndex(path, "/"); i >= 0 {
+		seg = path[i+1:]
+	}
+	// Split on '-' (kebab) and upper-case the first rune of each part; other runes are
+	// preserved (so camelCase segments like "nodeTypes" become "NodeTypes").
+	parts := strings.Split(seg, "-")
+	var b strings.Builder
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		r := []rune(p)
+		if r[0] >= 'a' && r[0] <= 'z' {
+			r[0] = r[0] - 'a' + 'A'
+		}
+		b.WriteString(string(r))
+	}
+	return b.String()
 }
 
 // fieldTag returns the reflect.StructTag for an ast field (empty when absent).

@@ -128,10 +128,20 @@ Risks and mitigations:
 5. **Migrate all types (schemas done).** All 33 resource schemas are generated from
    annotated structs in `tools/gen/testdata/model_defs.go`, each proven byte-for-byte by
    `TestSchemaEmitter_Golden`; `make gen` reports "33 migrated schema(s)" and leaves
-   generated code unchanged. Remaining: reproduce the full Go-generation `TypeSpec` from the
-   structs (`ParentLink`/`TypeRefLink`/`RefByRefs`/`CustomMethods`/`TestSetup`/`ExtraImports`),
-   move `model_defs.go` to a canonical package, then delete the `[]TypeSpec` literal and the
-   `wire_meta.go`/`domain_meta.go` maps.
+   generated code unchanged.
+6. **Drive Go generation from the structs (Path B).** The gap report
+   (`TestLoaderGapReport`) showed the `[]TypeSpec` literal is not pure data: much of it is
+   freeform Go (per-type `TestSetup` code, `CustomMethods` signatures, and relational
+   `TypeRefLink`/`ParentLink`/`RefByRefs` wiring). Rather than cram Go code and a multi-field
+   ref DSL into string tags (Path A), the **structs own the data and schema** (id, name, dir,
+   description, fields, client/handler wiring, imports, required) while a **slim, type-checked
+   Go supplement** (`typeWiring`, keyed by type name) owns the freeform wiring. The loader
+   builds each `TypeSpec` from the struct, merges `typeWiring[name]` when present, then runs
+   the existing enrichment. This deletes the `wire_meta.go`/`domain_meta.go` lookup maps and
+   the repetitive field/metadata portions of the literal; only the ~15 types with
+   refs/custom-methods/bespoke setup keep a wiring entry. A simple field still lives in one
+   place (the struct). Guarded by an equality test asserting the loader-built `allTypes`
+   equals the previous hand-written set.
 
 ## Fidelity: byte-identical now, semantic later
 
