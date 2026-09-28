@@ -125,9 +125,29 @@ Risks and mitigations:
    are byte-identical to the committed ones this is a no-op diff; a test asserts the merge
    reproduces the committed spec exactly. The full `base.yaml` split is unnecessary under
    this pass-through merge and is dropped.
-5. **Migrate all types** to annotated structs (moving `tools/gen/testdata/model_defs.go`
-   content into a canonical package as each type is migrated), then remove the `[]TypeSpec`
-   literal and the metadata maps, under the golden/fidelity tests.
+5. **Migrate all types (schemas done).** All 33 resource schemas are generated from
+   annotated structs in `tools/gen/testdata/model_defs.go`, each proven byte-for-byte by
+   `TestSchemaEmitter_Golden`; `make gen` reports "33 migrated schema(s)" and leaves
+   generated code unchanged. Remaining: reproduce the full Go-generation `TypeSpec` from the
+   structs (`ParentLink`/`TypeRefLink`/`RefByRefs`/`CustomMethods`/`TestSetup`/`ExtraImports`),
+   move `model_defs.go` to a canonical package, then delete the `[]TypeSpec` literal and the
+   `wire_meta.go`/`domain_meta.go` maps.
+
+## Fidelity: byte-identical now, semantic later
+
+The emitter currently reproduces the committed YAML **byte-for-byte** (matching `|` vs `>`
+block scalars, value-aware single-quoting, etc.). This was chosen deliberately for the
+migration: it makes the safety check a trivial, unarguable `git diff` (empty) that `make gen`
+enforces per type.
+
+Byte-identity is stricter than necessary — oapi-codegen only cares about the parsed data
+model, so `>`/`|`, quoting, and trailing whitespace are all semantically equivalent. Once the
+migration is complete and reviewed, a clean follow-up is to relax to **semantic equality**:
+drop `descstyle`, the `|`/`>` distinction, `quotedesc`/value-aware quoting (always quote, or
+emit via a YAML library), accept a one-time full-spec reformat, and change the fidelity test
+from `diff` to a parsed-model comparison (kin-openapi is already a dependency). That removes
+~40 lines of formatting special-cases. Deferred to avoid changing the safety property
+mid-migration.
 
 ## Alternatives considered
 

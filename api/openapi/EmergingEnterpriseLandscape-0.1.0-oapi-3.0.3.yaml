@@ -1501,7 +1501,7 @@ components:
         parent:
           type: string
           description: The UUID of the parent context, if applicable. This field is optional and may be omitted if the context has no parent. It establishes a hierarchical relationship between contexts.
-          format: uuid  
+          format: uuid
         annotations:
           type: array
           description: A set of key-value pairs for storing additional metadata about the context.

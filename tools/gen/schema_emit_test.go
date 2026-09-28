@@ -29,16 +29,21 @@ func readCommittedSpec(t *testing.T) string {
 
 func loadNodeTypeSchema(t *testing.T) resourceSchema {
 	t.Helper()
+	return loadSchemaByName(t, "NodeType")
+}
+
+func loadSchemaByName(t *testing.T, name string) resourceSchema {
+	t.Helper()
 	schemas, err := loadResourceSchemas("testdata")
 	if err != nil {
 		t.Fatalf("loadResourceSchemas: %v", err)
 	}
 	for _, s := range schemas {
-		if s.Name == "NodeType" {
+		if s.Name == name {
 			return s
 		}
 	}
-	t.Fatal("no NodeType schema loaded")
+	t.Fatalf("no %s schema loaded", name)
 	return resourceSchema{}
 }
 
@@ -53,6 +58,35 @@ func TestSchemaEmitter_NodeTypeGolden(t *testing.T) {
 
 	if got != want {
 		t.Errorf("emitted NodeType schema does not match committed spec.\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	}
+}
+
+// TestSchemaEmitter_Golden proves each migrated type's emitted schema block matches the
+// committed spec byte-for-byte. System exercises $ref (version), a required bool
+// (abstract), a non-id/name uuid ref (parent), a no-description field (displayName), and
+// an id that is not in the required list.
+func TestSchemaEmitter_Golden(t *testing.T) {
+	spec := readCommittedSpec(t)
+	for _, name := range []string{
+		"NodeType", "System", "API", "Component",
+		"ContextType", "Node", "SystemInstance", "ApiInstance",
+		"OrgUnit", "Group", "Identity", "Parameter",
+		"FindingType", "FilterRule", "MergeRule", "Product",
+		"ArtifactInstance", "Capability", "ComponentInstance", "CapacityResourceType",
+		"Finding", "PermissionSpec", "RoleSpec", "Permission", "Role", "Binding", "Capacity",
+		"Metric", "Threshold", "MetricInstance", "MetricValue",
+		"Artifact", "Context",
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := emitSchema(loadSchemaByName(t, name), 4)
+			want, ok := schemaBlock(spec, name, 4)
+			if !ok {
+				t.Fatalf("%s block not found in committed spec", name)
+			}
+			if got != want {
+				t.Errorf("emitted %s schema does not match committed spec.\n--- got ---\n%s\n--- want ---\n%s", name, got, want)
+			}
+		})
 	}
 }
 
