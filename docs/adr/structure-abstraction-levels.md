@@ -126,7 +126,7 @@ surface. It also weakens the schema's ability to state that only level 2 may own
 ### Option B — a third distinct type with a neutral noun (chosen)
 
 `System` and `Component` stay exactly as they are; one new type and its instance are added below
-`Component` following the 18-step checklist in [adding-resource-types.md](../adding-resource-types.md).
+`Component` following the workflow in [adding-resource-types.md](../adding-resource-types.md).
 Nothing breaks, validation stays per type, and the "only level 2 owns APIs" rule
 stays expressible in the schema. The cost is that `Component` permanently denotes the deployable
 tier, so the C4 reader still has to hold a translation in their head — mitigated, but not removed, by
@@ -151,9 +151,9 @@ labels and an untyped `DependsOn` all survive a move to a recursive type.
 - Level 3 gains a real source and stops returning 404; level 4 (code) stays out of scope.
 - `container.puml` and `component.puml` keep working as aliases, so the path change in decision 1 is
   not breaking for existing readers.
-- Adding `Part` and `PartInstance` touches OpenAPI, `tools/gen/specs.go`, `pkg/events`,
-  `pkg/ingress`, `pkg/model/structure.go`, authz wiring and replication — two types, so the
-  18-step checklist runs twice. Codegen is idempotent, so the regen step is safe to repeat.
+- Adding `Part` and `PartInstance` touches OpenAPI, `tools/gen/modeldefs` (+ `wiring.go`),
+  `pkg/events`, `pkg/ingress`, `pkg/model/structure.go`, authz wiring and replication — two
+  types. Codegen is idempotent, so the regen step is safe to repeat.
 - `Part` is a leaf by construction, so the model keeps three structural tiers and cannot express a
   fourth without another ADR. That is deliberate: level 4 is code, and code structure changes on
   every commit.
