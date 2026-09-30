@@ -1,5 +1,5 @@
 # Publish the OpenAPI spec and rendered Markdown docs to emeland-io/openapi
-# on every plain semver tag (vX.Y.Z). Prerelease tags such as v0.9.3-rc3 are ignored.
+# on every plain semver tag (vX.Y.Z) and release-candidate tag (vX.Y.Z-rcN).
 #
 # Required secret (modelsrv repository):
 #   OPENAPI_REPO_TOKEN — fine-grained PAT scoped to emeland-io/openapi with
@@ -15,10 +15,11 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+"
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing tag to (re)publish (e.g. v0.11.0)
+        description: Existing tag to (re)publish (e.g. v0.11.0 or v0.11.0-rc1)
         required: true
         type: string
 
@@ -34,22 +35,18 @@ jobs:
     steps:
       - name: Resolve tag
         id: tag
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ inputs.tag }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
           else
             TAG="${GITHUB_REF_NAME}"
           fi
-          case "$TAG" in
-            v[0-9]*.[0-9]*.[0-9]*) ;;
-            *)
-              echo "Refusing non-semver tag: $TAG" >&2
-              exit 1
-              ;;
-          esac
-          # Reject prerelease suffixes that slipped through workflow_dispatch.
-          if [[ "$TAG" =~ - ]]; then
-            echo "Refusing prerelease tag: $TAG" >&2
+          # vX.Y.Z or vX.Y.Z-rcN. Anchored so a manual run cannot inject shell.
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
+            echo "Refusing tag (want vX.Y.Z or vX.Y.Z-rcN): $TAG" >&2
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"

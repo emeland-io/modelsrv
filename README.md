@@ -199,7 +199,7 @@ Please make sure that all tests are running before you create a merge request.
 
 ## Publishing OpenAPI docs
 
-On every plain semver tag (`vX.Y.Z`), the
+On every plain semver tag (`vX.Y.Z`) and release-candidate tag (`vX.Y.Z-rcN`, such as `v0.47.11-rc3`), the
 [Publish OpenAPI spec and docs](.github/workflows/openapi-publish.yml) workflow renders the
 spec under `api/openapi/` to Markdown (`make api-docs`) and pushes it to
 [emeland-io/openapi](https://github.com/emeland-io/openapi) at `modelsrv/<tag>/`, mirrored to
