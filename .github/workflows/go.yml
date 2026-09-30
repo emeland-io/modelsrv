@@ -25,7 +25,14 @@ jobs:
       run: make tools
 
     - name: Generate
-      run: go generate -v ./...
+      run: make gen generate
+
+    - name: Verify generated files are up to date
+      run: |
+        if ! git diff --exit-code; then
+          echo "::error::Generated files are out of date. Run 'make gen generate' and commit the result."
+          exit 1
+        fi
 
     - name: Format
       run: go fmt ./...

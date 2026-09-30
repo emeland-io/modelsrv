@@ -38,13 +38,22 @@ func {{.ToDtoFuncName}}(v {{.DomainPkgAlias}}.{{.DomainTypeName}}) {{.OapiWireTy
 		{{.WireIDField}}:  uuidToOpenAPI(v.{{.WireDomainIDGetter}}()),
 		DisplayName: v.GetDisplayName(),
 		Annotations: AnnotationsToDto(v.GetAnnotations()),
-{{- range .ExtraStringFields}}
-		{{.}}: v.Get{{.}}(),
+{{- range .ExtraScalarFields}}
+{{- if not .Optional}}
+		{{.Name}}: v.Get{{.Name}}(),
+{{- end}}
 {{- end}}
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc
 	}
+{{- range .ExtraScalarFields}}
+{{- if .Optional}}
+	if val := v.Get{{.Name}}(); val != {{.Zero}} {
+		out.{{.Name}} = &val
+	}
+{{- end}}
+{{- end}}
 	return out
 {{- end}}
 }

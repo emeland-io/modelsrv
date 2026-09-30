@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"flag"
 	"fmt"
 	"go/format"
 	"os"
@@ -55,10 +56,45 @@ type convertGenSpec struct {
 	HasHash             bool
 	HasAnnotations      bool
 	IamStyleDescription bool
-	ExtraStringFields   []string
+	// ExtraScalarFields are scalar fields (string/int/bool) beyond the well-known
+	// DisplayName/Summary/Description/Hash set. The convert generator emits
+	// FromDto/ToDto code for each, honoring Optional (pointer DTO) fields.
+	ExtraScalarFields []scalarField
+}
+
+// scalarField describes a plain scalar field for the convert templates.
+type scalarField struct {
+	Name     string // Go field / accessor name (e.g. "Owner")
+	GoType   string // domain accessor type (e.g. "string", "int", "bool")
+	Optional bool   // when true, the wire DTO field is a pointer and needs nil-safe handling
+}
+
+// Zero returns the Go zero-value literal for the field's type, used by the ToDto
+// template to decide whether an optional field should be emitted.
+func (s scalarField) Zero() string {
+	switch s.GoType {
+	case "string":
+		return `""`
+	case "bool":
+		return "false"
+	default:
+		// numeric types
+		return "0"
+	}
 }
 
 func main() {
+	mode := flag.String("mode", "code", "generation mode: \"code\" (Go domain/DTO/convert code, default) or \"spec\" (regenerate the OpenAPI spec's migrated schema blocks in place, run before oapi-codegen)")
+	flag.Parse()
+
+	if *mode == "spec" {
+		if err := runSpecMerge(); err != nil {
+			fmt.Fprintf(os.Stderr, "spec merge: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+
 	funcMap := buildTemplateFuncMap()
 
 	tmpl := template.Must(template.New("type").Funcs(funcMap).Parse(typeTemplate))
@@ -290,8 +326,12 @@ func buildConvertSpecs() convertGenData {
 			case "Annotations":
 				cgs.HasAnnotations = true
 			default:
-				if f.Type == "string" && !handledStringFields[f.Name] {
-					cgs.ExtraStringFields = append(cgs.ExtraStringFields, f.Name)
+				if isScalarConvertType(f.Type) && !handledStringFields[f.Name] {
+					cgs.ExtraScalarFields = append(cgs.ExtraScalarFields, scalarField{
+						Name:     f.Name,
+						GoType:   f.Type,
+						Optional: f.Optional,
+					})
 				}
 			}
 		}
@@ -301,6 +341,23 @@ func buildConvertSpecs() convertGenData {
 		specs = append(specs, cgs)
 	}
 	return convertGenData{Specs: specs}
+}
+
+// isScalarConvertType reports whether a domain field type is a plain scalar that the
+// convert generator can map to/from a wire DTO field automatically. Ref types, slices,
+// maps, pointers and named struct types are excluded (they need hand-written converters
+// or a SkipConvert type).
+func isScalarConvertType(goType string) bool {
+	switch goType {
+	case "string",
+		"bool",
+		"int", "int32", "int64",
+		"uint", "uint32", "uint64",
+		"float32", "float64":
+		return true
+	default:
+		return false
+	}
 }
 
 func formatImportLines(base map[string]string, specs []convertGenSpec) []string {

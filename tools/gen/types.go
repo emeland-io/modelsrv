@@ -8,6 +8,11 @@ type Field struct {
 	MapKey         string
 	HasAnnotations bool
 	SkipAccessor   bool
+	// Optional marks a scalar field whose OpenAPI DTO property is optional, i.e. the
+	// generated wire type carries a pointer (e.g. *string). The convert generator emits
+	// nil-safe FromDto/ToDto code for such fields. The domain accessor type stays the
+	// value type (e.g. string); Optional only affects the wire<->domain conversion.
+	Optional bool
 }
 
 type ParentLinkSpec struct {

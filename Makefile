@@ -29,8 +29,12 @@ generate: $(MOCKGEN)
 	GOTOOLCHAIN=$(GOVERSION) go generate ./...
 
 .PHONY: gen
-gen: ## Regenerate OpenAPI server, client, and pkg/client models (same packages as go:generate directives).
+gen: gen-spec ## Regenerate OpenAPI server, client, and pkg/client models (same packages as go:generate directives).
 	GOTOOLCHAIN=$(GOVERSION) go generate ./internal/oapi/... ./pkg/client/...
+
+.PHONY: gen-spec
+gen-spec: ## Regenerate migrated resource schema blocks in the OpenAPI spec (runs before oapi-codegen). Byte-identical while migrated schemas match; see docs/adr/single-source-resource-fields.md.
+	GOTOOLCHAIN=$(GOVERSION) go run ./tools/gen -mode=spec
 
 .PHONY: test
 test: generate fmt vet ## Run tests.

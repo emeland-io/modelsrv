@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 var skipConvertByName = map[string]bool{
 	"Context":           true,
@@ -79,41 +82,6 @@ var wireKindToEventsResource = map[string]string{
 	"MetricValue":          "MetricValueResource",
 }
 
-var restListPathByName = map[string]string{
-	"ContextType":          "/landscape/contextTypes",
-	"Context":              "/landscape/contexts",
-	"System":               "/landscape/systems",
-	"SystemInstance":       "/landscape/system-instances",
-	"API":                  "/landscape/apis",
-	"ApiInstance":          "/landscape/api-instances",
-	"Component":            "/landscape/components",
-	"ComponentInstance":    "/landscape/component-instances",
-	"NodeType":             "/landscape/nodeTypes",
-	"Node":                 "/landscape/nodes",
-	"FindingType":          "/landscape/findingTypes",
-	"Finding":              "/landscape/findings",
-	"OrgUnit":              "/landscape/orgUnits",
-	"Group":                "/landscape/groups",
-	"Identity":             "/landscape/identities",
-	"Product":              "/landscape/products",
-	"Artifact":             "/landscape/artifacts",
-	"ArtifactInstance":     "/landscape/artifactInstances",
-	"PermissionSpec":       "/landscape/permissionSpecs",
-	"RoleSpec":             "/landscape/roleSpecs",
-	"Permission":           "/landscape/permissions",
-	"Role":                 "/landscape/roles",
-	"Binding":              "/landscape/bindings",
-	"FilterRule":           "/landscape/filter-rules",
-	"MergeRule":            "/landscape/merge-rules",
-	"Capability":           "/landscape/capabilities",
-	"Parameter":            "/landscape/parameters",
-	"CapacityResourceType": "/landscape/capacityResourceTypes",
-	"Capacity":             "/landscape/capacities",
-	"Metric":               "/landscape/metrics",
-	"Threshold":            "/landscape/thresholds",
-	"MetricInstance":       "/landscape/metricInstances",
-	"MetricValue":          "/landscape/metricValues",
-}
 
 var serverRequestIDByName = map[string]string{
 	"SystemInstance":    "SystemInstanceId",
@@ -205,7 +173,7 @@ var convertMissingIDByName = map[string]string{
 	"FindingType": "finding type event missing findingTypeId",
 }
 
-func enrichWireMeta(spec *TypeSpec) {
+func enrichWireMeta(spec *TypeSpec) error {
 	spec.SkipConvert = skipConvertByName[spec.Name]
 	spec.SkipAuthz = skipAuthzByName[spec.Name]
 
@@ -222,9 +190,16 @@ func enrichWireMeta(spec *TypeSpec) {
 		spec.ToDtoFuncName = "APIToDto"
 	}
 
-	if spec.WireKind != "" {
-		spec.EventsResource = wireKindToEventsResource[spec.WireKind]
+	// Every resource type must have an events resource mapping; a missing entry would
+	// silently drop the type from replication, so fail loud instead.
+	if spec.WireKind == "" {
+		return fmt.Errorf("enrichWireMeta: %s has no WireKind", spec.Name)
 	}
+	ev, ok := wireKindToEventsResource[spec.WireKind]
+	if !ok {
+		return fmt.Errorf("enrichWireMeta: %s (wireKind %q) missing from wireKindToEventsResource", spec.Name, spec.WireKind)
+	}
+	spec.EventsResource = ev
 
 	if v, ok := wireIDFieldByName[spec.Name]; ok {
 		spec.WireIDField = v
@@ -264,9 +239,7 @@ func enrichWireMeta(spec *TypeSpec) {
 		}
 	}
 
-	if v, ok := restListPathByName[spec.Name]; ok {
-		spec.RestListPath = v
-	}
+	// RestListPath is set by the loader from the +emeland:list= marker.
 	if v, ok := serverRequestIDByName[spec.Name]; ok {
 		spec.ServerRequestIDField = v
 	} else {
@@ -288,4 +261,5 @@ func enrichWireMeta(spec *TypeSpec) {
 	if v, ok := convertMissingIDByName[spec.Name]; ok {
 		spec.ConvertMissingIDMsg = v
 	}
+	return nil
 }
