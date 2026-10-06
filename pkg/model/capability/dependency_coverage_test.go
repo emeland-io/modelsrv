@@ -48,6 +48,7 @@ func TestCheckDependencyCoverage_FailMissingOffer(t *testing.T) {
 	require.Error(t, err)
 	var cov *mdlcapability.DependencyCoverageError
 	require.ErrorAs(t, err, &cov)
+	require.NotNil(t, cov)
 	assert.Equal(t, []uuid.UUID{reqID}, cov.Missing)
 }
 
