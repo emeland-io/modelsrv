@@ -26,6 +26,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -328,6 +329,13 @@ type Model interface {
 	MergeRuleModel
 	CapabilityModel
 	ParameterModel
+	ValidValueModel
+	CapabilityVersionModel
+	VariantModel
+	DependencyModel
+	OrderModel
+	OrderItemModel
+	BoundValueModel
 	CapacityResourceTypeModel
 	CapacityModel
 	MetricModel
@@ -393,6 +401,13 @@ type modelData struct {
 
 	capabilitiesByUUID          map[uuid.UUID]mdlcapability.Capability
 	parametersByUUID            map[uuid.UUID]mdlparameter.Parameter
+	validValuesByUUID           map[uuid.UUID]mdlparameter.ValidValue
+	capabilityVersionsByUUID    map[uuid.UUID]mdlcapability.CapabilityVersion
+	variantsByUUID              map[uuid.UUID]mdlcapability.Variant
+	dependenciesByUUID          map[uuid.UUID]mdlcapability.Dependency
+	ordersByUUID                map[uuid.UUID]mdlorder.Order
+	orderItemsByUUID            map[uuid.UUID]mdlorder.OrderItem
+	boundValuesByUUID           map[uuid.UUID]mdlorder.BoundValue
 	capacityResourceTypesByUUID map[uuid.UUID]mdlcap.CapacityResourceType
 	capacitiesByUUID            map[uuid.UUID]mdlcap.Capacity
 	capacitiesByTuple           map[capacityTupleKey]uuid.UUID
@@ -453,6 +468,13 @@ func NewModel(sink events.EventSink) (*modelData, error) {
 
 		capabilitiesByUUID:          make(map[uuid.UUID]mdlcapability.Capability),
 		parametersByUUID:            make(map[uuid.UUID]mdlparameter.Parameter),
+		validValuesByUUID:           make(map[uuid.UUID]mdlparameter.ValidValue),
+		capabilityVersionsByUUID:    make(map[uuid.UUID]mdlcapability.CapabilityVersion),
+		variantsByUUID:              make(map[uuid.UUID]mdlcapability.Variant),
+		dependenciesByUUID:          make(map[uuid.UUID]mdlcapability.Dependency),
+		ordersByUUID:                make(map[uuid.UUID]mdlorder.Order),
+		orderItemsByUUID:            make(map[uuid.UUID]mdlorder.OrderItem),
+		boundValuesByUUID:           make(map[uuid.UUID]mdlorder.BoundValue),
 		capacityResourceTypesByUUID: make(map[uuid.UUID]mdlcap.CapacityResourceType),
 		capacitiesByUUID:            make(map[uuid.UUID]mdlcap.Capacity),
 		capacitiesByTuple:           make(map[capacityTupleKey]uuid.UUID),
