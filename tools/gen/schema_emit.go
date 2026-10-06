@@ -18,15 +18,15 @@ type resourceSchema struct {
 }
 
 type schemaProp struct {
-	WireName    string // JSON property name, e.g. "nodeTypeId"
-	Description string // prose (field doc comment)
-	Type        string // OpenAPI scalar type: string/boolean/integer/number; "" for array/ref
-	Format      string // e.g. "uuid"; empty when none
-	IsArray     bool   // array property (items are either a $ref or a scalar)
-	ItemsRef    string // schema name referenced by array items (array-of-ref), e.g. "Annotation"
-	ItemsType   string // scalar type of array items (array-of-scalar), e.g. "string"
-	ItemsFormat string // format of array items (array-of-scalar), e.g. "uuid"
-	Ref         string // bare $ref to another schema (e.g. "Version"); no type/description emitted
+	WireName    string   // JSON property name, e.g. "nodeTypeId"
+	Description string   // prose (field doc comment)
+	Type        string   // OpenAPI scalar type: string/boolean/integer/number; "" for array/ref
+	Format      string   // e.g. "uuid"; empty when none
+	IsArray     bool     // array property (items are either a $ref or a scalar)
+	ItemsRef    string   // schema name referenced by array items (array-of-ref), e.g. "Annotation"
+	ItemsType   string   // scalar type of array items (array-of-scalar), e.g. "string"
+	ItemsFormat string   // format of array items (array-of-scalar), e.g. "uuid"
+	Ref         string   // bare $ref to another schema (e.g. "Version"); no type/description emitted
 	Enum        []string // enum values; when set, emitted before description and no `type` key
 	Pattern     string   // OpenAPI `pattern` (regex)
 	Example     string   // OpenAPI `example`
