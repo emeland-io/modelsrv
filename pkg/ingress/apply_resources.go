@@ -458,29 +458,56 @@ func applyCapability(spec map[string]any, m model.Model) error {
 	}
 	c := mdlcapability.NewCapability(id)
 	c.SetDisplayName(name)
-	if versions, ok := spec["versions"]; ok {
-		if vList, ok := versions.([]any); ok {
-			refs := make([]mdlcapability.CapabilityVersionRef, 0, len(vList))
-			for _, v := range vList {
-				if vMap, ok := v.(map[string]any); ok {
-					vid, err := parseUUIDField(vMap, "capabilityVersionId")
-					if err != nil {
-						return err
-					}
-					ver, err := parseVersionSpec(vMap["version"])
-					if err != nil {
-						return err
-					}
-					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid, Version: ver})
-				}
-			}
-			c.SetVersions(refs)
-		}
-	}
 	if err := applyAnnotations(c.GetAnnotations(), spec); err != nil {
 		return err
 	}
-	return m.AddCapability(c)
+	if err := m.AddCapability(c); err != nil {
+		return err
+	}
+	return applyCapabilityVersions(spec, id, name, m)
+}
+
+// applyCapabilityVersions turns the nested versions list emitted by
+// emelandctl into CapabilityVersion resources. Variants and dependencies in
+// that list are ignored.
+func applyCapabilityVersions(spec map[string]any, capabilityID uuid.UUID, capabilityName string, m model.Model) error {
+	versions, ok := spec["versions"]
+	if !ok {
+		return nil
+	}
+	vList, ok := versions.([]any)
+	if !ok {
+		return nil
+	}
+	for _, v := range vList {
+		vMap, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		vid, err := parseUUIDField(vMap, "capabilityVersionId")
+		if err != nil {
+			return err
+		}
+		ver, err := parseVersionSpec(vMap["version"])
+		if err != nil {
+			return err
+		}
+		cv := mdlcapability.NewCapabilityVersion(vid)
+		dn := ver.Version
+		if s, ok := stringField(vMap, "displayName"); ok && s != "" {
+			dn = s
+		}
+		if dn == "" {
+			dn = capabilityName
+		}
+		cv.SetDisplayName(dn)
+		cv.SetVersion(ver)
+		cv.SetCapabilityById(capabilityID)
+		if err := m.AddCapabilityVersion(cv); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func applyParameter(spec map[string]any, m model.Model) error {
@@ -494,19 +521,38 @@ func applyParameter(spec map[string]any, m model.Model) error {
 	}
 	param := mdlparameter.NewParameter(id)
 	param.SetDisplayName(name)
-	if values, ok := spec["values"]; ok {
-		if vList, ok := values.([]any); ok {
-			strs := make([]string, 0, len(vList))
-			for _, v := range vList {
-				if s, ok := v.(string); ok {
-					strs = append(strs, s)
-				}
-			}
-			param.SetValues(strs)
-		}
-	}
 	if err := applyAnnotations(param.GetAnnotations(), spec); err != nil {
 		return err
 	}
-	return m.AddParameter(param)
+	if err := m.AddParameter(param); err != nil {
+		return err
+	}
+	return applyParameterValues(spec, id, m)
+}
+
+// applyParameterValues turns a legacy string list into ValidValue resources.
+// Each id is derived from the parameter id and the value text so a repeated
+// apply addresses the same resources.
+func applyParameterValues(spec map[string]any, parameterID uuid.UUID, m model.Model) error {
+	values, ok := spec["values"]
+	if !ok {
+		return nil
+	}
+	vList, ok := values.([]any)
+	if !ok {
+		return nil
+	}
+	for _, v := range vList {
+		s, ok := v.(string)
+		if !ok || s == "" {
+			continue
+		}
+		vv := mdlparameter.NewValidValue(uuid.NewSHA1(parameterID, []byte(s)))
+		vv.SetDisplayName(s)
+		vv.SetParameterById(parameterID)
+		if err := m.AddValidValue(vv); err != nil {
+			return err
+		}
+	}
+	return nil
 }

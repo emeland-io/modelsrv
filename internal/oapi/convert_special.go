@@ -20,6 +20,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -363,6 +364,9 @@ func SystemInstanceFromDto(m model.Model, os *SystemInstance) (system.SystemInst
 	if os.Context != nil {
 		si.SetContextRef(&mdlctx.ContextRef{ContextId: uuid.UUID(*os.Context)})
 	}
+	if os.OrderItem != nil {
+		si.SetOrderItemRef(&mdlorder.OrderItemRef{OrderItemId: uuid.UUID(*os.OrderItem)})
+	}
 	MergeAnnotationsFromDto(si.GetAnnotations(), os.Annotations)
 	return si, nil
 }
@@ -381,6 +385,9 @@ func SystemInstanceToDto(si system.SystemInstance) SystemInstance {
 	}
 	if ref := si.GetContextRef(); ref != nil {
 		out.Context = uuidPtr(ref.ContextId)
+	}
+	if ref := si.GetOrderItemRef(); ref != nil {
+		out.OrderItem = uuidPtr(ref.OrderItemId)
 	}
 	return out
 }
@@ -897,15 +904,8 @@ func CapabilityFromDto(m model.Model, o *Capability) (mdlcapability.Capability, 
 	id := uuid.UUID(o.CapabilityId)
 	c := mdlcapability.NewCapability(id)
 	c.SetDisplayName(o.DisplayName)
-	if o.Versions != nil {
-		refs := make([]mdlcapability.CapabilityVersionRef, len(*o.Versions))
-		for i, v := range *o.Versions {
-			refs[i] = mdlcapability.CapabilityVersionRef{
-				CapabilityVersionId: uuid.UUID(v.CapabilityVersionId),
-				Version:             versionFromDto(v.Version),
-			}
-		}
-		c.SetVersions(refs)
+	if o.Offers != nil {
+		c.SetOffers(openAPIUUIDsToUUID(*o.Offers))
 	}
 	if o.Annotations != nil {
 		MergeAnnotationsFromDto(c.GetAnnotations(), o.Annotations)
@@ -921,15 +921,8 @@ func CapabilityToDto(v mdlcapability.Capability) Capability {
 		CapabilityId: uuidToOpenAPI(v.GetCapabilityId()),
 		DisplayName:  v.GetDisplayName(),
 	}
-	if vers := v.GetVersions(); len(vers) > 0 {
-		refs := make([]CapabilityVersionRef, len(vers))
-		for i, r := range vers {
-			refs[i] = CapabilityVersionRef{
-				CapabilityVersionId: uuidToOpenAPI(r.CapabilityVersionId),
-				Version:             versionToDto(r.Version),
-			}
-		}
-		out.Versions = &refs
+	if offers := v.GetOffers(); len(offers) > 0 {
+		out.Offers = uuidSliceToOpenAPI(offers)
 	}
 	out.Annotations = AnnotationsToDto(v.GetAnnotations())
 	return out
@@ -943,9 +936,6 @@ func ParameterFromDto(m model.Model, o *Parameter) (mdlparameter.Parameter, erro
 	id := uuid.UUID(o.ParameterId)
 	param := mdlparameter.NewParameter(id)
 	param.SetDisplayName(o.DisplayName)
-	if o.Values != nil {
-		param.SetValues(*o.Values)
-	}
 	if o.Annotations != nil {
 		MergeAnnotationsFromDto(param.GetAnnotations(), o.Annotations)
 	}
@@ -960,11 +950,280 @@ func ParameterToDto(v mdlparameter.Parameter) Parameter {
 		ParameterId: uuidToOpenAPI(v.GetParameterId()),
 		DisplayName: v.GetDisplayName(),
 	}
-	if vals := v.GetValues(); len(vals) > 0 {
-		out.Values = &vals
-	}
 	out.Annotations = AnnotationsToDto(v.GetAnnotations())
 	return out
+}
+
+// ValidValueFromDto builds a ValidValue from a wire DTO.
+func ValidValueFromDto(m model.Model, o *ValidValue) (mdlparameter.ValidValue, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil valid value")
+	}
+	id := uuid.UUID(o.ValidValueId)
+	v := mdlparameter.NewValidValue(id)
+	v.SetDisplayName(o.DisplayName)
+	v.SetParameterById(uuid.UUID(o.Parameter))
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	}
+	return v, nil
+}
+
+func ValidValueToDto(v mdlparameter.ValidValue) ValidValue {
+	if v == nil {
+		return ValidValue{}
+	}
+	out := ValidValue{
+		ValidValueId: uuidToOpenAPI(v.GetValidValueId()),
+		DisplayName:  v.GetDisplayName(),
+		Parameter:    uuidToOpenAPI(v.GetParameterId()),
+		Annotations:  AnnotationsToDto(v.GetAnnotations()),
+	}
+	return out
+}
+
+// CapabilityVersionFromDto builds a CapabilityVersion from a wire DTO.
+func CapabilityVersionFromDto(m model.Model, o *CapabilityVersion) (mdlcapability.CapabilityVersion, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil capability version")
+	}
+	id := uuid.UUID(o.CapabilityVersionId)
+	v := mdlcapability.NewCapabilityVersion(id)
+	v.SetDisplayName(o.DisplayName)
+	v.SetCapabilityById(uuid.UUID(o.Capability))
+	if o.Version != nil {
+		v.SetVersion(versionFromDto(o.Version))
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	}
+	return v, nil
+}
+
+func CapabilityVersionToDto(v mdlcapability.CapabilityVersion) CapabilityVersion {
+	if v == nil {
+		return CapabilityVersion{}
+	}
+	out := CapabilityVersion{
+		CapabilityVersionId: uuidToOpenAPI(v.GetCapabilityVersionId()),
+		DisplayName:         v.GetDisplayName(),
+		Capability:          uuidToOpenAPI(v.GetCapabilityId()),
+		Annotations:         AnnotationsToDto(v.GetAnnotations()),
+	}
+	if ver := versionToDto(v.GetVersion()); ver != nil {
+		out.Version = ver
+	}
+	return out
+}
+
+// VariantFromDto builds a Variant from a wire DTO.
+func VariantFromDto(m model.Model, o *Variant) (mdlcapability.Variant, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil variant")
+	}
+	id := uuid.UUID(o.VariantId)
+	v := mdlcapability.NewVariant(id)
+	v.SetDisplayName(o.DisplayName)
+	v.SetCapabilityVersionById(uuid.UUID(o.CapabilityVersion))
+	if o.Requires != nil {
+		v.SetRequires(openAPIUUIDsToUUID(*o.Requires))
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	}
+	return v, nil
+}
+
+func VariantToDto(v mdlcapability.Variant) Variant {
+	if v == nil {
+		return Variant{}
+	}
+	out := Variant{
+		VariantId:         uuidToOpenAPI(v.GetVariantId()),
+		DisplayName:       v.GetDisplayName(),
+		CapabilityVersion: uuidToOpenAPI(v.GetCapabilityVersionId()),
+		Annotations:       AnnotationsToDto(v.GetAnnotations()),
+	}
+	if req := v.GetRequires(); len(req) > 0 {
+		out.Requires = uuidSliceToOpenAPI(req)
+	}
+	return out
+}
+
+// DependencyFromDto builds a Dependency from a wire DTO.
+func DependencyFromDto(m model.Model, o *Dependency) (mdlcapability.Dependency, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil dependency")
+	}
+	id := uuid.UUID(o.DependencyId)
+	d := mdlcapability.NewDependency(id)
+	d.SetDisplayName(o.DisplayName)
+	d.SetVariantById(uuid.UUID(o.Variant))
+	d.SetCapabilityById(uuid.UUID(o.Capability))
+	if o.Mappings != nil {
+		maps := make([]mdlcapability.ValueMapping, len(*o.Mappings))
+		for i, mapping := range *o.Mappings {
+			maps[i] = mdlcapability.ValueMapping{
+				FromValidValueId: uuid.UUID(mapping.FromValidValueId),
+				ToValidValueId:   uuid.UUID(mapping.ToValidValueId),
+			}
+		}
+		d.SetMappings(maps)
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(d.GetAnnotations(), o.Annotations)
+	}
+	return d, nil
+}
+
+func DependencyToDto(v mdlcapability.Dependency) Dependency {
+	if v == nil {
+		return Dependency{}
+	}
+	out := Dependency{
+		DependencyId: uuidToOpenAPI(v.GetDependencyId()),
+		DisplayName:  v.GetDisplayName(),
+		Variant:      uuidToOpenAPI(v.GetVariantId()),
+		Capability:   uuidToOpenAPI(v.GetCapabilityId()),
+		Annotations:  AnnotationsToDto(v.GetAnnotations()),
+	}
+	if maps := v.GetMappings(); len(maps) > 0 {
+		wire := make([]ValueMapping, len(maps))
+		for i, mapping := range maps {
+			wire[i] = ValueMapping{
+				FromValidValueId: uuidToOpenAPI(mapping.FromValidValueId),
+				ToValidValueId:   uuidToOpenAPI(mapping.ToValidValueId),
+			}
+		}
+		out.Mappings = &wire
+	}
+	return out
+}
+
+// OrderFromDto builds an Order from a wire DTO.
+func OrderFromDto(m model.Model, o *Order) (mdlorder.Order, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil order")
+	}
+	id := uuid.UUID(o.OrderId)
+	ord := mdlorder.NewOrder(id)
+	ord.SetDisplayName(o.DisplayName)
+	ord.SetOrgUnitById(uuid.UUID(o.OrgUnit))
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(ord.GetAnnotations(), o.Annotations)
+	}
+	return ord, nil
+}
+
+func OrderToDto(v mdlorder.Order) Order {
+	if v == nil {
+		return Order{}
+	}
+	out := Order{
+		OrderId:     uuidToOpenAPI(v.GetOrderId()),
+		DisplayName: v.GetDisplayName(),
+		OrgUnit:     uuidToOpenAPI(v.GetOrgUnitId()),
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	return out
+}
+
+// OrderItemFromDto builds an OrderItem from a wire DTO.
+func OrderItemFromDto(m model.Model, o *OrderItem) (mdlorder.OrderItem, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil order item")
+	}
+	id := uuid.UUID(o.OrderItemId)
+	oi := mdlorder.NewOrderItem(id)
+	oi.SetDisplayName(o.DisplayName)
+	oi.SetOrderById(uuid.UUID(o.Order))
+	oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: uuid.UUID(o.Capability)})
+	oi.SetCapabilityVersionRef(&mdlcapability.CapabilityVersionRef{CapabilityVersionId: uuid.UUID(o.CapabilityVersion)})
+	oi.SetVariantRef(&mdlcapability.VariantRef{VariantId: uuid.UUID(o.Variant)})
+	if o.Contexts != nil {
+		oi.SetContexts(openAPIUUIDsToUUID(*o.Contexts))
+	}
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(oi.GetAnnotations(), o.Annotations)
+	}
+	return oi, nil
+}
+
+func OrderItemToDto(v mdlorder.OrderItem) OrderItem {
+	if v == nil {
+		return OrderItem{}
+	}
+	out := OrderItem{
+		OrderItemId: uuidToOpenAPI(v.GetOrderItemId()),
+		DisplayName: v.GetDisplayName(),
+		Order:       uuidToOpenAPI(v.GetOrderId()),
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	if ref := v.GetCapabilityRef(); ref != nil {
+		out.Capability = uuidToOpenAPI(ref.CapabilityId)
+	}
+	if ref := v.GetCapabilityVersionRef(); ref != nil {
+		out.CapabilityVersion = uuidToOpenAPI(ref.CapabilityVersionId)
+	}
+	if ref := v.GetVariantRef(); ref != nil {
+		out.Variant = uuidToOpenAPI(ref.VariantId)
+	}
+	if ctxs := v.GetContexts(); len(ctxs) > 0 {
+		out.Contexts = uuidSliceToOpenAPI(ctxs)
+	}
+	return out
+}
+
+// BoundValueFromDto builds a BoundValue from a wire DTO.
+func BoundValueFromDto(m model.Model, o *BoundValue) (mdlorder.BoundValue, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil bound value")
+	}
+	id := uuid.UUID(o.BoundValueId)
+	bv := mdlorder.NewBoundValue(id)
+	bv.SetDisplayName(o.DisplayName)
+	bv.SetOrderItemById(uuid.UUID(o.OrderItem))
+	bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: uuid.UUID(o.Parameter)})
+	bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: uuid.UUID(o.ValidValue)})
+	if o.Annotations != nil {
+		MergeAnnotationsFromDto(bv.GetAnnotations(), o.Annotations)
+	}
+	return bv, nil
+}
+
+func BoundValueToDto(v mdlorder.BoundValue) BoundValue {
+	if v == nil {
+		return BoundValue{}
+	}
+	out := BoundValue{
+		BoundValueId: uuidToOpenAPI(v.GetBoundValueId()),
+		DisplayName:  v.GetDisplayName(),
+		OrderItem:    uuidToOpenAPI(v.GetOrderItemId()),
+		Annotations:  AnnotationsToDto(v.GetAnnotations()),
+	}
+	if ref := v.GetParameterRef(); ref != nil {
+		out.Parameter = uuidToOpenAPI(ref.ParameterId)
+	}
+	if ref := v.GetValidValueRef(); ref != nil {
+		out.ValidValue = uuidToOpenAPI(ref.ValidValueId)
+	}
+	return out
+}
+
+func openAPIUUIDsToUUID(in []openapi_types.UUID) []uuid.UUID {
+	out := make([]uuid.UUID, len(in))
+	for i, id := range in {
+		out[i] = uuid.UUID(id)
+	}
+	return out
+}
+
+func uuidSliceToOpenAPI(in []uuid.UUID) *[]openapi_types.UUID {
+	out := make([]openapi_types.UUID, len(in))
+	for i, id := range in {
+		out[i] = uuidToOpenAPI(id)
+	}
+	return &out
 }
 
 // CapacityFromDto builds a domain Capacity from a wire DTO.
