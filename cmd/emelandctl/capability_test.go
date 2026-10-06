@@ -23,26 +23,22 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// capVersions extracts the versions list from a Capability resource spec.
-func capVersions(t *testing.T, r Resource) []map[string]any {
+func readCapabilityVersions(t *testing.T, dir string) []Resource {
 	t.Helper()
-	raw, ok := r.Spec["versions"].([]any)
-	require.True(t, ok, "versions must be a list, got %T", r.Spec["versions"])
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		require.True(t, ok, "version entry must be a map, got %T", item)
-		out = append(out, m)
+	matches, err := filepath.Glob(filepath.Join(dir, "capabilityversion-*.yaml"))
+	require.NoError(t, err)
+	out := make([]Resource, 0, len(matches))
+	for _, m := range matches {
+		out = append(out, readYAMLFile(t, m))
 	}
 	return out
 }
 
-// versionField returns the nested version.<key> value for a version entry.
-func versionField(t *testing.T, entry map[string]any, key string) any {
+func versionBlock(t *testing.T, r Resource) map[string]any {
 	t.Helper()
-	ver, ok := entry["version"].(map[string]any)
-	require.True(t, ok, "version block must be a map, got %T", entry["version"])
-	return ver[key]
+	ver, ok := r.Spec["version"].(map[string]any)
+	require.True(t, ok, "version block must be a map, got %T", r.Spec["version"])
+	return ver
 }
 
 func TestCreateCapabilityMultiVersionScoping(t *testing.T) {
@@ -57,54 +53,32 @@ func TestCreateCapabilityMultiVersionScoping(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	r := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
-	assert.Equal(t, "Capability", r.Kind)
-	assert.Equal(t, "Mail Service", r.Spec["displayName"])
-	assert.NotEmpty(t, r.Spec["capabilityId"])
+	cap := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
+	assert.Equal(t, "Capability", cap.Kind)
+	assert.Equal(t, "Mail Service", cap.Spec["displayName"])
+	assert.NotEmpty(t, cap.Spec["capabilityId"])
+	assert.Nil(t, cap.Spec["versions"])
 
-	versions := capVersions(t, r)
+	versions := readCapabilityVersions(t, dir)
 	require.Len(t, versions, 2)
 
-	// Version 1 got all three dates, scoped to the first --version.
-	assert.Equal(t, "1.0.0", versionField(t, versions[0], "version"))
-	assert.Equal(t, "2026-01-01T00:00:00Z", versionField(t, versions[0], "availableFrom"))
-	assert.Equal(t, "2027-01-01T00:00:00Z", versionField(t, versions[0], "deprecatedFrom"))
-	assert.Equal(t, "2028-01-01T00:00:00Z", versionField(t, versions[0], "terminatedFrom"))
+	byVer := map[string]Resource{}
+	for _, v := range versions {
+		assert.Equal(t, "CapabilityVersion", v.Kind)
+		assert.Equal(t, cap.Spec["capabilityId"], v.Spec["capability"])
+		vb := versionBlock(t, v)
+		byVer[vb["version"].(string)] = v
+	}
 
-	// Version 2 only got availableFrom; the other dates must not leak from v1.
-	assert.Equal(t, "2.0.0", versionField(t, versions[1], "version"))
-	assert.Equal(t, "2027-06-01T00:00:00Z", versionField(t, versions[1], "availableFrom"))
-	assert.Nil(t, versionField(t, versions[1], "deprecatedFrom"))
-	assert.Nil(t, versionField(t, versions[1], "terminatedFrom"))
-}
+	v1 := versionBlock(t, byVer["1.0.0"])
+	assert.Equal(t, "2026-01-01T00:00:00Z", v1["availableFrom"])
+	assert.Equal(t, "2027-01-01T00:00:00Z", v1["deprecatedFrom"])
+	assert.Equal(t, "2028-01-01T00:00:00Z", v1["terminatedFrom"])
 
-func TestCreateCapabilityScaffoldKeys(t *testing.T) {
-	dir := t.TempDir()
-	err := executeCmd("create", "-d", dir, "capability", "Cap", "--version", "1.0.0")
-	require.NoError(t, err)
-
-	r := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
-	versions := capVersions(t, r)
-	require.Len(t, versions, 1)
-
-	entry := versions[0]
-	assert.NotEmpty(t, entry["capabilityVersionId"])
-
-	// Empty dependencies scaffold.
-	deps, ok := entry["dependencies"].([]any)
-	require.True(t, ok, "dependencies must be a list")
-	assert.Empty(t, deps)
-
-	// Single variant scaffold with its own empty dependencies.
-	variants, ok := entry["variants"].([]any)
-	require.True(t, ok, "variants must be a list")
-	require.Len(t, variants, 1)
-	variant, ok := variants[0].(map[string]any)
-	require.True(t, ok)
-	assert.NotEmpty(t, variant["variantId"])
-	vdeps, ok := variant["dependencies"].([]any)
-	require.True(t, ok)
-	assert.Empty(t, vdeps)
+	v2 := versionBlock(t, byVer["2.0.0"])
+	assert.Equal(t, "2027-06-01T00:00:00Z", v2["availableFrom"])
+	assert.Nil(t, v2["deprecatedFrom"])
+	assert.Nil(t, v2["terminatedFrom"])
 }
 
 func TestCreateCapabilityInlineFlagValue(t *testing.T) {
@@ -113,11 +87,11 @@ func TestCreateCapabilityInlineFlagValue(t *testing.T) {
 		"--version=3.1.4", "--available-from=2026-05-05")
 	require.NoError(t, err)
 
-	r := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
-	versions := capVersions(t, r)
+	versions := readCapabilityVersions(t, dir)
 	require.Len(t, versions, 1)
-	assert.Equal(t, "3.1.4", versionField(t, versions[0], "version"))
-	assert.Equal(t, "2026-05-05T00:00:00Z", versionField(t, versions[0], "availableFrom"))
+	vb := versionBlock(t, versions[0])
+	assert.Equal(t, "3.1.4", vb["version"])
+	assert.Equal(t, "2026-05-05T00:00:00Z", vb["availableFrom"])
 }
 
 func TestCreateCapabilityNameFlagAndAnnotation(t *testing.T) {
@@ -158,19 +132,15 @@ func TestCreateCapabilityRequiresDisplayName(t *testing.T) {
 	assert.Contains(t, err.Error(), "display name is required")
 }
 
-func TestCreateCapabilityNoVersionStillProducesFullConstruct(t *testing.T) {
-	// TestCreateAllResourceTypes covers this too, but assert the shape here:
-	// a capability with only a display name still yields a single scaffold version.
+func TestCreateCapabilityNoVersionWritesCapabilityOnly(t *testing.T) {
 	dir := t.TempDir()
 	err := executeCmd("create", "-d", dir, "capability", "Bare Cap")
 	require.NoError(t, err)
 
 	r := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
-	versions := capVersions(t, r)
-	require.Len(t, versions, 1)
-	assert.Equal(t, "", versionField(t, versions[0], "version"))
-	_, ok := versions[0]["variants"].([]any)
-	assert.True(t, ok, "even a bare capability carries the variant scaffold")
+	assert.Equal(t, "Bare Cap", r.Spec["displayName"])
+	assert.Nil(t, r.Spec["versions"])
+	assert.Empty(t, readCapabilityVersions(t, dir))
 }
 
 func TestCreateCapabilityRFC3339DatePassthrough(t *testing.T) {
@@ -179,7 +149,7 @@ func TestCreateCapabilityRFC3339DatePassthrough(t *testing.T) {
 		"--version", "1.0.0", "--available-from", "2026-01-02T15:04:05Z")
 	require.NoError(t, err)
 
-	r := readYAMLFile(t, filepath.Join(dir, "capability-*.yaml"))
-	versions := capVersions(t, r)
-	assert.Equal(t, "2026-01-02T15:04:05Z", versionField(t, versions[0], "availableFrom"))
+	versions := readCapabilityVersions(t, dir)
+	require.Len(t, versions, 1)
+	assert.Equal(t, "2026-01-02T15:04:05Z", versionBlock(t, versions[0])["availableFrom"])
 }
