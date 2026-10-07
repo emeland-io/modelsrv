@@ -45,52 +45,49 @@ func renderInstanceList(cmd *cobra.Command, format string, items []common.Instan
 	return w.Flush()
 }
 
-func fetchResourceList(baseURL, path string) ([]common.InstanceListItem, error) {
+func fetchResourceList(baseURL, path, idField string) ([]common.InstanceListItem, []byte, error) {
 	resp, err := http.Get(baseURL + path)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode)
+		return nil, nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode)
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var raw []struct {
-		InstanceId  *string `json:"instanceId"`
-		FindingId   *string `json:"findingId"`
-		NodeId      *string `json:"nodeId"`
-		Id          *string `json:"id"`
-		DisplayName *string `json:"displayName"`
-		Reference   *string `json:"reference"`
-	}
+	var raw []map[string]json.RawMessage
 	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("decoding response: %w", err)
+		return nil, nil, fmt.Errorf("decoding response: %w", err)
 	}
 	items := make([]common.InstanceListItem, 0, len(raw))
 	for _, r := range raw {
 		var item common.InstanceListItem
-		switch {
-		case r.InstanceId != nil:
-			item.Id, _ = uuid.Parse(*r.InstanceId)
-		case r.FindingId != nil:
-			item.Id, _ = uuid.Parse(*r.FindingId)
-		case r.NodeId != nil:
-			item.Id, _ = uuid.Parse(*r.NodeId)
-		case r.Id != nil:
-			item.Id, _ = uuid.Parse(*r.Id)
+		for _, key := range []string{idField, "instanceId", "findingId", "nodeId", "id"} {
+			if key == "" {
+				continue
+			}
+			if rawID, ok := r[key]; ok {
+				var s string
+				if err := json.Unmarshal(rawID, &s); err == nil {
+					if id, err := uuid.Parse(s); err == nil {
+						item.Id = id
+						break
+					}
+				}
+			}
 		}
-		if r.DisplayName != nil {
-			item.Name = *r.DisplayName
+		if rawName, ok := r["displayName"]; ok {
+			_ = json.Unmarshal(rawName, &item.Name)
 		}
-		if r.Reference != nil {
-			item.Reference = *r.Reference
+		if rawRef, ok := r["reference"]; ok {
+			_ = json.Unmarshal(rawRef, &item.Reference)
 		}
 		items = append(items, item)
 	}
-	return items, nil
+	return items, body, nil
 }
 
 func newGetCmd() *cobra.Command {
@@ -117,9 +114,20 @@ func newGetCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				items, err := fetchResourceList(url, def.listPath)
+				items, body, err := fetchResourceList(url, def.listPath, def.idField)
 				if err != nil {
 					return fmt.Errorf("fetching %s: %w", plural, err)
+				}
+				if outputFormat == "json" {
+					// Preserve the server payload so full-resource list endpoints
+					// expose every field, not just InstanceList summaries.
+					var pretty any
+					if err := json.Unmarshal(body, &pretty); err != nil {
+						return err
+					}
+					enc := json.NewEncoder(cmd.OutOrStdout())
+					enc.SetIndent("", "  ")
+					return enc.Encode(pretty)
 				}
 				return renderInstanceList(cmd, outputFormat, items)
 			},
