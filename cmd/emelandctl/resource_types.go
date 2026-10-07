@@ -215,4 +215,59 @@ var resourceTypes = []resourceDef{
 		use: "parameter", short: "Create a Parameter resource",
 		kind: "Parameter", idField: "parameterId", listPath: "/landscape/parameters",
 	},
+	{
+		use: "valid-value", short: "Create a ValidValue resource",
+		kind: "ValidValue", idField: "validValueId", listPath: "/landscape/validValues",
+		flags: []flagDef{
+			{name: "parameter", specKey: "parameter", usage: "UUID of the Parameter this value belongs to"},
+		},
+	},
+	{
+		use: "capability-version", short: "Create a CapabilityVersion resource",
+		kind: "CapabilityVersion", idField: "capabilityVersionId", listPath: "/landscape/capabilityVersions",
+		flags: []flagDef{
+			{name: "capability", specKey: "capability", usage: "UUID of the Capability this version belongs to"},
+		},
+	},
+	{
+		use: "variant", short: "Create a Variant resource",
+		kind: "Variant", idField: "variantId", listPath: "/landscape/variants",
+		flags: []flagDef{
+			{name: "capability-version", specKey: "capabilityVersion", usage: "UUID of the CapabilityVersion this variant belongs to"},
+		},
+	},
+	{
+		use: "dependency", short: "Create a Dependency resource",
+		kind: "Dependency", idField: "dependencyId", listPath: "/landscape/dependencies",
+		flags: []flagDef{
+			{name: "variant", specKey: "variant", usage: "UUID of the Variant that owns this dependency"},
+			{name: "capability", specKey: "capability", usage: "UUID of the Capability this dependency requires"},
+		},
+	},
+	{
+		use: "order", short: "Create an Order resource",
+		kind: "Order", idField: "orderId", listPath: "/landscape/orders",
+		flags: []flagDef{
+			{name: "org-unit", specKey: "orgUnit", usage: "UUID of the OrgUnit that placed the order"},
+		},
+	},
+	{
+		use: "order-item", short: "Create an OrderItem resource",
+		kind: "OrderItem", idField: "orderItemId", listPath: "/landscape/orderItems",
+		flags: []flagDef{
+			{name: "order", specKey: "order", usage: "UUID of the Order this item belongs to"},
+			{name: "capability", specKey: "capability", usage: "UUID of the Capability being ordered"},
+			{name: "capability-version", specKey: "capabilityVersion", usage: "UUID of the CapabilityVersion being ordered"},
+			{name: "variant", specKey: "variant", usage: "UUID of the Variant selected for this order item"},
+		},
+	},
+	{
+		use: "bound-value", short: "Create a BoundValue resource",
+		kind: "BoundValue", idField: "boundValueId", listPath: "/landscape/boundValues",
+		flags: []flagDef{
+			{name: "order-item", specKey: "orderItem", usage: "UUID of the OrderItem this binding belongs to"},
+			{name: "parameter", specKey: "parameter", usage: "UUID of the Parameter being bound"},
+			{name: "valid-value", specKey: "validValue", usage: "UUID of the ValidValue selected for the Parameter"},
+		},
+	},
 }

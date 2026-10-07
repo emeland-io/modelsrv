@@ -45,6 +45,13 @@ var documentKinds = map[events.ResourceType]struct{}{
 
 	events.CapabilityResource:           {},
 	events.ParameterResource:            {},
+	events.ValidValueResource:           {},
+	events.CapabilityVersionResource:    {},
+	events.VariantResource:              {},
+	events.DependencyResource:           {},
+	events.OrderResource:                {},
+	events.OrderItemResource:            {},
+	events.BoundValueResource:           {},
 	events.CapacityResourceTypeResource: {},
 	events.CapacityResource:             {},
 

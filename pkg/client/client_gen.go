@@ -22,6 +22,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlprod "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -47,6 +48,7 @@ var (
 	_ mdlobs.Metric
 	_ node.Node
 	_ mdlparameter.Parameter
+	_ mdlorder.Order
 	_ mdlprod.Product
 	_ system.System
 )
@@ -601,7 +603,7 @@ func (c *ModelSrvClient) GetMergeRuleById(id uuid.UUID) (mdlmergerule.MergeRule,
 	return oapi.MergeRuleFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetCapabilities() ([]common.InstanceListItem, error) {
+func (c *ModelSrvClient) GetCapabilities() ([]mdlcapability.Capability, error) {
 	resp, err := c.oapi_client.GetLandscapeCapabilitiesWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -609,7 +611,18 @@ func (c *ModelSrvClient) GetCapabilities() ([]common.InstanceListItem, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return oapi.InstanceListFromDto(resp.JSON200)
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlcapability.Capability, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.CapabilityFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
 }
 
 func (c *ModelSrvClient) GetCapabilityById(id uuid.UUID) (mdlcapability.Capability, error) {
@@ -626,7 +639,7 @@ func (c *ModelSrvClient) GetCapabilityById(id uuid.UUID) (mdlcapability.Capabili
 	return oapi.CapabilityFromDto(nil, resp.JSON200)
 }
 
-func (c *ModelSrvClient) GetParameters() ([]common.InstanceListItem, error) {
+func (c *ModelSrvClient) GetParameters() ([]mdlparameter.Parameter, error) {
 	resp, err := c.oapi_client.GetLandscapeParametersWithResponse(context.TODO())
 	if err != nil {
 		return nil, err
@@ -634,7 +647,18 @@ func (c *ModelSrvClient) GetParameters() ([]common.InstanceListItem, error) {
 	if resp.StatusCode() != http.StatusOK {
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
-	return oapi.InstanceListFromDto(resp.JSON200)
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlparameter.Parameter, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.ParameterFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
 }
 
 func (c *ModelSrvClient) GetParameterById(id uuid.UUID) (mdlparameter.Parameter, error) {
@@ -649,6 +673,258 @@ func (c *ModelSrvClient) GetParameterById(id uuid.UUID) (mdlparameter.Parameter,
 		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
 	}
 	return oapi.ParameterFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetValidValues() ([]mdlparameter.ValidValue, error) {
+	resp, err := c.oapi_client.GetLandscapeValidValuesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlparameter.ValidValue, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.ValidValueFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetValidValueById(id uuid.UUID) (mdlparameter.ValidValue, error) {
+	resp, err := c.oapi_client.GetLandscapeValidValuesValidValueIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrValidValueNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.ValidValueFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetCapabilityVersions() ([]mdlcapability.CapabilityVersion, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilityVersionsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlcapability.CapabilityVersion, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.CapabilityVersionFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetCapabilityVersionById(id uuid.UUID) (mdlcapability.CapabilityVersion, error) {
+	resp, err := c.oapi_client.GetLandscapeCapabilityVersionsCapabilityVersionIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrCapabilityVersionNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.CapabilityVersionFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetVariants() ([]mdlcapability.Variant, error) {
+	resp, err := c.oapi_client.GetLandscapeVariantsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlcapability.Variant, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.VariantFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetVariantById(id uuid.UUID) (mdlcapability.Variant, error) {
+	resp, err := c.oapi_client.GetLandscapeVariantsVariantIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrVariantNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.VariantFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetDependencies() ([]mdlcapability.Dependency, error) {
+	resp, err := c.oapi_client.GetLandscapeDependenciesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlcapability.Dependency, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.DependencyFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetDependencyById(id uuid.UUID) (mdlcapability.Dependency, error) {
+	resp, err := c.oapi_client.GetLandscapeDependenciesDependencyIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrDependencyNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.DependencyFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrders() ([]mdlorder.Order, error) {
+	resp, err := c.oapi_client.GetLandscapeOrdersWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlorder.Order, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.OrderFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetOrderById(id uuid.UUID) (mdlorder.Order, error) {
+	resp, err := c.oapi_client.GetLandscapeOrdersOrderIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrOrderNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.OrderFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetOrderItems() ([]mdlorder.OrderItem, error) {
+	resp, err := c.oapi_client.GetLandscapeOrderItemsWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlorder.OrderItem, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.OrderItemFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetOrderItemById(id uuid.UUID) (mdlorder.OrderItem, error) {
+	resp, err := c.oapi_client.GetLandscapeOrderItemsOrderItemIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrOrderItemNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.OrderItemFromDto(nil, resp.JSON200)
+}
+
+func (c *ModelSrvClient) GetBoundValues() ([]mdlorder.BoundValue, error) {
+	resp, err := c.oapi_client.GetLandscapeBoundValuesWithResponse(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	if resp.JSON200 == nil {
+		return nil, nil
+	}
+	out := make([]mdlorder.BoundValue, 0, len(*resp.JSON200))
+	for i := range *resp.JSON200 {
+		item, err := oapi.BoundValueFromDto(nil, &(*resp.JSON200)[i])
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, nil
+}
+
+func (c *ModelSrvClient) GetBoundValueById(id uuid.UUID) (mdlorder.BoundValue, error) {
+	resp, err := c.oapi_client.GetLandscapeBoundValuesBoundValueIdWithResponse(context.TODO(), id)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return nil, common.ErrBoundValueNotFound
+	}
+	if resp.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("expected HTTP 200 but received %d", resp.StatusCode())
+	}
+	return oapi.BoundValueFromDto(nil, resp.JSON200)
 }
 
 func (c *ModelSrvClient) GetCapacityResourceTypes() ([]common.InstanceListItem, error) {

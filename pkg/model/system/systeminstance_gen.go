@@ -9,6 +9,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model/annotations"
 	"go.emeland.io/modelsrv/pkg/model/context"
+	"go.emeland.io/modelsrv/pkg/model/order"
 )
 
 // ensure SystemInstance interface is implemented correctly
@@ -31,6 +32,9 @@ type SystemInstance interface {
 	GetContextRef() *context.ContextRef
 	SetContextRef(*context.ContextRef)
 
+	GetOrderItemRef() *order.OrderItemRef
+	SetOrderItemRef(*order.OrderItemRef)
+
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
@@ -41,11 +45,12 @@ type systeminstanceData struct {
 	sink         events.EventSink
 	isRegistered bool
 
-	InstanceId  uuid.UUID
-	DisplayName string
-	SystemRef   *SystemRef
-	ContextRef  *context.ContextRef
-	Annotations annotations.Annotations
+	InstanceId   uuid.UUID
+	DisplayName  string
+	SystemRef    *SystemRef
+	ContextRef   *context.ContextRef
+	OrderItemRef *order.OrderItemRef
+	Annotations  annotations.Annotations
 }
 
 // NewSystemInstance constructs an unregistered resource; call [SystemInstance.Register] after adding to the model.
@@ -111,6 +116,20 @@ func (o *systeminstanceData) GetContextRef() *context.ContextRef {
 // SetContextRef implements [SystemInstance].
 func (o *systeminstanceData) SetContextRef(val *context.ContextRef) {
 	o.ContextRef = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)
+	}
+}
+
+// GetOrderItemRef implements [OrderItemRef].
+func (o *systeminstanceData) GetOrderItemRef() *order.OrderItemRef {
+	return o.OrderItemRef
+}
+
+// SetOrderItemRef implements [SystemInstance].
+func (o *systeminstanceData) SetOrderItemRef(val *order.OrderItemRef) {
+	o.OrderItemRef = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.SystemInstanceResource, events.UpdateOperation, o.InstanceId, o)

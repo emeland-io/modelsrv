@@ -101,6 +101,13 @@ const (
 	// Phase 3 capabilities
 	CapabilityResource
 	ParameterResource
+	ValidValueResource
+	CapabilityVersionResource
+	VariantResource
+	DependencyResource
+	OrderResource
+	OrderItemResource
+	BoundValueResource
 
 	// Phase 7
 	CapacityResourceTypeResource
@@ -158,8 +165,15 @@ var resourceTypeValues = map[ResourceType]string{
 	MergeRuleResource:  "MergeRule",
 
 	// Phase 3 capabilities
-	CapabilityResource: "Capability",
-	ParameterResource:  "Parameter",
+	CapabilityResource:        "Capability",
+	ParameterResource:         "Parameter",
+	ValidValueResource:        "ValidValue",
+	CapabilityVersionResource: "CapabilityVersion",
+	VariantResource:           "Variant",
+	DependencyResource:        "Dependency",
+	OrderResource:             "Order",
+	OrderItemResource:         "OrderItem",
+	BoundValueResource:        "BoundValue",
 
 	// Phase 7
 	CapacityResourceTypeResource: "CapacityResourceType",

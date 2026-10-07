@@ -160,6 +160,8 @@ type SystemInstance struct {
 	System uuid.UUID `emeland:"required"`
 	// The UUID of the context that contains this system instance. This can be left empty if the Context resource has not been created yet, but will trigger an entry in the finding list.
 	Context uuid.UUID
+	// The UUID of the OrderItem this system instance fulfills. Leave empty for multi-tenant systems that serve many orders.
+	OrderItem uuid.UUID
 	// A set of key-value pairs for storing additional metadata about the system instance.
 	Annotations annotations.Annotations `emeland:"annotations"`
 }
@@ -241,7 +243,7 @@ type Identity struct {
 	Annotations annotations.Annotations `emeland:"annotations"`
 }
 
-// A parameter defines an identifier and a list of discrete, finite values that the parameter can take.
+// A parameter defines an identifier for a grouping of discrete ValidValues.
 //
 // +emeland:resource
 // +emeland:dir=parameter
@@ -254,9 +256,26 @@ type Parameter struct {
 	ParameterID uuid.UUID `emeland:"id,required"`
 	// The human-readable name of the parameter.
 	DisplayName string `emeland:"name,required"`
-	// The discrete values this parameter can take.
-	Values []string
 	// A set of key-value pairs for storing additional metadata about the parameter.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// A discrete, finite value that is valid for a Parameter.
+//
+// +emeland:resource
+// +emeland:dir=parameter
+// +emeland:handler
+// +emeland:handleralias=mdlparameter
+// +emeland:client
+// +emeland:list=/landscape/validValues
+type ValidValue struct {
+	// An UUID that uniquely identifies the valid value.
+	ValidValueID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the value (e.g. "8GB", "10000-users").
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the Parameter this value belongs to.
+	Parameter uuid.UUID `emeland:"required"`
+	// A set of key-value pairs for storing additional metadata about the valid value.
 	Annotations annotations.Annotations `emeland:"annotations"`
 }
 
@@ -369,9 +388,143 @@ type Capability struct {
 	CapabilityID uuid.UUID `emeland:"id,required"`
 	// The human-readable name of the capability.
 	DisplayName string `emeland:"name,required"`
-	// References to capability versions.
-	Versions []struct{} `emeland:"arrayref=CapabilityVersionRef"`
+	// ValidValue UUIDs this capability offers (a subset of its Parameters' values).
+	Offers []uuid.UUID
 	// A set of key-value pairs for storing additional metadata about the capability.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// A versioned lifecycle of a Capability, with availability windows.
+//
+// +emeland:resource
+// +emeland:dir=capability
+// +emeland:handler
+// +emeland:handleralias=mdlcapability
+// +emeland:client
+// +emeland:list=/landscape/capabilityVersions
+type CapabilityVersion struct {
+	// An UUID that uniquely identifies the capability version.
+	CapabilityVersionID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the capability version.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the Capability this version belongs to.
+	Capability uuid.UUID `emeland:"required"`
+	// Version lifecycle (semver plus available/deprecated/terminated dates).
+	Version common.Version `emeland:"ref=Version"`
+	// A set of key-value pairs for storing additional metadata about the capability version.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// A Variant models a dependency pattern for a CapabilityVersion under a set of required Parameter values.
+//
+// +emeland:resource
+// +emeland:dir=capability
+// +emeland:handler
+// +emeland:handleralias=mdlcapability
+// +emeland:client
+// +emeland:list=/landscape/variants
+type Variant struct {
+	// An UUID that uniquely identifies the variant.
+	VariantID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the variant.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the CapabilityVersion this variant belongs to.
+	CapabilityVersion uuid.UUID `emeland:"required"`
+	// ValidValue UUIDs this variant requires from its Parameters.
+	Requires []uuid.UUID
+	// A set of key-value pairs for storing additional metadata about the variant.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// A Dependency links a Variant to another Capability it needs, with optional ValidValue mappings.
+//
+// +emeland:resource
+// +emeland:dir=capability
+// +emeland:handler
+// +emeland:handleralias=mdlcapability
+// +emeland:client
+// +emeland:list=/landscape/dependencies
+type Dependency struct {
+	// An UUID that uniquely identifies the dependency.
+	DependencyID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the dependency.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the Variant that owns this dependency.
+	Variant uuid.UUID `emeland:"required"`
+	// The UUID of the Capability this dependency requires.
+	Capability uuid.UUID `emeland:"required"`
+	// Mappings of ValidValues from the variant to the depended-on Capability.
+	Mappings []struct{} `emeland:"arrayref=ValueMapping"`
+	// A set of key-value pairs for storing additional metadata about the dependency.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// An Order tracks Capabilities ordered by an OrgUnit after commercial processes complete.
+//
+// +emeland:resource
+// +emeland:dir=order
+// +emeland:handler
+// +emeland:handleralias=mdlorder
+// +emeland:client
+// +emeland:list=/landscape/orders
+type Order struct {
+	// An UUID that uniquely identifies the order.
+	OrderID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the order.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the OrgUnit that placed the order.
+	OrgUnit uuid.UUID `emeland:"required"`
+	// A set of key-value pairs for storing additional metadata about the order.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// An OrderItem selects a Capability (version and variant) and binds Parameter values for an Order.
+//
+// +emeland:resource
+// +emeland:dir=order
+// +emeland:handler
+// +emeland:handleralias=mdlorder
+// +emeland:client
+// +emeland:list=/landscape/orderItems
+type OrderItem struct {
+	// An UUID that uniquely identifies the order item.
+	OrderItemID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the order item.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the Order this item belongs to.
+	Order uuid.UUID `emeland:"required"`
+	// The UUID of the Capability being ordered.
+	Capability uuid.UUID `emeland:"required"`
+	// The UUID of the CapabilityVersion being ordered.
+	CapabilityVersion uuid.UUID `emeland:"required"`
+	// The UUID of the Variant selected for this order item.
+	Variant uuid.UUID `emeland:"required"`
+	// Context UUIDs in which this order item is fulfilled.
+	Contexts []uuid.UUID
+	// A set of key-value pairs for storing additional metadata about the order item.
+	Annotations annotations.Annotations `emeland:"annotations"`
+}
+
+// A BoundValue records a specific ValidValue chosen for a Parameter on an OrderItem.
+//
+// +emeland:resource
+// +emeland:dir=order
+// +emeland:handler
+// +emeland:handleralias=mdlorder
+// +emeland:client
+// +emeland:list=/landscape/boundValues
+type BoundValue struct {
+	// An UUID that uniquely identifies the bound value.
+	BoundValueID uuid.UUID `emeland:"id,required"`
+	// The human-readable name of the bound value.
+	DisplayName string `emeland:"name,required"`
+	// The UUID of the OrderItem this binding belongs to.
+	OrderItem uuid.UUID `emeland:"required"`
+	// The UUID of the Parameter being bound.
+	Parameter uuid.UUID `emeland:"required"`
+	// The UUID of the ValidValue selected for the Parameter.
+	ValidValue uuid.UUID `emeland:"required"`
+	// A set of key-value pairs for storing additional metadata about the bound value.
 	Annotations annotations.Annotations `emeland:"annotations"`
 }
 

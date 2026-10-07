@@ -23,7 +23,15 @@ func (a *ApiServer) {{.ClientListOapiMethod}}(ctx context.Context, request {{.Cl
 		items = authz.FilterVisible(a.Authz, principal, events.{{.EventsResource}}, items)
 	}
 {{- end}}
+{{- if .FullListResponse}}
+	out := make([]{{.OapiWireTypeName}}, 0, len(items))
+	for _, item := range items {
+		out = append(out, {{.ToDtoFuncName}}(item))
+	}
+	return {{.ClientListOapiMethod}}200JSONResponse(out), nil
+{{- else}}
 	return {{.ClientListOapiMethod}}200JSONResponse(buildInstanceList(a.BaseURL, "{{.RestListPath}}", items)), nil
+{{- end}}
 }
 
 // {{.ClientGetByIdOapiMethod}} implements [StrictServerInterface].

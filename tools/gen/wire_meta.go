@@ -27,6 +27,13 @@ var skipConvertByName = map[string]bool{
 	"MergeRule":         true,
 	"Capability":        true,
 	"Parameter":         true,
+	"ValidValue":        true,
+	"CapabilityVersion": true,
+	"Variant":           true,
+	"Dependency":        true,
+	"Order":             true,
+	"OrderItem":         true,
+	"BoundValue":        true,
 	"Capacity":          true,
 	"Threshold":         true,
 	"MetricInstance":    true,
@@ -44,6 +51,19 @@ var skipClientMethodsByName = map[string]bool{
 	"Finding":     true,
 	"FindingType": true,
 	"Node":        true,
+}
+
+// fullListByName marks resources whose GET collection returns full objects (not InstanceList).
+var fullListByName = map[string]bool{
+	"Capability":        true,
+	"Parameter":         true,
+	"ValidValue":        true,
+	"CapabilityVersion": true,
+	"Variant":           true,
+	"Dependency":        true,
+	"Order":             true,
+	"OrderItem":         true,
+	"BoundValue":        true,
 }
 
 var wireKindToEventsResource = map[string]string{
@@ -74,6 +94,13 @@ var wireKindToEventsResource = map[string]string{
 	"MergeRule":            "MergeRuleResource",
 	"Capability":           "CapabilityResource",
 	"Parameter":            "ParameterResource",
+	"ValidValue":           "ValidValueResource",
+	"CapabilityVersion":    "CapabilityVersionResource",
+	"Variant":              "VariantResource",
+	"Dependency":           "DependencyResource",
+	"Order":                "OrderResource",
+	"OrderItem":            "OrderItemResource",
+	"BoundValue":           "BoundValueResource",
 	"CapacityResourceType": "CapacityResourceTypeResource",
 	"Capacity":             "CapacityResource",
 	"Metric":               "MetricResource",
@@ -81,7 +108,6 @@ var wireKindToEventsResource = map[string]string{
 	"MetricInstance":       "MetricInstanceResource",
 	"MetricValue":          "MetricValueResource",
 }
-
 
 var serverRequestIDByName = map[string]string{
 	"SystemInstance":    "SystemInstanceId",
@@ -118,6 +144,13 @@ var serverResourceLabelByName = map[string]string{
 	"MergeRule":            "merge rule",
 	"Capability":           "capability",
 	"Parameter":            "parameter",
+	"ValidValue":           "valid value",
+	"CapabilityVersion":    "capability version",
+	"Variant":              "variant",
+	"Dependency":           "dependency",
+	"Order":                "order",
+	"OrderItem":            "order item",
+	"BoundValue":           "bound value",
 	"CapacityResourceType": "capacity resource type",
 	"Capacity":             "capacity",
 	"Metric":               "metric",
@@ -217,6 +250,7 @@ func enrichWireMeta(spec *TypeSpec) error {
 	spec.WireDomainIDGetter = strings.TrimSuffix(spec.ConvertDomainIDMethod, "()")
 
 	spec.SkipClientMethods = skipClientMethodsByName[spec.Name]
+	spec.FullListResponse = fullListByName[spec.Name]
 
 	if spec.GenClientMethods {
 		if !spec.SkipClientMethods {

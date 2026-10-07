@@ -17,6 +17,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	"go.emeland.io/modelsrv/pkg/model/system"
 )
@@ -50,6 +51,20 @@ func parseResourceTypeForRef(s string) (events.ResourceType, error) {
 		return events.CapabilityResource, nil
 	case "Parameter":
 		return events.ParameterResource, nil
+	case "ValidValue":
+		return events.ValidValueResource, nil
+	case "CapabilityVersion":
+		return events.CapabilityVersionResource, nil
+	case "Variant":
+		return events.VariantResource, nil
+	case "Dependency":
+		return events.DependencyResource, nil
+	case "Order":
+		return events.OrderResource, nil
+	case "OrderItem":
+		return events.OrderItemResource, nil
+	case "BoundValue":
+		return events.BoundValueResource, nil
 	default:
 		return 0, fmt.Errorf("unknown resource type %q", s)
 	}
@@ -216,6 +231,11 @@ func applySystemInstance(spec map[string]any, m model.Model) error {
 		return err
 	} else if has {
 		si.SetContextRef(&mdlctx.ContextRef{ContextId: cid})
+	}
+	if oid, has, err := optionalFirstUUIDRef(spec, "orderItem", "orderItemId"); err != nil {
+		return err
+	} else if has {
+		si.SetOrderItemRef(&mdlorder.OrderItemRef{OrderItemId: oid})
 	}
 	if err := applyAnnotations(si.GetAnnotations(), spec); err != nil {
 		return err
@@ -458,25 +478,11 @@ func applyCapability(spec map[string]any, m model.Model) error {
 	}
 	c := mdlcapability.NewCapability(id)
 	c.SetDisplayName(name)
-	if versions, ok := spec["versions"]; ok {
-		if vList, ok := versions.([]any); ok {
-			refs := make([]mdlcapability.CapabilityVersionRef, 0, len(vList))
-			for _, v := range vList {
-				if vMap, ok := v.(map[string]any); ok {
-					vid, err := parseUUIDField(vMap, "capabilityVersionId")
-					if err != nil {
-						return err
-					}
-					ver, err := parseVersionSpec(vMap["version"])
-					if err != nil {
-						return err
-					}
-					refs = append(refs, mdlcapability.CapabilityVersionRef{CapabilityVersionId: vid, Version: ver})
-				}
-			}
-			c.SetVersions(refs)
-		}
+	offers, err := parseUUIDStringList(spec, "offers")
+	if err != nil {
+		return err
 	}
+	c.SetOffers(offers)
 	if err := applyAnnotations(c.GetAnnotations(), spec); err != nil {
 		return err
 	}
@@ -494,17 +500,6 @@ func applyParameter(spec map[string]any, m model.Model) error {
 	}
 	param := mdlparameter.NewParameter(id)
 	param.SetDisplayName(name)
-	if values, ok := spec["values"]; ok {
-		if vList, ok := values.([]any); ok {
-			strs := make([]string, 0, len(vList))
-			for _, v := range vList {
-				if s, ok := v.(string); ok {
-					strs = append(strs, s)
-				}
-			}
-			param.SetValues(strs)
-		}
-	}
 	if err := applyAnnotations(param.GetAnnotations(), spec); err != nil {
 		return err
 	}

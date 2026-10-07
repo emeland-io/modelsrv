@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
+	"gopkg.in/yaml.v3"
 )
 
 // dateInputLayouts are the layouts accepted for the lifecycle date flags and
@@ -115,9 +117,12 @@ Flags:
 			}
 
 			id := uuid.New()
-			spec := buildCapabilitySpec(id, displayName, versions)
+			capSpec := map[string]any{
+				"capabilityId": id.String(),
+				"displayName":  displayName,
+			}
 			if len(parsed.annotations) > 0 {
-				spec["annotations"] = parseAnnotations(parsed.annotations)
+				capSpec["annotations"] = parseAnnotations(parsed.annotations)
 			}
 
 			dir := *outputDir
@@ -129,8 +134,19 @@ Flags:
 				file = parsed.outputFile
 			}
 
-			r := Resource{Version: resourceVersion, Kind: def.kind, Spec: spec}
-			return writeResource(r, id, dir, file)
+			capRes := Resource{Version: resourceVersion, Kind: def.kind, Spec: capSpec}
+			if err := writeResource(capRes, id, dir, file); err != nil {
+				return err
+			}
+
+			// Write one CapabilityVersion document per --version. When stdout is
+			// the destination the versions append after the capability document.
+			for _, v := range versions {
+				if err := writeCapabilityVersion(id, displayName, v, dir, file); err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 
@@ -306,59 +322,58 @@ func normalizeDate(s string) (string, error) {
 	return "", fmt.Errorf("invalid date %q (use YYYY-MM-DD or RFC3339)", s)
 }
 
-// buildCapabilitySpec assembles the YAML spec map for a Capability.
-//
-// The versions carry the real, ingress-backed fields (capabilityVersionId +
-// version{version,availableFrom,deprecatedFrom,terminatedFrom}). Each version
-// also gets a scaffolded single variant and an empty dependencies list. The
-// Variant and Dependency entities are not yet part of the modelsrv model (see
-// emeland-io/modelsrv#177); the modelsrv ingress currently ignores these keys,
-// so they act as forward-looking scaffolding rather than functional data.
-func buildCapabilitySpec(id uuid.UUID, displayName string, versions []capabilityVersionInput) map[string]any {
-	if len(versions) == 0 {
-		// Keep a single empty version so the construct is always "full".
-		versions = []capabilityVersionInput{{}}
+// writeCapabilityVersion writes a CapabilityVersion document for one version
+// input, linked to the parent Capability by capabilityId.
+func writeCapabilityVersion(capabilityID uuid.UUID, capabilityName string, v capabilityVersionInput, outputDir, outputFile string) error {
+	vid := uuid.New()
+	ver := map[string]any{"version": v.version}
+	if v.availableFrom != "" {
+		ver["availableFrom"] = v.availableFrom
 	}
-
-	verList := make([]any, 0, len(versions))
-	for _, v := range versions {
-		ver := map[string]any{"version": v.version}
-		if v.availableFrom != "" {
-			ver["availableFrom"] = v.availableFrom
-		}
-		if v.deprecatedFrom != "" {
-			ver["deprecatedFrom"] = v.deprecatedFrom
-		}
-		if v.terminatedFrom != "" {
-			ver["terminatedFrom"] = v.terminatedFrom
-		}
-
-		entry := map[string]any{
-			"capabilityVersionId": uuid.New().String(),
-			"version":             ver,
-			// Scaffold: not yet modelled by modelsrv (emeland-io/modelsrv#177).
-			"dependencies": []any{},
-			"variants": []any{
-				map[string]any{
-					"variantId":    uuid.New().String(),
-					"displayName":  "default",
-					"dependencies": []any{},
-				},
-			},
-		}
-		verList = append(verList, entry)
+	if v.deprecatedFrom != "" {
+		ver["deprecatedFrom"] = v.deprecatedFrom
 	}
-
-	return map[string]any{
-		"capabilityId": id.String(),
-		"displayName":  displayName,
-		"versions":     verList,
+	if v.terminatedFrom != "" {
+		ver["terminatedFrom"] = v.terminatedFrom
 	}
+	displayName := v.version
+	if displayName == "" {
+		displayName = capabilityName
+	}
+	spec := map[string]any{
+		"capabilityVersionId": vid.String(),
+		"displayName":         displayName,
+		"capability":          capabilityID.String(),
+		"version":             ver,
+	}
+	r := Resource{Version: resourceVersion, Kind: "CapabilityVersion", Spec: spec}
+	if outputFile == "-" {
+		// Append as a second YAML document on stdout.
+		data, err := yaml.Marshal(r)
+		if err != nil {
+			return fmt.Errorf("marshalling YAML: %w", err)
+		}
+		if _, err := os.Stdout.Write([]byte("---\n")); err != nil {
+			return err
+		}
+		_, err = os.Stdout.Write(data)
+		return err
+	}
+	// When writing to an explicit file path, place sibling version files next to it.
+	if outputFile != "" {
+		dir := filepath.Dir(outputFile)
+		base := filepath.Base(outputFile)
+		ext := filepath.Ext(base)
+		stem := strings.TrimSuffix(base, ext)
+		sibling := filepath.Join(dir, fmt.Sprintf("%s-version-%s%s", stem, vid.String(), ext))
+		return writeResource(r, vid, "", sibling)
+	}
+	return writeResource(r, vid, outputDir, "")
 }
 
 // promptForVersions asks interactively for at least one version when none were
 // supplied and stdin is a terminal. When not interactive, missing values are
-// left as-is (the scaffold still produces a valid, if sparse, construct).
+// left as-is (the Capability document is still valid without versions).
 func promptForVersions(cmd *cobra.Command, versions []capabilityVersionInput) ([]capabilityVersionInput, error) {
 	if !isInteractive() {
 		return versions, nil

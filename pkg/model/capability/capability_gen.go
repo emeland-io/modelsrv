@@ -24,8 +24,8 @@ type Capability interface {
 	GetDisplayName() string
 	SetDisplayName(string)
 
-	GetVersions() []CapabilityVersionRef
-	SetVersions([]CapabilityVersionRef)
+	GetOffers() []uuid.UUID
+	SetOffers([]uuid.UUID)
 
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
@@ -39,7 +39,7 @@ type capabilityData struct {
 
 	CapabilityId uuid.UUID
 	DisplayName  string
-	Versions     []CapabilityVersionRef
+	Offers       []uuid.UUID
 	Annotations  annotations.Annotations
 }
 
@@ -84,14 +84,14 @@ func (o *capabilityData) SetDisplayName(val string) {
 	}
 }
 
-// GetVersions implements [Versions].
-func (o *capabilityData) GetVersions() []CapabilityVersionRef {
-	return o.Versions
+// GetOffers implements [Offers].
+func (o *capabilityData) GetOffers() []uuid.UUID {
+	return o.Offers
 }
 
-// SetVersions implements [Capability].
-func (o *capabilityData) SetVersions(val []CapabilityVersionRef) {
-	o.Versions = val
+// SetOffers implements [Capability].
+func (o *capabilityData) SetOffers(val []uuid.UUID) {
+	o.Offers = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.CapabilityResource, events.UpdateOperation, o.CapabilityId, o)
