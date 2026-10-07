@@ -4835,7 +4835,7 @@ func (r GetLandscapeBindingsBindingIdResponse) ContentType() string {
 type GetLandscapeBoundValuesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]BoundValue
 }
 
 // Status returns HTTPResponse.Status
@@ -4896,7 +4896,7 @@ func (r GetLandscapeBoundValuesBoundValueIdResponse) ContentType() string {
 type GetLandscapeCapabilitiesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]Capability
 }
 
 // Status returns HTTPResponse.Status
@@ -4957,7 +4957,7 @@ func (r GetLandscapeCapabilitiesCapabilityIdResponse) ContentType() string {
 type GetLandscapeCapabilityVersionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]CapabilityVersion
 }
 
 // Status returns HTTPResponse.Status
@@ -5384,7 +5384,7 @@ func (r GetLandscapeContextsContextIdResponse) ContentType() string {
 type GetLandscapeDependenciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]Dependency
 }
 
 // Status returns HTTPResponse.Status
@@ -6116,7 +6116,7 @@ func (r GetLandscapeNodesNodeIdResponse) ContentType() string {
 type GetLandscapeOrderItemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]OrderItem
 }
 
 // Status returns HTTPResponse.Status
@@ -6177,7 +6177,7 @@ func (r GetLandscapeOrderItemsOrderItemIdResponse) ContentType() string {
 type GetLandscapeOrdersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]Order
 }
 
 // Status returns HTTPResponse.Status
@@ -6299,7 +6299,7 @@ func (r GetLandscapeOrgUnitsOrgUnitIdResponse) ContentType() string {
 type GetLandscapeParametersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]Parameter
 }
 
 // Status returns HTTPResponse.Status
@@ -6848,7 +6848,7 @@ func (r GetLandscapeThresholdsThresholdIdResponse) ContentType() string {
 type GetLandscapeValidValuesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]ValidValue
 }
 
 // Status returns HTTPResponse.Status
@@ -6909,7 +6909,7 @@ func (r GetLandscapeValidValuesValidValueIdResponse) ContentType() string {
 type GetLandscapeVariantsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *InstanceList
+	JSON200      *[]Variant
 }
 
 // Status returns HTTPResponse.Status
@@ -8214,7 +8214,7 @@ func ParseGetLandscapeBoundValuesResponse(rsp *http.Response) (*GetLandscapeBoun
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []BoundValue
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8273,7 +8273,7 @@ func ParseGetLandscapeCapabilitiesResponse(rsp *http.Response) (*GetLandscapeCap
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []Capability
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8332,7 +8332,7 @@ func ParseGetLandscapeCapabilityVersionsResponse(rsp *http.Response) (*GetLandsc
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []CapabilityVersion
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8745,7 +8745,7 @@ func ParseGetLandscapeDependenciesResponse(rsp *http.Response) (*GetLandscapeDep
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []Dependency
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9453,7 +9453,7 @@ func ParseGetLandscapeOrderItemsResponse(rsp *http.Response) (*GetLandscapeOrder
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []OrderItem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9512,7 +9512,7 @@ func ParseGetLandscapeOrdersResponse(rsp *http.Response) (*GetLandscapeOrdersRes
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []Order
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9630,7 +9630,7 @@ func ParseGetLandscapeParametersResponse(rsp *http.Response) (*GetLandscapeParam
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []Parameter
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -10161,7 +10161,7 @@ func ParseGetLandscapeValidValuesResponse(rsp *http.Response) (*GetLandscapeVali
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []ValidValue
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -10220,7 +10220,7 @@ func ParseGetLandscapeVariantsResponse(rsp *http.Response) (*GetLandscapeVariant
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceList
+		var dest []Variant
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

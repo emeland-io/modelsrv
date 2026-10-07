@@ -1130,7 +1130,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Capability'
   /landscape/capabilities/{capabilityId}:
     get:
       description: Retrieve a capability by its UUID.
@@ -1165,7 +1167,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Parameter'
   /landscape/parameters/{parameterId}:
     get:
       description: Retrieve a parameter by its UUID.
@@ -1200,7 +1204,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ValidValue'
   /landscape/validValues/{validValueId}:
     get:
       description: Retrieve a valid value by its UUID.
@@ -1235,7 +1241,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CapabilityVersion'
   /landscape/capabilityVersions/{capabilityVersionId}:
     get:
       description: Retrieve a capability version by its UUID.
@@ -1270,7 +1278,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Variant'
   /landscape/variants/{variantId}:
     get:
       description: Retrieve a variant by its UUID.
@@ -1305,7 +1315,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dependency'
   /landscape/dependencies/{dependencyId}:
     get:
       description: Retrieve a dependency by its UUID.
@@ -1340,7 +1352,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
   /landscape/orders/{orderId}:
     get:
       description: Retrieve an order by its UUID.
@@ -1375,7 +1389,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderItem'
   /landscape/orderItems/{orderItemId}:
     get:
       description: Retrieve an order item by its UUID.
@@ -1410,7 +1426,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InstanceList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/BoundValue'
   /landscape/boundValues/{boundValueId}:
     get:
       description: Retrieve a bound value by its UUID.

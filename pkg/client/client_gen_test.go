@@ -1055,6 +1055,15 @@ func TestListCapability(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Capability list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetCapabilityId() == testIDs["Capability"] {
+			found = true
+			assert.Equal(t, "Test Capability", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Capability list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdCapability(t *testing.T) {
@@ -1081,6 +1090,15 @@ func TestListParameter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Parameter list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetParameterId() == testIDs["Parameter"] {
+			found = true
+			assert.Equal(t, "Test Parameter", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Parameter list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdParameter(t *testing.T) {
@@ -1107,6 +1125,15 @@ func TestListValidValue(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "ValidValue list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetValidValueId() == testIDs["ValidValue"] {
+			found = true
+			assert.Equal(t, "Test ValidValue", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "ValidValue list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdValidValue(t *testing.T) {
@@ -1133,6 +1160,15 @@ func TestListCapabilityVersion(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "CapabilityVersion list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetCapabilityVersionId() == testIDs["CapabilityVersion"] {
+			found = true
+			assert.Equal(t, "Test CapabilityVersion", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "CapabilityVersion list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdCapabilityVersion(t *testing.T) {
@@ -1159,6 +1195,15 @@ func TestListVariant(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Variant list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetVariantId() == testIDs["Variant"] {
+			found = true
+			assert.Equal(t, "Test Variant", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Variant list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdVariant(t *testing.T) {
@@ -1185,6 +1230,15 @@ func TestListDependency(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Dependency list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetDependencyId() == testIDs["Dependency"] {
+			found = true
+			assert.Equal(t, "Test Dependency", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Dependency list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdDependency(t *testing.T) {
@@ -1211,6 +1265,15 @@ func TestListOrder(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Order list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetOrderId() == testIDs["Order"] {
+			found = true
+			assert.Equal(t, "Test Order", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Order list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdOrder(t *testing.T) {
@@ -1237,6 +1300,15 @@ func TestListOrderItem(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "OrderItem list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetOrderItemId() == testIDs["OrderItem"] {
+			found = true
+			assert.Equal(t, "Test OrderItem", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "OrderItem list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdOrderItem(t *testing.T) {
@@ -1263,6 +1335,15 @@ func TestListBoundValue(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "BoundValue list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetBoundValueId() == testIDs["BoundValue"] {
+			found = true
+			assert.Equal(t, "Test BoundValue", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "BoundValue list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdBoundValue(t *testing.T) {

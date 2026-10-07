@@ -598,7 +598,11 @@ func (a *ApiServer) GetLandscapeCapabilities(ctx context.Context, request GetLan
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.CapabilityResource, items)
 	}
-	return GetLandscapeCapabilities200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capabilities", items)), nil
+	out := make([]Capability, 0, len(items))
+	for _, item := range items {
+		out = append(out, CapabilityToDto(item))
+	}
+	return GetLandscapeCapabilities200JSONResponse(out), nil
 }
 
 // GetLandscapeCapabilitiesCapabilityId implements [StrictServerInterface].
@@ -625,7 +629,11 @@ func (a *ApiServer) GetLandscapeParameters(ctx context.Context, request GetLands
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.ParameterResource, items)
 	}
-	return GetLandscapeParameters200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/parameters", items)), nil
+	out := make([]Parameter, 0, len(items))
+	for _, item := range items {
+		out = append(out, ParameterToDto(item))
+	}
+	return GetLandscapeParameters200JSONResponse(out), nil
 }
 
 // GetLandscapeParametersParameterId implements [StrictServerInterface].
@@ -652,7 +660,11 @@ func (a *ApiServer) GetLandscapeValidValues(ctx context.Context, request GetLand
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.ValidValueResource, items)
 	}
-	return GetLandscapeValidValues200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/validValues", items)), nil
+	out := make([]ValidValue, 0, len(items))
+	for _, item := range items {
+		out = append(out, ValidValueToDto(item))
+	}
+	return GetLandscapeValidValues200JSONResponse(out), nil
 }
 
 // GetLandscapeValidValuesValidValueId implements [StrictServerInterface].
@@ -679,7 +691,11 @@ func (a *ApiServer) GetLandscapeCapabilityVersions(ctx context.Context, request 
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.CapabilityVersionResource, items)
 	}
-	return GetLandscapeCapabilityVersions200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/capabilityVersions", items)), nil
+	out := make([]CapabilityVersion, 0, len(items))
+	for _, item := range items {
+		out = append(out, CapabilityVersionToDto(item))
+	}
+	return GetLandscapeCapabilityVersions200JSONResponse(out), nil
 }
 
 // GetLandscapeCapabilityVersionsCapabilityVersionId implements [StrictServerInterface].
@@ -706,7 +722,11 @@ func (a *ApiServer) GetLandscapeVariants(ctx context.Context, request GetLandsca
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.VariantResource, items)
 	}
-	return GetLandscapeVariants200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/variants", items)), nil
+	out := make([]Variant, 0, len(items))
+	for _, item := range items {
+		out = append(out, VariantToDto(item))
+	}
+	return GetLandscapeVariants200JSONResponse(out), nil
 }
 
 // GetLandscapeVariantsVariantId implements [StrictServerInterface].
@@ -733,7 +753,11 @@ func (a *ApiServer) GetLandscapeDependencies(ctx context.Context, request GetLan
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.DependencyResource, items)
 	}
-	return GetLandscapeDependencies200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/dependencies", items)), nil
+	out := make([]Dependency, 0, len(items))
+	for _, item := range items {
+		out = append(out, DependencyToDto(item))
+	}
+	return GetLandscapeDependencies200JSONResponse(out), nil
 }
 
 // GetLandscapeDependenciesDependencyId implements [StrictServerInterface].
@@ -760,7 +784,11 @@ func (a *ApiServer) GetLandscapeOrders(ctx context.Context, request GetLandscape
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.OrderResource, items)
 	}
-	return GetLandscapeOrders200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orders", items)), nil
+	out := make([]Order, 0, len(items))
+	for _, item := range items {
+		out = append(out, OrderToDto(item))
+	}
+	return GetLandscapeOrders200JSONResponse(out), nil
 }
 
 // GetLandscapeOrdersOrderId implements [StrictServerInterface].
@@ -787,7 +815,11 @@ func (a *ApiServer) GetLandscapeOrderItems(ctx context.Context, request GetLands
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.OrderItemResource, items)
 	}
-	return GetLandscapeOrderItems200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/orderItems", items)), nil
+	out := make([]OrderItem, 0, len(items))
+	for _, item := range items {
+		out = append(out, OrderItemToDto(item))
+	}
+	return GetLandscapeOrderItems200JSONResponse(out), nil
 }
 
 // GetLandscapeOrderItemsOrderItemId implements [StrictServerInterface].
@@ -814,7 +846,11 @@ func (a *ApiServer) GetLandscapeBoundValues(ctx context.Context, request GetLand
 		principal := authz.PrincipalFromCtx(ctx)
 		items = authz.FilterVisible(a.Authz, principal, events.BoundValueResource, items)
 	}
-	return GetLandscapeBoundValues200JSONResponse(buildInstanceList(a.BaseURL, "/landscape/boundValues", items)), nil
+	out := make([]BoundValue, 0, len(items))
+	for _, item := range items {
+		out = append(out, BoundValueToDto(item))
+	}
+	return GetLandscapeBoundValues200JSONResponse(out), nil
 }
 
 // GetLandscapeBoundValuesBoundValueId implements [StrictServerInterface].

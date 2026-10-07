@@ -53,6 +53,19 @@ var skipClientMethodsByName = map[string]bool{
 	"Node":        true,
 }
 
+// fullListByName marks resources whose GET collection returns full objects (not InstanceList).
+var fullListByName = map[string]bool{
+	"Capability":        true,
+	"Parameter":         true,
+	"ValidValue":        true,
+	"CapabilityVersion": true,
+	"Variant":           true,
+	"Dependency":        true,
+	"Order":             true,
+	"OrderItem":         true,
+	"BoundValue":        true,
+}
+
 var wireKindToEventsResource = map[string]string{
 	"ContextType":          "ContextTypeResource",
 	"Context":              "ContextResource",
@@ -237,6 +250,7 @@ func enrichWireMeta(spec *TypeSpec) error {
 	spec.WireDomainIDGetter = strings.TrimSuffix(spec.ConvertDomainIDMethod, "()")
 
 	spec.SkipClientMethods = skipClientMethodsByName[spec.Name]
+	spec.FullListResponse = fullListByName[spec.Name]
 
 	if spec.GenClientMethods {
 		if !spec.SkipClientMethods {
