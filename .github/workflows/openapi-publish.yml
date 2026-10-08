@@ -52,7 +52,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Checkout modelsrv at tag
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.tag.outputs.tag }}
 
@@ -70,7 +70,7 @@ jobs:
           cp "${{ env.OPENAPI_SPEC }}" dist/apidocs/openapi.yaml
 
       - name: Checkout openapi repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.OPENAPI_REPO }}
           token: ${{ secrets.OPENAPI_REPO_TOKEN }}
