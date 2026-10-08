@@ -82,7 +82,6 @@ var wireKindToEventsResource = map[string]string{
 	"MetricValue":          "MetricValueResource",
 }
 
-
 var serverRequestIDByName = map[string]string{
 	"SystemInstance":    "SystemInstanceId",
 	"ApiInstance":       "ApiInstanceId",

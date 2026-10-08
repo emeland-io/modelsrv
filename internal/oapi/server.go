@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	strictnethttp "github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
 	"github.com/oapi-codegen/runtime/types"
 	"go.emeland.io/modelsrv/pkg/authz"
 	"go.emeland.io/modelsrv/pkg/events"
@@ -160,9 +159,9 @@ type ApiHandlerOptions struct {
 }
 
 func NewApiHandler(server *ApiServer, opts ApiHandlerOptions) ServerInterface {
-	middlewares := []strictnethttp.StrictHTTPMiddlewareFunc{ProcessContentTypeRequest}
+	middlewares := []StrictMiddlewareFunc{ProcessContentTypeRequest}
 	if opts.TrustAuthHeaders {
-		middlewares = append([]strictnethttp.StrictHTTPMiddlewareFunc{ProcessAuthHeaders}, middlewares...)
+		middlewares = append([]StrictMiddlewareFunc{ProcessAuthHeaders}, middlewares...)
 	}
 	handler := NewStrictHandler(server, middlewares)
 	return handler
