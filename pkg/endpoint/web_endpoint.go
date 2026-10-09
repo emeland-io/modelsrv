@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -101,8 +99,7 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	r.Use(httpMetrics.Middleware)
 	r.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
-	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
-	r.PathPrefix("/swagger").Handler(spa)
+	registerSwaggerDocs(r, log)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 	mountExtraHandlers(r, opts.ExtraHandlers)
 
@@ -145,8 +142,7 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 		metricsHandler.ServeHTTP(w, req)
 	}))
 
-	spa := spaHandler{staticPath: "/", indexPath: "/swagger/index.html", log: log}
-	r.PathPrefix("/swagger").Handler(spa)
+	registerSwaggerDocs(r, log)
 	r.HandleFunc("/api/events/history", server.HandleGetEventsHistory).Methods("GET")
 	mountExtraHandlers(r, opts.ExtraHandlers)
 
@@ -221,48 +217,6 @@ func WebListenerAddr() net.Addr {
 		return nil
 	}
 	return webListener.Addr()
-}
-
-// spaHandler implements the http.Handler interface, so we can use it
-// to respond to HTTP requests. The path to the static directory and
-// path to the index file within that static directory are used to
-// serve the SPA in the given static directory.
-type spaHandler struct {
-	staticPath string
-	indexPath  string
-	log        *zap.SugaredLogger
-}
-
-// ServeHTTP inspects the URL path to locate a file within the static dir
-// on the SPA handler. If a file is found, it will be served. If not, the
-// file located at the index path on the SPA handler will be served. This
-// is suitable behavior for serving an SPA (single page application).
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Join internally call path.Clean to prevent directory traversal
-	path := filepath.Join(h.staticPath, r.URL.Path)
-
-	h.log.Debugw("serving static file", "path", path, "url", r.URL.Path)
-
-	// check whether a file exists or is a directory at the given path
-	fi, err := os.Stat(path)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			h.log.Errorw("static file stat error", "path", path, "error", err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	// file does not exist or path is a directory: serve index file
-	// fi is only non-nil when err == nil, so IsDir() is safe here.
-	if err != nil || fi.IsDir() {
-		path = filepath.Join(h.staticPath, h.indexPath)
-		http.ServeFile(w, r, path)
-		return
-	}
-
-	// otherwise, use http.FileServer to serve the static file
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
 }
 
 // requestLoggingMiddleware logs each HTTP request with method, path, status
