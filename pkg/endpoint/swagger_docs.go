@@ -37,11 +37,11 @@ const redocPage = `<!DOCTYPE html>
 //	GET /swagger/              -> an HTML docs page (Redoc)
 //	GET /swagger/openapi.json  -> the embedded OpenAPI spec as JSON
 //
-// The spec comes from the generated oapi.GetSwagger(), so it always matches the
+// The spec comes from the generated oapi.GetSpec(), so it always matches the
 // built binary and needs no files on disk.
 func registerSwaggerDocs(r *mux.Router, log *zap.SugaredLogger) {
 	r.HandleFunc("/swagger/openapi.json", func(w http.ResponseWriter, _ *http.Request) {
-		spec, err := oapi.GetSwagger()
+		spec, err := oapi.GetSpec()
 		if err != nil {
 			log.Errorw("failed to load embedded openapi spec", "error", err)
 			http.Error(w, "failed to load OpenAPI spec", http.StatusInternalServerError)
