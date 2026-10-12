@@ -1,16 +1,24 @@
-# Auto-approve Renovate digest/patch PRs so they can automerge.
-# Calls the reusable workflow in opendefensecloud/dev-kit. The automerge policy
-# (which update types are eligible) comes from the renovate-config presets.
+# Auto-approve Renovate PRs that Renovate has marked for automerge.
+# Eligibility is controlled by the automerge rules in renovate.json.
 name: renovate-auto-approve
+
 on:
   pull_request:
-    types: [opened, reopened, synchronize, labeled, unlabeled]
-permissions:
-  contents: read
-  pull-requests: write
+    types: [opened, reopened, synchronize, auto_merge_enabled]
+
+permissions: {}
+
 jobs:
   approve:
-    uses: opendefensecloud/dev-kit/.github/workflows/renovate-auto-approve.yml@81c31ba09a3cf8e117213f9392a387455706ad64
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.auto_merge
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
       pull-requests: write
+    steps:
+      - name: Approve PR
+        run: gh pr review "$PR_URL" --approve
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
