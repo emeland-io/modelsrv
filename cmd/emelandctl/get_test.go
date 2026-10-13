@@ -68,12 +68,15 @@ func TestGetFindingsJSON(t *testing.T) {
 	require.NoError(t, err)
 
 	var items []struct {
-		Id   string `json:"Id"`
-		Name string `json:"Name"`
+		FindingId   string `json:"findingId"`
+		DisplayName string `json:"displayName"`
+		Reference   string `json:"reference"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(out), &items))
 	assert.Len(t, items, 1)
-	assert.Equal(t, "Phase 0 Integrity check", items[0].Name)
+	assert.Equal(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", items[0].FindingId)
+	assert.Equal(t, "Phase 0 Integrity check", items[0].DisplayName)
+	assert.Equal(t, "http://localhost/api/landscape/findings/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", items[0].Reference)
 }
 
 func TestGetFindingsEmpty(t *testing.T) {

@@ -64,8 +64,9 @@ var canonicalTypeOrder = []string{
 	"ApiInstance", "API", "Component", "SystemInstance", "ComponentInstance",
 	"Finding", "OrgUnit", "Group", "Identity", "PermissionSpec", "RoleSpec",
 	"Permission", "Role", "Binding", "Artifact", "ArtifactInstance", "Product",
-	"FilterRule", "MergeRule", "Capability", "Parameter", "CapacityResourceType",
-	"Capacity", "Metric", "Threshold", "MetricInstance", "MetricValue",
+	"FilterRule", "MergeRule", "Capability", "Parameter", "ValidValue",
+	"CapabilityVersion", "Variant", "Dependency", "Order", "OrderItem", "BoundValue",
+	"CapacityResourceType", "Capacity", "Metric", "Threshold", "MetricInstance", "MetricValue",
 }
 
 // orderTypes returns specs sorted by their index in order; any type not listed is appended

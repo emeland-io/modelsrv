@@ -24,9 +24,6 @@ type Parameter interface {
 	GetDisplayName() string
 	SetDisplayName(string)
 
-	GetValues() []string
-	SetValues([]string)
-
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
@@ -39,7 +36,6 @@ type parameterData struct {
 
 	ParameterId uuid.UUID
 	DisplayName string
-	Values      []string
 	Annotations annotations.Annotations
 }
 
@@ -78,20 +74,6 @@ func (o *parameterData) GetDisplayName() string {
 // SetDisplayName implements [Parameter].
 func (o *parameterData) SetDisplayName(val string) {
 	o.DisplayName = val
-
-	if o.isRegistered {
-		o.sink.Receive(events.ParameterResource, events.UpdateOperation, o.ParameterId, o)
-	}
-}
-
-// GetValues implements [Values].
-func (o *parameterData) GetValues() []string {
-	return o.Values
-}
-
-// SetValues implements [Parameter].
-func (o *parameterData) SetValues(val []string) {
-	o.Values = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.ParameterResource, events.UpdateOperation, o.ParameterId, o)

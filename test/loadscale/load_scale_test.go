@@ -371,7 +371,6 @@ func resourceKinds(f fixtureIDs) []resourceKind {
 		{"Parameter", func(m model.Model, id uuid.UUID, dn string) error {
 			param := mdlparameter.NewParameter(id)
 			param.SetDisplayName(dn)
-			param.SetValues([]string{"val1", "val2"})
 			return m.AddParameter(param)
 		}},
 		{"CapacityResourceType", func(m model.Model, id uuid.UUID, dn string) error {
@@ -409,7 +408,7 @@ func resourceKinds(f fixtureIDs) []resourceKind {
 		{"Threshold", func(m model.Model, id uuid.UUID, dn string) error {
 			th := mdlobs.NewThreshold(id)
 			th.SetDisplayName(dn)
-			th.SetMetricById(f.metric)
+			th.SetMetricInstanceById(f.metricInstance)
 			return m.AddThreshold(th)
 		}},
 		{"MetricInstance", func(m model.Model, id uuid.UUID, dn string) error {

@@ -157,6 +157,27 @@ type Binding struct {
 	Subject SubjectRef `json:"subject"`
 }
 
+// BoundValue A BoundValue records a specific ValidValue chosen for a Parameter on an OrderItem.
+type BoundValue struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the bound value.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// BoundValueId An UUID that uniquely identifies the bound value.
+	BoundValueId openapi_types.UUID `json:"boundValueId"`
+
+	// DisplayName The human-readable name of the bound value.
+	DisplayName string `json:"displayName"`
+
+	// OrderItem The UUID of the OrderItem this binding belongs to.
+	OrderItem openapi_types.UUID `json:"orderItem"`
+
+	// Parameter The UUID of the Parameter being bound.
+	Parameter openapi_types.UUID `json:"parameter"`
+
+	// ValidValue The UUID of the ValidValue selected for the Parameter.
+	ValidValue openapi_types.UUID `json:"validValue"`
+}
+
 // Capability A capability represents a technical building block offered by a product or system.
 type Capability struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the capability.
@@ -168,14 +189,23 @@ type Capability struct {
 	// DisplayName The human-readable name of the capability.
 	DisplayName string `json:"displayName"`
 
-	// Versions References to capability versions.
-	Versions *[]CapabilityVersionRef `json:"versions,omitempty"`
+	// Offers ValidValue UUIDs this capability offers (a subset of its Parameters' values).
+	Offers *[]openapi_types.UUID `json:"offers,omitempty"`
 }
 
-// CapabilityVersionRef A reference to a capability version.
-type CapabilityVersionRef struct {
-	// CapabilityVersionId The UUID of the referenced capability version.
+// CapabilityVersion A versioned lifecycle of a Capability, with availability windows.
+type CapabilityVersion struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the capability version.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Capability The UUID of the Capability this version belongs to.
+	Capability openapi_types.UUID `json:"capability"`
+
+	// CapabilityVersionId An UUID that uniquely identifies the capability version.
 	CapabilityVersionId openapi_types.UUID `json:"capabilityVersionId"`
+
+	// DisplayName The human-readable name of the capability version.
+	DisplayName string `json:"displayName"`
 
 	// Version Version information for all objects in the EmELand model.
 	Version *Version `json:"version,omitempty"`
@@ -315,6 +345,27 @@ type ContextType struct {
 
 	// DisplayName The human-readable name of the context type.
 	DisplayName string `json:"displayName"`
+}
+
+// Dependency A Dependency links a Variant to another Capability it needs, with optional ValidValue mappings.
+type Dependency struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the dependency.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Capability The UUID of the Capability this dependency requires.
+	Capability openapi_types.UUID `json:"capability"`
+
+	// DependencyId An UUID that uniquely identifies the dependency.
+	DependencyId openapi_types.UUID `json:"dependencyId"`
+
+	// DisplayName The human-readable name of the dependency.
+	DisplayName string `json:"displayName"`
+
+	// Mappings Mappings of ValidValues from the variant to the depended-on Capability.
+	Mappings *[]ValueMapping `json:"mappings,omitempty"`
+
+	// Variant The UUID of the Variant that owns this dependency.
+	Variant openapi_types.UUID `json:"variant"`
 }
 
 // ErrorString defines model for ErrorString.
@@ -552,6 +603,48 @@ type NodeView struct {
 	Reference string `json:"reference"`
 }
 
+// Order An Order tracks Capabilities ordered by an OrgUnit after commercial processes complete.
+type Order struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the order.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// DisplayName The human-readable name of the order.
+	DisplayName string `json:"displayName"`
+
+	// OrderId An UUID that uniquely identifies the order.
+	OrderId openapi_types.UUID `json:"orderId"`
+
+	// OrgUnit The UUID of the OrgUnit that placed the order.
+	OrgUnit openapi_types.UUID `json:"orgUnit"`
+}
+
+// OrderItem An OrderItem selects a Capability (version and variant) and binds Parameter values for an Order.
+type OrderItem struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the order item.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// Capability The UUID of the Capability being ordered.
+	Capability openapi_types.UUID `json:"capability"`
+
+	// CapabilityVersion The UUID of the CapabilityVersion being ordered.
+	CapabilityVersion openapi_types.UUID `json:"capabilityVersion"`
+
+	// Contexts Context UUIDs in which this order item is fulfilled.
+	Contexts *[]openapi_types.UUID `json:"contexts,omitempty"`
+
+	// DisplayName The human-readable name of the order item.
+	DisplayName string `json:"displayName"`
+
+	// Order The UUID of the Order this item belongs to.
+	Order openapi_types.UUID `json:"order"`
+
+	// OrderItemId An UUID that uniquely identifies the order item.
+	OrderItemId openapi_types.UUID `json:"orderItemId"`
+
+	// Variant The UUID of the Variant selected for this order item.
+	Variant openapi_types.UUID `json:"variant"`
+}
+
 // OrgUnit Represents a organizational unit in the EmELand model. This can be used to represent departments, teams, or any other organizational structure relevant to the landscape.
 type OrgUnit struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the organizational unit.
@@ -567,7 +660,7 @@ type OrgUnit struct {
 	OrgUnitId openapi_types.UUID `json:"orgUnitId"`
 }
 
-// Parameter A parameter defines an identifier and a list of discrete, finite values that the parameter can take.
+// Parameter A parameter defines an identifier for a grouping of discrete ValidValues.
 type Parameter struct {
 	// Annotations A set of key-value pairs for storing additional metadata about the parameter.
 	Annotations *[]Annotation `json:"annotations,omitempty"`
@@ -577,9 +670,6 @@ type Parameter struct {
 
 	// ParameterId An UUID that uniquely identifies the parameter.
 	ParameterId openapi_types.UUID `json:"parameterId"`
-
-	// Values The discrete values this parameter can take.
-	Values *[]string `json:"values,omitempty"`
 }
 
 // Permission Realized permission instance linked to a permission spec within the landscape.
@@ -725,6 +815,9 @@ type SystemInstance struct {
 	// DisplayName The human-readable name of the system instance.
 	DisplayName string `json:"displayName"`
 
+	// OrderItem The UUID of the OrderItem this system instance fulfills. Leave empty for multi-tenant systems that serve many orders.
+	OrderItem *openapi_types.UUID `json:"orderItem,omitempty"`
+
 	// System The UUID of the system that this instance realizes.
 	System openapi_types.UUID `json:"system"`
 
@@ -741,6 +834,48 @@ type Threshold struct {
 	// MetricInstanceRef Reference to a MetricInstance.
 	MetricInstanceRef MetricInstanceRef  `json:"metricInstanceRef"`
 	ThresholdId       openapi_types.UUID `json:"thresholdId"`
+}
+
+// ValidValue A discrete, finite value that is valid for a Parameter.
+type ValidValue struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the valid value.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// DisplayName The human-readable name of the value (e.g. "8GB", "10000-users").
+	DisplayName string `json:"displayName"`
+
+	// Parameter The UUID of the Parameter this value belongs to.
+	Parameter openapi_types.UUID `json:"parameter"`
+
+	// ValidValueId An UUID that uniquely identifies the valid value.
+	ValidValueId openapi_types.UUID `json:"validValueId"`
+}
+
+// ValueMapping Maps a ValidValue on the requiring side of a Dependency to a ValidValue on the depended-on Capability.
+type ValueMapping struct {
+	// FromValidValueId The ValidValue UUID on the requiring Variant side.
+	FromValidValueId openapi_types.UUID `json:"fromValidValueId"`
+
+	// ToValidValueId The ValidValue UUID on the depended-on Capability side.
+	ToValidValueId openapi_types.UUID `json:"toValidValueId"`
+}
+
+// Variant A Variant models a dependency pattern for a CapabilityVersion under a set of required Parameter values.
+type Variant struct {
+	// Annotations A set of key-value pairs for storing additional metadata about the variant.
+	Annotations *[]Annotation `json:"annotations,omitempty"`
+
+	// CapabilityVersion The UUID of the CapabilityVersion this variant belongs to.
+	CapabilityVersion openapi_types.UUID `json:"capabilityVersion"`
+
+	// DisplayName The human-readable name of the variant.
+	DisplayName string `json:"displayName"`
+
+	// Requires ValidValue UUIDs this variant requires from its Parameters.
+	Requires *[]openapi_types.UUID `json:"requires,omitempty"`
+
+	// VariantId An UUID that uniquely identifies the variant.
+	VariantId openapi_types.UUID `json:"variantId"`
 }
 
 // Version Version information for all objects in the EmELand model.
@@ -825,11 +960,23 @@ type ServerInterface interface {
 	// (GET /landscape/bindings/{bindingId})
 	GetLandscapeBindingsBindingId(w http.ResponseWriter, r *http.Request, bindingId openapi_types.UUID)
 
+	// (GET /landscape/boundValues)
+	GetLandscapeBoundValues(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/boundValues/{boundValueId})
+	GetLandscapeBoundValuesBoundValueId(w http.ResponseWriter, r *http.Request, boundValueId openapi_types.UUID)
+
 	// (GET /landscape/capabilities)
 	GetLandscapeCapabilities(w http.ResponseWriter, r *http.Request)
 
 	// (GET /landscape/capabilities/{capabilityId})
 	GetLandscapeCapabilitiesCapabilityId(w http.ResponseWriter, r *http.Request, capabilityId openapi_types.UUID)
+
+	// (GET /landscape/capabilityVersions)
+	GetLandscapeCapabilityVersions(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/capabilityVersions/{capabilityVersionId})
+	GetLandscapeCapabilityVersionsCapabilityVersionId(w http.ResponseWriter, r *http.Request, capabilityVersionId openapi_types.UUID)
 
 	// (GET /landscape/capacities)
 	GetLandscapeCapacities(w http.ResponseWriter, r *http.Request)
@@ -866,6 +1013,12 @@ type ServerInterface interface {
 
 	// (GET /landscape/contexts/{contextId})
 	GetLandscapeContextsContextId(w http.ResponseWriter, r *http.Request, contextId openapi_types.UUID)
+
+	// (GET /landscape/dependencies)
+	GetLandscapeDependencies(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/dependencies/{dependencyId})
+	GetLandscapeDependenciesDependencyId(w http.ResponseWriter, r *http.Request, dependencyId openapi_types.UUID)
 
 	// (GET /landscape/filter-rules)
 	GetLandscapeFilterRules(w http.ResponseWriter, r *http.Request)
@@ -933,6 +1086,18 @@ type ServerInterface interface {
 	// (GET /landscape/nodes/{nodeId})
 	GetLandscapeNodesNodeId(w http.ResponseWriter, r *http.Request, nodeId openapi_types.UUID)
 
+	// (GET /landscape/orderItems)
+	GetLandscapeOrderItems(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/orderItems/{orderItemId})
+	GetLandscapeOrderItemsOrderItemId(w http.ResponseWriter, r *http.Request, orderItemId openapi_types.UUID)
+
+	// (GET /landscape/orders)
+	GetLandscapeOrders(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/orders/{orderId})
+	GetLandscapeOrdersOrderId(w http.ResponseWriter, r *http.Request, orderId openapi_types.UUID)
+
 	// (GET /landscape/orgUnits)
 	GetLandscapeOrgUnits(w http.ResponseWriter, r *http.Request)
 
@@ -992,6 +1157,18 @@ type ServerInterface interface {
 
 	// (GET /landscape/thresholds/{thresholdId})
 	GetLandscapeThresholdsThresholdId(w http.ResponseWriter, r *http.Request, thresholdId openapi_types.UUID)
+
+	// (GET /landscape/validValues)
+	GetLandscapeValidValues(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/validValues/{validValueId})
+	GetLandscapeValidValuesValidValueId(w http.ResponseWriter, r *http.Request, validValueId openapi_types.UUID)
+
+	// (GET /landscape/variants)
+	GetLandscapeVariants(w http.ResponseWriter, r *http.Request)
+
+	// (GET /landscape/variants/{variantId})
+	GetLandscapeVariantsVariantId(w http.ResponseWriter, r *http.Request, variantId openapi_types.UUID)
 
 	// (GET /test)
 	GetTest(w http.ResponseWriter, r *http.Request)
@@ -1288,6 +1465,46 @@ func (siw *ServerInterfaceWrapper) GetLandscapeBindingsBindingId(w http.Response
 	handler.ServeHTTP(w, r)
 }
 
+// GetLandscapeBoundValues operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeBoundValues(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeBoundValues(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeBoundValuesBoundValueId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeBoundValuesBoundValueId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "boundValueId" -------------
+	var boundValueId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "boundValueId", mux.Vars(r)["boundValueId"], &boundValueId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "boundValueId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeBoundValuesBoundValueId(w, r, boundValueId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLandscapeCapabilities operation middleware
 func (siw *ServerInterfaceWrapper) GetLandscapeCapabilities(w http.ResponseWriter, r *http.Request) {
 
@@ -1319,6 +1536,46 @@ func (siw *ServerInterfaceWrapper) GetLandscapeCapabilitiesCapabilityId(w http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLandscapeCapabilitiesCapabilityId(w, r, capabilityId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeCapabilityVersions operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeCapabilityVersions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeCapabilityVersions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeCapabilityVersionsCapabilityVersionId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeCapabilityVersionsCapabilityVersionId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "capabilityVersionId" -------------
+	var capabilityVersionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "capabilityVersionId", mux.Vars(r)["capabilityVersionId"], &capabilityVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "capabilityVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeCapabilityVersionsCapabilityVersionId(w, r, capabilityVersionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1559,6 +1816,46 @@ func (siw *ServerInterfaceWrapper) GetLandscapeContextsContextId(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLandscapeContextsContextId(w, r, contextId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeDependencies operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeDependencies(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeDependencies(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeDependenciesDependencyId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeDependenciesDependencyId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "dependencyId" -------------
+	var dependencyId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dependencyId", mux.Vars(r)["dependencyId"], &dependencyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dependencyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeDependenciesDependencyId(w, r, dependencyId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2008,6 +2305,86 @@ func (siw *ServerInterfaceWrapper) GetLandscapeNodesNodeId(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// GetLandscapeOrderItems operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeOrderItems(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeOrderItems(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeOrderItemsOrderItemId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeOrderItemsOrderItemId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderItemId" -------------
+	var orderItemId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderItemId", mux.Vars(r)["orderItemId"], &orderItemId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderItemId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeOrderItemsOrderItemId(w, r, orderItemId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeOrders operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeOrders(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeOrders(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeOrdersOrderId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeOrdersOrderId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "orderId" -------------
+	var orderId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "orderId", mux.Vars(r)["orderId"], &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "orderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeOrdersOrderId(w, r, orderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLandscapeOrgUnits operation middleware
 func (siw *ServerInterfaceWrapper) GetLandscapeOrgUnits(w http.ResponseWriter, r *http.Request) {
 
@@ -2408,6 +2785,86 @@ func (siw *ServerInterfaceWrapper) GetLandscapeThresholdsThresholdId(w http.Resp
 	handler.ServeHTTP(w, r)
 }
 
+// GetLandscapeValidValues operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeValidValues(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeValidValues(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeValidValuesValidValueId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeValidValuesValidValueId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "validValueId" -------------
+	var validValueId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "validValueId", mux.Vars(r)["validValueId"], &validValueId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "validValueId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeValidValuesValidValueId(w, r, validValueId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeVariants operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeVariants(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeVariants(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLandscapeVariantsVariantId operation middleware
+func (siw *ServerInterfaceWrapper) GetLandscapeVariantsVariantId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "variantId" -------------
+	var variantId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "variantId", mux.Vars(r)["variantId"], &variantId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "variantId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLandscapeVariantsVariantId(w, r, variantId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetTest operation middleware
 func (siw *ServerInterfaceWrapper) GetTest(w http.ResponseWriter, r *http.Request) {
 
@@ -2565,9 +3022,17 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/landscape/bindings/{bindingId}", wrapper.GetLandscapeBindingsBindingId).Methods(http.MethodGet)
 
+	r.HandleFunc(options.BaseURL+"/landscape/boundValues", wrapper.GetLandscapeBoundValues).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/boundValues/{boundValueId}", wrapper.GetLandscapeBoundValuesBoundValueId).Methods(http.MethodGet)
+
 	r.HandleFunc(options.BaseURL+"/landscape/capabilities", wrapper.GetLandscapeCapabilities).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/capabilities/{capabilityId}", wrapper.GetLandscapeCapabilitiesCapabilityId).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/capabilityVersions", wrapper.GetLandscapeCapabilityVersions).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/capabilityVersions/{capabilityVersionId}", wrapper.GetLandscapeCapabilityVersionsCapabilityVersionId).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/capacities", wrapper.GetLandscapeCapacities).Methods(http.MethodGet)
 
@@ -2592,6 +3057,10 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/landscape/contexts", wrapper.GetLandscapeContexts).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/contexts/{contextId}", wrapper.GetLandscapeContextsContextId).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/dependencies", wrapper.GetLandscapeDependencies).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/dependencies/{dependencyId}", wrapper.GetLandscapeDependenciesDependencyId).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/filter-rules", wrapper.GetLandscapeFilterRules).Methods(http.MethodGet)
 
@@ -2637,6 +3106,14 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 
 	r.HandleFunc(options.BaseURL+"/landscape/nodes/{nodeId}", wrapper.GetLandscapeNodesNodeId).Methods(http.MethodGet)
 
+	r.HandleFunc(options.BaseURL+"/landscape/orderItems", wrapper.GetLandscapeOrderItems).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/orderItems/{orderItemId}", wrapper.GetLandscapeOrderItemsOrderItemId).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/orders", wrapper.GetLandscapeOrders).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/orders/{orderId}", wrapper.GetLandscapeOrdersOrderId).Methods(http.MethodGet)
+
 	r.HandleFunc(options.BaseURL+"/landscape/orgUnits", wrapper.GetLandscapeOrgUnits).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/orgUnits/{orgUnitId}", wrapper.GetLandscapeOrgUnitsOrgUnitId).Methods(http.MethodGet)
@@ -2676,6 +3153,14 @@ func HandlerWithOptions(si ServerInterface, options GorillaServerOptions) http.H
 	r.HandleFunc(options.BaseURL+"/landscape/thresholds", wrapper.GetLandscapeThresholds).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/landscape/thresholds/{thresholdId}", wrapper.GetLandscapeThresholdsThresholdId).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/validValues", wrapper.GetLandscapeValidValues).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/validValues/{validValueId}", wrapper.GetLandscapeValidValuesValidValueId).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/variants", wrapper.GetLandscapeVariants).Methods(http.MethodGet)
+
+	r.HandleFunc(options.BaseURL+"/landscape/variants/{variantId}", wrapper.GetLandscapeVariantsVariantId).Methods(http.MethodGet)
 
 	r.HandleFunc(options.BaseURL+"/test", wrapper.GetTest).Methods(http.MethodGet)
 
@@ -3088,6 +3573,63 @@ func (response GetLandscapeBindingsBindingId404JSONResponse) VisitGetLandscapeBi
 	return err
 }
 
+type GetLandscapeBoundValuesRequestObject struct {
+}
+
+type GetLandscapeBoundValuesResponseObject interface {
+	VisitGetLandscapeBoundValuesResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeBoundValues200JSONResponse []BoundValue
+
+func (response GetLandscapeBoundValues200JSONResponse) VisitGetLandscapeBoundValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeBoundValuesBoundValueIdRequestObject struct {
+	BoundValueId openapi_types.UUID `json:"boundValueId"`
+}
+
+type GetLandscapeBoundValuesBoundValueIdResponseObject interface {
+	VisitGetLandscapeBoundValuesBoundValueIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeBoundValuesBoundValueId200JSONResponse BoundValue
+
+func (response GetLandscapeBoundValuesBoundValueId200JSONResponse) VisitGetLandscapeBoundValuesBoundValueIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeBoundValuesBoundValueId404JSONResponse ErrorString
+
+func (response GetLandscapeBoundValuesBoundValueId404JSONResponse) VisitGetLandscapeBoundValuesBoundValueIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetLandscapeCapabilitiesRequestObject struct {
 }
 
@@ -3095,7 +3637,7 @@ type GetLandscapeCapabilitiesResponseObject interface {
 	VisitGetLandscapeCapabilitiesResponse(w http.ResponseWriter) error
 }
 
-type GetLandscapeCapabilities200JSONResponse InstanceList
+type GetLandscapeCapabilities200JSONResponse []Capability
 
 func (response GetLandscapeCapabilities200JSONResponse) VisitGetLandscapeCapabilitiesResponse(w http.ResponseWriter) error {
 
@@ -3134,6 +3676,63 @@ func (response GetLandscapeCapabilitiesCapabilityId200JSONResponse) VisitGetLand
 type GetLandscapeCapabilitiesCapabilityId404JSONResponse ErrorString
 
 func (response GetLandscapeCapabilitiesCapabilityId404JSONResponse) VisitGetLandscapeCapabilitiesCapabilityIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeCapabilityVersionsRequestObject struct {
+}
+
+type GetLandscapeCapabilityVersionsResponseObject interface {
+	VisitGetLandscapeCapabilityVersionsResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeCapabilityVersions200JSONResponse []CapabilityVersion
+
+func (response GetLandscapeCapabilityVersions200JSONResponse) VisitGetLandscapeCapabilityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeCapabilityVersionsCapabilityVersionIdRequestObject struct {
+	CapabilityVersionId openapi_types.UUID `json:"capabilityVersionId"`
+}
+
+type GetLandscapeCapabilityVersionsCapabilityVersionIdResponseObject interface {
+	VisitGetLandscapeCapabilityVersionsCapabilityVersionIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeCapabilityVersionsCapabilityVersionId200JSONResponse CapabilityVersion
+
+func (response GetLandscapeCapabilityVersionsCapabilityVersionId200JSONResponse) VisitGetLandscapeCapabilityVersionsCapabilityVersionIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeCapabilityVersionsCapabilityVersionId404JSONResponse ErrorString
+
+func (response GetLandscapeCapabilityVersionsCapabilityVersionId404JSONResponse) VisitGetLandscapeCapabilityVersionsCapabilityVersionIdResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3476,6 +4075,63 @@ func (response GetLandscapeContextsContextId200JSONResponse) VisitGetLandscapeCo
 type GetLandscapeContextsContextId404JSONResponse ErrorString
 
 func (response GetLandscapeContextsContextId404JSONResponse) VisitGetLandscapeContextsContextIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeDependenciesRequestObject struct {
+}
+
+type GetLandscapeDependenciesResponseObject interface {
+	VisitGetLandscapeDependenciesResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeDependencies200JSONResponse []Dependency
+
+func (response GetLandscapeDependencies200JSONResponse) VisitGetLandscapeDependenciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeDependenciesDependencyIdRequestObject struct {
+	DependencyId openapi_types.UUID `json:"dependencyId"`
+}
+
+type GetLandscapeDependenciesDependencyIdResponseObject interface {
+	VisitGetLandscapeDependenciesDependencyIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeDependenciesDependencyId200JSONResponse Dependency
+
+func (response GetLandscapeDependenciesDependencyId200JSONResponse) VisitGetLandscapeDependenciesDependencyIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeDependenciesDependencyId404JSONResponse ErrorString
+
+func (response GetLandscapeDependenciesDependencyId404JSONResponse) VisitGetLandscapeDependenciesDependencyIdResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4114,6 +4770,120 @@ func (response GetLandscapeNodesNodeId404JSONResponse) VisitGetLandscapeNodesNod
 	return err
 }
 
+type GetLandscapeOrderItemsRequestObject struct {
+}
+
+type GetLandscapeOrderItemsResponseObject interface {
+	VisitGetLandscapeOrderItemsResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeOrderItems200JSONResponse []OrderItem
+
+func (response GetLandscapeOrderItems200JSONResponse) VisitGetLandscapeOrderItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeOrderItemsOrderItemIdRequestObject struct {
+	OrderItemId openapi_types.UUID `json:"orderItemId"`
+}
+
+type GetLandscapeOrderItemsOrderItemIdResponseObject interface {
+	VisitGetLandscapeOrderItemsOrderItemIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeOrderItemsOrderItemId200JSONResponse OrderItem
+
+func (response GetLandscapeOrderItemsOrderItemId200JSONResponse) VisitGetLandscapeOrderItemsOrderItemIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeOrderItemsOrderItemId404JSONResponse ErrorString
+
+func (response GetLandscapeOrderItemsOrderItemId404JSONResponse) VisitGetLandscapeOrderItemsOrderItemIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeOrdersRequestObject struct {
+}
+
+type GetLandscapeOrdersResponseObject interface {
+	VisitGetLandscapeOrdersResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeOrders200JSONResponse []Order
+
+func (response GetLandscapeOrders200JSONResponse) VisitGetLandscapeOrdersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeOrdersOrderIdRequestObject struct {
+	OrderId openapi_types.UUID `json:"orderId"`
+}
+
+type GetLandscapeOrdersOrderIdResponseObject interface {
+	VisitGetLandscapeOrdersOrderIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeOrdersOrderId200JSONResponse Order
+
+func (response GetLandscapeOrdersOrderId200JSONResponse) VisitGetLandscapeOrdersOrderIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeOrdersOrderId404JSONResponse ErrorString
+
+func (response GetLandscapeOrdersOrderId404JSONResponse) VisitGetLandscapeOrdersOrderIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetLandscapeOrgUnitsRequestObject struct {
 }
 
@@ -4178,7 +4948,7 @@ type GetLandscapeParametersResponseObject interface {
 	VisitGetLandscapeParametersResponse(w http.ResponseWriter) error
 }
 
-type GetLandscapeParameters200JSONResponse InstanceList
+type GetLandscapeParameters200JSONResponse []Parameter
 
 func (response GetLandscapeParameters200JSONResponse) VisitGetLandscapeParametersResponse(w http.ResponseWriter) error {
 
@@ -4684,6 +5454,120 @@ func (response GetLandscapeThresholdsThresholdId404JSONResponse) VisitGetLandsca
 	return err
 }
 
+type GetLandscapeValidValuesRequestObject struct {
+}
+
+type GetLandscapeValidValuesResponseObject interface {
+	VisitGetLandscapeValidValuesResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeValidValues200JSONResponse []ValidValue
+
+func (response GetLandscapeValidValues200JSONResponse) VisitGetLandscapeValidValuesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeValidValuesValidValueIdRequestObject struct {
+	ValidValueId openapi_types.UUID `json:"validValueId"`
+}
+
+type GetLandscapeValidValuesValidValueIdResponseObject interface {
+	VisitGetLandscapeValidValuesValidValueIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeValidValuesValidValueId200JSONResponse ValidValue
+
+func (response GetLandscapeValidValuesValidValueId200JSONResponse) VisitGetLandscapeValidValuesValidValueIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeValidValuesValidValueId404JSONResponse ErrorString
+
+func (response GetLandscapeValidValuesValidValueId404JSONResponse) VisitGetLandscapeValidValuesValidValueIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeVariantsRequestObject struct {
+}
+
+type GetLandscapeVariantsResponseObject interface {
+	VisitGetLandscapeVariantsResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeVariants200JSONResponse []Variant
+
+func (response GetLandscapeVariants200JSONResponse) VisitGetLandscapeVariantsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeVariantsVariantIdRequestObject struct {
+	VariantId openapi_types.UUID `json:"variantId"`
+}
+
+type GetLandscapeVariantsVariantIdResponseObject interface {
+	VisitGetLandscapeVariantsVariantIdResponse(w http.ResponseWriter) error
+}
+
+type GetLandscapeVariantsVariantId200JSONResponse Variant
+
+func (response GetLandscapeVariantsVariantId200JSONResponse) VisitGetLandscapeVariantsVariantIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLandscapeVariantsVariantId404JSONResponse ErrorString
+
+func (response GetLandscapeVariantsVariantId404JSONResponse) VisitGetLandscapeVariantsVariantIdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetTestRequestObject struct {
 }
 
@@ -4747,11 +5631,23 @@ type StrictServerInterface interface {
 	// (GET /landscape/bindings/{bindingId})
 	GetLandscapeBindingsBindingId(ctx context.Context, request GetLandscapeBindingsBindingIdRequestObject) (GetLandscapeBindingsBindingIdResponseObject, error)
 
+	// (GET /landscape/boundValues)
+	GetLandscapeBoundValues(ctx context.Context, request GetLandscapeBoundValuesRequestObject) (GetLandscapeBoundValuesResponseObject, error)
+
+	// (GET /landscape/boundValues/{boundValueId})
+	GetLandscapeBoundValuesBoundValueId(ctx context.Context, request GetLandscapeBoundValuesBoundValueIdRequestObject) (GetLandscapeBoundValuesBoundValueIdResponseObject, error)
+
 	// (GET /landscape/capabilities)
 	GetLandscapeCapabilities(ctx context.Context, request GetLandscapeCapabilitiesRequestObject) (GetLandscapeCapabilitiesResponseObject, error)
 
 	// (GET /landscape/capabilities/{capabilityId})
 	GetLandscapeCapabilitiesCapabilityId(ctx context.Context, request GetLandscapeCapabilitiesCapabilityIdRequestObject) (GetLandscapeCapabilitiesCapabilityIdResponseObject, error)
+
+	// (GET /landscape/capabilityVersions)
+	GetLandscapeCapabilityVersions(ctx context.Context, request GetLandscapeCapabilityVersionsRequestObject) (GetLandscapeCapabilityVersionsResponseObject, error)
+
+	// (GET /landscape/capabilityVersions/{capabilityVersionId})
+	GetLandscapeCapabilityVersionsCapabilityVersionId(ctx context.Context, request GetLandscapeCapabilityVersionsCapabilityVersionIdRequestObject) (GetLandscapeCapabilityVersionsCapabilityVersionIdResponseObject, error)
 
 	// (GET /landscape/capacities)
 	GetLandscapeCapacities(ctx context.Context, request GetLandscapeCapacitiesRequestObject) (GetLandscapeCapacitiesResponseObject, error)
@@ -4788,6 +5684,12 @@ type StrictServerInterface interface {
 
 	// (GET /landscape/contexts/{contextId})
 	GetLandscapeContextsContextId(ctx context.Context, request GetLandscapeContextsContextIdRequestObject) (GetLandscapeContextsContextIdResponseObject, error)
+
+	// (GET /landscape/dependencies)
+	GetLandscapeDependencies(ctx context.Context, request GetLandscapeDependenciesRequestObject) (GetLandscapeDependenciesResponseObject, error)
+
+	// (GET /landscape/dependencies/{dependencyId})
+	GetLandscapeDependenciesDependencyId(ctx context.Context, request GetLandscapeDependenciesDependencyIdRequestObject) (GetLandscapeDependenciesDependencyIdResponseObject, error)
 
 	// (GET /landscape/filter-rules)
 	GetLandscapeFilterRules(ctx context.Context, request GetLandscapeFilterRulesRequestObject) (GetLandscapeFilterRulesResponseObject, error)
@@ -4855,6 +5757,18 @@ type StrictServerInterface interface {
 	// (GET /landscape/nodes/{nodeId})
 	GetLandscapeNodesNodeId(ctx context.Context, request GetLandscapeNodesNodeIdRequestObject) (GetLandscapeNodesNodeIdResponseObject, error)
 
+	// (GET /landscape/orderItems)
+	GetLandscapeOrderItems(ctx context.Context, request GetLandscapeOrderItemsRequestObject) (GetLandscapeOrderItemsResponseObject, error)
+
+	// (GET /landscape/orderItems/{orderItemId})
+	GetLandscapeOrderItemsOrderItemId(ctx context.Context, request GetLandscapeOrderItemsOrderItemIdRequestObject) (GetLandscapeOrderItemsOrderItemIdResponseObject, error)
+
+	// (GET /landscape/orders)
+	GetLandscapeOrders(ctx context.Context, request GetLandscapeOrdersRequestObject) (GetLandscapeOrdersResponseObject, error)
+
+	// (GET /landscape/orders/{orderId})
+	GetLandscapeOrdersOrderId(ctx context.Context, request GetLandscapeOrdersOrderIdRequestObject) (GetLandscapeOrdersOrderIdResponseObject, error)
+
 	// (GET /landscape/orgUnits)
 	GetLandscapeOrgUnits(ctx context.Context, request GetLandscapeOrgUnitsRequestObject) (GetLandscapeOrgUnitsResponseObject, error)
 
@@ -4914,6 +5828,18 @@ type StrictServerInterface interface {
 
 	// (GET /landscape/thresholds/{thresholdId})
 	GetLandscapeThresholdsThresholdId(ctx context.Context, request GetLandscapeThresholdsThresholdIdRequestObject) (GetLandscapeThresholdsThresholdIdResponseObject, error)
+
+	// (GET /landscape/validValues)
+	GetLandscapeValidValues(ctx context.Context, request GetLandscapeValidValuesRequestObject) (GetLandscapeValidValuesResponseObject, error)
+
+	// (GET /landscape/validValues/{validValueId})
+	GetLandscapeValidValuesValidValueId(ctx context.Context, request GetLandscapeValidValuesValidValueIdRequestObject) (GetLandscapeValidValuesValidValueIdResponseObject, error)
+
+	// (GET /landscape/variants)
+	GetLandscapeVariants(ctx context.Context, request GetLandscapeVariantsRequestObject) (GetLandscapeVariantsResponseObject, error)
+
+	// (GET /landscape/variants/{variantId})
+	GetLandscapeVariantsVariantId(ctx context.Context, request GetLandscapeVariantsVariantIdRequestObject) (GetLandscapeVariantsVariantIdResponseObject, error)
 
 	// (GET /test)
 	GetTest(ctx context.Context, request GetTestRequestObject) (GetTestResponseObject, error)
@@ -5341,6 +6267,56 @@ func (sh *strictHandler) GetLandscapeBindingsBindingId(w http.ResponseWriter, r 
 	}
 }
 
+// GetLandscapeBoundValues operation middleware
+func (sh *strictHandler) GetLandscapeBoundValues(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeBoundValuesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeBoundValues(ctx, request.(GetLandscapeBoundValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeBoundValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeBoundValuesResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeBoundValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeBoundValuesBoundValueId operation middleware
+func (sh *strictHandler) GetLandscapeBoundValuesBoundValueId(w http.ResponseWriter, r *http.Request, boundValueId openapi_types.UUID) {
+	var request GetLandscapeBoundValuesBoundValueIdRequestObject
+
+	request.BoundValueId = boundValueId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeBoundValuesBoundValueId(ctx, request.(GetLandscapeBoundValuesBoundValueIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeBoundValuesBoundValueId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeBoundValuesBoundValueIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeBoundValuesBoundValueIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLandscapeCapabilities operation middleware
 func (sh *strictHandler) GetLandscapeCapabilities(w http.ResponseWriter, r *http.Request) {
 	var request GetLandscapeCapabilitiesRequestObject
@@ -5384,6 +6360,56 @@ func (sh *strictHandler) GetLandscapeCapabilitiesCapabilityId(w http.ResponseWri
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLandscapeCapabilitiesCapabilityIdResponseObject); ok {
 		if err := validResponse.VisitGetLandscapeCapabilitiesCapabilityIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeCapabilityVersions operation middleware
+func (sh *strictHandler) GetLandscapeCapabilityVersions(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeCapabilityVersionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeCapabilityVersions(ctx, request.(GetLandscapeCapabilityVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeCapabilityVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeCapabilityVersionsResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeCapabilityVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeCapabilityVersionsCapabilityVersionId operation middleware
+func (sh *strictHandler) GetLandscapeCapabilityVersionsCapabilityVersionId(w http.ResponseWriter, r *http.Request, capabilityVersionId openapi_types.UUID) {
+	var request GetLandscapeCapabilityVersionsCapabilityVersionIdRequestObject
+
+	request.CapabilityVersionId = capabilityVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeCapabilityVersionsCapabilityVersionId(ctx, request.(GetLandscapeCapabilityVersionsCapabilityVersionIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeCapabilityVersionsCapabilityVersionId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeCapabilityVersionsCapabilityVersionIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeCapabilityVersionsCapabilityVersionIdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -5684,6 +6710,56 @@ func (sh *strictHandler) GetLandscapeContextsContextId(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLandscapeContextsContextIdResponseObject); ok {
 		if err := validResponse.VisitGetLandscapeContextsContextIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeDependencies operation middleware
+func (sh *strictHandler) GetLandscapeDependencies(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeDependenciesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeDependencies(ctx, request.(GetLandscapeDependenciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeDependencies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeDependenciesResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeDependenciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeDependenciesDependencyId operation middleware
+func (sh *strictHandler) GetLandscapeDependenciesDependencyId(w http.ResponseWriter, r *http.Request, dependencyId openapi_types.UUID) {
+	var request GetLandscapeDependenciesDependencyIdRequestObject
+
+	request.DependencyId = dependencyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeDependenciesDependencyId(ctx, request.(GetLandscapeDependenciesDependencyIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeDependenciesDependencyId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeDependenciesDependencyIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeDependenciesDependencyIdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6241,6 +7317,106 @@ func (sh *strictHandler) GetLandscapeNodesNodeId(w http.ResponseWriter, r *http.
 	}
 }
 
+// GetLandscapeOrderItems operation middleware
+func (sh *strictHandler) GetLandscapeOrderItems(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeOrderItemsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeOrderItems(ctx, request.(GetLandscapeOrderItemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeOrderItems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeOrderItemsResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeOrderItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeOrderItemsOrderItemId operation middleware
+func (sh *strictHandler) GetLandscapeOrderItemsOrderItemId(w http.ResponseWriter, r *http.Request, orderItemId openapi_types.UUID) {
+	var request GetLandscapeOrderItemsOrderItemIdRequestObject
+
+	request.OrderItemId = orderItemId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeOrderItemsOrderItemId(ctx, request.(GetLandscapeOrderItemsOrderItemIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeOrderItemsOrderItemId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeOrderItemsOrderItemIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeOrderItemsOrderItemIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeOrders operation middleware
+func (sh *strictHandler) GetLandscapeOrders(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeOrdersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeOrders(ctx, request.(GetLandscapeOrdersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeOrders")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeOrdersResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeOrdersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeOrdersOrderId operation middleware
+func (sh *strictHandler) GetLandscapeOrdersOrderId(w http.ResponseWriter, r *http.Request, orderId openapi_types.UUID) {
+	var request GetLandscapeOrdersOrderIdRequestObject
+
+	request.OrderId = orderId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeOrdersOrderId(ctx, request.(GetLandscapeOrdersOrderIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeOrdersOrderId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeOrdersOrderIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeOrdersOrderIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetLandscapeOrgUnits operation middleware
 func (sh *strictHandler) GetLandscapeOrgUnits(w http.ResponseWriter, r *http.Request) {
 	var request GetLandscapeOrgUnitsRequestObject
@@ -6741,6 +7917,106 @@ func (sh *strictHandler) GetLandscapeThresholdsThresholdId(w http.ResponseWriter
 	}
 }
 
+// GetLandscapeValidValues operation middleware
+func (sh *strictHandler) GetLandscapeValidValues(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeValidValuesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeValidValues(ctx, request.(GetLandscapeValidValuesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeValidValues")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeValidValuesResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeValidValuesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeValidValuesValidValueId operation middleware
+func (sh *strictHandler) GetLandscapeValidValuesValidValueId(w http.ResponseWriter, r *http.Request, validValueId openapi_types.UUID) {
+	var request GetLandscapeValidValuesValidValueIdRequestObject
+
+	request.ValidValueId = validValueId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeValidValuesValidValueId(ctx, request.(GetLandscapeValidValuesValidValueIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeValidValuesValidValueId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeValidValuesValidValueIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeValidValuesValidValueIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeVariants operation middleware
+func (sh *strictHandler) GetLandscapeVariants(w http.ResponseWriter, r *http.Request) {
+	var request GetLandscapeVariantsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeVariants(ctx, request.(GetLandscapeVariantsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeVariants")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeVariantsResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeVariantsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLandscapeVariantsVariantId operation middleware
+func (sh *strictHandler) GetLandscapeVariantsVariantId(w http.ResponseWriter, r *http.Request, variantId openapi_types.UUID) {
+	var request GetLandscapeVariantsVariantIdRequestObject
+
+	request.VariantId = variantId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLandscapeVariantsVariantId(ctx, request.(GetLandscapeVariantsVariantIdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLandscapeVariantsVariantId")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLandscapeVariantsVariantIdResponseObject); ok {
+		if err := validResponse.VisitGetLandscapeVariantsVariantIdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetTest operation middleware
 func (sh *strictHandler) GetTest(w http.ResponseWriter, r *http.Request) {
 	var request GetTestRequestObject
@@ -6770,141 +8046,163 @@ func (sh *strictHandler) GetTest(w http.ResponseWriter, r *http.Request) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"7H3/kts2kv+roPTdqrVrZWnsSZzE37+ciZ2du9ie9di5qlv7vBAJSdghCQYANdZOuWofYp9wn+QKv0ES",
-	"EkFKMyP58lfiEQE0Gv1pNBqN7ptRQvKSFKjgbPTsZsSSJcqh/N/nF+fiPyUlJaIcI/lHWBSEQ45JIf+Z",
-	"IpZQXIp/j56NngOGOCBzcIXWj1YwqxAoIaYMzAkFjBOKiwWAaYrF9zADOeIwhRwCOCMVB3yJwPOLc4AL",
-	"xmGRoMloPMIc5XKkP1A0Hz0b/b+po3eqiZ0+t0SNvoxHfF2i0bMRpBSuxb9hic/TALEFeP/+/CfAl5CD",
-	"qsC/VShbA5yiguM5RsyQMwHnHLAlqbIUzBBYoAJRyFEKYJECyBheFCgF10tUuAkwkFBkP8orxgFFOcQF",
-	"SIicnJgsJdVi6c37jwxkeI6SdZKhCXi3RGCOUZaK3kipOYYLwEiORDccfeZsDFiVLAFkigA5qmQyKNC1",
-	"pOV6iSiSQ5z/BHK4rs9htpY/sTXjKAeYM5TNBdvnhOaQj56NqgqnI8tTxsUSCqbWeNmWgxnFaA68vwqp",
-	"cPMsK1oShiR35lWRqNlhvp4Ex8KszOD6NcxReyzBp2WVw+IRRTCFswyBAubIGy/Yp5pxuDspFrq95owU",
-	"kpKSFU6lZGBmeu7klPpDaBzxi0cneIAmi8kYvClR8fzifAwWby/OxuBnCsvlX355OAHn6lPZDDNQFVcF",
-	"uS7GAPvyKRDICfgweq9+/jCqN0wJYqAgHMwxB7BYg5KiFM2xEOIEcrQgFCO2qdM3fImo7LJQkpdAJr72",
-	"QJ0iDnHGGpiWY7sONStTIdDiE19SpNQL1qKiykfP/mpmMhqPNGtG45Hmymg8ElwSPwnKRh+/jEcrRJkW",
-	"y21K41f92Zcv4xFFv1WYolSM5kubXr2PdlnJ7O8o4WJZPZ3TWty3qKSIidEAbOhCUDGUSn1oNGmx0ELG",
-	"JByImAcQSkioXMOfF/mLX6QqISnKBG/qWvkKrcMidoXWRsKc5lYaDdEVYkJziB+t2qOStvr3ghoahqac",
-	"WHhoNWfIGEmw1DXXmC+bPV+htaTGQssTJFwobEntQd1mQVEm++NE9ia6aJPWWFTBIENtcDVLfK53na9l",
-	"z+vWbRKXQrFJfWYoABTBDP8DMbEHiZ0MFgKxGZpzgPKSrwF2zSlipKIJAkuotMoMmW0IpWCN+BjMKg6u",
-	"cZYBTvFigYTgK4Eysj3HRSqYlGHGozQqdIu1y8bueN5vh7eMGrDNm7b73+stVbe14e+2CdcEfMNu7CMw",
-	"ale2c5ZLLfgEceG2Z2+Bt0vyZW34+xDqhrqqS3id+UH1RTmew4R3bEUzXEC6BpByJL5WBgdgZM6vIRV6",
-	"K7mCCzQGkCZLvEJj0wB9RknFxbI+BJzC5Mpt3BksUpbAErU3pdtWm1BPel8qU3cXUind+sQnZlfjOWA2",
-	"+933g+bzbcDc2u0SsmW7vz9DtjTNtXgoObSSL2cPYCYsSb7Mny3RZy1pH0aXf37+5Nunz35AP8wmk8mH",
-	"0UNp532GeZmJwb2fv/v22/Tp6ez0KUzmpyfJ4yfwB3g6T06/++HJN6ffPf4meZw8TU/T9Lsn3z99nMKn",
-	"p9/NT0+fotns9NuZEEXIOaKC4P/56/NH/w0f/ePk0Q8f//TsryePfoCP5h//9IduEDqBiEfgZh1WQyIr",
-	"UYLnOHEq7EFCyvU0I4kU0IeCxbAAz70Fuh907d0y2aiqfAVP0RxRVCQorbGg2zRoLMNuYK7N/RZRvX1z",
-	"3B3e2/rfJPR9tp8f1WbXpk78IMW9UiriwYKSqhTWvOI4Xz8UZjwElGTdO8gepG+mKFVi0XdFu1am9buY",
-	"VdRAmj9dc7tUn71F89a6uYmNGydYSYQbIrR+Z7CEM5xhvg4JWGJ/BdTXYRwlywInMAOzCmfS2pllJLkC",
-	"ZC7AK21NKE52aZVwsebKart7VeYmsCcd5jocfP6o03Sr1nd9qPYRXvlBWGjH0kqYCZB6YmCaRLPTCZj2",
-	"ukgRbjK2IdI1LncroeAYAXGyW4vSPO1ptQU0aXYdWvbmGcXbwsJjdC76jo6sENWbGJcEse+ZLEtyDXJx",
-	"/BR2iZxQohSCPipJ/x76jBmXPitoTq1j61T8hzgmMyAoRIyjdGydgGOhHMSJucpRGlAPOamKgL3wmhSP",
-	"CrSAHK8QSFGCc5iB3yoo9xVf+AOUSltVHAkVlfL8rgkNo2SrjnrxmaMiRalTPsaJZoe3LrQ9qZ/EKp9O",
-	"MTLzigGp6PbMfC/aKv5oKEW1di12uCZo823vKrGjeyMv79Yl6jH9t41mIVAmIZXWHrHGfW8ZxwYR28B8",
-	"5i16nTVnGWRMnD2gYbjFtmNLG8i+Q95iWGFVgliRKyHsEeb4GZCPzRuOUs0XS8gQOPEpaOhl9UMUDprr",
-	"YJtu46K/mm1yL5dQmDkrksBZlYmTsPTrgxxBVlEpdJajGc4xVy5wKIwCfhfWbhKYxh2ZvmKKbY79hOaw",
-	"yrjmEMpRIS0krhgnpZopjGKmFLVyHCSEIjYGP+MfH3YfYTbMugk3SWHs4seI64atxhMPq23a5sWgZYqb",
-	"eHCORpTu/rbDSvG+dkPTYLgtbinqdxFg2w25CbCN938V4Oi6pbsAreiD8pFhJgXk+cW5ZD3zrpgcYaaH",
-	"mgxEXqW7pR9sXXi8v7tQhJrgt3o2N6DDeWp62I2nQwIj6jcvtXne9iGnrtM18Vs13v3d83r6Yr8+1cTX",
-	"5tuXzdGw7eY3Tgk0GLq7/v39RvY2tLClY7PqsJ/sSS/vQ0tud4rHqss+k9+nAt3rXXaYJ30PPG24Nk1i",
-	"p0da0/DEzWN+WNFKcHRcgBnHSzC+CTx3v4uPl3ixfJShFcqcN8nGBaVE4luyTV4vsG3xVDPIUApIAZg6",
-	"vCVLSGHCEcWM44SJDrVFwO7BUe0OunvZFbzT8SC1rKjpaxTbhetvEsumt2EQK5oOLBbWzdc3QllCSnQL",
-	"xqcVrbYuhTTKdlDfOc8ungNYlhlOxGg6xqa9VHL1Fa9JjrngNK7RpMNsdPdS3BDjcJZhtkQK/ojKkJQE",
-	"Zir6TyBwiUswQ/xaxuZoMdgxILduKCni5Ble4kRFyWpsNNXGvOZPHqKeDVjHsRGoWtGGfVM1ZWsCjWOV",
-	"rgoU3jJdz11uNfG8tgr3ojgl4fvVns4XM1yDKrKGqVET7D1Ql8r2t6dQJXWHqVXNzO9MtVrhiwJ60CkZ",
-	"QvkLSgm9VH2FHK0vVkHdXTe2lrBYoFbIngK+hBkSvQCKpDaX3DSqVcaJ0wCmr3ARwMVPWPwrxwXkxMWS",
-	"m45Rap2jE3BecERLinQoeA55IvS9tuesE1Wwmmk/8GuSojE4MxuQitscAy96ewze0MX7AvOHE3BZzQQx",
-	"M0QZqIocUraEGfib6flvzhiUuluqnsmHIiQfYuIbgv2bLzkkK8PPF84kiEfj0fsyVf/zE8oQR/LZgiFL",
-	"6kur7S48nnNaoQYuRv9x+ea1CcAT3FZ6YlrJARQtbAIul2K5YYYXBXNx+AmhFLGS6EhVKxY/v3inDGbp",
-	"yi5JwZBeSciBWHYNeVKYK98a15zsmimFFOglUgSnkgOaUqVsCuJWf0bStVBULM6f1ACbW7axktcQwl7i",
-	"jCP6tsoC0P+JJFWuUTSX3wGKFphxGeAi78ckiBhdec6Ll/rLKhPyjJQQyms2jUQ9W60sS8iEHGoNLjRv",
-	"KcDL9M04+lxCebusVanCqqYmWUIciFgYojyv1dkY2YlWmXoutHeN6Q0QvnutsuGbbqPzfgKjR+5Wyy9V",
-	"vFUP40tHhLON1pcJGW9ZX6YHuSArTJQBLHc0+24mYBRJDojtfg0gNT1aKSIUL7DY+TXQZFyHJmEM1Es0",
-	"CGSXCckylAh9Lq83hSmVYemrEAKfQppOwHumTACPL6rLl2ZWBKCCVRTJR2fzispzeUlJghgTH4jtQi6d",
-	"+IcwTYpsrc4X6q2P5Z9cfTEjmPAKZtkaVEWKKOOE2Nmpnu7eEDVrmGSQsT1ZokMNoRotd2IJtWbf6n3u",
-	"xGMHgPuj9DOra22H2NVNpu7ZsK7TdyuW9Zft2uxXjK7DYXOMZCuU1tWUC6YTGBFCYZ6FSbOB7WdnOhpp",
-	"7rfZ1JtH7zkbVqgAqKA4WXpLFF4TZQDa9ZTrKLhobS67qOzeFOjtqM7bEI9tghEZazOv2xLbptsEqpQo",
-	"vVqh9Xj/9rwe8MqVk86S7oijeFsYXHxIkok+MfRtjfGdbwxb95nik+FPOASSnympyg6TTL9CmJtXCPEP",
-	"rW9b/CVl92w3SBoaGrbhANy7rrXzbvUqfxlsK6h++9kISjoG2AaGcXu2CRQ9t2UL+Gg0vO7eis71853t",
-	"QCvsM59Nhx7viwQW7n0JgKBElJFCHEIYoiucCHs/IVXB5aFYHCLU1Z5ZcSlTui91h6qe+zYzEMBEnDgA",
-	"xYslV57sEtEcM/miQX5y/09bDVPuWRMYMu5YGfizb3VsfhysEmzvPWNMrCQPiDFxfNx3jImh6i7Ug8f6",
-	"CA2hvWG/YMajbQe/0TlHeUiYW9+04ri6YpNxLWCp0zyrGVjb7aXQ2eoVogvU7V3MxWfKxRPhYXxlv45x",
-	"MMq+RWecKIetECBrUu3Ze+hN5Fach67//fsO633fkuvwFeIUJwEKZ4wLvVqLjpdb1qxiuBCblrqiAKoH",
-	"Jp1gBeGA4xyJXRIj9v/FPNZy4WHGiOKc8tmRqpAvlChOwPWSKKd+XmUQZHilLGBvX7uL9wm7PjJQkxly",
-	"9LYtY5drczyXvDZPKOImlpBjeyMO9VKBmWQ+J8ImsqrevopWV2Tm0YCUQ9kKMyMLMmXUQ7PyhphtEiAX",
-	"XvWlexCGzWIMrpc4Q7qjX6V1kkBK7ZV1Ram6CoTmiHgkUtBPqatGEQ+7XtkP499pmyNw6AFYi9q+Ehjz",
-	"FKXeor2IA1jWNY3NhMcTHPFWZg+Q30zpr+FsZmd1TPjAPvcyDJmUZ9am8/GkfiJFth5LwEIJ2QwX6Pgg",
-	"Fo0av4HtRTI5EqWr7QuimTr3deaDqljBDKfS7lU9RbwZq5PW9EW1p78tl9xrkqLLKs8hXXe7aguSIsDU",
-	"13V/rYxi3uS0lc3qHvi7P6UKIu7mhNowBwNHVUPLXk3NjZ2KHyJFWHwa49l9rb/bwa1ryO08o/iSr6fS",
-	"foxshvemsEnae9yCS8HddAPupLo7+FDnNhB2i+5W3wzPUEbUfbN9RXo/0NhnNOJQD46l445dOLX5b8TE",
-	"4HOa676fE8cJ2AAvjs/LPbtxHF134cfx2N9tfNb00rZ74cCWFH8pfEeiFuHrcUF428P82reltZzFr9s6",
-	"M2Y17PhxCxNpX9SWQeVn/t2y+N2yOHDLQgfydhgWhC5goR8hwExlkwjbF34OWJmFmxPvwilFJaRcemPH",
-	"gCOYs8Y9U2MgxmmV8IoKnGRoJfcLct/3RgFm3LMBEqDojk2RDTxph3grcRtsk4TG6WedBEW5v50SZvme",
-	"LZYQrXdhu7hV6t4hLyCFOeKIhiS2ND/as4a9rpZp8OUS2afEKWbSxTsGc1xgrl099j0x8roTGobDq3tA",
-	"v6VhX5jfAXU1WkIvDtWvg9FW6z/Oj8TCkzBL65YUsw3LaXna8Qi8IbP+bCOk1kYjhHY+maDBD1lwD8cz",
-	"XFypXQ36v7MSJcPCGg7A8ejmEWkUidluTy3s+HspOKOW27GrRw6M5jL7tDatHknX9uW+DJL+pq5opbLC",
-	"7n7Jo/yBXOkp0DQJU+bhca2x4MAQ136rhwiUqbS0wZ1BZ6wtKUkq6r27Ue/VMEP//ue/bNJ8k0yfSTsQ",
-	"KrtygaTJOKckV5ue0IwZWsBM2JQF5BWFmQ5WGtstOFsDrh87wKK5w65QkRK1LemUOSh1mzq4xkVKru8h",
-	"YFdz657NTI+KvRqP2/rVvw3fwrSchfRyRNokIQ7dz9hDdhpMlCHHjFCJxa7kSxvzZFPoRDf12CROAQn7",
-	"pSmhcoBMGlxCgW1Bj3zV06IlSsg0ujEpbN6orj3aLma07vB6DwHLKAg9MTlnmei24lp1m/U3YiE1jYN0",
-	"CjnS3m5h6WNeycBIwzH15rIBdvNjm6Jza9o2GB9ymtdoNguyW1ocuII4E/h6SUkgvdh/qUNQc+wZSkgu",
-	"uGBaS/GpWB0kglOPOHbpEurvyEuK5NvjLSPr5DaUuePaAhcgxwuqTz3XcG30eYPIeFK42KeKzaQ8n3Mj",
-	"8TKgQ/kZPXbI45+qSOMKiYnj2DWhVxmBKYslJhSp5octtILq+nqNnIe0zzODuMTaQc9rtG/3XVRBvg7/",
-	"rslyVE/DobyyI+9WbDxSj9Tt/3gZlVQlO7/0mJ+YM5Syzgu8dv4x8+bB1WEYj96SDEl7smVgqt9qfx85",
-	"c8g+MhrVn7h6JYYCtU5qb6j9iMdaaQH/QO5lHd+QbdfGyY1H75YUsSXJ0lErGqseufGxFZPnxKqx/h+3",
-	"yH/nVUdbNu7kpmODSAZCpH8H0VcHolvHCo7DCMnQFr8EJdLS40vldrDLPgYLCgte81ywsXq46SKRx8ba",
-	"Caf7voUE2Zty1flQOWtkDxPbv5imepvOhiSz2eGMXJ96bzNs+Hu+YMkOVV5mb74ZgziPy8P9MZqyoCfG",
-	"Lf0mIR/kjdEUK6EXZmPDD8eOyx+zq6xpNg5x6Xhtuw9kXl2kdp4ZHWQt10dXSQL//ue/AMLylGlfg9La",
-	"e7UHeaWTS6DPSVYxvEIBZ5r3OLGTO/WHSwMe6V9uyMxcLyxnsomGI6zMz42smv6zOc1sZjJ9oM9ghpZw",
-	"hQlVufmKBJasyuTpdAUpJpWstqmOqvbY68Q2IPP6pUPglFqkMk+UvHSS6+PfGTFgWoIHnFbooS4co/z3",
-	"D+YwY+jhBNiHFDYPKEWgpDiHFGfrwN0v+swRlZe6uoFf7lvNzdS2UEWt7JiaMpNbZZObXa/ljJAMwaKz",
-	"nswe3HKu1tY9euUUEbsmWd81XyXTWcJ2TVep13r3bJVayqIMB52Gd6iPUYtBv3voSwu3vlfPl2bB93zb",
-	"rFl/S5kG95qC3uq2jxtV+P1loG/kmt5vqsweOVXbKa6blHVUbDY2+b3UH9/lDB9YgQ2Y71eCYYdE/vVM",
-	"3zuqmt9T+A8ObWmtwzi+uoU79rcfy5AidUcUOsOcQro2tp0w+yDnUAaLht6OST4mtg81ueCLUfAA5UiY",
-	"PRNMptwQNEGfZTJDTIqH+ukTA0qvqOVh/3ceQFmmDDkR+Y27HyiFhGTjbZX+AeBCkST+X1bkyjKdWzQ6",
-	"P872W553OBfGUl4CrAx9AbVre/WjN+L2rc8EvFRVxTEDT05Onj46efzo5MkEvFJINIq84hVFe7sYiiRW",
-	"Zf1mOJUP9l2nE7FJ1S+V4IrgFFQy3WGtD+gufgTJfaY7Aa+EihS7JFSdwALUlmF/91ODOOI69Tlib7Iq",
-	"hobxoj3r+oLGT3u1CReXJsbXxlzoF4UqHfEYfBg9npxMTj6MHio9KSZD5oChHBYcJ6aVzmhJhVjnslJo",
-	"94tEQ1QbyF9kCos5CezTF+dCh/9WIbpupO5UVqIwfXJEF4IgF87SOKtiLmvxvzAfvnAf/mJzBCu3u+Xc",
-	"6GTyeHKiMyUXsMSjZ6PTycnkVJXiX0rlMFVZKaZlxZbS9iUsYDReVGypt1+V6VYVCHc5McxdrUw6qg7k",
-	"BahKximCuc5XLRoVhOP5GjAvCzSZ65zXKk2G3HpsjmChlEcXhHGZUpsJOkZjU+vyR5KubclJdfjUh0nR",
-	"dPp3puRHqf+uzUHl7P5SX3JOK6QctOruSHTy5OQk4IP8T+UfggsmBEUxVfnzDYelBExvmKBd2hJfpLcK",
-	"BYPpOcVohQxLAMOFzkKwwCuZAFx1As5/arPrZ6S59Rcx4qUdb+TFeAoqb0ZYDCZEYTQeFXKbHTH/8zoj",
-	"xh4nmzj5GMuk8ej05Pv2Ty9JVaT6gOFNTmYrkSpJpkiR1qfgQkXFMZ5X1Dh49IGFQ14JRZci89a7ECcS",
-	"m1+FFAh8KLSuNuNMPkjz5JuTb/YnTF6CeClSzSrJHMgZ/7FTagzGNmPzrf6ihk+Lxy1gMg13AFSzZmaW",
-	"zWBy9Z5mUWl56nUyXduweu1C5eOAma0OLZ1M9tRRNyalI1GHoHsasM53tgWWXgr8URg20fwP3AOEYzka",
-	"cVYtiYzQX1XRLYvv7TdyWzOwi5dJ18FXIpUb1eAdqpv3b3+RpWD0ZKQ+nQv1s3nNrfUxhSV+ZI7cEegQ",
-	"xxO/xhsLhlK2kGGNGC9oYGd0xGY1iwCEpV5soo8/2Ydm29k1vYFuOlEbvnoIqqIB5e0knuOkXjRvthYH",
-	"fun8iWflc5+OKEMANlpstgW6jswfb3EZ/RiTDat4Pzv7YOmJx9gAaB0rpDSSdkNQH+BIwMQD5YABcnH+",
-	"VQCjEZkViRLTbPh21Br3QAH0/acUcvgpgRxmZNHNv+lN8087oKvF5h5YaxL2vEVWHApDzQ4Uks0owyPB",
-	"Z6SI9YTmUEQeOxJ9BO4Beb0B54DWE2CHD6yvBFA6MC4ST7NGKatIOP1oBjlENG3iyPRmZmpUDEaOCTuM",
-	"Bo7h1I9eeYxu2My8rw8TNSa2/hhA0xQIP+VcHExqSerqSb17oObMH/cYkONPe3pj/7WOAhB0XFvH48Xn",
-	"0Zk3YBRsknqDw0SO947qWMGT9IROIkQAFZzi3kepMzfcgVpu330yU9zCK4WeJBY74c2nxsqemEosopJ+",
-	"eEoOH03JsWApSlpqD8L6gszlnheNh2GtQcDRwq4+D4dA/8/7QGON571RWafyLEhjL7C2mh42cGvPH78C",
-	"EJvx+l5/2YaDvY6t97FH6bcPMHB6kzSntgtuW4zugdkWi8/alMWhNdjuQKHaenj9FdwNuAF74nMwLI8b",
-	"jjUU7gN9/UHnga0vyI4AXF8HqGzyh2hY6YdEQ+xVf7QDxdZJJLcEuuy/dsKX42cfiDlKznw6ImFWb3Go",
-	"QHOJSY4EahHC0w9mAxF2zOhyyNoDqvoCyoCpH5AOH0RfA4DmMkfPI1l5Mw5EqoWu1dm8BcAsUN1zq4y4",
-	"JEHHcRvgM2x6o4pkRt0DeHyLR5DHnbemHmc3gmzpzsOEj5cX6hh9/14l/0jIKLOOzM3TbAauCnJdBAss",
-	"bJMFb9x9Bb9vXyeX66t/HHxNBX37iWJ2tZWV0xvvX5GY0mxssbcHvhwBL/3ho3A2b7Q4VLh5y3gcO9Z2",
-	"cYneqAZFdbzcU1RHH4iZUja3BzEHrx0MwHnfuA/Dy5e94j7mBx/3UVu2o4aUzPgVCSj1bU84/awGOAbT",
-	"Ts1veqOzoA2GiUrAFg0SxaGfdeq1GIAs7LeHCQ+VevQYbTud1C46rsN93xMW526gY4CGm+f0xiX+G4wQ",
-	"m5YwGiSOX+cu72AMVrD/+WHCxabvPUbE5IguUB//gWywN/eBTSt8HDjyuNXLeeCYFg8Zx5qvx3Xgskgf",
-	"J1b8tEbReJF14IfGQ7xqjHmgPuynn8iMIboyQaEdrJve1P+ww17U4G8ffNVIetUgKApuebvRoQKvlnv9",
-	"SA49cVL1q62mF41GXVtvCBT1aEeNQzUHA0L5r90RqFKA9oSfouSVT0cP4LkWh4w6VeDgq4JcL7QNw9mR",
-	"Q8xtcTsDqyekzE7Wawc7dAx9LfAxFcYjAWSr3/fF0Gs7zjEcqyxXpjfmf3eAjWVaPHIsu17b4aPQU/if",
-	"HyZ+bNWiYzxxCf72gEobJbKcMllJFwUjYA5ptyDczdWRGOmyynNI1ztfHwXZprC0K456QUjCpwd0Dhw2",
-	"R3M/1Fx/XZU+EjmELmQh1r57zBszyjFsMYYl0xtbsn8wMAzD4sFhWPXGjB0FEeJ9fZgoMeXqjhEkPv9j",
-	"YOK+H/54/sKNeQygcVOe3tj/j3R52+/jUeK4c+EGi0JKWfv+MLHiqo0eJVpqFSdjIVMvNyeUp67N0BM2",
-	"jcGPAjt1mqc39T/ssP1s4moPoNVpu2hQFge5dqMDxV29Vupxgy8SeNQUQPVaDsbcseGthrX94GwAsjxU",
-	"9UbUUaDpOJGkaiJHwsgUYszWoKQkkZU3TA+AU5hc9bcADQFHgSlN7PRG/98uaFI99ICSHvzCDB0HIu/r",
-	"A0WQLst9jPAxZXBjtyGSod0sv7d2wGPAi2XP9MYVDB6MmDb34sFj+fbWL1wcET/kf36Y+LHVsI8VQH1t",
-	"ONlmAG6OBzMaL7tipRc6JDJ6oOLAEXGUaFAVJPsmGWpU9uwLjXrR26PMZ9Lk2/SmWaxzMJAazI3HVIOt",
-	"l+3qoREVuNqNDhNxjcLJX0HSE10EvA8ChwHviAHncLYzvnrCysCpF4wOHT5fA2xsFdzYp+T2+57geecG",
-	"OtK4ODf16Y1XPHgwkmwf8WByTHxXq17cDal6tePDRJUrun3UwXIcqfJ6WiZaq/lO/B5dmFRSpoqwqsWt",
-	"aDZ6NlpyXrJn06kpEZ6RBGbT1eORWCFNbLM/VcfWL0rdTAChSstNnNi46X4ZN7tDRVoSXHBVChdlKJd5",
-	"+XQxfVUXtkSUQywL9nICyiVkCJyYT2q1r0FCigRR+alJGuQRUksisz9aHnfSovc7O/gY4IIjOofCcBct",
-	"mta8T/TjWyH6SSfR7rnkWJ++xWcwSRBjIIcFXMixfFKffMIw3yORp51Ekvlc1R/20/qLLwlNEWWiK112",
-	"UvTDUO1Dn/TTT7VaAvubwzcRksq44CupClktU3w0w1mGi4VP4Tef9B/3SNy3ncTJhRb/QzG7UrKKkopi",
-	"vvZp0w/z90fY0+6V97XmGGRksTDMy0mBOaEN/jUV7f6I/a57iU2G6TKDhSUziCEvI/H+KPy+k0Koa5Or",
-	"WjQ+QY0qNW2ivJKvqa5zLqmT9UQBnJGK20LWIXtPD6Trj375+OV/AwAA//8=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

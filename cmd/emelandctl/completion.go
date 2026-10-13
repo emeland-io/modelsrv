@@ -35,6 +35,15 @@ var flagToListPath = map[string]string{
 	"vendor":          "/landscape/orgUnits",
 }
 
+func idFieldForListPath(listPath string) string {
+	for _, def := range resourceTypes {
+		if def.listPath == listPath {
+			return def.idField
+		}
+	}
+	return ""
+}
+
 // completionForPath returns a cobra completion function that fetches resources from the given API path.
 func completionForPath(listPath string) func(*cobra.Command, []string, string) ([]string, cobra.ShellCompDirective) {
 	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -42,7 +51,7 @@ func completionForPath(listPath string) func(*cobra.Command, []string, string) (
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-		items, err := fetchResourceList(url, listPath)
+		items, _, err := fetchResourceList(url, listPath, idFieldForListPath(listPath))
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}

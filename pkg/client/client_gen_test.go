@@ -29,6 +29,7 @@ import (
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
@@ -50,6 +51,7 @@ var (
 	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
+	_ = mdlorder.NewOrder
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -83,6 +85,13 @@ var testIDs = map[string]uuid.UUID{
 	"MergeRule":            uuid.New(),
 	"Capability":           uuid.New(),
 	"Parameter":            uuid.New(),
+	"ValidValue":           uuid.New(),
+	"CapabilityVersion":    uuid.New(),
+	"Variant":              uuid.New(),
+	"Dependency":           uuid.New(),
+	"Order":                uuid.New(),
+	"OrderItem":            uuid.New(),
+	"BoundValue":           uuid.New(),
 	"CapacityResourceType": uuid.New(),
 	"Capacity":             uuid.New(),
 	"Metric":               uuid.New(),
@@ -319,8 +328,70 @@ func loadTestModel(t *testing.T, m model.Model) {
 	{
 		param := mdlparameter.NewParameter(testIDs["Parameter"])
 		param.SetDisplayName("Test Parameter")
-		param.SetValues([]string{"val1", "val2"})
 		require.NoError(t, m.AddParameter(param))
+	}
+
+	// --- ValidValue ---
+	{
+		vv := mdlparameter.NewValidValue(testIDs["ValidValue"])
+		vv.SetDisplayName("Test ValidValue")
+		vv.SetParameterById(testIDs["Parameter"])
+		require.NoError(t, m.AddValidValue(vv))
+	}
+
+	// --- CapabilityVersion ---
+	{
+		cv := mdlcapability.NewCapabilityVersion(testIDs["CapabilityVersion"])
+		cv.SetDisplayName("Test CapabilityVersion")
+		cv.SetCapabilityById(testIDs["Capability"])
+		cv.SetVersion(common.Version{Version: "1.0.0"})
+		require.NoError(t, m.AddCapabilityVersion(cv))
+	}
+
+	// --- Variant ---
+	{
+		v := mdlcapability.NewVariant(testIDs["Variant"])
+		v.SetDisplayName("Test Variant")
+		v.SetCapabilityVersionById(testIDs["CapabilityVersion"])
+		require.NoError(t, m.AddVariant(v))
+	}
+
+	// --- Dependency ---
+	{
+		d := mdlcapability.NewDependency(testIDs["Dependency"])
+		d.SetDisplayName("Test Dependency")
+		d.SetVariantById(testIDs["Variant"])
+		d.SetCapabilityById(testIDs["Capability"])
+		require.NoError(t, m.AddDependency(d))
+	}
+
+	// --- Order ---
+	{
+		o := mdlorder.NewOrder(testIDs["Order"])
+		o.SetDisplayName("Test Order")
+		o.SetOrgUnitById(testIDs["OrgUnit"])
+		require.NoError(t, m.AddOrder(o))
+	}
+
+	// --- OrderItem ---
+	{
+		oi := mdlorder.NewOrderItem(testIDs["OrderItem"])
+		oi.SetDisplayName("Test OrderItem")
+		oi.SetOrderById(testIDs["Order"])
+		oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: testIDs["Capability"]})
+		oi.SetCapabilityVersionRef(&mdlcapability.CapabilityVersionRef{CapabilityVersionId: testIDs["CapabilityVersion"]})
+		oi.SetVariantRef(&mdlcapability.VariantRef{VariantId: testIDs["Variant"]})
+		require.NoError(t, m.AddOrderItem(oi))
+	}
+
+	// --- BoundValue ---
+	{
+		bv := mdlorder.NewBoundValue(testIDs["BoundValue"])
+		bv.SetDisplayName("Test BoundValue")
+		bv.SetOrderItemById(testIDs["OrderItem"])
+		bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: testIDs["Parameter"]})
+		bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: testIDs["ValidValue"]})
+		require.NoError(t, m.AddBoundValue(bv))
 	}
 
 	// --- CapacityResourceType ---
@@ -984,6 +1055,15 @@ func TestListCapability(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Capability list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetCapabilityId() == testIDs["Capability"] {
+			found = true
+			assert.Equal(t, "Test Capability", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Capability list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdCapability(t *testing.T) {
@@ -1010,6 +1090,15 @@ func TestListParameter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "Parameter list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetParameterId() == testIDs["Parameter"] {
+			found = true
+			assert.Equal(t, "Test Parameter", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Parameter list should include the seeded test resource with full fields")
 }
 
 func TestGetByIdParameter(t *testing.T) {
@@ -1026,6 +1115,251 @@ func TestGetByIdParameter(t *testing.T) {
 	require.NotNil(t, got)
 	assert.Equal(t, testIDs["Parameter"], got.GetParameterId())
 	assert.Equal(t, "Test Parameter", got.GetDisplayName())
+}
+
+func TestListValidValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetValidValues()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "ValidValue list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetValidValueId() == testIDs["ValidValue"] {
+			found = true
+			assert.Equal(t, "Test ValidValue", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "ValidValue list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdValidValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetValidValueById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrValidValueNotFound)
+
+	// known id → success
+	got, err := c.GetValidValueById(testIDs["ValidValue"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["ValidValue"], got.GetValidValueId())
+	assert.Equal(t, "Test ValidValue", got.GetDisplayName())
+}
+
+func TestListCapabilityVersion(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetCapabilityVersions()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "CapabilityVersion list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetCapabilityVersionId() == testIDs["CapabilityVersion"] {
+			found = true
+			assert.Equal(t, "Test CapabilityVersion", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "CapabilityVersion list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdCapabilityVersion(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetCapabilityVersionById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrCapabilityVersionNotFound)
+
+	// known id → success
+	got, err := c.GetCapabilityVersionById(testIDs["CapabilityVersion"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["CapabilityVersion"], got.GetCapabilityVersionId())
+	assert.Equal(t, "Test CapabilityVersion", got.GetDisplayName())
+}
+
+func TestListVariant(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetVariants()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Variant list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetVariantId() == testIDs["Variant"] {
+			found = true
+			assert.Equal(t, "Test Variant", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Variant list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdVariant(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetVariantById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrVariantNotFound)
+
+	// known id → success
+	got, err := c.GetVariantById(testIDs["Variant"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Variant"], got.GetVariantId())
+	assert.Equal(t, "Test Variant", got.GetDisplayName())
+}
+
+func TestListDependency(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetDependencies()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Dependency list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetDependencyId() == testIDs["Dependency"] {
+			found = true
+			assert.Equal(t, "Test Dependency", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Dependency list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdDependency(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetDependencyById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrDependencyNotFound)
+
+	// known id → success
+	got, err := c.GetDependencyById(testIDs["Dependency"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Dependency"], got.GetDependencyId())
+	assert.Equal(t, "Test Dependency", got.GetDisplayName())
+}
+
+func TestListOrder(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetOrders()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "Order list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetOrderId() == testIDs["Order"] {
+			found = true
+			assert.Equal(t, "Test Order", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "Order list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdOrder(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetOrderById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrOrderNotFound)
+
+	// known id → success
+	got, err := c.GetOrderById(testIDs["Order"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["Order"], got.GetOrderId())
+	assert.Equal(t, "Test Order", got.GetDisplayName())
+}
+
+func TestListOrderItem(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetOrderItems()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "OrderItem list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetOrderItemId() == testIDs["OrderItem"] {
+			found = true
+			assert.Equal(t, "Test OrderItem", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "OrderItem list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdOrderItem(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetOrderItemById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrOrderItemNotFound)
+
+	// known id → success
+	got, err := c.GetOrderItemById(testIDs["OrderItem"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["OrderItem"], got.GetOrderItemId())
+	assert.Equal(t, "Test OrderItem", got.GetDisplayName())
+}
+
+func TestListBoundValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	list, err := c.GetBoundValues()
+	require.NoError(t, err)
+	require.NotNil(t, list)
+	assert.Greater(t, len(list), 0, "BoundValue list should not be empty")
+	var found bool
+	for _, item := range list {
+		if item.GetBoundValueId() == testIDs["BoundValue"] {
+			found = true
+			assert.Equal(t, "Test BoundValue", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "BoundValue list should include the seeded test resource with full fields")
+}
+
+func TestGetByIdBoundValue(t *testing.T) {
+	c, m := setupTestServer(t)
+	loadTestModel(t, m)
+
+	// unknown id → not found
+	_, err := c.GetBoundValueById(uuid.New())
+	assert.ErrorIs(t, err, common.ErrBoundValueNotFound)
+
+	// known id → success
+	got, err := c.GetBoundValueById(testIDs["BoundValue"])
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, testIDs["BoundValue"], got.GetBoundValueId())
+	assert.Equal(t, "Test BoundValue", got.GetDisplayName())
 }
 
 func TestListCapacityResourceType(t *testing.T) {
@@ -1220,6 +1554,13 @@ func TestResourceRefEnumCompleteness(t *testing.T) {
 		"MergeRule",
 		"Capability",
 		"Parameter",
+		"ValidValue",
+		"CapabilityVersion",
+		"Variant",
+		"Dependency",
+		"Order",
+		"OrderItem",
+		"BoundValue",
 		"CapacityResourceType",
 		"Capacity",
 		"Metric",

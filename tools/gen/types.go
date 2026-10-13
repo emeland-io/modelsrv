@@ -143,6 +143,8 @@ type TypeSpec struct {
 	WireIDOptional bool
 	// GenServerHandlers emits GetLandscape* list/get handlers in server_handlers_gen.go.
 	GenServerHandlers bool
+	// FullListResponse makes list endpoints return full wire objects instead of InstanceList.
+	FullListResponse bool
 	// SkipClientMethods skips generated pkg/client list/get wrappers (hand-written instead).
 	SkipClientMethods bool
 	// EventsResource is the events.ResourceType const name (e.g. "SystemResource").

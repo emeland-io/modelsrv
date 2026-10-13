@@ -120,8 +120,42 @@ var typeWiring = map[string]Wiring{
 	"Parameter": {
 		TestSetup: `param := mdlparameter.NewParameter(testIDs["Parameter"])
 			param.SetDisplayName("Test Parameter")
-			param.SetValues([]string{"val1", "val2"})
 			require.NoError(t, m.AddParameter(param))`,
+	},
+	"ValidValue": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "ParameterRef", Type: "*ParameterRef", SkipAccessor: true},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		TestDeps: []string{"Parameter"},
+		TestSetup: `vv := mdlparameter.NewValidValue(testIDs["ValidValue"])
+			vv.SetDisplayName("Test ValidValue")
+			vv.SetParameterById(testIDs["Parameter"])
+			require.NoError(t, m.AddValidValue(vv))`,
+		CustomMethods: []string{
+			"GetParameter() (Parameter, error)",
+			"GetParameterId() uuid.UUID",
+			"SetParameterRef(*ParameterRef)",
+			"SetParameterByRef(parameter Parameter)",
+			"SetParameterById(parameterId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "ParameterRef",
+			RefTypeName:       "ParameterRef",
+			ResourceTypeName:  "Parameter",
+			ResolvedMethod:    "ResolvedParameter",
+			EmbedFieldName:    "Parameter",
+			RefIDFieldName:    "ParameterId",
+			ResourceIDGetter:  "GetParameterId",
+			ModelLookupByID:   "GetParameterById",
+			EffectiveIDMethod: "EffectiveParameterID",
+			SetByID:           true,
+			SetByIDParamName:  "parameterId",
+		},
 	},
 	"PermissionSpec": {
 		TestSetup: `ps := iam.NewPermissionSpec(testIDs["PermissionSpec"])
@@ -151,12 +185,265 @@ var typeWiring = map[string]Wiring{
 	"Capability": {
 		Fields: []Field{
 			{Name: "DisplayName", Type: "string"},
-			{Name: "Versions", Type: "[]CapabilityVersionRef"},
+			{Name: "Offers", Type: "[]uuid.UUID"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
 		TestSetup: `cap := mdlcapability.NewCapability(testIDs["Capability"])
 			cap.SetDisplayName("Test Capability")
 			require.NoError(t, m.AddCapability(cap))`,
+	},
+	"CapabilityVersion": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "CapabilityRef", Type: "*CapabilityRef", SkipAccessor: true},
+			{Name: "Version", Type: "common.Version"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/common",
+		},
+		TestDeps: []string{"Capability"},
+		TestSetup: `cv := mdlcapability.NewCapabilityVersion(testIDs["CapabilityVersion"])
+			cv.SetDisplayName("Test CapabilityVersion")
+			cv.SetCapabilityById(testIDs["Capability"])
+			cv.SetVersion(common.Version{Version: "1.0.0"})
+			require.NoError(t, m.AddCapabilityVersion(cv))`,
+		CustomMethods: []string{
+			"GetCapability() (Capability, error)",
+			"GetCapabilityId() uuid.UUID",
+			"SetCapabilityRef(*CapabilityRef)",
+			"SetCapabilityByRef(capability Capability)",
+			"SetCapabilityById(capabilityId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "CapabilityRef",
+			RefTypeName:       "CapabilityRef",
+			ResourceTypeName:  "Capability",
+			ResolvedMethod:    "ResolvedCapability",
+			EmbedFieldName:    "Capability",
+			RefIDFieldName:    "CapabilityId",
+			ResourceIDGetter:  "GetCapabilityId",
+			ModelLookupByID:   "GetCapabilityById",
+			EffectiveIDMethod: "EffectiveCapabilityID",
+			SetByID:           true,
+			SetByIDParamName:  "capabilityId",
+		},
+	},
+	"Variant": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "CapabilityVersionRef", Type: "*CapabilityVersionRef", SkipAccessor: true},
+			{Name: "Requires", Type: "[]uuid.UUID"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		TestDeps: []string{"Capability", "CapabilityVersion"},
+		TestSetup: `v := mdlcapability.NewVariant(testIDs["Variant"])
+			v.SetDisplayName("Test Variant")
+			v.SetCapabilityVersionById(testIDs["CapabilityVersion"])
+			require.NoError(t, m.AddVariant(v))`,
+		CustomMethods: []string{
+			"GetCapabilityVersion() (CapabilityVersion, error)",
+			"GetCapabilityVersionId() uuid.UUID",
+			"SetCapabilityVersionRef(*CapabilityVersionRef)",
+			"SetCapabilityVersionByRef(capabilityVersion CapabilityVersion)",
+			"SetCapabilityVersionById(capabilityVersionId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "CapabilityVersionRef",
+			RefTypeName:       "CapabilityVersionRef",
+			ResourceTypeName:  "CapabilityVersion",
+			ResolvedMethod:    "ResolvedCapabilityVersion",
+			EmbedFieldName:    "CapabilityVersion",
+			RefIDFieldName:    "CapabilityVersionId",
+			ResourceIDGetter:  "GetCapabilityVersionId",
+			ModelLookupByID:   "GetCapabilityVersionById",
+			EffectiveIDMethod: "EffectiveCapabilityVersionID",
+			SetByID:           true,
+			SetByIDParamName:  "capabilityVersionId",
+		},
+	},
+	"Dependency": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "VariantRef", Type: "*VariantRef", SkipAccessor: true},
+			{Name: "CapabilityRef", Type: "*CapabilityRef", SkipAccessor: true},
+			{Name: "Mappings", Type: "[]ValueMapping"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+		},
+		TestDeps: []string{"Capability", "CapabilityVersion", "Variant"},
+		TestSetup: `d := mdlcapability.NewDependency(testIDs["Dependency"])
+			d.SetDisplayName("Test Dependency")
+			d.SetVariantById(testIDs["Variant"])
+			d.SetCapabilityById(testIDs["Capability"])
+			require.NoError(t, m.AddDependency(d))`,
+		CustomMethods: []string{
+			"GetVariant() (Variant, error)",
+			"GetVariantId() uuid.UUID",
+			"SetVariantRef(*VariantRef)",
+			"SetVariantByRef(variant Variant)",
+			"SetVariantById(variantId uuid.UUID)",
+			"GetCapability() (Capability, error)",
+			"GetCapabilityId() uuid.UUID",
+			"SetCapabilityRef(*CapabilityRef)",
+			"SetCapabilityByRef(capability Capability)",
+			"SetCapabilityById(capabilityId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "VariantRef",
+			RefTypeName:       "VariantRef",
+			ResourceTypeName:  "Variant",
+			ResolvedMethod:    "ResolvedVariant",
+			EmbedFieldName:    "Variant",
+			RefIDFieldName:    "VariantId",
+			ResourceIDGetter:  "GetVariantId",
+			ModelLookupByID:   "GetVariantById",
+			EffectiveIDMethod: "EffectiveVariantID",
+			SetByID:           true,
+			SetByIDParamName:  "variantId",
+		},
+		RefByRefs: []RefByRefSpec{
+			{
+				MethodName:       "SetCapabilityByRef",
+				ParamName:        "capability",
+				ResourceTypeName: "Capability",
+				ParamGoType:      "Capability",
+				SetterName:       "SetCapabilityRef",
+				RefTypeName:      "CapabilityRef",
+				RefTypeGoType:    "CapabilityRef",
+				EmbedFieldName:   "Capability",
+				RefIDFieldName:   "CapabilityId",
+				ResourceIDGetter: "GetCapabilityId",
+				NilCheck:         true,
+			},
+		},
+	},
+	"Order": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "OrgUnitRef", Type: "*iam.OrgUnitRef", SkipAccessor: true},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/iam",
+		},
+		TestDeps: []string{"OrgUnit"},
+		TestSetup: `o := mdlorder.NewOrder(testIDs["Order"])
+			o.SetDisplayName("Test Order")
+			o.SetOrgUnitById(testIDs["OrgUnit"])
+			require.NoError(t, m.AddOrder(o))`,
+		CustomMethods: []string{
+			"GetOrgUnit() (iam.OrgUnit, error)",
+			"GetOrgUnitId() uuid.UUID",
+			"SetOrgUnitRef(*iam.OrgUnitRef)",
+			"SetOrgUnitByRef(orgUnit iam.OrgUnit)",
+			"SetOrgUnitById(orgUnitId uuid.UUID)",
+		},
+		RefByRefs: []RefByRefSpec{
+			{
+				MethodName:       "SetOrgUnitByRef",
+				ParamName:        "orgUnit",
+				ResourceTypeName: "OrgUnit",
+				ParamGoType:      "iam.OrgUnit",
+				SetterName:       "SetOrgUnitRef",
+				RefTypeName:      "OrgUnitRef",
+				RefTypeGoType:    "iam.OrgUnitRef",
+				EmbedFieldName:   "OrgUnit",
+				RefIDFieldName:   "OrgUnitId",
+				ResourceIDGetter: "GetOrgUnitId",
+				NilCheck:         true,
+			},
+		},
+	},
+	"OrderItem": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "OrderRef", Type: "*OrderRef", SkipAccessor: true},
+			{Name: "CapabilityRef", Type: "*capability.CapabilityRef"},
+			{Name: "CapabilityVersionRef", Type: "*capability.CapabilityVersionRef"},
+			{Name: "VariantRef", Type: "*capability.VariantRef"},
+			{Name: "Contexts", Type: "[]uuid.UUID"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/capability",
+		},
+		TestDeps: []string{"Order", "Capability", "CapabilityVersion", "Variant"},
+		TestSetup: `oi := mdlorder.NewOrderItem(testIDs["OrderItem"])
+			oi.SetDisplayName("Test OrderItem")
+			oi.SetOrderById(testIDs["Order"])
+			oi.SetCapabilityRef(&mdlcapability.CapabilityRef{CapabilityId: testIDs["Capability"]})
+			oi.SetCapabilityVersionRef(&mdlcapability.CapabilityVersionRef{CapabilityVersionId: testIDs["CapabilityVersion"]})
+			oi.SetVariantRef(&mdlcapability.VariantRef{VariantId: testIDs["Variant"]})
+			require.NoError(t, m.AddOrderItem(oi))`,
+		CustomMethods: []string{
+			"GetOrder() (Order, error)",
+			"GetOrderId() uuid.UUID",
+			"SetOrderRef(*OrderRef)",
+			"SetOrderByRef(order Order)",
+			"SetOrderById(orderId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "OrderRef",
+			RefTypeName:       "OrderRef",
+			ResourceTypeName:  "Order",
+			ResolvedMethod:    "ResolvedOrder",
+			EmbedFieldName:    "Order",
+			RefIDFieldName:    "OrderId",
+			ResourceIDGetter:  "GetOrderId",
+			ModelLookupByID:   "GetOrderById",
+			EffectiveIDMethod: "EffectiveOrderID",
+			SetByID:           true,
+			SetByIDParamName:  "orderId",
+		},
+	},
+	"BoundValue": {
+		Fields: []Field{
+			{Name: "DisplayName", Type: "string"},
+			{Name: "OrderItemRef", Type: "*OrderItemRef", SkipAccessor: true},
+			{Name: "ParameterRef", Type: "*parameter.ParameterRef"},
+			{Name: "ValidValueRef", Type: "*parameter.ValidValueRef"},
+			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
+		},
+		ExtraImports: []string{
+			"go.emeland.io/modelsrv/pkg/model/annotations",
+			"go.emeland.io/modelsrv/pkg/model/parameter",
+		},
+		TestDeps: []string{"OrderItem", "Parameter", "ValidValue"},
+		TestSetup: `bv := mdlorder.NewBoundValue(testIDs["BoundValue"])
+			bv.SetDisplayName("Test BoundValue")
+			bv.SetOrderItemById(testIDs["OrderItem"])
+			bv.SetParameterRef(&mdlparameter.ParameterRef{ParameterId: testIDs["Parameter"]})
+			bv.SetValidValueRef(&mdlparameter.ValidValueRef{ValidValueId: testIDs["ValidValue"]})
+			require.NoError(t, m.AddBoundValue(bv))`,
+		CustomMethods: []string{
+			"GetOrderItem() (OrderItem, error)",
+			"GetOrderItemId() uuid.UUID",
+			"SetOrderItemRef(*OrderItemRef)",
+			"SetOrderItemByRef(orderItem OrderItem)",
+			"SetOrderItemById(orderItemId uuid.UUID)",
+		},
+		TypeRefLink: &TypeRefLinkSpec{
+			FieldName:         "OrderItemRef",
+			RefTypeName:       "OrderItemRef",
+			ResourceTypeName:  "OrderItem",
+			ResolvedMethod:    "ResolvedOrderItem",
+			EmbedFieldName:    "OrderItem",
+			RefIDFieldName:    "OrderItemId",
+			ResourceIDGetter:  "GetOrderItemId",
+			ModelLookupByID:   "GetOrderItemById",
+			EffectiveIDMethod: "EffectiveOrderItemID",
+			SetByID:           true,
+			SetByIDParamName:  "orderItemId",
+		},
 	},
 	"System": {
 		Fields: []Field{
@@ -328,11 +615,13 @@ var typeWiring = map[string]Wiring{
 			{Name: "DisplayName", Type: "string"},
 			{Name: "SystemRef", Type: "*SystemRef"},
 			{Name: "ContextRef", Type: "*context.ContextRef"},
+			{Name: "OrderItemRef", Type: "*order.OrderItemRef"},
 			{Name: "Annotations", Type: "annotations.Annotations", HasAnnotations: true},
 		},
 		ExtraImports: []string{
 			"go.emeland.io/modelsrv/pkg/model/annotations",
 			"go.emeland.io/modelsrv/pkg/model/context",
+			"go.emeland.io/modelsrv/pkg/model/order",
 		},
 		TestDeps: []string{"System"},
 		TestSetup: `si := system.NewSystemInstance(testIDs["SystemInstance"])

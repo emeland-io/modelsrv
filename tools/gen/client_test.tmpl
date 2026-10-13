@@ -29,6 +29,7 @@ import (
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
+	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlproduct "go.emeland.io/modelsrv/pkg/model/product"
 	"go.emeland.io/modelsrv/pkg/model/system"
 	"go.emeland.io/modelsrv/pkg/model"
@@ -50,6 +51,7 @@ var (
 	_ = mdlobs.NewMetric
 	_ = node.NewNode
 	_ = mdlparameter.NewParameter
+	_ = mdlorder.NewOrder
 	_ = mdlproduct.NewProduct
 	_ = system.NewSystem
 )
@@ -102,6 +104,17 @@ func TestList{{.Name}}(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	assert.Greater(t, len(list), 0, "{{.Name}} list should not be empty")
+{{- if .FullListResponse}}
+	var found bool
+	for _, item := range list {
+		if item.{{.WireDomainIDGetter}}() == testIDs["{{.Name}}"] {
+			found = true
+			assert.Equal(t, "{{.TestDisplayName}}", item.GetDisplayName())
+			break
+		}
+	}
+	assert.True(t, found, "{{.Name}} list should include the seeded test resource with full fields")
+{{- end}}
 }
 
 func TestGetById{{.Name}}(t *testing.T) {
