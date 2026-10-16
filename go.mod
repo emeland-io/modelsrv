@@ -21,6 +21,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/twmb/franz-go v1.21.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260421212619-897f85bae559
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/term v0.42.0
