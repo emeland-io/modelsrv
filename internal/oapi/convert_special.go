@@ -195,8 +195,8 @@ func FindingFromDto(m model.Model, of *Finding) (finding.Finding, error) {
 		})
 	}
 	f.SetResources(refs)
-	if of.Type != nil {
-		f.SetFindingTypeById(uuid.UUID(*of.Type))
+	if tid := uuid.UUID(of.Type); tid != uuid.Nil {
+		f.SetFindingTypeById(tid)
 	}
 	MergeAnnotationsFromDto(f.GetAnnotations(), of.Annotations)
 	return f, nil
@@ -215,7 +215,7 @@ func FindingToDto(f finding.Finding) Finding {
 		Annotations: AnnotationsToDto(f.GetAnnotations()),
 	}
 	if typeID := f.GetFindingTypeId(); typeID != uuid.Nil {
-		out.Type = uuidPtr(typeID)
+		out.Type = uuidToOpenAPI(typeID)
 	}
 	return out
 }

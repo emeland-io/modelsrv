@@ -255,6 +255,34 @@ func main() {
 	writeOapi("server_handlers_gen.go", serverHandlerTmpl, allTypes)
 	writeOapi("convert_from_wire_gen.go", convertFromTmpl, buildConvertFromGenData())
 	writeOapi("convert_dto_encode_gen.go", convertToTmpl, buildConvertToGenData())
+
+	// Generate the wire DTO structs that oapi-codegen does not emit (replication-only
+	// resources like Node and Finding). Driven by the same annotated structs via their
+	// OpenAPI-schema view, so adding a field to model_defs.go updates the DTO too.
+	{
+		defsDir, err := modelDefsPath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "wire DTO: %v\n", err)
+			os.Exit(1)
+		}
+		schemas, err := loadResourceSchemas(defsDir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "wire DTO: loading schemas: %v\n", err)
+			os.Exit(1)
+		}
+		src := emitWireDTOFile(buildWireDTOs(schemas))
+		formatted, err := format.Source([]byte(src))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "wire DTO: formatting: %v\n%s\n", err, src)
+			os.Exit(1)
+		}
+		filename := filepath.Join(oapiDir, "wire_dto_gen.go")
+		if err := os.WriteFile(filename, formatted, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", filename, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Generated %s\n", filename)
+	}
 }
 
 type replicationEncodeGenData struct {
