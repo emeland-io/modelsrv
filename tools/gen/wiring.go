@@ -36,6 +36,65 @@ type Wiring struct {
 	TestNameAssertExpr string
 }
 
+// isPlainMergeableType reports whether a struct field type is a plain value type whose
+// domain and wire representations are identical, so it can be merged into a wiring skeleton
+// without any relational handling: a scalar (string/bool/numeric) or a slice of one.
+// Everything relational (uuid.UUID and []uuid.UUID, which become *Ref / []Ref in the domain;
+// qualified types such as common.Version; pointers; ref/arrayref structs) is excluded.
+func isPlainMergeableType(goType string) bool {
+	return isScalarConvertType(goType) || isSliceScalarConvertType(goType)
+}
+
+// mergeWiringFields combines the hand-written wiring field skeleton with the fields the
+// loader parsed from the model_defs.go struct. The skeleton owns the domain representation
+// and declaration order (it carries ref substitutions such as a *NodeTypeRef field in place
+// of the wire's nodeType uuid, which the struct parse cannot know). Any plain struct field
+// not already represented in the skeleton — matched by Go field name — is inserted just
+// before the trailing Annotations field (the universal last field), so adding a scalar or
+// slice field to a struct that happens to have a wiring entry needs no change here.
+//
+// For every type whose skeleton is already complete (all of them today) this is a no-op and
+// produces byte-identical output; it only adds genuinely new struct fields.
+func mergeWiringFields(skeleton, parsed []Field) []Field {
+	inSkeleton := make(map[string]bool, len(skeleton))
+	for _, f := range skeleton {
+		inSkeleton[f.Name] = true
+	}
+
+	var missing []Field
+	for _, f := range parsed {
+		// Only plain value fields can be merged in automatically: their domain and wire
+		// representations are identical, so the skeleton (if it listed them) would carry
+		// the exact same {Name, Type}. Relational fields (uuid ids that become *Ref types,
+		// slices of refs, named ref/version structs) diverge between domain and wire and
+		// are already spelled out in the skeleton under a different name/type, so they must
+		// never be re-added here. Annotations is the insertion anchor and always present.
+		if f.HasAnnotations || inSkeleton[f.Name] || !isPlainMergeableType(f.Type) {
+			continue
+		}
+		missing = append(missing, f)
+	}
+	if len(missing) == 0 {
+		return skeleton
+	}
+
+	// Insert the new fields immediately before the trailing Annotations field so the
+	// annotations stay last (matching the convention used across all generated structs).
+	out := make([]Field, 0, len(skeleton)+len(missing))
+	inserted := false
+	for _, f := range skeleton {
+		if f.HasAnnotations && !inserted {
+			out = append(out, missing...)
+			inserted = true
+		}
+		out = append(out, f)
+	}
+	if !inserted {
+		out = append(out, missing...)
+	}
+	return out
+}
+
 // applyWiring overlays typeWiring[spec.Name] onto a loader-built TypeSpec.
 func applyWiring(spec *TypeSpec) {
 	w, ok := typeWiring[spec.Name]
@@ -43,7 +102,7 @@ func applyWiring(spec *TypeSpec) {
 		return
 	}
 	if w.Fields != nil {
-		spec.Fields = w.Fields
+		spec.Fields = mergeWiringFields(w.Fields, spec.Fields)
 	}
 	if w.CustomMethods != nil {
 		spec.CustomMethods = w.CustomMethods
