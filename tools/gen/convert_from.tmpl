@@ -48,6 +48,25 @@ func {{.FromDtoFuncName}}(m model.Model, o *{{.OapiWireTypeName}}) ({{.DomainPkg
 	v.Set{{.Name}}(o.{{.Name}})
 {{- end}}
 {{- end}}
+{{- range .SliceScalarFields}}
+{{- if .Optional}}
+	if o.{{.Name}} != nil {
+		v.Set{{.Name}}(*o.{{.Name}})
+	}
+{{- else}}
+	v.Set{{.Name}}(o.{{.Name}})
+{{- end}}
+{{- end}}
+{{- with .RefField}}
+	{
+		refID := uuid.UUID(o.{{.WireField}})
+		var resolved {{.EmbedGoType}}
+		if m != nil {
+			resolved = m.{{.ModelLookup}}(refID)
+		}
+		v.{{.SetRefMethod}}(&{{.RefGoType}}{{"{"}}{{.RefIDField}}: refID, {{.EmbedField}}: resolved})
+	}
+{{- end}}
 {{- if .HasAnnotations}}
 	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
 {{- end}}

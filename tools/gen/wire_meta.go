@@ -7,7 +7,6 @@ import (
 
 var skipConvertByName = map[string]bool{
 	"Context":           true,
-	"Node":              true,
 	"System":            true,
 	"SystemInstance":    true,
 	"API":               true,

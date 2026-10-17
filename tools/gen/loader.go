@@ -197,20 +197,18 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 			roleSet[strings.TrimSpace(r)] = true
 		}
 
-		// The id field sets IDField and is not emitted as a Field accessor. When a wire
-		// name override is present (e.g. acronym ids like APIID -> apiId), the IDField
-		// spelling is the PascalCase of that wire name (ApiId).
+		// The id field sets IDField and is not emitted as a Field accessor. The Go field
+		// name is the IDField spelling directly (e.g. ApiId); wire name is lowerFirst.
 		if roleSet["id"] {
-			if wire := roleValue(roleSet, "wire="); wire != "" {
-				spec.IDField = upperFirst(wire)
-			} else {
-				spec.IDField = normalizeIDName(fieldName)
-			}
+			spec.IDField = fieldName
 			continue
 		}
 
 		f := Field{Name: fieldName, Type: goType}
-		if roleSet["optional"] {
+		// A field is optional on the wire (pointer in the DTO, nil-safe in convert) unless
+		// it is explicitly required. This matches the DTO generator, which makes every
+		// non-required property a pointer. An explicit "optional" role is also honored.
+		if roleSet["optional"] || !roleSet["required"] {
 			f.Optional = true
 		}
 		if roleSet["annotations"] {
@@ -272,38 +270,6 @@ func buildVocabTestSetup(name, dir string) string {
 		varName, dir, name, name, varName, name, name, varName)
 }
 
-// roleValue returns the value of the first role in the set with the given prefix
-// (e.g. "wire="), or "".
-func roleValue(roles map[string]bool, prefix string) string {
-	for r := range roles {
-		if strings.HasPrefix(r, prefix) {
-			return strings.TrimPrefix(r, prefix)
-		}
-	}
-	return ""
-}
-
-// upperFirst upper-cases the first rune (apiId -> ApiId).
-func upperFirst(s string) string {
-	if s == "" {
-		return s
-	}
-	r := []rune(s)
-	if r[0] >= 'a' && r[0] <= 'z' {
-		r[0] = r[0] - 'a' + 'A'
-	}
-	return string(r)
-}
-
-// normalizeIDName maps a Go id field name to the TypeSpec IDField spelling: a trailing
-// "ID" acronym becomes "Id" (NodeTypeID -> NodeTypeId), matching oapi/domain naming.
-func normalizeIDName(fieldName string) string {
-	if strings.HasSuffix(fieldName, "ID") {
-		return strings.TrimSuffix(fieldName, "ID") + "Id"
-	}
-	return fieldName
-}
-
 // pluralize returns the regular English plural. Irregulars (e.g. "Identity" ->
 // "Identities") will be handled by an explicit marker when those types are migrated.
 func pluralize(name string) string {
@@ -331,14 +297,7 @@ func pascalFromPath(path string) string {
 	parts := strings.Split(seg, "-")
 	var b strings.Builder
 	for _, p := range parts {
-		if p == "" {
-			continue
-		}
-		r := []rune(p)
-		if r[0] >= 'a' && r[0] <= 'z' {
-			r[0] = r[0] - 'a' + 'A'
-		}
-		b.WriteString(string(r))
+		b.WriteString(upperFirst(p))
 	}
 	return b.String()
 }
