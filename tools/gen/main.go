@@ -60,13 +60,41 @@ type convertGenSpec struct {
 	// DisplayName/Summary/Description/Hash set. The convert generator emits
 	// FromDto/ToDto code for each, honoring Optional (pointer DTO) fields.
 	ExtraScalarFields []scalarField
+	// SliceScalarFields are slice-of-scalar fields (e.g. []string). The wire DTO carries
+	// a *[]T for optional slices; FromDto/ToDto copy the slice nil-safely.
+	SliceScalarFields []sliceScalarField
+	// RefField, when non-nil, is the single type-reference field (e.g. Node.nodeType ->
+	// TypeRef). The convert generator emits the SetTypeRef(&Ref{...}) call with a nil-safe
+	// model lookup on FromDto and the id read-back on ToDto.
+	RefField *refConvertField
 }
 
 // scalarField describes a plain scalar field for the convert templates.
 type scalarField struct {
-	Name     string // Go field / accessor name (e.g. "Owner")
+	Name     string // domain accessor name (e.g. "Owner" -> GetOwner/SetOwner); also the DTO field name
 	GoType   string // domain accessor type (e.g. "string", "int", "bool")
 	Optional bool   // when true, the wire DTO field is a pointer and needs nil-safe handling
+}
+
+// sliceScalarField describes a []scalar field (e.g. []string) for the convert templates.
+type sliceScalarField struct {
+	Name     string // domain accessor name; also the DTO field name
+	ElemType string // element type (e.g. "string")
+	Optional bool   // when true, the wire DTO field is *[]T and needs nil-safe handling
+}
+
+// refConvertField describes a single type-reference field (wire uuid property that maps to
+// a domain *Ref). It carries everything the convert templates need to emit the
+// SetTypeRef(&Ref{IDField: id, Embed: lookup}) call and the id read-back.
+type refConvertField struct {
+	WireField      string // DTO field name carrying the uuid (e.g. "NodeType")
+	RefGoType      string // qualified domain ref type (e.g. "node.NodeTypeRef")
+	RefIDField     string // id field on the ref struct (e.g. "NodeTypeId")
+	EmbedField     string // resolved-object field on the ref struct (e.g. "NodeType")
+	EmbedGoType    string // qualified type of the resolved object (e.g. "node.NodeType")
+	SetRefMethod   string // domain setter for the ref (e.g. "SetTypeRef")
+	ModelLookup    string // model.Model method resolving the id (e.g. "GetNodeTypeById")
+	DomainIDGetter string // domain getter for the id (e.g. "GetNodeTypeId")
 }
 
 // Zero returns the Go zero-value literal for the field's type, used by the ToDto
@@ -323,6 +351,10 @@ func buildConvertToGenData() convertGenData {
 	base := map[string]string{}
 	for _, spec := range data.Specs {
 		base[spec.DomainPkgImport] = spec.DomainPkgAlias
+		if spec.RefField != nil {
+			// Ref read-back compares the id against uuid.Nil.
+			base["github.com/google/uuid"] = "uuid"
+		}
 	}
 	data.Imports = formatImportLines(base, data.Specs)
 	return data
@@ -354,13 +386,36 @@ func buildConvertSpecs() convertGenData {
 			case "Annotations":
 				cgs.HasAnnotations = true
 			default:
-				if isScalarConvertType(f.Type) && !handledStringFields[f.Name] {
+				switch {
+				case isScalarConvertType(f.Type) && !handledStringFields[f.Name]:
 					cgs.ExtraScalarFields = append(cgs.ExtraScalarFields, scalarField{
 						Name:     f.Name,
 						GoType:   f.Type,
 						Optional: f.Optional,
 					})
+				case isSliceScalarConvertType(f.Type):
+					cgs.SliceScalarFields = append(cgs.SliceScalarFields, sliceScalarField{
+						Name:     f.Name,
+						ElemType: f.Type[len("[]"):],
+						Optional: f.Optional,
+					})
 				}
+			}
+		}
+		// A single type-reference link (wire uuid -> domain *Ref) is generatable; build the
+		// ref convert descriptor from the TypeRefLink wiring. Types with other relational
+		// shapes (ParentLink, RefByRefs, slice-of-ref) remain SkipConvert and are not reached
+		// here because SkipConvert is checked above.
+		if trl := spec.TypeRefLink; trl != nil {
+			cgs.RefField = &refConvertField{
+				WireField:      trl.EmbedFieldName,
+				RefGoType:      spec.DomainPkgAlias + "." + trl.RefTypeName,
+				RefIDField:     trl.RefIDFieldName,
+				EmbedField:     trl.EmbedFieldName,
+				EmbedGoType:    spec.DomainPkgAlias + "." + trl.ResourceTypeName,
+				SetRefMethod:   "Set" + trl.FieldName,
+				ModelLookup:    trl.ModelLookupByID,
+				DomainIDGetter: trl.ResourceIDGetter,
 			}
 		}
 		if spec.Dir == "iam" {
@@ -375,6 +430,16 @@ func buildConvertSpecs() convertGenData {
 // convert generator can map to/from a wire DTO field automatically. Ref types, slices,
 // maps, pointers and named struct types are excluded (they need hand-written converters
 // or a SkipConvert type).
+// isSliceScalarConvertType reports whether a domain field type is a slice of a plain scalar
+// (e.g. []string, []int) that the convert generator can copy automatically. Slices of refs,
+// uuids, or named structs are excluded (they need hand-written converters).
+func isSliceScalarConvertType(goType string) bool {
+	if len(goType) < 2 || goType[0] != '[' || goType[1] != ']' {
+		return false
+	}
+	return isScalarConvertType(goType[2:])
+}
+
 func isScalarConvertType(goType string) bool {
 	switch goType {
 	case "string",

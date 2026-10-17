@@ -205,7 +205,10 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 		}
 
 		f := Field{Name: fieldName, Type: goType}
-		if roleSet["optional"] {
+		// A field is optional on the wire (pointer in the DTO, nil-safe in convert) unless
+		// it is explicitly required. This matches the DTO generator, which makes every
+		// non-required property a pointer. An explicit "optional" role is also honored.
+		if roleSet["optional"] || !roleSet["required"] {
 			f.Optional = true
 		}
 		if roleSet["annotations"] {

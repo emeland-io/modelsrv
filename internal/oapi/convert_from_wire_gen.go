@@ -52,6 +52,29 @@ func NodeTypeFromDto(m model.Model, o *NodeType) (node.NodeType, error) {
 	return v, nil
 }
 
+// NodeFromDto builds a domain Node from a wire DTO.
+func NodeFromDto(m model.Model, o *Node) (node.Node, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil node")
+	}
+	id := uuid.UUID(o.NodeId)
+	v := node.NewNode(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	{
+		refID := uuid.UUID(o.NodeType)
+		var resolved node.NodeType
+		if m != nil {
+			resolved = m.GetNodeTypeById(refID)
+		}
+		v.SetTypeRef(&node.NodeTypeRef{NodeTypeId: refID, NodeType: resolved})
+	}
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
 // OrgUnitFromDto builds a domain OrgUnit from a wire DTO.
 func OrgUnitFromDto(m model.Model, o *OrgUnit) (iam.OrgUnit, error) {
 	if o == nil {

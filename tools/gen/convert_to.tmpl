@@ -43,6 +43,11 @@ func {{.ToDtoFuncName}}(v {{.DomainPkgAlias}}.{{.DomainTypeName}}) {{.OapiWireTy
 		{{.Name}}: v.Get{{.Name}}(),
 {{- end}}
 {{- end}}
+{{- range .SliceScalarFields}}
+{{- if not .Optional}}
+		{{.Name}}: v.Get{{.Name}}(),
+{{- end}}
+{{- end}}
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc
@@ -53,6 +58,18 @@ func {{.ToDtoFuncName}}(v {{.DomainPkgAlias}}.{{.DomainTypeName}}) {{.OapiWireTy
 		out.{{.Name}} = &val
 	}
 {{- end}}
+{{- end}}
+{{- range .SliceScalarFields}}
+{{- if .Optional}}
+	if val := v.Get{{.Name}}(); val != nil {
+		out.{{.Name}} = &val
+	}
+{{- end}}
+{{- end}}
+{{- with .RefField}}
+	if refID := v.{{.DomainIDGetter}}(); refID != uuid.Nil {
+		out.{{.WireField}} = uuidToOpenAPI(refID)
+	}
 {{- end}}
 	return out
 {{- end}}
