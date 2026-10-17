@@ -188,6 +188,18 @@ func lowerFirst(s string) string {
 	return string(r)
 }
 
+// upperFirst upper-cases the first rune (nodeId -> NodeId); the inverse of lowerFirst.
+func upperFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	if r[0] >= 'a' && r[0] <= 'z' {
+		r[0] = r[0] - 'a' + 'A'
+	}
+	return string(r)
+}
+
 // goTypeToScalar maps a Go field type to the scalar key understood by openapiScalarType.
 // uuid.UUID is a string in the wire schema.
 func goTypeToScalar(goType string) string {

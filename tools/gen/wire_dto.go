@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 )
 
@@ -36,31 +35,23 @@ func buildWireDTOs(schemas []resourceSchema) []wireDTO {
 		byName[s.Name] = s
 	}
 	var out []wireDTO
+	emitted := map[string]bool{}
 	for _, name := range canonicalTypeOrder {
 		if !genWireDTOByName[name] {
 			continue
 		}
 		rs, ok := byName[name]
 		if !ok {
-			continue
+			panic(fmt.Sprintf("buildWireDTOs: %q is in genWireDTOByName but has no resource schema", name))
 		}
 		out = append(out, wireDTOFromSchema(rs))
+		emitted[name] = true
 	}
-	// Any genWireDTO type not in canonicalTypeOrder (defensive; none today) appended sorted.
-	seen := map[string]bool{}
-	for _, d := range out {
-		seen[d.Name] = true
-	}
-	var extra []string
+	// Every genWireDTO type must have been emitted above; a leftover means it is missing
+	// from canonicalTypeOrder, which would silently drop its DTO. Fail loud instead.
 	for name := range genWireDTOByName {
-		if !seen[name] {
-			extra = append(extra, name)
-		}
-	}
-	sort.Strings(extra)
-	for _, name := range extra {
-		if rs, ok := byName[name]; ok {
-			out = append(out, wireDTOFromSchema(rs))
+		if !emitted[name] {
+			panic(fmt.Sprintf("buildWireDTOs: %q is in genWireDTOByName but missing from canonicalTypeOrder", name))
 		}
 	}
 	return out
@@ -76,7 +67,7 @@ func wireDTOFromSchema(rs resourceSchema) wireDTO {
 	for _, p := range rs.Props {
 		req := required[p.WireName]
 		d.Fields = append(d.Fields, wireDTOField{
-			GoName:  pascalFromWire(p.WireName),
+			GoName:  upperFirst(p.WireName),
 			GoType:  wireDTOGoType(p, req),
 			JSONTag: wireDTOJSONTag(p.WireName, req),
 		})
@@ -144,19 +135,6 @@ func wireDTOJSONTag(wireName string, required bool) string {
 		return fmt.Sprintf("`json:%q`", wireName)
 	}
 	return fmt.Sprintf("`json:%q`", wireName+",omitempty")
-}
-
-// pascalFromWire converts a lowerCamel wire property name to its PascalCase Go field name
-// (nodeId -> NodeId, displayName -> DisplayName).
-func pascalFromWire(wire string) string {
-	if wire == "" {
-		return wire
-	}
-	r := []rune(wire)
-	if r[0] >= 'a' && r[0] <= 'z' {
-		r[0] = r[0] - 'a' + 'A'
-	}
-	return string(r)
 }
 
 // emitWireDTOFile renders the generated wire DTO file content.

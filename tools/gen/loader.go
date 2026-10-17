@@ -297,14 +297,7 @@ func pascalFromPath(path string) string {
 	parts := strings.Split(seg, "-")
 	var b strings.Builder
 	for _, p := range parts {
-		if p == "" {
-			continue
-		}
-		r := []rune(p)
-		if r[0] >= 'a' && r[0] <= 'z' {
-			r[0] = r[0] - 'a' + 'A'
-		}
-		b.WriteString(string(r))
+		b.WriteString(upperFirst(p))
 	}
 	return b.String()
 }
