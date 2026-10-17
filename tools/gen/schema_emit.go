@@ -170,18 +170,10 @@ func tagRoles(tag interface{ Get(string) string }) map[string]bool {
 	return set
 }
 
-// wirePropName returns the JSON property name for a field. An explicit emeland:"wire=x"
-// tag wins (needed for acronym ids like APIID -> apiId); otherwise the id field is
-// normalized (NodeTypeID -> nodeTypeId) and other fields are lowerCamel of the Go name.
+// wirePropName returns the JSON property name for a field: the Go field name with a
+// lowercased first letter. Field names use single-capital initialisms (ApiId, Url), so
+// lowerFirst is total and no per-field wire-name override is needed.
 func wirePropName(fieldName string, roles map[string]bool) string {
-	for r := range roles {
-		if strings.HasPrefix(r, "wire=") {
-			return strings.TrimPrefix(r, "wire=")
-		}
-	}
-	if roles["id"] {
-		return lowerFirst(normalizeIDName(fieldName))
-	}
 	return lowerFirst(fieldName)
 }
 

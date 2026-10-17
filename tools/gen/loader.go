@@ -197,15 +197,10 @@ func buildTypeSpec(name, docText string, st *ast.StructType, markers map[string]
 			roleSet[strings.TrimSpace(r)] = true
 		}
 
-		// The id field sets IDField and is not emitted as a Field accessor. When a wire
-		// name override is present (e.g. acronym ids like APIID -> apiId), the IDField
-		// spelling is the PascalCase of that wire name (ApiId).
+		// The id field sets IDField and is not emitted as a Field accessor. The Go field
+		// name is the IDField spelling directly (e.g. ApiId); wire name is lowerFirst.
 		if roleSet["id"] {
-			if wire := roleValue(roleSet, "wire="); wire != "" {
-				spec.IDField = upperFirst(wire)
-			} else {
-				spec.IDField = normalizeIDName(fieldName)
-			}
+			spec.IDField = fieldName
 			continue
 		}
 
@@ -270,38 +265,6 @@ func buildVocabTestSetup(name, dir string) string {
 			%s.SetDisplayName("Test %s")
 			require.NoError(t, m.Add%s(%s))`,
 		varName, dir, name, name, varName, name, name, varName)
-}
-
-// roleValue returns the value of the first role in the set with the given prefix
-// (e.g. "wire="), or "".
-func roleValue(roles map[string]bool, prefix string) string {
-	for r := range roles {
-		if strings.HasPrefix(r, prefix) {
-			return strings.TrimPrefix(r, prefix)
-		}
-	}
-	return ""
-}
-
-// upperFirst upper-cases the first rune (apiId -> ApiId).
-func upperFirst(s string) string {
-	if s == "" {
-		return s
-	}
-	r := []rune(s)
-	if r[0] >= 'a' && r[0] <= 'z' {
-		r[0] = r[0] - 'a' + 'A'
-	}
-	return string(r)
-}
-
-// normalizeIDName maps a Go id field name to the TypeSpec IDField spelling: a trailing
-// "ID" acronym becomes "Id" (NodeTypeID -> NodeTypeId), matching oapi/domain naming.
-func normalizeIDName(fieldName string) string {
-	if strings.HasSuffix(fieldName, "ID") {
-		return strings.TrimSuffix(fieldName, "ID") + "Id"
-	}
-	return fieldName
 }
 
 // pluralize returns the regular English plural. Irregulars (e.g. "Identity" ->
