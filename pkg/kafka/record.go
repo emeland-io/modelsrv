@@ -31,8 +31,10 @@ type Record struct {
 	krec   *kgo.Record
 }
 
-// Ack commits this record's offset. It is valid only for the next uncommitted
-// offset on the record's topic and partition.
+// Ack commits this record's offset. It is valid only for the oldest unacknowledged
+// record on its topic and partition; any other Ack returns an error. Read and Ack
+// from a single goroutine in delivery order, and Ack promptly: rebalancing is paused
+// until the current batch is fully acknowledged.
 func (r Record) Ack(ctx context.Context) error {
 	if r.stream == nil || r.krec == nil {
 		return fmt.Errorf("kafka: record is not from a stream")

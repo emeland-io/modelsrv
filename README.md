@@ -115,6 +115,11 @@ return stream.Err()
 record left unacknowledged is delivered again after restart. TLS and SASL (`PLAIN`,
 `SCRAM-SHA-256`, `SCRAM-SHA-512`) are set on `Config`.
 
+Read and ack records from a single goroutine, in the order they arrive. An out-of-order `Ack`
+returns an error, so fanning records out to parallel workers does not work. Keep handlers
+fast: rebalancing is paused until every record of the current batch is acked, so a slow
+handler holds up the whole consumer group.
+
 ### Logging
 
 The server logs HTTP requests (method, path, status, duration) and lifecycle events using

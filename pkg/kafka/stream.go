@@ -115,6 +115,7 @@ func saslMechanism(cfg SASLConfig) (sasl.Mechanism, error) {
 
 // Records returns the channel of delivered records. It is closed when the
 // stream context is cancelled or the client fails. After close, call [Stream.Err].
+// Consume it from a single goroutine and [Record.Ack] each record in order.
 func (s *Stream) Records() <-chan Record {
 	return s.records
 }

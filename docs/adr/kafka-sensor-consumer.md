@@ -50,6 +50,11 @@ Each Sensor:
 A record left unacknowledged is delivered again after restart. There is no dead-letter
 topic and no retry policy inside the library.
 
+A Sensor reads and acks records from a single goroutine, in delivery order. An out-of-order
+ack returns an error, so records cannot be fanned out to parallel workers. Acks must be
+prompt: rebalancing is paused until the current batch is fully acked, so a slow handler
+holds up the whole consumer group and can exceed the group's rebalance timeout.
+
 ### Out of scope
 
 - CloudEvents parsing helpers in modelsrv.
