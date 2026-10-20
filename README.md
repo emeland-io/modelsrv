@@ -83,6 +83,43 @@ Supported URI schemes: `file://`, `http://` / `https://`, `s3://`. Local Sources
 S3 auth uses the default AWS credential chain (env, shared config, IAM role). File/object deletes
 do **not** remove landscape resources in v1.
 
+### Kafka stream for Sensors
+
+Sensors that read Kafka use [`pkg/kafka`](pkg/kafka). The library opens a consumer group for
+the topics you choose and exposes an in-process record stream; it does not decode payloads or
+write to the model. Record values are CloudEvents — landscape resources live in the CloudEvents
+`data` section, and each Sensor maps them itself. See
+[docs/adr/kafka-sensor-consumer.md](docs/adr/kafka-sensor-consumer.md).
+
+```go
+stream, err := kafka.Consume(ctx, kafka.Config{
+    Brokers: []string{"localhost:9092"},
+    GroupID: "my-sensor",
+    Topics:  []string{"landscape-events"},
+})
+if err != nil {
+    return err
+}
+defer stream.Close()
+
+for rec := range stream.Records() {
+    // decode CloudEvent from rec.Value, update model…
+    if err := rec.Ack(ctx); err != nil {
+        return err
+    }
+}
+return stream.Err()
+```
+
+`Ack` commits the offset after the Sensor has used (or deliberately dropped) the record. A
+record left unacknowledged is delivered again after restart. TLS and SASL (`PLAIN`,
+`SCRAM-SHA-256`, `SCRAM-SHA-512`) are set on `Config`.
+
+Read and ack records from a single goroutine, in the order they arrive. An out-of-order `Ack`
+returns an error, so fanning records out to parallel workers does not work. Keep handlers
+fast: rebalancing is paused until every record of the current batch is acked, so a slow
+handler holds up the whole consumer group.
+
 ### Logging
 
 The server logs HTTP requests (method, path, status, duration) and lifecycle events using
