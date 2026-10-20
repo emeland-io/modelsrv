@@ -3048,6 +3048,18 @@ components:
           description: >
             Discriminator for the replicated resource. Interpretation matches domain resource names
             (e.g. Node, Context, System, ApiInstance, OrgUnit). Subscribers unmarshal `resource` based on this value.
+        originUrl:
+          type: string
+          description: >
+            Base API URL of the node that first produced this event. Stamped once at the origin node and
+            preserved unchanged across every forwarding hop, so a receiver can always tell which node
+            produced the change regardless of how many relays it passed through.
+        timestamp:
+          type: string
+          format: date-time
+          description: >
+            Time at which the origin node produced this event. Like originUrl it is stamped once at the
+            origin and preserved across forwarding.
         resourceId:
           type: string
           format: uuid
@@ -3061,3 +3073,5 @@ components:
       required:
         - operation
         - kind
+        - originUrl
+        - timestamp

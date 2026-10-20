@@ -28,6 +28,8 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 			Kind:       kind,
 			Operation:  op,
 			ResourceId: &rid,
+			OriginUrl:  ev.OriginURL,
+			Timestamp:  ev.Timestamp,
 		}, nil
 	}
 	obj, ok := firstEventObject(ev)
@@ -45,6 +47,8 @@ func PushWireEventFromDomain(ev *events.Event) (Event, error) {
 		Kind:      kind,
 		Operation: op,
 		Resource:  &m,
+		OriginUrl: ev.OriginURL,
+		Timestamp: ev.Timestamp,
 	}, nil
 }
 
