@@ -2,6 +2,7 @@ package oapi_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +23,13 @@ import (
 )
 
 func newServer() (model.Model, events.EventManager, *httptest.Server) {
-	em, err := eventmgr.NewEventManager()
+	return newServerWithSelfURL("http://test")
+}
+
+// newServerWithSelfURL builds a server whose event manager stamps selfURL as the
+// origin of its locally-produced events.
+func newServerWithSelfURL(selfURL string) (model.Model, events.EventManager, *httptest.Server) {
+	em, err := eventmgr.NewEventManager(eventmgr.WithSelfURL(selfURL))
 	Expect(err).NotTo(HaveOccurred())
 	if em == nil { // required by nilaway
 		Fail("NewEventManager returned nil manager")
@@ -33,7 +40,7 @@ func newServer() (model.Model, events.EventManager, *httptest.Server) {
 	Expect(err).NotTo(HaveOccurred())
 
 	r := mux.NewRouter()
-	srv := oapi.NewApiServer(m, em, "http://test", nil)
+	srv := oapi.NewApiServer(m, em, selfURL, nil)
 	strict := oapi.NewApiHandler(srv, oapi.ApiHandlerOptions{})
 	h := oapi.HandlerFromMuxWithBaseURL(strict, r, "/api")
 
@@ -165,6 +172,47 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 			}
 			return string(got.GetAmount())
 		}, "2s", "20ms").Should(Equal("64"))
+	})
+
+	It("preserves the origin node URL and timestamp across a two-hop forward (A to B to C)", func() {
+		mA, emA, srvA := newServerWithSelfURL("http://node-a:24000/api")
+		defer srvA.Close()
+		_, _, srvB := newServerWithSelfURL("http://node-b:24000/api")
+		defer srvB.Close()
+		_, emC, srvC := newServerWithSelfURL("http://node-c:24000/api")
+		defer srvC.Close()
+
+		postEventsRegister(srvA.URL+"/api", srvB.URL+"/api")
+		postEventsRegister(srvB.URL+"/api", srvC.URL+"/api")
+
+		sid := uuid.New()
+		sys := system.NewSystem(sid)
+		sys.SetDisplayName("Origin System")
+		Expect(mA.AddSystem(sys)).To(Succeed())
+
+		// The event is produced on A, forwarded A->B then B->C. At every hop the
+		// recorded event must still name A as the origin with A's timestamp,
+		// never the forwarding node's URL or a re-stamped time.
+		originOnA := func(em events.EventManager) (string, bool) {
+			evs, err := em.QueryEvents(context.Background(), events.EventQuery{ResourceId: &sid})
+			Expect(err).NotTo(HaveOccurred())
+			if len(evs) == 0 {
+				return "", false
+			}
+			return evs[len(evs)-1].OriginURL, true
+		}
+
+		// Confirm A stamped itself as origin.
+		Eventually(func() string {
+			o, _ := originOnA(emA)
+			return o
+		}, "2s", "20ms").Should(Equal("http://node-a:24000/api"))
+
+		// Confirm C, two hops downstream, still sees A as the origin.
+		Eventually(func() string {
+			o, _ := originOnA(emC)
+			return o
+		}, "3s", "20ms").Should(Equal("http://node-a:24000/api"))
 	})
 
 	It("acknowledges a Binding with an empty subject and does not store it", func() {
