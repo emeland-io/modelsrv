@@ -2573,6 +2573,14 @@ components:
           type: string
           description: 'The UUID of the node type that this node is an instance of.'
           format: uuid
+        url:
+          type: string
+          description: 'The base API URL at which this node is reachable. Stable across restarts (unlike the node id, which is regenerated per in-memory instance), so it is used as the key for subscription edges between nodes. Required: every node is a running modelsrv instance that knows its own reachable URL.'
+        subscriptions:
+          type: array
+          description: 'The peer node base API URLs this node pushes events to (its configured subscribers). These are directed data-flow edges keyed on stable URLs; the graph consumer resolves each URL to the currently-live node advertising it. Required and always present: a node that pushes to nobody carries an empty list.'
+          items:
+            type: string
         annotations:
           type: array
           description: 'A set of key-value pairs for storing additional metadata about the node.'
@@ -2582,6 +2590,8 @@ components:
         - nodeId
         - displayName
         - nodeType
+        - url
+        - subscriptions
     OrgUnit:
       type: object
       description: 'Represents a organizational unit in the EmELand model. This can be used to represent departments, teams, or any other organizational structure relevant to the landscape.'

@@ -63,6 +63,8 @@ func NodeFromDto(m model.Model, o *Node) (node.Node, error) {
 	if o.Description != nil {
 		v.SetDescription(*o.Description)
 	}
+	v.SetUrl(o.Url)
+	v.SetSubscriptions(o.Subscriptions)
 	{
 		refID := uuid.UUID(o.NodeType)
 		var resolved node.NodeType
