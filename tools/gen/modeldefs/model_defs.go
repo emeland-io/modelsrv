@@ -142,6 +142,16 @@ type Node struct {
 	Description string `emeland:"description"`
 	// The UUID of the node type that this node is an instance of.
 	NodeType uuid.UUID `emeland:"required"`
+	// The base API URL at which this node is reachable. Stable across restarts
+	// (unlike the node id, which is regenerated per in-memory instance), so it is
+	// used as the key for subscription edges between nodes. Required: every node
+	// is a running modelsrv instance that knows its own reachable URL.
+	Url string `emeland:"required"`
+	// The peer node base API URLs this node pushes events to (its configured
+	// subscribers). These are directed data-flow edges keyed on stable URLs; the
+	// graph consumer resolves each URL to the currently-live node advertising it.
+	// Required and always present: a node that pushes to nobody carries an empty list.
+	Subscriptions []string `emeland:"required"`
 	// A set of key-value pairs for storing additional metadata about the node.
 	Annotations annotations.Annotations `emeland:"annotations"`
 }

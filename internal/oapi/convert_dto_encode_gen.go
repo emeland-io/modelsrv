@@ -53,9 +53,11 @@ func NodeToDto(v node.Node) Node {
 		return Node{}
 	}
 	out := Node{
-		NodeId:      uuidToOpenAPI(v.GetNodeId()),
-		DisplayName: v.GetDisplayName(),
-		Annotations: AnnotationsToDto(v.GetAnnotations()),
+		NodeId:        uuidToOpenAPI(v.GetNodeId()),
+		DisplayName:   v.GetDisplayName(),
+		Annotations:   AnnotationsToDto(v.GetAnnotations()),
+		Url:           v.GetUrl(),
+		Subscriptions: v.GetSubscriptions(),
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc

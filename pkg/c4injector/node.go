@@ -19,7 +19,8 @@ func NodeTypeID() uuid.UUID {
 
 // RegisterNode ensures the c4-doc-injector NodeType and a process Node exist
 // in the landscape. nodeID should be unique per process (e.g. uuid.New()).
-func RegisterNode(m model.Model, nodeID uuid.UUID, displayName string) error {
+// url is this process's base API URL, recorded as the node's reachable address.
+func RegisterNode(m model.Model, nodeID uuid.UUID, displayName, url string) error {
 	ntID := NodeTypeID()
 	if m.GetNodeTypeById(ntID) == nil {
 		nt := node.NewNodeType(ntID)
@@ -40,5 +41,6 @@ func RegisterNode(m model.Model, nodeID uuid.UUID, displayName string) error {
 	n.SetDisplayName(displayName)
 	n.SetDescription("In-process C4-PlantUML document Injector.")
 	n.SetNodeTypeById(ntID)
+	n.SetUrl(url)
 	return m.AddNode(n)
 }

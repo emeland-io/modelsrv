@@ -156,6 +156,34 @@ func (mr *MockNodeMockRecorder) GetResourceName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceName", reflect.TypeOf((*MockNode)(nil).GetResourceName))
 }
 
+// GetSubscriptions mocks base method.
+func (m *MockNode) GetSubscriptions() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptions")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetSubscriptions indicates an expected call of GetSubscriptions.
+func (mr *MockNodeMockRecorder) GetSubscriptions() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockNode)(nil).GetSubscriptions))
+}
+
+// GetUrl mocks base method.
+func (m *MockNode) GetUrl() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUrl")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetUrl indicates an expected call of GetUrl.
+func (mr *MockNodeMockRecorder) GetUrl() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUrl", reflect.TypeOf((*MockNode)(nil).GetUrl))
+}
+
 // Register mocks base method.
 func (m *MockNode) Register(sink events.EventSink) {
 	m.ctrl.T.Helper()
@@ -228,6 +256,18 @@ func (mr *MockNodeMockRecorder) SetNodeTypeByRef(nodeType any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNodeTypeByRef", reflect.TypeOf((*MockNode)(nil).SetNodeTypeByRef), nodeType)
 }
 
+// SetSubscriptions mocks base method.
+func (m *MockNode) SetSubscriptions(arg0 []string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSubscriptions", arg0)
+}
+
+// SetSubscriptions indicates an expected call of SetSubscriptions.
+func (mr *MockNodeMockRecorder) SetSubscriptions(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSubscriptions", reflect.TypeOf((*MockNode)(nil).SetSubscriptions), arg0)
+}
+
 // SetTypeRef mocks base method.
 func (m *MockNode) SetTypeRef(arg0 *node.NodeTypeRef) {
 	m.ctrl.T.Helper()
@@ -238,4 +278,16 @@ func (m *MockNode) SetTypeRef(arg0 *node.NodeTypeRef) {
 func (mr *MockNodeMockRecorder) SetTypeRef(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTypeRef", reflect.TypeOf((*MockNode)(nil).SetTypeRef), arg0)
+}
+
+// SetUrl mocks base method.
+func (m *MockNode) SetUrl(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetUrl", arg0)
+}
+
+// SetUrl indicates an expected call of SetUrl.
+func (mr *MockNodeMockRecorder) SetUrl(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUrl", reflect.TypeOf((*MockNode)(nil).SetUrl), arg0)
 }

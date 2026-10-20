@@ -1,6 +1,8 @@
 package oapi_test
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -802,6 +804,57 @@ var _ = Describe("replication wire: encode then decode round-trip", func() {
 		Expect(out.GetContextId()).To(Equal(ctxID))
 		Expect(string(out.GetCategory())).To(Equal("provided"))
 		Expect(string(out.GetAmount())).To(Equal("64"))
+	})
+})
+
+var _ = Describe("replication wire: event origin + timestamp", func() {
+	It("carries originUrl and timestamp through encode then decode for create", func() {
+		m := replicationTestModel()
+		sysID := uuid.New()
+		sys := system.NewSystem(sysID)
+		sys.SetDisplayName("origin-rt")
+		origin := "http://origin:24000/api"
+		ts := time.Date(2026, 5, 6, 7, 8, 9, 0, time.UTC)
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.SystemResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   sysID,
+			Objects:      []any{sys},
+			OriginURL:    origin,
+			Timestamp:    ts,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(wire.OriginUrl).To(Equal(origin))
+		Expect(wire.Timestamp).To(Equal(ts))
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(back.OriginURL).To(Equal(origin))
+		Expect(back.Timestamp).To(Equal(ts))
+	})
+
+	It("carries originUrl and timestamp through encode then decode for delete", func() {
+		m := replicationTestModel()
+		rid := uuid.New()
+		origin := "http://origin:24000/api"
+		ts := time.Date(2026, 5, 6, 7, 8, 9, 0, time.UTC)
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.SystemResource,
+			Operation:    events.DeleteOperation,
+			ResourceId:   rid,
+			OriginURL:    origin,
+			Timestamp:    ts,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(wire.OriginUrl).To(Equal(origin))
+		Expect(wire.Timestamp).To(Equal(ts))
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(back.OriginURL).To(Equal(origin))
+		Expect(back.Timestamp).To(Equal(ts))
 	})
 })
 

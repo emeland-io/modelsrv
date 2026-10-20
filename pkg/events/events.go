@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -53,6 +54,12 @@ type EventManager interface {
 	AddSubscriber(url string) error
 	// RemoveSubscriber removes a subscriber by URL.
 	RemoveSubscriber(url string) error
+
+	// ApplyReplicated runs fn (applying an upstream event to local state)
+	// while preserving the given origin URL and timestamp, so the recorded
+	// event keeps the originating node's identity and time instead of being
+	// stamped as locally produced.
+	ApplyReplicated(originURL string, timestamp time.Time, fn func() error) error
 }
 
 type ResourceType int
@@ -234,6 +241,15 @@ type Event struct {
 	Operation    Operation
 	ResourceId   uuid.UUID
 	Objects      []any
+
+	// OriginURL is the base API URL of the node that first produced this
+	// event. It is stamped once at the origin node and preserved unchanged
+	// across every forwarding hop, so a receiver can always tell which node
+	// produced the change regardless of how many relays it passed through.
+	OriginURL string
+	// Timestamp is when the origin node produced this event. Like OriginURL
+	// it is stamped once at the origin and preserved across forwarding.
+	Timestamp time.Time
 }
 
 func (e Event) String() string {

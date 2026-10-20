@@ -27,6 +27,12 @@ type Node interface {
 	GetDescription() string
 	SetDescription(string)
 
+	GetUrl() string
+	SetUrl(string)
+
+	GetSubscriptions() []string
+	SetSubscriptions([]string)
+
 	GetAnnotations() annotations.Annotations
 	SetAnnotations(annotations.Annotations)
 
@@ -43,11 +49,13 @@ type nodeData struct {
 	sink         events.EventSink
 	isRegistered bool
 
-	NodeId      uuid.UUID
-	DisplayName string
-	Description string
-	TypeRef     *NodeTypeRef
-	Annotations annotations.Annotations
+	NodeId        uuid.UUID
+	DisplayName   string
+	Description   string
+	TypeRef       *NodeTypeRef
+	Url           string
+	Subscriptions []string
+	Annotations   annotations.Annotations
 }
 
 // NewNode constructs an unregistered resource; call [Node.Register] after adding to the model.
@@ -99,6 +107,34 @@ func (o *nodeData) GetDescription() string {
 // SetDescription implements [Node].
 func (o *nodeData) SetDescription(val string) {
 	o.Description = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.NodeResource, events.UpdateOperation, o.NodeId, o)
+	}
+}
+
+// GetUrl implements [Url].
+func (o *nodeData) GetUrl() string {
+	return o.Url
+}
+
+// SetUrl implements [Node].
+func (o *nodeData) SetUrl(val string) {
+	o.Url = val
+
+	if o.isRegistered {
+		o.sink.Receive(events.NodeResource, events.UpdateOperation, o.NodeId, o)
+	}
+}
+
+// GetSubscriptions implements [Subscriptions].
+func (o *nodeData) GetSubscriptions() []string {
+	return o.Subscriptions
+}
+
+// SetSubscriptions implements [Node].
+func (o *nodeData) SetSubscriptions(val []string) {
+	o.Subscriptions = val
 
 	if o.isRegistered {
 		o.sink.Receive(events.NodeResource, events.UpdateOperation, o.NodeId, o)
