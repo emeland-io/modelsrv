@@ -23,10 +23,10 @@ func newLatestStateStore() *latestStateStore {
 	return &latestStateStore{state: make(map[resourceKey]events.Event)}
 }
 
-func (s *latestStateStore) Receive(resType events.ResourceType, op events.Operation, resourceId uuid.UUID, objects ...any) {
-	key := resourceKey{resType: resType, id: resourceId}
+func (s *latestStateStore) Receive(ev events.Event) {
+	key := resourceKey{resType: ev.ResourceType, id: ev.ResourceId}
 
-	if op == events.DeleteOperation {
+	if ev.Operation == events.DeleteOperation {
 		if _, ok := s.state[key]; ok {
 			delete(s.state, key)
 			s.removeFromOrder(key)
@@ -37,12 +37,7 @@ func (s *latestStateStore) Receive(resType events.ResourceType, op events.Operat
 	if _, exists := s.state[key]; !exists {
 		s.order = append(s.order, key)
 	}
-	s.state[key] = events.Event{
-		ResourceType: resType,
-		Operation:    op,
-		ResourceId:   resourceId,
-		Objects:      objects,
-	}
+	s.state[key] = ev
 }
 
 func (s *latestStateStore) removeFromOrder(key resourceKey) {
@@ -62,6 +57,10 @@ func (s *latestStateStore) GetEvents() []events.Event {
 	out := make([]events.Event, 0, len(s.order))
 	for _, key := range s.order {
 		ev := s.state[key]
+		// Report as Create for a party seeing this as first knowledge of the
+		// resource, but keep the stored OriginURL + Timestamp: a replayed
+		// resource must still name the node that originally produced it and
+		// when, not the replaying node or replay time.
 		ev.Operation = events.CreateOperation
 		out = append(out, ev)
 	}
