@@ -18,7 +18,6 @@ import (
 	"go.emeland.io/modelsrv/pkg/model/finding"
 	"go.emeland.io/modelsrv/pkg/model/iam"
 	mdlmergerule "go.emeland.io/modelsrv/pkg/model/mergerule"
-	"go.emeland.io/modelsrv/pkg/model/node"
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 	mdlorder "go.emeland.io/modelsrv/pkg/model/order"
 	mdlparameter "go.emeland.io/modelsrv/pkg/model/parameter"
@@ -66,50 +65,8 @@ func ContextToDto(c mdlctx.Context) Context {
 	return out
 }
 
-// NodeFromDto builds a domain Node from a wire DTO.
-func NodeFromDto(m model.Model, on *Node) (node.Node, error) {
-	if on == nil {
-		return nil, fmt.Errorf("nil node")
-	}
-	id := uuid.UUID(on.NodeId)
-	n := node.NewNode(id)
-	n.SetDisplayName(on.DisplayName)
-	if on.Description != nil {
-		n.SetDescription(*on.Description)
-	}
-	ntid := uuid.UUID(on.NodeType)
-	n.SetTypeRef(&node.NodeTypeRef{
-		NodeTypeId: ntid,
-		NodeType:   nilsafeGetNodeType(m, ntid),
-	})
-	MergeAnnotationsFromDto(n.GetAnnotations(), on.Annotations)
-	return n, nil
-}
-
-func nilsafeGetNodeType(m model.Model, ntid uuid.UUID) node.NodeType {
-	if m == nil {
-		return nil
-	}
-	return m.GetNodeTypeById(ntid)
-}
-
-func NodeToDto(n node.Node) Node {
-	if n == nil {
-		return Node{}
-	}
-	out := Node{
-		NodeId:      uuidToOpenAPI(n.GetNodeId()),
-		DisplayName: n.GetDisplayName(),
-		Annotations: AnnotationsToDto(n.GetAnnotations()),
-	}
-	if desc := n.GetDescription(); desc != "" {
-		out.Description = &desc
-	}
-	if typeID := n.GetNodeTypeId(); typeID != uuid.Nil {
-		out.NodeType = uuidToOpenAPI(typeID)
-	}
-	return out
-}
+// NodeFromDto, NodeToDto and the node type resolver are generated (convert_from_wire_gen.go
+// / convert_dto_encode_gen.go) from the model_defs.go Node struct and its TypeRef wiring.
 
 // ProductionVersionFromDto maps a wire production version payload.
 func ProductionVersionFromDto(in ProductionVersion) mdlprod.ProductionVersion {
@@ -195,8 +152,8 @@ func FindingFromDto(m model.Model, of *Finding) (finding.Finding, error) {
 		})
 	}
 	f.SetResources(refs)
-	if of.Type != nil {
-		f.SetFindingTypeById(uuid.UUID(*of.Type))
+	if tid := uuid.UUID(of.Type); tid != uuid.Nil {
+		f.SetFindingTypeById(tid)
 	}
 	MergeAnnotationsFromDto(f.GetAnnotations(), of.Annotations)
 	return f, nil
@@ -215,7 +172,7 @@ func FindingToDto(f finding.Finding) Finding {
 		Annotations: AnnotationsToDto(f.GetAnnotations()),
 	}
 	if typeID := f.GetFindingTypeId(); typeID != uuid.Nil {
-		out.Type = uuidPtr(typeID)
+		out.Type = uuidToOpenAPI(typeID)
 	}
 	return out
 }

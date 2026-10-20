@@ -14,6 +14,8 @@ import (
 	mdlobs "go.emeland.io/modelsrv/pkg/model/observability"
 
 	node "go.emeland.io/modelsrv/pkg/model/node"
+
+	uuid "github.com/google/uuid"
 )
 
 func ContextTypeToDto(v mdlctx.ContextType) ContextType {
@@ -42,6 +44,24 @@ func NodeTypeToDto(v node.NodeType) NodeType {
 	}
 	if desc := v.GetDescription(); desc != "" {
 		out.Description = &desc
+	}
+	return out
+}
+
+func NodeToDto(v node.Node) Node {
+	if v == nil {
+		return Node{}
+	}
+	out := Node{
+		NodeId:      uuidToOpenAPI(v.GetNodeId()),
+		DisplayName: v.GetDisplayName(),
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+	if desc := v.GetDescription(); desc != "" {
+		out.Description = &desc
+	}
+	if refID := v.GetNodeTypeId(); refID != uuid.Nil {
+		out.NodeType = uuidToOpenAPI(refID)
 	}
 	return out
 }
