@@ -45,6 +45,8 @@ func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {
 			ResourceType: rt,
 			Operation:    wop,
 			ResourceId:   id,
+			OriginURL:    ev.OriginUrl,
+			Timestamp:    ev.Timestamp,
 		}, nil
 	case events.CreateOperation, events.UpdateOperation:
 		if ev.Resource == nil {
@@ -59,6 +61,8 @@ func ReplicationEventFromWire(m model.Model, ev *Event) (events.Event, error) {
 			Operation:    wop,
 			ResourceId:   id,
 			Objects:      []any{obj},
+			OriginURL:    ev.OriginUrl,
+			Timestamp:    ev.Timestamp,
 		}, nil
 	default:
 		return events.Event{}, fmt.Errorf("unsupported operation %q", op)

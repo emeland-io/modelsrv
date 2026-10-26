@@ -11,6 +11,7 @@ import (
 type StoredEvent struct {
 	SequenceId   uint64    `json:"sequenceId"`
 	Timestamp    time.Time `json:"timestamp"`
+	OriginURL    string    `json:"originUrl"`
 	ResourceType string    `json:"resourceType"`
 	Operation    string    `json:"operation"`
 	ResourceId   uuid.UUID `json:"resourceId"`
@@ -18,10 +19,11 @@ type StoredEvent struct {
 }
 
 // NewStoredEvent creates a StoredEvent with human-readable type/operation strings.
-func NewStoredEvent(seq uint64, ts time.Time, rt ResourceType, op Operation, id uuid.UUID, objects []any) StoredEvent {
+func NewStoredEvent(seq uint64, ts time.Time, originURL string, rt ResourceType, op Operation, id uuid.UUID, objects []any) StoredEvent {
 	return StoredEvent{
 		SequenceId:   seq,
 		Timestamp:    ts,
+		OriginURL:    originURL,
 		ResourceType: rt.WireKind(),
 		Operation:    op.WireOperation(),
 		ResourceId:   id,

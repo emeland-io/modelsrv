@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
@@ -35,6 +36,17 @@ func WithLogger(log *zap.SugaredLogger) Option {
 	}
 }
 
+// WithSelfURL sets this node's own base API URL. It is stamped as the origin
+// of every locally-produced event, so receivers can tell which node produced
+// a change. An empty value is ignored.
+func WithSelfURL(url string) Option {
+	return func(e *eventManager) {
+		if url != "" {
+			e.selfURL = url
+		}
+	}
+}
+
 type eventManager struct {
 	mu             sync.RWMutex
 	sequenceNumber uint64
@@ -46,16 +58,40 @@ type eventManager struct {
 	historyLimit int
 	modelSink    events.EventSink
 
+	// selfURL is this node's own base API URL, stamped as the origin of
+	// locally-produced events.
+	selfURL string
+	// replicationStamps holds the preserved origin + timestamp of an event
+	// currently being forwarded, keyed by the goroutine running ApplyReplicated.
+	// Keying by goroutine is what makes stamping correct under concurrency: the
+	// whole replicated apply (model mutation -> sink.Receive -> eventStamp) runs
+	// synchronously on one goroutine, so only that goroutine's records read the
+	// preserved stamp. A concurrent local mutation on another goroutine finds no
+	// entry and is correctly stamped with selfURL + now. (The EventSink.Receive
+	// signature carries no context, so the stamp cannot be threaded as a
+	// parameter without changing every sink implementation; goroutine scoping is
+	// the contained alternative.)
+	replicationMu     sync.Mutex
+	replicationStamps map[uint64]replicationStamp
+
 	logger *zap.SugaredLogger
+}
+
+// replicationStamp is the origin + timestamp preserved while forwarding a
+// replicated event.
+type replicationStamp struct {
+	originURL string
+	timestamp time.Time
 }
 
 func NewEventManager(opts ...Option) (events.EventManager, error) {
 	e := &eventManager{
-		sequenceNumber: 0,
-		notifiers:      make([]*notifier, 0),
-		latestState:    newLatestStateStore(),
-		historyLimit:   DefaultHistoryLimit,
-		logger:         zap.NewNop().Sugar(),
+		sequenceNumber:    0,
+		notifiers:         make([]*notifier, 0),
+		latestState:       newLatestStateStore(),
+		historyLimit:      DefaultHistoryLimit,
+		replicationStamps: make(map[uint64]replicationStamp),
+		logger:            zap.NewNop().Sugar(),
 	}
 	for _, opt := range opts {
 		opt(e)
@@ -74,6 +110,54 @@ func (e *eventManager) getOrCreateModelSink() events.EventSink {
 		e.modelSink = newRecordingSink(e)
 	}
 	return e.modelSink
+}
+
+// eventStamp returns the origin URL and timestamp to record for an event
+// about to flow through the recording sink. If the calling goroutine is inside
+// an ApplyReplicated (forwarding an upstream event), it returns the preserved
+// upstream origin + timestamp; otherwise it returns this node's own URL and the
+// current time. Keying on the goroutine ensures a concurrent local mutation on
+// another goroutine is never stamped with a remote origin.
+func (e *eventManager) eventStamp() (string, time.Time) {
+	gid := goroutineID()
+	e.replicationMu.Lock()
+	rep, ok := e.replicationStamps[gid]
+	e.replicationMu.Unlock()
+	if ok {
+		return rep.originURL, rep.timestamp
+	}
+	return e.selfURL, time.Now()
+}
+
+// ApplyReplicated runs fn (which applies an upstream event to the local model)
+// with origin + timestamp preserved, so the resulting recorded event keeps the
+// originating node's identity and time rather than being re-stamped as locally
+// produced.
+//
+// The stamp is scoped to the current goroutine. POST /events/push is served on
+// a per-request goroutine and the whole apply (model mutation -> recording sink)
+// runs synchronously on it, so concurrent pushes and concurrent local mutations
+// each read their own correct stamp without interfering. Nested calls on the
+// same goroutine restore the previous stamp on return.
+func (e *eventManager) ApplyReplicated(originURL string, timestamp time.Time, fn func() error) error {
+	gid := goroutineID()
+
+	e.replicationMu.Lock()
+	prev, hadPrev := e.replicationStamps[gid]
+	e.replicationStamps[gid] = replicationStamp{originURL: originURL, timestamp: timestamp}
+	e.replicationMu.Unlock()
+
+	defer func() {
+		e.replicationMu.Lock()
+		if hadPrev {
+			e.replicationStamps[gid] = prev
+		} else {
+			delete(e.replicationStamps, gid)
+		}
+		e.replicationMu.Unlock()
+	}()
+
+	return fn()
 }
 
 func (e *eventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error) {
@@ -235,7 +319,7 @@ func (e *eventManager) QueryEvents(ctx context.Context, q events.EventQuery) ([]
 				continue
 			}
 			synthetic = append(synthetic, events.NewStoredEvent(
-				compactionSeq, compactionAt, ev.ResourceType, events.CreateOperation, ev.ResourceId, ev.Objects,
+				compactionSeq, compactionAt, ev.OriginURL, ev.ResourceType, events.CreateOperation, ev.ResourceId, ev.Objects,
 			))
 		}
 	}

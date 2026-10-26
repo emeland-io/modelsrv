@@ -197,6 +197,18 @@ func applyNode(spec map[string]any, m model.Model) error {
 	}
 	n := node.NewNode(id)
 	n.SetDisplayName(name)
+	url, err := requiredStringField(spec, "url")
+	if err != nil {
+		return err
+	}
+	n.SetUrl(url)
+	if subs, has, err := stringSliceField(spec, "subscriptions"); err != nil {
+		return err
+	} else if has {
+		n.SetSubscriptions(subs)
+	} else {
+		n.SetSubscriptions([]string{})
+	}
 	if desc, ok := stringField(spec, "description"); ok {
 		n.SetDescription(desc)
 	}

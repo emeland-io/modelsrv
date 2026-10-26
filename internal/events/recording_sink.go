@@ -1,8 +1,6 @@
 package eventmgr
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"go.emeland.io/modelsrv/pkg/events"
 )
@@ -20,18 +18,27 @@ func newRecordingSink(mgr *eventManager) *recordingSink {
 }
 
 func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation, resourceId uuid.UUID, objects ...any) error {
+	// Determine origin + timestamp. For a locally-produced change these are
+	// this node's own URL and the current time. For a change applied while
+	// forwarding a replicated event (see eventManager.ApplyReplicated), the
+	// incoming origin + timestamp are preserved unchanged so provenance
+	// survives every hop.
+	originURL, timestamp := r.mgr.eventStamp()
+
 	ev := events.Event{
 		ResourceType: resType,
 		Operation:    op,
 		ResourceId:   resourceId,
 		Objects:      objects,
+		OriginURL:    originURL,
+		Timestamp:    timestamp,
 	}
 
 	r.mgr.mu.Lock()
-	r.mgr.latestState.Receive(resType, op, resourceId, objects...)
+	r.mgr.latestState.Receive(ev)
 	r.mgr.sequenceNumber++
 	r.mgr.historyTail.Add(events.NewStoredEvent(
-		r.mgr.sequenceNumber, time.Now(), resType, op, resourceId, objects,
+		r.mgr.sequenceNumber, timestamp, originURL, resType, op, resourceId, objects,
 	))
 	seq := r.mgr.sequenceNumber
 	notifiers := make([]*notifier, len(r.mgr.notifiers))
@@ -43,6 +50,7 @@ func (r *recordingSink) Receive(resType events.ResourceType, op events.Operation
 		"kind", resType.WireKind(),
 		"operation", op.WireOperation(),
 		"resourceId", resourceId.String(),
+		"origin", originURL,
 		"objects", len(objects),
 		"subscribers", len(notifiers),
 	)

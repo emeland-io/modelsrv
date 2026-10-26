@@ -106,6 +106,15 @@ func NewHandler(backend model.Model, eventMgr events.EventManager, baseURL strin
 	return requestLoggingMiddleware(log)(oapi.HandlerFromMuxWithBaseURL(strict, r, "/api"))
 }
 
+// APIBaseURL returns the canonical base API URL for a modelsrv instance
+// listening on hostPort (e.g. "localhost:24000" -> "http://localhost:24000/api").
+// It is the single source of truth for the self-node url and event origin, so
+// a node's advertised URL matches the subscription edge-key other nodes point
+// at it with. No trailing slash: edges are compared as exact strings.
+func APIBaseURL(hostPort string) string {
+	return "http://" + hostPort + "/api"
+}
+
 // StartWebListener starts the web endpoint serving the Swagger-UI and API
 // on its own goroutine. Use StopWebListener to shut it down.
 //
@@ -120,7 +129,7 @@ func StartWebListener(backend model.Model, eventMgr events.EventManager, addr st
 	}
 	webListener = ln
 
-	baseURL := fmt.Sprintf("http://%s/api", ln.Addr().String())
+	baseURL := APIBaseURL(ln.Addr().String())
 	var authzEval *authz.Evaluator
 	if opts.TrustAuthHeaders {
 		authzEval = authz.NewEvaluator(opts.AuthzConfig)

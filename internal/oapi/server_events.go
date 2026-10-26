@@ -111,7 +111,12 @@ func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRe
 		"resourceId", ev.ResourceId.String(),
 		"objects", len(ev.Objects),
 	)
-	if err := a.Backend.Apply(ev); err != nil {
+	// Apply with the upstream origin + timestamp preserved: the model
+	// re-mutation re-enters the recording sink, which would otherwise
+	// re-stamp this as a locally-produced event and destroy provenance.
+	if err := a.Events.ApplyReplicated(ev.OriginURL, ev.Timestamp, func() error {
+		return a.Backend.Apply(ev)
+	}); err != nil {
 		log.Errorw("POST /events/push apply failed",
 			"kind", ev.ResourceType.WireKind(),
 			"resourceId", ev.ResourceId.String(),

@@ -44,6 +44,48 @@ func stringField(spec map[string]any, key string) (string, bool) {
 	}
 }
 
+// requiredStringField returns a trimmed, non-empty string for a field that the model marks
+// as required. It errors when the field is absent, null, or blank so that ingress enforces
+// the same contract as the generated schema.
+func requiredStringField(spec map[string]any, key string) (string, error) {
+	s, ok := stringField(spec, key)
+	if !ok || strings.TrimSpace(s) == "" {
+		return "", fmt.Errorf("missing or empty %q", key)
+	}
+	return strings.TrimSpace(s), nil
+}
+
+// stringSliceField reads a list-of-strings field. It accepts a YAML/JSON sequence
+// (`[]any` of strings) and, for CSV/scalar friendliness, a single string value. Returns
+// has=false when the field is absent or null so the caller can apply its own default.
+func stringSliceField(spec map[string]any, key string) (out []string, has bool, err error) {
+	v, ok := spec[key]
+	if !ok || v == nil {
+		return nil, false, nil
+	}
+	switch t := v.(type) {
+	case []string:
+		return append([]string(nil), t...), true, nil
+	case []any:
+		res := make([]string, 0, len(t))
+		for i, elem := range t {
+			if elem == nil {
+				return nil, true, fmt.Errorf("%q[%d] must not be null", key, i)
+			}
+			s, ok := elem.(string)
+			if !ok {
+				s = fmt.Sprint(elem)
+			}
+			res = append(res, s)
+		}
+		return res, true, nil
+	case string:
+		return []string{t}, true, nil
+	default:
+		return nil, true, fmt.Errorf("%q must be a list of strings", key)
+	}
+}
+
 func parseUUIDField(spec map[string]any, key string) (uuid.UUID, error) {
 	s, ok := stringField(spec, key)
 	if !ok || strings.TrimSpace(s) == "" {

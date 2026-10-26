@@ -28,6 +28,7 @@ import (
 type config struct {
 	eventHistoryLimit int
 	logger            *zap.SugaredLogger
+	selfURL           string
 }
 
 // Option configures a Backend at construction time.
@@ -45,6 +46,12 @@ func WithEventHistoryLimit(n int) Option {
 // failures are recorded with zap instead of fmt.Printf.
 func WithLogger(log *zap.SugaredLogger) Option {
 	return func(c *config) { c.logger = log }
+}
+
+// WithSelfURL sets this node's own base API URL, stamped as the origin of
+// every locally-produced event.
+func WithSelfURL(url string) Option {
+	return func(c *config) { c.selfURL = url }
 }
 
 // Backend bundles the model, the filter chain, and the event manager.
@@ -87,6 +94,14 @@ func New(opts ...Option) (Backend, error) {
 	}
 	if cfg.logger != nil {
 		mgrOpts = append(mgrOpts, eventmgr.WithLogger(cfg.logger))
+	}
+	if cfg.selfURL != "" {
+		mgrOpts = append(mgrOpts, eventmgr.WithSelfURL(cfg.selfURL))
+	} else if cfg.logger != nil {
+		// Without a self URL, locally-produced events are stamped with an empty
+		// origin, so downstream nodes cannot tell which node produced them.
+		// Surface this rather than failing silently.
+		cfg.logger.Warnw("backend created without a self URL; locally-produced events will have an empty origin (pass WithSelfURL)")
 	}
 	eventMgr, err := eventmgr.NewEventManager(mgrOpts...)
 	if err != nil {

@@ -85,9 +85,17 @@ func runServer(cmd *cobra.Command, _ []string) error {
 
 	logger := log.Sugar()
 
+	// selfURL is this instance's own base API URL. It is stamped as the origin
+	// of every locally-produced event so downstream nodes can tell which node
+	// produced a change. Uses the same canonical form as the served API base
+	// URL (endpoint.APIBaseURL) so it matches the subscription edge-key peers
+	// use to point at this node.
+	selfURL := endpoint.APIBaseURL(serviceAddr)
+
 	b, err := backend.New(
 		backend.WithEventHistoryLimit(eventHistoryLimit),
 		backend.WithLogger(logger),
+		backend.WithSelfURL(selfURL),
 	)
 	if err != nil {
 		return fmt.Errorf("creating backend: %w", err)
@@ -145,7 +153,7 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		if c4Landscape.Name == "" {
 			c4Landscape = c4injector.DefaultLandscape()
 		}
-		if err := c4injector.RegisterNode(b.GetModel(), uuid.New(), "c4-doc-injector"); err != nil {
+		if err := c4injector.RegisterNode(b.GetModel(), uuid.New(), "c4-doc-injector", selfURL); err != nil {
 			return fmt.Errorf("register c4-doc-injector node: %w", err)
 		}
 		logger.Infow("c4 plantuml injector started",

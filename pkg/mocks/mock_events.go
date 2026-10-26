@@ -12,6 +12,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
+	time "time"
 
 	uuid "github.com/google/uuid"
 	events "go.emeland.io/modelsrv/pkg/events"
@@ -97,6 +98,20 @@ func (m *MockEventManager) AddSubscriber(url string) error {
 func (mr *MockEventManagerMockRecorder) AddSubscriber(url any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSubscriber", reflect.TypeOf((*MockEventManager)(nil).AddSubscriber), url)
+}
+
+// ApplyReplicated mocks base method.
+func (m *MockEventManager) ApplyReplicated(originURL string, timestamp time.Time, fn func() error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyReplicated", originURL, timestamp, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyReplicated indicates an expected call of ApplyReplicated.
+func (mr *MockEventManagerMockRecorder) ApplyReplicated(originURL, timestamp, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyReplicated", reflect.TypeOf((*MockEventManager)(nil).ApplyReplicated), originURL, timestamp, fn)
 }
 
 // GetCurrentSequenceId mocks base method.
