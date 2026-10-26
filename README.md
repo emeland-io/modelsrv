@@ -234,6 +234,15 @@ Merge requests to expand and improve the service are greatly appreciated.
 
 Please make sure that all tests are running before you create a merge request.
 
+## Container images
+
+On every version tag (`v*`), the publish workflows push container images to GitHub Container Registry:
+
+- `ghcr.io/emeland-io/modelsrv`
+- `ghcr.io/emeland-io/emelandctl`
+
+Each matching [GitHub Release](https://github.com/emeland-io/modelsrv/releases) lists the image tag and immutable digest for that release (with `docker pull` commands). Use [releases/latest](https://github.com/emeland-io/modelsrv/releases/latest) for the newest stable cut.
+
 ## Publishing OpenAPI docs
 
 On every plain semver tag (`vX.Y.Z`) and release-candidate tag (`vX.Y.Z-rcN`, such as `v0.47.11-rc3`), the
