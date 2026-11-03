@@ -1,4 +1,4 @@
-FROM golang:1.25 AS builder
+FROM golang:1.26 AS builder
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -24,7 +24,7 @@ COPY internal/ internal/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o emelandctl ./cmd/emelandctl/
 
 # Use alpine as base to allow interactive shell usage (kubectl attach)
-FROM alpine:3.21
+FROM alpine:3.22
 WORKDIR /
 COPY --from=builder /workspace/emelandctl /usr/local/bin/emelandctl
 USER nobody
