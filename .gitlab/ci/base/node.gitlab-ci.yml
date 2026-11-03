@@ -1,0 +1,15 @@
+# Base CI config for emeland Node/Vite apps (emeland-ui).
+#
+# Wraps the TBC node component (plus docker for repos that ship an image) with
+# the org defaults. Consumers include this file, not TBC directly.
+#
+#   include:
+#     - project: odc/emeland/modelsrv
+#       ref: main
+#       file: .gitlab/ci/base/node.gitlab-ci.yml
+
+include:
+  - component: $CI_SERVER_FQDN/to-be-continuous/node/gitlab-ci-node@5.4.0
+  - component: $CI_SERVER_FQDN/to-be-continuous/docker/gitlab-ci-docker@8.5.3
+    inputs:
+      build-tool: kaniko

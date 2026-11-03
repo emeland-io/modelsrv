@@ -1,0 +1,29 @@
+# Base CI config for emeland Go services (sensors, filters, exporters, modelsrv).
+#
+# This is the single place where the org's TBC choices live. Repos include this
+# file; they do NOT include TBC components directly, so build-tool, pinned
+# component versions and image defaults are controlled here for the whole fleet.
+#
+# Consumer repo .gitlab-ci.yml:
+#
+#   include:
+#     - project: odc/emeland/modelsrv
+#       ref: main
+#       file: .gitlab/ci/base/go-service.gitlab-ci.yml
+#
+# A Go service with a Dockerfile then needs nothing else. Repos override TBC
+# inputs via variables (e.g. GO_IMAGE equivalents) only where they genuinely
+# differ; see the per-input variables documented in the TBC golang/docker docs.
+#
+# Runner note: build-tool is kaniko because our Kubernetes runners disallow user
+# namespaces (rootless buildah cannot start). Change it in ONE place here (or via
+# the group-level TBC_DEFAULT_DOCKER_BUILD_TOOL variable) if that ever changes.
+
+include:
+  - component: $CI_SERVER_FQDN/to-be-continuous/golang/gitlab-ci-golang@4.17.2
+    inputs:
+      image: golang:1.26
+      build-mode: application
+  - component: $CI_SERVER_FQDN/to-be-continuous/docker/gitlab-ci-docker@8.5.3
+    inputs:
+      build-tool: kaniko

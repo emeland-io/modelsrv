@@ -1,0 +1,21 @@
+# Example: the complete .gitlab-ci.yml for a simple Go sensor
+# (modelsrv-git-sensor, -prometheus-sensor, -oci-registry-sensor, otel-exporter).
+#
+# The repo includes the shared base from modelsrv and nothing else. All TBC
+# setup (golang + docker, kaniko, pinned versions) comes from the base.
+#
+# Prerequisites in the repo: a Dockerfile at the repo root (TBC golang builds
+# and tests Go directly; no Makefile contract required).
+#
+# Pin ref: to a modelsrv tag instead of main for reproducible CI.
+
+include:
+  - project: odc/emeland/modelsrv
+    ref: main
+    file: .gitlab/ci/base/go-service.gitlab-ci.yml
+
+# Single root Dockerfile -> the TBC default image names already work, so there
+# is nothing to override. A repo with a non-default image path would set:
+#   docker-kaniko-build:
+#     variables:
+#       DOCKER_FILE: path/to/Dockerfile
