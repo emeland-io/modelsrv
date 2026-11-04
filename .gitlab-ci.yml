@@ -1,25 +1,114 @@
+# modelsrv pipeline. modelsrv hosts the base CI config and consumes it like any
+# other repo (via a local include), so there is one shared definition of the
+# fleet's TBC setup. modelsrv only adds what is genuinely specific to it.
+#
+# The base (.gitlab/ci/base/go-service.gitlab-ci.yml) wraps the TBC golang and
+# docker components and sets the org defaults (kaniko build tool, pinned
+# versions, Go image). Everything below is modelsrv-only.
 
-stages:
-- test
-- security
+include:
+  - local: .gitlab/ci/base/go-service.gitlab-ci.yml
 
 variables:
-  SECRET_DETECTION_ENABLED: 'true'
-  GO_VERSION: "1.24"
+  # modelsrv has its own .golangci.yml. Drop TBC's default "-E gosec" so the
+  # project's own lint configuration decides what is enforced.
+  GO_CI_LINT_ARGS: "./..."
 
-# Include GitLab security templates
-include:
-  - template: Security/SAST.gitlab-ci.yml
-  - template: Security/Secret-Detection.gitlab-ci.yml
+# modelsrv has no root Dockerfile; lint both real Dockerfiles. hadolint is a
+# single TBC job, so matrix it over the two files like the build.
+docker-hadolint:
+  # DL3066 (non-numeric user id) is a pre-existing nit in Dockerfile.emelandctl
+  # that the old GitHub CI never checked. Ignore it here so the CI migration can
+  # land; fix the Dockerfile to a numeric UID in a follow-up and drop this.
+  variables:
+    DOCKER_HADOLINT_ARGS: "--ignore DL3066"
+  parallel:
+    matrix:
+      - DOCKER_FILE: deploy/container/Dockerfile.modelsrv
+      - DOCKER_FILE: deploy/container/Dockerfile.emelandctl
 
-test:
-  stage: test
-  image: golang:${GO_VERSION}
+# --- modelsrv-specific checks TBC golang does not cover --------------------
+# Codegen drift (generated files must be committed), nilaway, api-docs render.
+modelsrv-codegen:
+  stage: build
+  image: golang:1.26
+  variables:
+    GOFLAGS: "-mod=readonly"
   script:
-    - make test
+    - make tools
+    - make gen generate
+    - |
+      if ! git diff --exit-code; then
+        echo "Generated files are out of date. Run 'make gen generate' and commit the result." >&2
+        exit 1
+      fi
+    - make nilaway
+    - make api-docs API_DOCS_VERSION=ci
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
 
-sast:
-  stage: security
+# --- two container images via the base's TBC kaniko build ------------------
+# modelsrv builds two images. Define the per-image matrix once and reuse it for
+# the build and the downstream scan jobs, which TBC otherwise runs against a
+# single default image. The -ci-test image names are a staging guard; drop the
+# suffix once verified.
+.image-matrix: &image-matrix
+  - DOCKER_FILE: deploy/container/Dockerfile.modelsrv
+    DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
+    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv-ci-test:$CI_COMMIT_REF_NAME"
+  - DOCKER_FILE: deploy/container/Dockerfile.emelandctl
+    DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
+    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl-ci-test:$CI_COMMIT_REF_NAME"
 
-secret_detection:
-  stage: security
+docker-kaniko-build:
+  variables:
+    # modelsrv's Dockerfiles live under deploy/container/ but COPY from the repo
+    # root (go.mod etc.), so the build context must be the root, not the
+    # Dockerfile's directory (TBC's default).
+    DOCKER_CONTEXT_PATH: "."
+  parallel:
+    matrix: *image-matrix
+
+# Scan each built image, not TBC's single default snapshot image.
+docker-trivy:
+  parallel:
+    matrix: *image-matrix
+
+docker-sbom:
+  parallel:
+    matrix: *image-matrix
+
+# --- publish OpenAPI spec and docs to odc/emeland/openapi ------------------
+# Ports the old GitHub openapi-publish.yml. Runs on semver tags; also available
+# as a manual run with a TAG variable (for backfilling an existing release).
+# Uses CI_JOB_TOKEN (no stored secret) to push a branch and open an MR on the
+# openapi repo. One-time setup: add odc/emeland/modelsrv to that repo's CI/CD
+# job-token inbound allowlist with push permission.
+.publish-openapi-base:
+  stage: publish
+  image: golang:1.26
+  variables:
+    OPENAPI_SPEC: api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml
+    OPENAPI_REPO_PATH: odc/emeland/openapi
+    OPENAPI_REPO_BRANCH: main
+  resource_group: openapi-publish
+
+publish-openapi:
+  extends: .publish-openapi-base
+  script:
+    - .gitlab/scripts/publish-openapi.sh "$CI_COMMIT_TAG"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$/'
+
+# Manual backfill: set TAG (e.g. v0.11.0) when running.
+publish-openapi-manual:
+  extends: .publish-openapi-base
+  script:
+    - .gitlab/scripts/publish-openapi.sh "$TAG"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - when: manual
+  allow_failure: true

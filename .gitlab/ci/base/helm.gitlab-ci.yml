@@ -1,0 +1,12 @@
+# Base CI config for emeland Helm chart repos (emeland-helm, demo-stack-chart).
+#
+# Wraps the TBC helm component with org defaults. Consumers include this file,
+# not TBC directly.
+#
+#   include:
+#     - project: odc/emeland/modelsrv
+#       ref: main
+#       file: .gitlab/ci/base/helm.gitlab-ci.yml
+
+include:
+  - component: $CI_SERVER_FQDN/to-be-continuous/helm/gitlab-ci-helm@9.7.2
