@@ -49,6 +49,19 @@ func (s *latestStateStore) removeFromOrder(key resourceKey) {
 	}
 }
 
+// CountByOrigin returns how many live resources currently carry the given
+// OriginURL. Used by hop-by-hop reconciliation so a publisher can compare
+// its inventory to a subscriber's without shipping payloads.
+func (s *latestStateStore) CountByOrigin(originURL string) int {
+	n := 0
+	for _, ev := range s.state {
+		if ev.OriginURL == originURL {
+			n++
+		}
+	}
+	return n
+}
+
 // GetEvents returns one event per live resource, oldest-creation-first,
 // always reported as a Create: to a party seeing this snapshot as their
 // first knowledge of the resource (a new subscriber, or a history query

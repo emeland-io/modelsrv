@@ -90,6 +90,9 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// GetEventsOriginCount request
+	GetEventsOriginCount(ctx context.Context, params *GetEventsOriginCountParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostEventsPushWithBody request with any body
 	PostEventsPushWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -353,6 +356,18 @@ type ClientInterface interface {
 
 	// GetTest request
 	GetTest(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) GetEventsOriginCount(ctx context.Context, params *GetEventsOriginCountParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEventsOriginCountRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) PostEventsPushWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1421,6 +1436,56 @@ func (c *Client) GetTest(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewGetEventsOriginCountRequest generates requests for GetEventsOriginCount
+func NewGetEventsOriginCountRequest(server string, params *GetEventsOriginCountParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/events/origin-count")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "originUrl", params.OriginUrl, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uri"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // NewPostEventsPushRequest calls the generic PostEventsPush builder with application/json body
@@ -4114,6 +4179,9 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// GetEventsOriginCountWithResponse request
+	GetEventsOriginCountWithResponse(ctx context.Context, params *GetEventsOriginCountParams, reqEditors ...RequestEditorFn) (*GetEventsOriginCountResponse, error)
+
 	// PostEventsPushWithBodyWithResponse request with any body
 	PostEventsPushWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error)
 
@@ -4377,6 +4445,36 @@ type ClientWithResponsesInterface interface {
 
 	// GetTestWithResponse request
 	GetTestWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTestResponse, error)
+}
+
+type GetEventsOriginCountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OriginCount
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEventsOriginCountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEventsOriginCountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetEventsOriginCountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type PostEventsPushResponse struct {
@@ -6996,6 +7094,15 @@ func (r GetTestResponse) ContentType() string {
 	return ""
 }
 
+// GetEventsOriginCountWithResponse request returning *GetEventsOriginCountResponse
+func (c *ClientWithResponses) GetEventsOriginCountWithResponse(ctx context.Context, params *GetEventsOriginCountParams, reqEditors ...RequestEditorFn) (*GetEventsOriginCountResponse, error) {
+	rsp, err := c.GetEventsOriginCount(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEventsOriginCountResponse(rsp)
+}
+
 // PostEventsPushWithBodyWithResponse request with arbitrary body returning *PostEventsPushResponse
 func (c *ClientWithResponses) PostEventsPushWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostEventsPushResponse, error) {
 	rsp, err := c.PostEventsPushWithBody(ctx, contentType, body, reqEditors...)
@@ -7792,6 +7899,32 @@ func (c *ClientWithResponses) GetTestWithResponse(ctx context.Context, reqEditor
 		return nil, err
 	}
 	return ParseGetTestResponse(rsp)
+}
+
+// ParseGetEventsOriginCountResponse parses an HTTP response from a GetEventsOriginCountWithResponse call
+func ParseGetEventsOriginCountResponse(rsp *http.Response) (*GetEventsOriginCountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEventsOriginCountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OriginCount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParsePostEventsPushResponse parses an HTTP response from a PostEventsPushWithResponse call

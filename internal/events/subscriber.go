@@ -92,3 +92,28 @@ func (s *subscriber) Notify(ctx context.Context, event *events.Event) error {
 	)
 	return nil
 }
+
+func (s *subscriber) CountOrigin(ctx context.Context, originURL string) (int, error) {
+	s.log.Debugw("subscriber origin-count",
+		"url", s.url,
+		"subscriberId", s.id.String(),
+		"originUrl", originURL,
+	)
+	count, err := s.subClient.OriginCount(ctx, originURL)
+	if err != nil {
+		s.log.Debugw("subscriber origin-count failed",
+			"url", s.url,
+			"subscriberId", s.id.String(),
+			"originUrl", originURL,
+			"error", err,
+		)
+		return 0, err
+	}
+	s.log.Debugw("subscriber origin-count ok",
+		"url", s.url,
+		"subscriberId", s.id.String(),
+		"originUrl", originURL,
+		"count", count,
+	)
+	return count, nil
+}

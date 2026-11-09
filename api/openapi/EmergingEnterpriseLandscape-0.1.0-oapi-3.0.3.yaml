@@ -1547,6 +1547,27 @@ paths:
       responses:
         '200':
           description: OK
+  /events/origin-count:
+    get:
+      description: |
+        Count live resources whose OriginURL matches the query parameter.
+        Used by an upstream publisher to reconcile whether a subscriber is missing
+        resources for a given origin before resending them.
+      tags: [events]
+      parameters:
+        - name: originUrl
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OriginCount'
   /test:
     get:
       responses:
@@ -1556,6 +1577,21 @@ components:
   schemas:
     ErrorString:
       type: string
+    OriginCount:
+      type: object
+      description: Live-resource count for one OriginURL in this node's latest state.
+      required:
+        - originUrl
+        - count
+      properties:
+        originUrl:
+          type: string
+          format: uri
+          description: The origin base API URL that was queried.
+        count:
+          type: integer
+          minimum: 0
+          description: Number of live resources currently carrying that OriginURL.
     Finding:
       type: object
       description: 'Represents the finding of a rule violation. Rules may either be defined for semantic correctness of the model or for compliance checks against external regulations and standards.'

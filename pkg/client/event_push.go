@@ -58,6 +58,32 @@ func (c *ModelSrvClient) Register(callbackURL string) error {
 	return nil
 }
 
+// OriginCount asks GET /events/origin-count for how many live resources the
+// peer holds with the given OriginURL.
+func (c *ModelSrvClient) OriginCount(ctx context.Context, originURL string) (int, error) {
+	c.logger().Debugw("GET /events/origin-count", "originUrl", originURL)
+	resp, err := c.oapi_client.GetEventsOriginCountWithResponse(ctx, &oapi.GetEventsOriginCountParams{
+		OriginUrl: originURL,
+	})
+	if err != nil {
+		c.logger().Errorw("GET /events/origin-count transport error", "originUrl", originURL, "error", err)
+		return 0, err
+	}
+	if resp.StatusCode() != http.StatusOK || resp.JSON200 == nil {
+		c.logger().Warnw("GET /events/origin-count rejected",
+			"originUrl", originURL,
+			"status", resp.StatusCode(),
+			"body", strings.TrimSpace(string(resp.Body)),
+		)
+		return 0, fmt.Errorf("GET /events/origin-count: expected 200, got %d", resp.StatusCode())
+	}
+	c.logger().Debugw("GET /events/origin-count ok",
+		"originUrl", originURL,
+		"count", resp.JSON200.Count,
+	)
+	return resp.JSON200.Count, nil
+}
+
 // PostEvent sends a domain event to POST /events/push (used for server-to-server replication).
 func (c *ModelSrvClient) PostEvent(ctx context.Context, ev *events.Event) error {
 	if ev == nil {

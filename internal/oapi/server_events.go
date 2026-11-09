@@ -82,6 +82,18 @@ func (a *ApiServer) GetEventsSubscribers(ctx context.Context, request GetEventsS
 	return GetEventsSubscribers200JSONResponse(out), nil
 }
 
+// GetEventsOriginCount returns how many live resources currently carry the given OriginURL.
+func (a *ApiServer) GetEventsOriginCount(ctx context.Context, request GetEventsOriginCountRequestObject) (GetEventsOriginCountResponseObject, error) {
+	_ = ctx
+	origin := request.Params.OriginUrl
+	count := a.Events.CountByOrigin(origin)
+	a.logger().Debugw("GET /events/origin-count", "originUrl", origin, "count", count)
+	return GetEventsOriginCount200JSONResponse{
+		OriginUrl: origin,
+		Count:     count,
+	}, nil
+}
+
 // PostEventsPush receives replicated events from an upstream server and applies them to the local model.
 // The recording sink forwards applied changes to any registered downstream subscribers.
 func (a *ApiServer) PostEventsPush(ctx context.Context, request PostEventsPushRequestObject) (PostEventsPushResponseObject, error) {
