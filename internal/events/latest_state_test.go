@@ -95,3 +95,21 @@ func TestLatestStateStore_PreservesOriginAndTimestamp(t *testing.T) {
 	assert.Equal(t, "http://origin:24000/api", got[0].OriginURL)
 	assert.Equal(t, ts, got[0].Timestamp)
 }
+
+func TestLatestStateStore_CountByOrigin(t *testing.T) {
+	s := newLatestStateStore()
+	originA := "http://a:24000/api"
+	originB := "http://b:24000/api"
+	id1, id2, id3 := uuid.New(), uuid.New(), uuid.New()
+
+	s.Receive(events.Event{ResourceType: events.SystemResource, Operation: events.CreateOperation, ResourceId: id1, OriginURL: originA})
+	s.Receive(events.Event{ResourceType: events.SystemResource, Operation: events.CreateOperation, ResourceId: id2, OriginURL: originA})
+	s.Receive(events.Event{ResourceType: events.NodeResource, Operation: events.CreateOperation, ResourceId: id3, OriginURL: originB})
+
+	assert.Equal(t, 2, s.CountByOrigin(originA))
+	assert.Equal(t, 1, s.CountByOrigin(originB))
+	assert.Equal(t, 0, s.CountByOrigin("http://missing/api"))
+
+	s.Receive(events.Event{ResourceType: events.SystemResource, Operation: events.DeleteOperation, ResourceId: id1, OriginURL: originA})
+	assert.Equal(t, 1, s.CountByOrigin(originA))
+}

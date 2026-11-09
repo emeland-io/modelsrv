@@ -114,6 +114,20 @@ func (mr *MockEventManagerMockRecorder) ApplyReplicated(originURL, timestamp, fn
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyReplicated", reflect.TypeOf((*MockEventManager)(nil).ApplyReplicated), originURL, timestamp, fn)
 }
 
+// CountByOrigin mocks base method.
+func (m *MockEventManager) CountByOrigin(originURL string) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountByOrigin", originURL)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// CountByOrigin indicates an expected call of CountByOrigin.
+func (mr *MockEventManagerMockRecorder) CountByOrigin(originURL any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountByOrigin", reflect.TypeOf((*MockEventManager)(nil).CountByOrigin), originURL)
+}
+
 // GetCurrentSequenceId mocks base method.
 func (m *MockEventManager) GetCurrentSequenceId(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()

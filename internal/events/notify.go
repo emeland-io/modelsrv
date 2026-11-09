@@ -14,7 +14,7 @@ import (
 const (
 	// notifyQueueDepth bounds how many events may await delivery to one
 	// subscriber. Beyond that the queued events are abandoned in favour of
-	// a latest-state resync, which converges the subscriber on current
+	// origin-count reconcile, which converges the subscriber on current
 	// state without retaining an unbounded backlog.
 	notifyQueueDepth = 256
 
@@ -25,6 +25,22 @@ const (
 	notifyResyncDelay    = 2 * time.Second
 )
 
+// notifyReconcileInterval is how often a notifier asks its subscriber for
+// per-origin live counts. Overridable in tests via SetReconcileIntervalForTest.
+// Atomic because notifiers from earlier tests may still be starting while a
+// later test overrides it.
+var notifyReconcileInterval atomic.Int64
+
+func init() { notifyReconcileInterval.Store(int64(10 * time.Second)) }
+
+// SetReconcileIntervalForTest overrides the periodic origin-count tick.
+// Call before AddSubscriber so new notifiers pick up the interval. Returns a
+// restore function for defer.
+func SetReconcileIntervalForTest(d time.Duration) (restore func()) {
+	prev := notifyReconcileInterval.Swap(int64(d))
+	return func() { notifyReconcileInterval.Store(prev) }
+}
+
 // notifier delivers events to one subscriber from a single goroutine, so
 // they arrive in the order the model produced them: concurrent delivery
 // could land a Create after the Delete that supersedes it.
@@ -32,6 +48,11 @@ const (
 // Delivery is bounded by the queue rather than by blocking the caller. A
 // slow or unreachable subscriber must not stall model mutations, nor
 // delivery to the other subscribers.
+//
+// Catch-up after queue overflow, exhausted retries, or a peer that fell
+// behind is owned by origin-count reconciliation: ask how many live
+// resources the subscriber holds per OriginURL, and resend that origin's
+// live events when the counts differ.
 type notifier struct {
 	sub      events.Subscriber
 	snapshot func() []events.Event
@@ -58,7 +79,7 @@ func (n *notifier) stopDelivery() { close(n.stop) }
 
 // enqueue hands ev to the delivery goroutine without blocking. A subscriber
 // that has fallen a full queue behind loses the individual events and is
-// scheduled for a resync instead.
+// scheduled for origin-count reconcile instead.
 func (n *notifier) enqueue(ev events.Event) {
 	select {
 	case n.queue <- ev:
@@ -73,7 +94,7 @@ func (n *notifier) enqueue(ev events.Event) {
 		)
 	default:
 		n.resync.Store(true)
-		n.logger.Warnw("subscriber fell behind; scheduling state resync",
+		n.logger.Warnw("subscriber fell behind; scheduling origin-count reconcile",
 			"url", n.sub.GetURL(),
 			"subscriberId", n.sub.GetId().String(),
 			"kind", ev.ResourceType.WireKind(),
@@ -85,6 +106,8 @@ func (n *notifier) enqueue(ev events.Event) {
 }
 
 func (n *notifier) run() {
+	ticker := time.NewTicker(time.Duration(notifyReconcileInterval.Load()))
+	defer ticker.Stop()
 	var resyncRetry <-chan time.Time
 	for {
 		select {
@@ -94,55 +117,94 @@ func (n *notifier) run() {
 			if !n.deliver(ev) {
 				n.resync.Store(true)
 			}
+		case <-ticker.C:
+			n.resync.Store(true)
 		case <-resyncRetry:
 		}
 
 		resyncRetry = nil
-		// Clear before resyncing: an enqueue that overflows while the
-		// snapshot is in flight must schedule another round rather than
+		// Clear before reconciling: an enqueue that overflows while a
+		// reconcile is in flight must schedule another round rather than
 		// be swallowed by a success that predates it.
-		if n.resync.CompareAndSwap(true, false) && !n.deliverSnapshot() {
+		if n.resync.CompareAndSwap(true, false) && !n.reconcile() {
 			n.resync.Store(true)
 			resyncRetry = time.After(notifyResyncDelay)
 		}
 	}
 }
 
-// deliverSnapshot brings the subscriber back to current state after events
-// were dropped. Queued events are discarded first: they predate the
-// snapshot, and replaying one afterwards would resurrect a resource the
-// snapshot has already established as deleted.
-func (n *notifier) deliverSnapshot() bool {
+// reconcile compares per-origin live counts with the subscriber and resends
+// any origin whose counts differ (or whose count GET fails). Queued events
+// are discarded first: they predate the snapshot, and replaying one
+// afterwards would resurrect a resource the snapshot has already established
+// as deleted.
+func (n *notifier) reconcile() bool {
 	n.drainQueue()
 	snapshot := n.snapshot()
-	n.logger.Infow("resyncing subscriber from current state",
+	byOrigin := make(map[string][]events.Event)
+	for i := range snapshot {
+		origin := snapshot[i].OriginURL
+		byOrigin[origin] = append(byOrigin[origin], snapshot[i])
+	}
+
+	n.logger.Debugw("reconciling subscriber by origin count",
 		"url", n.sub.GetURL(),
 		"subscriberId", n.sub.GetId().String(),
+		"origins", len(byOrigin),
 		"resources", len(snapshot),
 	)
-	for i := range snapshot {
-		n.logger.Debugw("resync pushing resource",
-			"url", n.sub.GetURL(),
-			"index", i,
-			"of", len(snapshot),
-			"kind", snapshot[i].ResourceType.WireKind(),
-			"operation", snapshot[i].Operation.WireOperation(),
-			"resourceId", snapshot[i].ResourceId.String(),
-		)
-		if !n.deliver(snapshot[i]) {
-			n.logger.Warnw("resync aborted; will retry",
+
+	ok := true
+	for origin, evs := range byOrigin {
+		ctx, cancel := context.WithTimeout(context.Background(), notifyAttemptTimeout)
+		remote, err := n.sub.CountOrigin(ctx, origin)
+		cancel()
+		local := len(evs)
+		if err == nil && remote == local {
+			n.logger.Debugw("origin count matches; skip resend",
 				"url", n.sub.GetURL(),
-				"delivered", i,
-				"resources", len(snapshot),
+				"originUrl", origin,
+				"count", local,
 			)
-			return false
+			continue
+		}
+		if err != nil {
+			n.logger.Warnw("origin count failed; resending origin",
+				"url", n.sub.GetURL(),
+				"originUrl", origin,
+				"local", local,
+				"error", err,
+			)
+		} else {
+			n.logger.Infow("origin count mismatch; resending origin",
+				"url", n.sub.GetURL(),
+				"originUrl", origin,
+				"local", local,
+				"remote", remote,
+			)
+		}
+		for i := range evs {
+			n.logger.Debugw("reconcile pushing resource",
+				"url", n.sub.GetURL(),
+				"originUrl", origin,
+				"index", i,
+				"of", len(evs),
+				"kind", evs[i].ResourceType.WireKind(),
+				"resourceId", evs[i].ResourceId.String(),
+			)
+			if !n.deliver(evs[i]) {
+				n.logger.Warnw("reconcile aborted; will retry",
+					"url", n.sub.GetURL(),
+					"originUrl", origin,
+					"delivered", i,
+					"resources", len(evs),
+				)
+				ok = false
+				break
+			}
 		}
 	}
-	n.logger.Debugw("resync finished",
-		"url", n.sub.GetURL(),
-		"resources", len(snapshot),
-	)
-	return true
+	return ok
 }
 
 func (n *notifier) drainQueue() {
@@ -157,8 +219,8 @@ func (n *notifier) drainQueue() {
 
 // deliver reports whether ev was handled for this subscriber. Transient
 // failures are retried with exponential backoff; a permanent rejection is
-// skipped so a snapshot can continue with later resources. Exhausting retries
-// is not data loss: the caller schedules a resync of current state.
+// skipped so a reconcile can continue with later resources. Exhausting retries
+// is not data loss: the caller schedules origin-count reconcile.
 func (n *notifier) deliver(ev events.Event) bool {
 	for attempt := 1; ; attempt++ {
 		n.logger.Debugw("pushing event to subscriber",

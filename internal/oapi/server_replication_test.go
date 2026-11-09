@@ -3,9 +3,12 @@ package oapi_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -14,6 +17,7 @@ import (
 
 	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/internal/oapi"
+	"go.emeland.io/modelsrv/pkg/client"
 	"go.emeland.io/modelsrv/pkg/events"
 	"go.emeland.io/modelsrv/pkg/model"
 	mdlcap "go.emeland.io/modelsrv/pkg/model/capacity"
@@ -213,6 +217,88 @@ var _ = Describe("phase-1 event replication (server to server)", func() {
 			o, _ := originOnA(emC)
 			return o
 		}, "3s", "20ms").Should(Equal("http://node-a:24000/api"))
+	})
+
+	It("returns live resource counts for an OriginURL", func() {
+		const selfURL = "http://origin-count-a:24000/api"
+		mA, emA, srvA := newServerWithSelfURL(selfURL)
+		defer srvA.Close()
+
+		Expect(emA.CountByOrigin(selfURL)).To(Equal(0))
+
+		sid := uuid.New()
+		sys := system.NewSystem(sid)
+		sys.SetDisplayName("Counted")
+		Expect(mA.AddSystem(sys)).To(Succeed())
+		Expect(emA.CountByOrigin(selfURL)).To(Equal(1))
+
+		q := url.Values{"originUrl": {selfURL}}.Encode()
+		resp, err := http.Get(srvA.URL + "/api/events/origin-count?" + q)
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close() //nolint:errcheck
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+		var body oapi.OriginCount
+		Expect(json.NewDecoder(resp.Body).Decode(&body)).To(Succeed())
+		Expect(body.OriginUrl).To(Equal(selfURL))
+		Expect(body.Count).To(Equal(1))
+
+		cli, err := client.NewModelSrvClient(srvA.URL + "/api")
+		Expect(err).NotTo(HaveOccurred())
+		got, err := cli.OriginCount(context.Background(), selfURL)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got).To(Equal(1))
+	})
+
+	It("refills a drained middle hop via origin-count reconcile so the chain converges again", func() {
+		restore := eventmgr.SetReconcileIntervalForTest(50 * time.Millisecond)
+		defer restore()
+
+		const originA = "http://node-a:24000/api"
+		mA, _, srvA := newServerWithSelfURL(originA)
+		defer srvA.Close()
+		mB, _, srvB := newServerWithSelfURL("http://node-b:24000/api")
+		defer srvB.Close()
+		mC, _, srvC := newServerWithSelfURL("http://node-c:24000/api")
+		defer srvC.Close()
+
+		postEventsRegister(srvA.URL+"/api", srvB.URL+"/api")
+		postEventsRegister(srvB.URL+"/api", srvC.URL+"/api")
+
+		sid := uuid.New()
+		sys := system.NewSystem(sid)
+		sys.SetDisplayName("Chain System")
+		Expect(mA.AddSystem(sys)).To(Succeed())
+
+		Eventually(func() bool {
+			return mB.GetSystemById(sid) != nil && mC.GetSystemById(sid) != nil
+		}, "3s", "20ms").Should(BeTrue())
+
+		// Drain the middle hop (and its downstream) the way a crashed process
+		// would: landscape empty while A still holds the origin resource.
+		Expect(mB.DeleteSystemById(sid)).To(Succeed())
+		Eventually(func() bool {
+			return mB.GetSystemById(sid) == nil
+		}, "2s", "20ms").Should(BeTrue())
+		Eventually(func() bool {
+			return mC.GetSystemById(sid) == nil
+		}, "2s", "20ms").Should(BeTrue())
+
+		// A reconciles with B (count mismatch for origin A), then B with C.
+		Eventually(func() string {
+			g := mB.GetSystemById(sid)
+			if g == nil {
+				return ""
+			}
+			return g.GetDisplayName()
+		}, "3s", "50ms").Should(Equal("Chain System"))
+		Eventually(func() string {
+			g := mC.GetSystemById(sid)
+			if g == nil {
+				return ""
+			}
+			return g.GetDisplayName()
+		}, "3s", "50ms").Should(Equal("Chain System"))
 	})
 
 	It("acknowledges a Binding with an empty subject and does not store it", func() {

@@ -288,6 +288,14 @@ func (e *eventManager) stateSnapshot() []events.Event {
 	return e.latestState.GetEvents()
 }
 
+// CountByOrigin returns how many live resources currently carry the given
+// OriginURL in latest state.
+func (e *eventManager) CountByOrigin(originURL string) int {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.latestState.CountByOrigin(originURL)
+}
+
 // tailResourceKey identifies a resource within a historyRing snapshot, using
 // the same wire-format ResourceType string StoredEvent already carries (no
 // parsing round-trip needed).

@@ -34,6 +34,11 @@ modelsrv-codegen:
   image: golang:1.26
   variables:
     GOFLAGS: "-mod=readonly"
+    # nilaway holds ~3.5 GB live heap on this module; the runner default gets
+    # the pod OOM-killed (exit 137). Needs memory_limit_overwrite_max_allowed
+    # >= this on the runner.
+    KUBERNETES_MEMORY_REQUEST: "4Gi"
+    KUBERNETES_MEMORY_LIMIT: "6Gi"
   script:
     - make tools
     - make gen generate

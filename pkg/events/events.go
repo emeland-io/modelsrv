@@ -30,6 +30,8 @@ import (
 // Subscriber receives replicated events from an upstream server (HTTP callback target).
 type Subscriber interface {
 	Notify(ctx context.Context, event *Event) error
+	// CountOrigin asks the subscriber how many live resources it holds for originURL.
+	CountOrigin(ctx context.Context, originURL string) (int, error)
 	GetURL() string
 	GetId() uuid.UUID
 	GetStatus() string
@@ -60,6 +62,10 @@ type EventManager interface {
 	// event keeps the originating node's identity and time instead of being
 	// stamped as locally produced.
 	ApplyReplicated(originURL string, timestamp time.Time, fn func() error) error
+
+	// CountByOrigin returns how many live resources currently carry the given
+	// OriginURL in latest state (not history-ring length).
+	CountByOrigin(originURL string) int
 }
 
 type ResourceType int
