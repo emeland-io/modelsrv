@@ -28,6 +28,9 @@ FROM alpine:3.22
 # The published base image lags the package repository, so pull in security fixes at build time.
 RUN apk upgrade --no-cache
 WORKDIR /
+# The alpine:3.22 tag lags the branch package repo. Upgrade so fixes already
+# published there (zlib 1.4-r0 / CVE-2026-4738) are in the scanned image.
+RUN apk upgrade --no-cache
 COPY --from=builder /workspace/emelandctl /usr/local/bin/emelandctl
 USER nobody
 
