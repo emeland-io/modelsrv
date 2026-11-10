@@ -25,6 +25,8 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o em
 
 # Use alpine as base to allow interactive shell usage (kubectl attach)
 FROM alpine:3.22
+# The published base image lags the package repository, so pull in security fixes at build time.
+RUN apk upgrade --no-cache
 WORKDIR /
 COPY --from=builder /workspace/emelandctl /usr/local/bin/emelandctl
 USER nobody

@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	eventmgr "go.emeland.io/modelsrv/internal/events"
 	"go.emeland.io/modelsrv/pkg/authz"
@@ -21,6 +20,7 @@ import (
 	"go.emeland.io/modelsrv/pkg/endpointprobe"
 	"go.emeland.io/modelsrv/pkg/eventfilter"
 	"go.emeland.io/modelsrv/pkg/filesensor"
+	"go.emeland.io/modelsrv/pkg/selfnode"
 	"go.uber.org/zap"
 )
 
@@ -101,6 +101,14 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("creating backend: %w", err)
 	}
 
+	// Register this instance as a Node so it reports itself through the API
+	// (GET /landscape/nodes). Keyed on selfURL, so a restart on the same
+	// address reports the same node and re-registration is idempotent.
+	if err := selfnode.Register(b.GetModel(), selfURL); err != nil {
+		return fmt.Errorf("registering self-node: %w", err)
+	}
+	logger.Infow("registered self-node", "url", selfURL, "nodeId", selfnode.NodeID(selfURL).String())
+
 	dataPath := dataDir
 	if !filepath.IsAbs(dataPath) {
 		if abs, err := filepath.Abs(dataPath); err == nil {
@@ -153,9 +161,8 @@ func runServer(cmd *cobra.Command, _ []string) error {
 		if c4Landscape.Name == "" {
 			c4Landscape = c4injector.DefaultLandscape()
 		}
-		if err := c4injector.RegisterNode(b.GetModel(), uuid.New(), "c4-doc-injector", selfURL); err != nil {
-			return fmt.Errorf("register c4-doc-injector node: %w", err)
-		}
+		// The c4 injector runs in-process, so it shares the self-node
+		// registered above instead of adding a second node with the same url.
 		logger.Infow("c4 plantuml injector started",
 			"context", c4injector.PathContext,
 			"container", c4injector.PathContainer,
