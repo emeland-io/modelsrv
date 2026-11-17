@@ -68,6 +68,21 @@ func iamPermissionSpecRefsToOpenAPIUUIDs(refs []*iam.PermissionSpecRef) *[]opena
 	return &out
 }
 
+func iamIdentityRefsToOpenAPIUUIDs(refs []*iam.IdentityRef) *[]openapi_types.UUID {
+	out := make([]openapi_types.UUID, 0, len(refs))
+	for _, ref := range refs {
+		id := ref.EffectiveIdentityID() // nil-safe
+		if id == uuid.Nil {
+			continue
+		}
+		out = append(out, openapi_types.UUID(id))
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return &out
+}
+
 func iamPermissionRefsToOpenAPIUUIDs(refs []*iam.PermissionRef) *[]openapi_types.UUID {
 	if len(refs) == 0 {
 		return nil

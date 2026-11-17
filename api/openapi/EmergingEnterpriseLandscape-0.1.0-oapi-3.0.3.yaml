@@ -2664,6 +2664,12 @@ components:
         description:
           type: string
           description: 'A brief description of the group''s purpose and characteristics.'
+        members:
+          type: array
+          description: 'The ids of the identities that are members of the group.'
+          items:
+            type: string
+            format: uuid
         annotations:
           type: array
           description: 'A set of key-value pairs for storing additional metadata about the group.'
