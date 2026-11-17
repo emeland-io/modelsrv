@@ -19,6 +19,7 @@ var skipConvertByName = map[string]bool{
 	"ArtifactInstance":  true,
 	"PermissionSpec":    true,
 	"RoleSpec":          true,
+	"Group":             true,
 	"Permission":        true,
 	"Role":              true,
 	"Binding":           true,

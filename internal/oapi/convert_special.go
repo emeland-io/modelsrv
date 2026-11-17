@@ -571,6 +571,47 @@ func PermissionSpecToDto(v iam.PermissionSpec) PermissionSpec {
 	}
 }
 
+// GroupFromDto builds a domain Group from a wire DTO.
+func GroupFromDto(m model.Model, o *Group) (iam.Group, error) {
+	if o == nil {
+		return nil, fmt.Errorf("nil group")
+	}
+	id := uuid.UUID(o.GroupId)
+	v := iam.NewGroup(id)
+	v.SetDisplayName(o.DisplayName)
+	if o.Description != nil {
+		v.SetDescription(*o.Description)
+	}
+	if o.Members != nil {
+		refs := make([]*iam.IdentityRef, 0, len(*o.Members))
+		for _, mid := range *o.Members {
+			u := uuid.UUID(mid)
+			refs = append(refs, &iam.IdentityRef{
+				IdentityId: u,
+				Identity:   nilsafeGetIdentity(m, u),
+			})
+		}
+		v.SetMembers(refs)
+	}
+	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
+	return v, nil
+}
+
+// GroupToDto converts a domain Group to its wire DTO.
+func GroupToDto(v iam.Group) Group {
+	if v == nil {
+		return Group{}
+	}
+	desc := v.GetDescription()
+	return Group{
+		GroupId:     uuidToOpenAPI(v.GetGroupId()),
+		DisplayName: v.GetDisplayName(),
+		Description: &desc,
+		Members:     iamIdentityRefsToOpenAPIUUIDs(v.GetMembers()),
+		Annotations: AnnotationsToDto(v.GetAnnotations()),
+	}
+}
+
 // RoleSpecFromDto builds a domain RoleSpec from a wire DTO.
 func RoleSpecFromDto(m model.Model, o *RoleSpec) (iam.RoleSpec, error) {
 	if o == nil {

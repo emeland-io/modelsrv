@@ -82,20 +82,6 @@ func OrgUnitToDto(v iam.OrgUnit) OrgUnit {
 	return out
 }
 
-func GroupToDto(v iam.Group) Group {
-	if v == nil {
-		return Group{}
-	}
-	desc := v.GetDescription()
-	out := Group{
-		GroupId:     uuidToOpenAPI(v.GetGroupId()),
-		DisplayName: v.GetDisplayName(),
-		Description: &desc,
-		Annotations: AnnotationsToDto(v.GetAnnotations()),
-	}
-	return out
-}
-
 func IdentityToDto(v iam.Identity) Identity {
 	if v == nil {
 		return Identity{}

@@ -230,6 +230,8 @@ type Group struct {
 	DisplayName string `emeland:"name,required"`
 	// A brief description of the group's purpose and characteristics.
 	Description string `emeland:"description"`
+	// The ids of the identities that are members of the group.
+	Members []uuid.UUID
 	// A set of key-value pairs for storing additional metadata about the group.
 	Annotations annotations.Annotations `emeland:"annotations"`
 }

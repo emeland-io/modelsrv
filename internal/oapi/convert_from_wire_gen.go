@@ -92,21 +92,6 @@ func OrgUnitFromDto(m model.Model, o *OrgUnit) (iam.OrgUnit, error) {
 	return v, nil
 }
 
-// GroupFromDto builds a domain Group from a wire DTO.
-func GroupFromDto(m model.Model, o *Group) (iam.Group, error) {
-	if o == nil {
-		return nil, fmt.Errorf("nil group")
-	}
-	id := uuid.UUID(o.GroupId)
-	v := iam.NewGroup(id)
-	v.SetDisplayName(o.DisplayName)
-	if o.Description != nil {
-		v.SetDescription(*o.Description)
-	}
-	MergeAnnotationsFromDto(v.GetAnnotations(), o.Annotations)
-	return v, nil
-}
-
 // IdentityFromDto builds a domain Identity from a wire DTO.
 func IdentityFromDto(m model.Model, o *Identity) (iam.Identity, error) {
 	if o == nil {
