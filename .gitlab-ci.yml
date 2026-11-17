@@ -13,6 +13,10 @@ variables:
   # modelsrv has its own .golangci.yml. Drop TBC's default "-E gosec" so the
   # project's own lint configuration decides what is enforced.
   GO_CI_LINT_ARGS: "./..."
+  # modelsrv has no main package in the repo root; its programs live in cmd/.
+  # Point the SBOM at the server binary (container images get their own SBOM
+  # from docker-sbom).
+  GO_SBOM_OPTS: "-main cmd/modelsrv"
 
 # modelsrv has no root Dockerfile; lint both real Dockerfiles. hadolint is a
 # single TBC job, so matrix it over the two files like the build.
