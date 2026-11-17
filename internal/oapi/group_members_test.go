@@ -63,6 +63,33 @@ var _ = Describe("Group members on the wire", func() {
 		Expect(uuid.UUID((*dto.Members)[0])).To(Equal(keep))
 	})
 
+	It("keeps members through a replication event", func() {
+		aliceID, bobID := uuid.New(), uuid.New()
+		g := iam.NewGroup(uuid.New())
+		g.SetDisplayName("admins")
+		g.SetMembers([]*iam.IdentityRef{{IdentityId: aliceID}, {IdentityId: bobID}})
+
+		wire, err := oapi.PushWireEventFromDomain(&events.Event{
+			ResourceType: events.GroupResource,
+			Operation:    events.CreateOperation,
+			ResourceId:   g.GetGroupId(),
+			Objects:      []any{g},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(wire.Resource).NotTo(BeNil())
+		Expect((*wire.Resource)["members"]).To(ConsistOf(aliceID.String(), bobID.String()))
+
+		back, err := oapi.ReplicationEventFromWire(m, &wire)
+		Expect(err).NotTo(HaveOccurred())
+		got, ok := back.Objects[0].(iam.Group)
+		Expect(ok).To(BeTrue())
+		ids := []uuid.UUID{}
+		for _, ref := range got.GetMembers() {
+			ids = append(ids, ref.EffectiveIdentityID())
+		}
+		Expect(ids).To(Equal([]uuid.UUID{aliceID, bobID}))
+	})
+
 	It("omits the members field for a group without members", func() {
 		g := iam.NewGroup(uuid.New())
 		g.SetDisplayName("empty")
