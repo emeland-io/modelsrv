@@ -51,6 +51,18 @@ var _ = Describe("Group members on the wire", func() {
 		Expect(members[1].ResolvedIdentity()).To(BeNil(), "unknown identities stay as plain ids")
 	})
 
+	It("skips nil and empty member references", func() {
+		keep := uuid.New()
+		g := iam.NewGroup(uuid.New())
+		g.SetDisplayName("sparse")
+		g.SetMembers([]*iam.IdentityRef{nil, {}, {IdentityId: keep}})
+
+		dto := oapi.GroupToDto(g)
+		Expect(dto.Members).NotTo(BeNil())
+		Expect(*dto.Members).To(HaveLen(1))
+		Expect(uuid.UUID((*dto.Members)[0])).To(Equal(keep))
+	})
+
 	It("omits the members field for a group without members", func() {
 		g := iam.NewGroup(uuid.New())
 		g.SetDisplayName("empty")
