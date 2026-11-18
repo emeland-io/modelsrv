@@ -27,3 +27,8 @@ include:
   - component: $CI_SERVER_FQDN/to-be-continuous/docker/gitlab-ci-docker@8.5.3
     inputs:
       build-tool: kaniko
+
+# All jobs run on the group runner tagged "emeland" (runner #867, which only
+# takes tagged jobs). Do not use the shared instance runners.
+default:
+  tags: [emeland]

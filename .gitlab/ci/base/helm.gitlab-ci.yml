@@ -10,3 +10,8 @@
 
 include:
   - component: $CI_SERVER_FQDN/to-be-continuous/helm/gitlab-ci-helm@9.7.2
+
+# All jobs run on the group runner tagged "emeland" (runner #867, which only
+# takes tagged jobs). Do not use the shared instance runners.
+default:
+  tags: [emeland]
