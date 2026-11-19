@@ -91,36 +91,3 @@ docker-trivy:
 docker-sbom:
   parallel:
     matrix: *image-matrix
-
-# --- publish OpenAPI spec and docs to odc/emeland/openapi ------------------
-# Ports the old GitHub openapi-publish.yml. Runs on semver tags; also available
-# as a manual run with a TAG variable (for backfilling an existing release).
-# Uses CI_JOB_TOKEN (no stored secret) to push a branch and open an MR on the
-# openapi repo. One-time setup: add odc/emeland/modelsrv to that repo's CI/CD
-# job-token inbound allowlist with push permission.
-.publish-openapi-base:
-  stage: publish
-  image: golang:1.26
-  variables:
-    OPENAPI_SPEC: api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml
-    OPENAPI_REPO_PATH: odc/emeland/openapi
-    OPENAPI_REPO_BRANCH: main
-  resource_group: openapi-publish
-
-publish-openapi:
-  extends: .publish-openapi-base
-  script:
-    - .gitlab/scripts/publish-openapi.sh "$CI_COMMIT_TAG"
-  rules:
-    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$/'
-
-# Manual backfill: set TAG (e.g. v0.11.0) when running.
-publish-openapi-manual:
-  extends: .publish-openapi-base
-  script:
-    - .gitlab/scripts/publish-openapi.sh "$TAG"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
-    - when: manual
-  allow_failure: true
