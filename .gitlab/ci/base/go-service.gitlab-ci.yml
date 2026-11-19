@@ -32,3 +32,10 @@ include:
 # takes tagged jobs). Do not use the shared instance runners.
 default:
   tags: [emeland]
+
+# Release images are not published from GitLab. GitLab push-mirrors main and
+# tags to GitHub, where the repo's workflows build v* tags and push them to
+# ghcr.io. The snapshot build, trivy and sbom jobs stay as MR/main checks.
+docker-publish:
+  rules:
+    - when: never
