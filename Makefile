@@ -17,6 +17,9 @@ NILAWAY = $(LOCALBIN)/nilaway
 # Pinned pseudo-version (go.uber.org/nilaway); bump when adopting newer nilaway fixes.
 NILAWAY_VERSION ?= v0.0.0-20260318203545-ad240b12fb4c
 NILAWAY_INCLUDE_PKGS ?= go.emeland.io/modelsrv
+# Generated code (about half of the module) is not analysed: it is not edited
+# by hand and skipping it cuts nilaway's peak memory by roughly 1.2 GiB.
+NILAWAY_EXCLUDE_DOCSTRINGS ?= Code generated
 
 
 .PHONY: build
@@ -85,7 +88,7 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 
 .PHONY: nilaway
 nilaway: $(NILAWAY) ## Run Uber NilAway nilness checks on this module
-	$(NILAWAY) -include-pkgs=$(NILAWAY_INCLUDE_PKGS) ./...
+	$(NILAWAY) -include-pkgs=$(NILAWAY_INCLUDE_PKGS) -exclude-file-docstrings="$(NILAWAY_EXCLUDE_DOCSTRINGS)" ./...
 
 $(NILAWAY): $(LOCALBIN)
 	$(call go-install-tool,$(NILAWAY),go.uber.org/nilaway/cmd/nilaway,$(NILAWAY_VERSION))

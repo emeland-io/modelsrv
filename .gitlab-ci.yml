@@ -38,9 +38,11 @@ modelsrv-codegen:
   image: golang:1.26
   variables:
     GOFLAGS: "-mod=readonly"
-    # nilaway holds ~3.5 GB live heap on this module; the runner default gets
-    # the pod OOM-killed (exit 137). Needs memory_limit_overwrite_max_allowed
-    # >= this on the runner.
+    # nilaway peaks at about 4.6 GiB on this module even with generated files
+    # skipped (see Makefile). GOMEMLIMIT on the nilaway step below keeps it at
+    # about 3.2 GiB, so it stays inside the reserved request and the pod is not
+    # the first to be evicted. The runner must allow the overwrite
+    # (memory_{request,limit}_overwrite_max_allowed >= these values).
     KUBERNETES_MEMORY_REQUEST: "4Gi"
     KUBERNETES_MEMORY_LIMIT: "6Gi"
   script:
@@ -51,7 +53,8 @@ modelsrv-codegen:
         echo "Generated files are out of date. Run 'make gen generate' and commit the result." >&2
         exit 1
       fi
-    - make nilaway
+    # Soft heap limit: the GC works harder (roughly +20 s) instead of growing.
+    - GOMEMLIMIT=2500MiB make nilaway
     - make api-docs API_DOCS_VERSION=ci
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
