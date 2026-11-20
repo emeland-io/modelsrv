@@ -35,7 +35,7 @@ docker-hadolint:
 # Codegen drift (generated files must be committed), nilaway, api-docs render.
 modelsrv-codegen:
   stage: build
-  image: golang:1.26
+  image: golang:1.27@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf
   variables:
     GOFLAGS: "-mod=readonly"
     # nilaway peaks at about 4.6 GiB on this module even with generated files

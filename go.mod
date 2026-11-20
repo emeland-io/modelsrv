@@ -1,6 +1,6 @@
 module go.emeland.io/modelsrv
 
-go 1.26.0
+go 1.27.4
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.43.5
