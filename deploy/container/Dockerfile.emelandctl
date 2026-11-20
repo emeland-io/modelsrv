@@ -24,7 +24,7 @@ COPY internal/ internal/
 RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o emelandctl ./cmd/emelandctl/
 
 # Use alpine as base to allow interactive shell usage (kubectl attach)
-FROM alpine:3.22
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 # The published base image lags the package repository, so pull in security fixes at build time.
 RUN apk upgrade --no-cache
 WORKDIR /
