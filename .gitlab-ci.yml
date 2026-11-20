@@ -64,15 +64,13 @@ modelsrv-codegen:
 # --- two container images via the base's TBC kaniko build ------------------
 # modelsrv builds two images. Define the per-image matrix once and reuse it for
 # the build and the downstream scan jobs, which TBC otherwise runs against a
-# single default image. The -ci-test image names are a staging guard; drop the
-# suffix once verified.
+# single default image. These snapshot images are only build and scan targets:
+# release images are built on GitHub from the mirrored tags (see README).
 .image-matrix: &image-matrix
   - DOCKER_FILE: deploy/container/Dockerfile.modelsrv
     DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
-    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv-ci-test:$CI_COMMIT_REF_NAME"
   - DOCKER_FILE: deploy/container/Dockerfile.emelandctl
     DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
-    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl-ci-test:$CI_COMMIT_REF_NAME"
 
 docker-kaniko-build:
   variables:
