@@ -64,15 +64,13 @@ modelsrv-codegen:
 # --- two container images via the base's TBC kaniko build ------------------
 # modelsrv builds two images. Define the per-image matrix once and reuse it for
 # the build and the downstream scan jobs, which TBC otherwise runs against a
-# single default image. The -ci-test image names are a staging guard; drop the
-# suffix once verified.
+# single default image. These snapshot images are only build and scan targets:
+# release images are built on GitHub from the mirrored tags (see README).
 .image-matrix: &image-matrix
   - DOCKER_FILE: deploy/container/Dockerfile.modelsrv
     DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
-    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/modelsrv-ci-test:$CI_COMMIT_REF_NAME"
   - DOCKER_FILE: deploy/container/Dockerfile.emelandctl
     DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
-    DOCKER_RELEASE_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl-ci-test:$CI_COMMIT_REF_NAME"
 
 docker-kaniko-build:
   variables:
@@ -91,36 +89,3 @@ docker-trivy:
 docker-sbom:
   parallel:
     matrix: *image-matrix
-
-# --- publish OpenAPI spec and docs to odc/emeland/openapi ------------------
-# Ports the old GitHub openapi-publish.yml. Runs on semver tags; also available
-# as a manual run with a TAG variable (for backfilling an existing release).
-# Uses CI_JOB_TOKEN (no stored secret) to push a branch and open an MR on the
-# openapi repo. One-time setup: add odc/emeland/modelsrv to that repo's CI/CD
-# job-token inbound allowlist with push permission.
-.publish-openapi-base:
-  stage: publish
-  image: golang:1.26
-  variables:
-    OPENAPI_SPEC: api/openapi/EmergingEnterpriseLandscape-0.1.0-oapi-3.0.3.yaml
-    OPENAPI_REPO_PATH: odc/emeland/openapi
-    OPENAPI_REPO_BRANCH: main
-  resource_group: openapi-publish
-
-publish-openapi:
-  extends: .publish-openapi-base
-  script:
-    - .gitlab/scripts/publish-openapi.sh "$CI_COMMIT_TAG"
-  rules:
-    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$/'
-
-# Manual backfill: set TAG (e.g. v0.11.0) when running.
-publish-openapi-manual:
-  extends: .publish-openapi-base
-  script:
-    - .gitlab/scripts/publish-openapi.sh "$TAG"
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
-    - when: manual
-  allow_failure: true

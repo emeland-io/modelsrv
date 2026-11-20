@@ -234,6 +234,21 @@ Merge requests to expand and improve the service are greatly appreciated.
 
 Please make sure that all tests are running before you create a merge request.
 
+## Releases and the GitHub mirror
+
+Development happens on GitLab (`odc/emeland/modelsrv`). GitLab push-mirrors `main` and all tags to
+[github.com/emeland-io/modelsrv](https://github.com/emeland-io/modelsrv). Do not push to GitHub
+directly; the mirror overwrites it.
+
+To release, push a `vX.Y.Z` tag to GitLab. Once the mirror has pushed it (usually within a few
+minutes), the GitHub workflows build and publish the container images, create the GitHub release and
+publish the OpenAPI docs (see below). GitLab CI only builds and scans snapshot images; it does not
+publish anything.
+
+Go consumers get the module from the GitHub tag: `go.emeland.io/modelsrv` points to the GitHub
+repository, and `proxy.golang.org` caches each version on first use. Never move or re-create a
+published tag, because the Go checksum database keeps the first version it saw.
+
 ## Container images
 
 On every version tag (`v*`), the publish workflows push container images to GitHub Container Registry:
