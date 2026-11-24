@@ -73,11 +73,18 @@ modelsrv-codegen:
     DOCKER_SNAPSHOT_IMAGE: "$CI_REGISTRY_IMAGE/emelandctl/snapshot-ci-test:$CI_COMMIT_REF_SLUG"
 
 docker-kaniko-build:
+  # The image is built from the checkout. Reports from earlier jobs are not
+  # inputs, and a missing archive (go-semgrep has returned 404) fails the job
+  # before Kaniko starts.
+  dependencies: []
   variables:
     # modelsrv's Dockerfiles live under deploy/container/ but COPY from the repo
     # root (go.mod etc.), so the build context must be the root, not the
     # Dockerfile's directory (TBC's default).
     DOCKER_CONTEXT_PATH: "."
+    # The cache repo (.../snapshot-ci-test/cache) answers 401, and Kaniko then
+    # fails the image push with BLOB_UPLOAD_UNKNOWN. Build without that cache.
+    DOCKER_BUILD_CACHE_DISABLED: "true"
   parallel:
     matrix: *image-matrix
 

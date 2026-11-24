@@ -9,6 +9,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kerr"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
+	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"github.com/twmb/franz-go/pkg/sasl/plain"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
 )
@@ -82,6 +83,12 @@ func clientOpts(cfg Config) ([]kgo.Opt, error) {
 	if cfg.TLS != nil {
 		opts = append(opts, kgo.DialTLSConfig(cfg.TLS))
 	}
+	switch cfg.ResetOffset {
+	case ResetEnd:
+		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()))
+	case ResetBeginning:
+		opts = append(opts, kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
+	}
 	if cfg.SASL.Mechanism != "" {
 		mech, err := saslMechanism(cfg.SASL)
 		if err != nil {
@@ -108,6 +115,9 @@ func saslMechanism(cfg SASLConfig) (sasl.Mechanism, error) {
 		return scram.Sha256(scramFn), nil
 	case SASLScramSHA512:
 		return scram.Sha512(scramFn), nil
+	case SASLOAuthBearer:
+		tokens := newOAuthTokens(cfg)
+		return oauth.Oauth(tokens.auth), nil
 	default:
 		return nil, fmt.Errorf("kafka: unsupported SASL mechanism %q", cfg.Mechanism)
 	}

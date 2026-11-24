@@ -35,7 +35,7 @@ used (or deliberately dropped) it; acknowledgement commits the offset.
 - No import of `pkg/ingress` or `pkg/model`.
 - Record `Value` is the raw body (the CloudEvent). The library does not parse it.
 - Manual commits only. Offsets advance only on contiguous acks per partition.
-- TLS and SASL (`PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`) are configured by the Sensor.
+- TLS and SASL (`PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, `OAUTHBEARER`) are configured by the Sensor. `OAUTHBEARER` is the OIDC client-credentials flow: the library fetches and caches the access token and refreshes it shortly before expiry.
 
 ### Sensors own CloudEvents and model updates
 
