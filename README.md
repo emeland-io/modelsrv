@@ -113,7 +113,11 @@ return stream.Err()
 
 `Ack` commits the offset after the Sensor has used (or deliberately dropped) the record. A
 record left unacknowledged is delivered again after restart. TLS and SASL (`PLAIN`,
-`SCRAM-SHA-256`, `SCRAM-SHA-512`) are set on `Config`.
+`SCRAM-SHA-256`, `SCRAM-SHA-512`, `OAUTHBEARER`) are set on `Config`. `OAUTHBEARER` uses
+OIDC client credentials (`TokenURL`, `ClientID`, `ClientSecret`); the library fetches the
+token and caches it until shortly before expiry. `ResetOffset` (`beginning` or `end`) is
+where a new consumer group starts when the broker has no committed offset. A committed
+offset always wins.
 
 Read and ack records from a single goroutine, in the order they arrive. An out-of-order `Ack`
 returns an error, so fanning records out to parallel workers does not work. Keep handlers

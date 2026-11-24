@@ -46,4 +46,43 @@ var _ = Describe("Config validation", func() {
 		})
 		Expect(err).To(MatchError(ContainSubstring("unsupported SASL mechanism")))
 	})
+
+	It("rejects OAUTHBEARER without a token URL", func() {
+		_, err := kafka.Consume(context.Background(), kafka.Config{
+			Brokers: []string{"localhost:9092"},
+			GroupID: "g",
+			Topics:  []string{"t"},
+			SASL: kafka.SASLConfig{
+				Mechanism:    kafka.SASLOAuthBearer,
+				ClientID:     "kafka-emeland-sandbox",
+				ClientSecret: "s",
+			},
+		})
+		Expect(err).To(MatchError(ContainSubstring("token URL is required")))
+	})
+
+	It("rejects OAUTHBEARER without a client secret", func() {
+		_, err := kafka.Consume(context.Background(), kafka.Config{
+			Brokers: []string{"localhost:9092"},
+			GroupID: "g",
+			Topics:  []string{"t"},
+			SASL: kafka.SASLConfig{
+				Mechanism:    kafka.SASLOAuthBearer,
+				TokenURL:     "https://issuer.example/token",
+				ClientID:     "kafka-emeland-sandbox",
+				ClientSecret: "  ",
+			},
+		})
+		Expect(err).To(MatchError(ContainSubstring("client secret is required")))
+	})
+
+	It("rejects an unknown reset offset", func() {
+		_, err := kafka.Consume(context.Background(), kafka.Config{
+			Brokers:     []string{"localhost:9092"},
+			GroupID:     "g",
+			Topics:      []string{"t"},
+			ResetOffset: "latest",
+		})
+		Expect(err).To(MatchError(ContainSubstring("reset offset")))
+	})
 })
